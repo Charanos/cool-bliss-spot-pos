@@ -133,15 +133,26 @@ async function applyTrade(rows: TradeRows, full: boolean) {
   }
 
   const lineTab = new Map(rows.lines.map((l) => [l.id, l.tabId]));
-  await db.tabs.bulkPut(rows.tabs.filter((t) => !held.has(t.id)) as AnyRows);
-  await db.seats.bulkPut(rows.seats.filter(keep) as AnyRows);
-  await db.orders.bulkPut(rows.orders.filter(keep) as AnyRows);
-  await db.lines.bulkPut(rows.lines.filter(keep) as AnyRows);
-  await db.lineModifiers.bulkPut(rows.lineModifiers.filter((m) => !held.has(lineTab.get(m.orderLineId) ?? '')) as AnyRows);
-  await db.bills.bulkPut(rows.bills as AnyRows);
-  await db.billLines.bulkPut(rows.billLines as AnyRows);
-  await db.tenders.bulkPut(rows.tenders as AnyRows);
-  await db.drawers.bulkPut(rows.drawers as AnyRows);
+  
+  const tabs = rows.tabs.filter((t) => !held.has(t.id));
+  if (tabs.length > 0) await db.tabs.bulkPut(tabs as AnyRows);
+  
+  const seats = rows.seats.filter(keep);
+  if (seats.length > 0) await db.seats.bulkPut(seats as AnyRows);
+  
+  const orders = rows.orders.filter(keep);
+  if (orders.length > 0) await db.orders.bulkPut(orders as AnyRows);
+  
+  const lines = rows.lines.filter(keep);
+  if (lines.length > 0) await db.lines.bulkPut(lines as AnyRows);
+  
+  const lineModifiers = rows.lineModifiers.filter((m) => !held.has(lineTab.get(m.orderLineId) ?? ''));
+  if (lineModifiers.length > 0) await db.lineModifiers.bulkPut(lineModifiers as AnyRows);
+  
+  if (rows.bills.length > 0) await db.bills.bulkPut(rows.bills as AnyRows);
+  if (rows.billLines.length > 0) await db.billLines.bulkPut(rows.billLines as AnyRows);
+  if (rows.tenders.length > 0) await db.tenders.bulkPut(rows.tenders as AnyRows);
+  if (rows.drawers.length > 0) await db.drawers.bulkPut(rows.drawers as AnyRows);
 }
 
 async function applyPull(body: PullBody) {
