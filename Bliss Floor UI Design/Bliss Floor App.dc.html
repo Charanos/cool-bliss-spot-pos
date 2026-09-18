@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0B1015;overflow:hidden}
+  a{color:#6FC6D6;text-decoration:none}
+  a:hover{color:#A8DCE6}
+  ::-webkit-scrollbar{width:6px;height:0}
+  ::-webkit-scrollbar-thumb{background:#38424B;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  @keyframes blissPulse{0%{opacity:.45}50%{opacity:.9}100%{opacity:.45}}
+  @keyframes blissSpin{to{transform:rotate(360deg)}}
+  @keyframes blissRise{from{transform:translateY(8px)}to{transform:translateY(0)}}
+</style>
+</helmet>
+
+<div style="height:100vh;position:relative;display:grid;grid-template-rows:56px 1fr;background:#0B1015;color:#FBFCFD;font-family:'Geist','Helvetica Neue',Helvetica,sans-serif;font-weight:400;font-size:15px;line-height:22px;letter-spacing:-.006em;-webkit-font-smoothing:antialiased;overflow:hidden">
+
+  <div style="display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid #232B32;min-width:0">
+    <div style="display:flex;align-items:center;gap:8px;flex:0 0 auto">
+      <div style="width:22px;height:22px;position:relative">
+        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:5px;background:#1F6E82"></div>
+        <div style="position:absolute;left:8px;top:0;width:14px;height:14px;border-radius:5px;background:#6FC6D6"></div>
+      </div>
+      <span style="font-size:17px;letter-spacing:-.02em;color:#FBFCFD">bliss</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;flex:0 0 auto">
+      <sc-for list="{{ surfaces }}" as="s" hint-placeholder-count="3">
+        <div style="height:32px;border-radius:6px;padding:0 12px;display:flex;align-items:center;gap:8px;background:{{ s.fill }}">
+          <div style="width:16px;height:16px">{{ s.icon }}</div>
+          <span style="font-size:13px;color:{{ s.ink }};white-space:nowrap">{{ s.name }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="flex:1 1 auto;min-width:8px"></div>
+    <div style="flex:0 1 264px;height:32px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:6px;background:#232B32;min-width:0">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex:0 0 14px"><circle cx="7" cy="7" r="4.5" stroke="#8C9AA6" stroke-width="1.3"></circle><path d="M10.5 10.5 14 14" stroke="#8C9AA6" stroke-width="1.3" stroke-linecap="round"></path></svg>
+      <span style="flex:1 1 auto;min-width:0;font-size:13px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Search items, seats, tabs</span>
+      <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8C9AA6">⌘K</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;flex:0 0 auto">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:6px;height:6px;border-radius:50%;background:{{ connDot }}"></div>
+        <span style="font-size:12px;color:{{ connDot }};white-space:nowrap">{{ connText }}</span>
+      </div>
+      <div style="text-align:right;line-height:15px">
+        <div style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#E7ECF0">21:48</div>
+        <div style="font-size:10px;color:#8C9AA6;white-space:nowrap">Sun, 6 Sep 2026</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:32px;height:32px;border-radius:6px;background:{{ avatarFill }};outline:{{ avatarRing }};outline-offset:2px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:{{ avatarInk }}">AW</div>
+        <div style="line-height:15px">
+          <div style="font-size:13px;color:#E7ECF0;white-space:nowrap">Amina</div>
+          <div style="font-size:10px;color:{{ avatarRoleInk }};white-space:nowrap">{{ avatarRole }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;min-height:0;overflow:hidden">
+
+    <div style="flex:0 0 76px;width:76px;border-right:1px solid #232B32;display:flex;flex-direction:column;align-items:center;padding:8px 0 16px;gap:4px;overflow:hidden">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="6">
+        <div style="position:relative;width:60px;height:56px;border-radius:6px;background:{{ n.fill }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;flex:0 0 auto">
+          <div style="width:20px;height:20px">{{ n.icon }}</div>
+          <span style="font-size:11px;line-height:14px;color:{{ n.ink }}">{{ n.label }}</span>
+          <sc-if value="{{ n.badge }}">
+            <div style="position:absolute;top:6px;right:6px;min-width:18px;height:18px;border-radius:6px;padding:0 4px;background:#6FC6D6;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:11px;color:#0B1015">{{ n.badge }}</div>
+          </sc-if>
+        </div>
+      </sc-for>
+      <div style="flex:1 1 auto"></div>
+      <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:6px">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3.2 7.4a10 10 0 0 1 13.6 0M5.8 10.6a6.4 6.4 0 0 1 8.4 0M8.4 13.8a2.6 2.6 0 0 1 3.2 0" stroke="{{ railDot }}" stroke-width="1.4" stroke-linecap="round"></path><circle cx="10" cy="16.6" r="1" fill="{{ railDot }}"></circle></svg>
+        <span style="font-size:10px;line-height:13px;color:{{ railDot }};text-align:center">{{ railState }}</span>
+      </div>
+    </div>
+
+    <sc-if value="{{ isFloor }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1 1 auto;min-width:0;display:flex;overflow:hidden">
+        <div style="flex:1 1 auto;min-width:0;display:grid;grid-template-rows:auto auto 1fr;overflow:hidden">
+
+          <div style="display:flex;align-items:flex-start;gap:16px;padding:16px;border-bottom:1px solid #232B32;min-width:0">
+            <div style="flex:0 1 auto;min-width:0">
+              <div style="display:flex;align-items:baseline;gap:12px">
+                <span style="font-size:24px;line-height:30px;letter-spacing:-.025em;color:#FBFCFD;white-space:nowrap">Table 7</span>
+                <span style="font-size:12px;color:#B3BFC9;white-space:nowrap">4 guests</span>
+              </div>
+              <div style="font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tab 1024 · Terrace · open 1h12</div>
+            </div>
+            <div style="flex:1 1 auto;min-width:8px"></div>
+            <div style="flex:0 0 auto;display:flex;gap:12px;overflow-x:auto;overflow-y:hidden">
+              <sc-for list="{{ strip }}" as="s" hint-placeholder-count="5">
+                <div style="flex:0 0 40px;width:40px">
+                  <div style="width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ s.fill }};border:{{ s.border }};outline:{{ s.ring }};outline-offset:2px">
+                    <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:{{ s.size }};color:{{ s.ink }}">{{ s.glyph }}</span>
+                  </div>
+                  <div style="margin-top:6px;text-align:center;font-size:11px;line-height:14px;color:{{ s.labelInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;height:56px;padding:0 16px;border-bottom:1px solid #232B32;min-width:0">
+            <div style="display:flex;align-items:center;gap:4px;flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden">
+              <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+                <div style="height:32px;border-radius:6px;padding:0 12px;display:flex;align-items:center;gap:8px;background:{{ c.fill }};flex:0 0 auto">
+                  <span style="font-size:13px;color:{{ c.ink }};white-space:nowrap">{{ c.name }}</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:{{ c.sub }}">{{ c.n }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="overflow-y:auto;overflow-x:hidden;padding:16px;min-height:0">
+            <sc-if value="{{ isLoading }}">
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(164px,1fr));gap:12px">
+                <sc-for list="{{ skeletons }}" as="k" hint-placeholder-count="12">
+                  <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;overflow:hidden;animation:blissPulse 1200ms cubic-bezier(.65,0,.35,1) infinite;animation-delay:{{ k.delay }}">
+                    <div style="height:96px;background:#232B32"></div>
+                    <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px">
+                      <div style="height:14px;width:{{ k.w }};border-radius:6px;background:#232B32"></div>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <div style="flex:1 1 auto;height:14px;border-radius:6px;background:#232B32"></div>
+                        <div style="flex:0 0 32px;width:32px;height:32px;border-radius:6px;background:#232B32"></div>
+                      </div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ showCatalogue }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(164px,1fr));gap:12px">
+                <sc-for list="{{ products }}" as="p" hint-placeholder-count="20">
+                  <div style="border-radius:10px;background:#151B20;border:1px solid {{ p.stroke }};overflow:hidden;display:flex;flex-direction:column;transition:border-color 140ms cubic-bezier(.22,1,.36,1)" style-hover="border-color:#4E5A65">
+                    <div style="position:relative;height:96px;background:#232B32;overflow:hidden">
+                      <div style="width:100%;height:100%;background-image:url({{ p.img }});background-size:cover;background-position:center;filter:{{ p.filter }};opacity:{{ p.imgOp }}"></div>
+                      <div style="position:absolute;left:0;right:0;bottom:0;height:52px;background:linear-gradient(to top,#0B1015 4%,rgba(11,16,21,.62) 46%,rgba(11,16,21,0))"></div>
+                      <div style="position:absolute;left:12px;bottom:9px;right:12px;font-family:'JetBrains Mono',monospace;font-size:10px;line-height:13px;letter-spacing:.1em;text-transform:uppercase;color:{{ p.catInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.cat }}</div>
+                      <sc-if value="{{ p.qty }}">
+                        <div style="position:absolute;top:8px;right:8px;min-width:22px;height:22px;border-radius:6px;padding:0 6px;background:#6FC6D6;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:12px;color:#0B1015">{{ p.qty }}</div>
+                      </sc-if>
+                      <sc-if value="{{ p.flag }}">
+                        <div style="position:absolute;top:8px;left:8px;height:20px;border-radius:6px;padding:0 8px;display:flex;align-items:center;gap:6px;background:#0B1015">
+                          <div style="width:5px;height:5px;border-radius:50%;background:{{ p.stateInk }}"></div>
+                          <span style="font-size:10px;line-height:13px;letter-spacing:.04em;color:{{ p.stateInk }};white-space:nowrap">{{ p.flag }}</span>
+                        </div>
+                      </sc-if>
+                    </div>
+                    <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1 1 auto;opacity:{{ p.textOp }}">
+                      <div style="font-size:14px;line-height:19px;color:#FBFCFD;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.name }}</div>
+                      <div style="flex:1 1 auto"></div>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <div style="flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:4px">
+                          <span style="font-size:10px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+                          <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;line-height:20px;letter-spacing:-.01em;color:#D4DCE3">{{ p.price }}</span>
+                        </div>
+                        <div style="flex:0 0 32px;width:32px;height:32px;border-radius:6px;background:{{ p.addFill }};display:flex;align-items:center;justify-content:center">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2.2v9.6M2.2 7h9.6" stroke="{{ p.addInk }}" stroke-width="1.6" stroke-linecap="round"></path></svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="flex:0 1 384px;width:384px;min-width:0;border-left:1px solid #232B32;display:grid;grid-template-rows:56px 1fr auto;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 16px;border-bottom:1px solid #232B32">
+            <span style="font-size:16px;letter-spacing:-.01em;color:#FBFCFD">The ticket</span>
+            <span style="font-size:12px;color:#8C9AA6;white-space:nowrap">{{ ticketMeta }}</span>
+          </div>
+          <div style="overflow-y:auto;overflow-x:hidden;padding:0 16px 16px;min-height:0">
+            <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+              <div style="padding-top:16px">
+                <div style="display:flex;align-items:center;gap:8px;height:24px">
+                  <div style="flex:0 0 22px;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ g.fill }};border:{{ g.border }}">
+                    <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:{{ g.ink }}">{{ g.glyph }}</span>
+                  </div>
+                  <span style="flex:1 1 auto;min-width:0;font-size:13px;color:#B3BFC9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.label }}</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8C9AA6">{{ g.sub }}</span>
+                </div>
+                <sc-for list="{{ g.lines }}" as="l" hint-placeholder-count="2">
+                  <div style="min-height:56px;display:flex;align-items:center;gap:12px;padding:8px 0">
+                    <div style="flex:0 0 40px;width:40px;height:40px;border-radius:6px;overflow:hidden;background:#232B32">
+                      <div style="width:100%;height:100%;background-image:url({{ l.img }});background-size:cover;background-position:center;filter:saturate(.72) contrast(1.07);opacity:{{ l.imgOp }}"></div>
+                    </div>
+                    <div style="flex:1 1 auto;min-width:0">
+                      <div style="display:flex;align-items:baseline;gap:8px">
+                        <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:#8C9AA6;flex:0 0 auto">{{ l.q }}</span>
+                        <span style="font-size:14px;line-height:19px;color:{{ l.ink }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.name }}</span>
+                      </div>
+                      <sc-if value="{{ l.note }}">
+                        <div style="display:flex;align-items:center;gap:6px;height:16px">
+                          <sc-if value="{{ l.dot }}">
+                            <div style="width:5px;height:5px;border-radius:50%;background:{{ l.dot }};flex:0 0 5px"></div>
+                          </sc-if>
+                          <span style="font-size:11px;line-height:15px;color:{{ l.noteInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.note }}</span>
+                        </div>
+                      </sc-if>
+                    </div>
+                    <div style="flex:0 0 auto;display:flex;align-items:baseline;gap:4px">
+                      <span style="font-size:10px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+                      <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px;color:{{ l.ink }}">{{ l.price }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+                <div style="height:1px;background:#232B32;margin-top:8px"></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:16px;border-top:1px solid #232B32">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+              <span style="font-size:12px;color:#8C9AA6">Seat 2 · Sarah</span>
+              <div style="display:flex;align-items:baseline;gap:6px">
+                <span style="font-size:12px;letter-spacing:.02em;color:#8C9AA6">KES</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#B3BFC9">500.00</span>
+              </div>
+            </div>
+            <div style="height:6px"></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+              <span style="font-size:13px;color:#B3BFC9">Tab total</span>
+              <div style="display:flex;align-items:baseline;gap:6px">
+                <span style="font-size:12px;letter-spacing:.02em;color:#8C9AA6">KES</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:28px;line-height:34px;letter-spacing:-.025em;color:#E9BE86">3,400.00</span>
+              </div>
+            </div>
+            <div style="height:16px"></div>
+            <div style="display:flex;gap:8px">
+              <div style="flex:0 0 auto;height:48px;border-radius:6px;padding:0 16px;display:flex;align-items:center;gap:8px;background:#232B32;white-space:nowrap">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M6 7.5V3.5h8v4M6 14.5H4.2A1.2 1.2 0 0 1 3 13.3V8.7a1.2 1.2 0 0 1 1.2-1.2h11.6A1.2 1.2 0 0 1 17 8.7v4.6a1.2 1.2 0 0 1-1.2 1.2H14M6 12h8v4.5H6z" stroke="#B3BFC9" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                <span style="font-size:14px;color:#B3BFC9">Print bill</span>
+              </div>
+              <div style="flex:1 1 auto;height:48px;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:8px;background:#6FC6D6;white-space:nowrap;transition:background-color 140ms cubic-bezier(.22,1,.36,1)" style-hover="background:#A8DCE6">
+                <sc-if value="{{ isSending }}">
+                  <div style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(11,16,21,.25);border-top-color:#0B1015;animation:blissSpin 700ms linear infinite"></div>
+                </sc-if>
+                <span style="font-size:15px;font-weight:500;letter-spacing:-.01em;color:#0B1015">{{ fireLabel }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isTabs }}">
+      <div style="flex:1 1 auto;min-width:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:16px;padding:16px;border-bottom:1px solid #232B32;min-width:0;flex-wrap:wrap">
+          <div style="flex:0 1 auto;min-width:0">
+            <div style="font-size:24px;line-height:30px;letter-spacing:-.025em;color:#FBFCFD;white-space:nowrap">Tabs</div>
+            <div style="font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap">{{ tabsMeta }}</div>
+          </div>
+          <div style="flex:1 1 auto;min-width:8px"></div>
+          <div style="flex:0 0 auto;display:flex;align-items:center;gap:4px">
+            <sc-for list="{{ zones }}" as="z" hint-placeholder-count="3">
+              <div style="height:32px;border-radius:6px;padding:0 12px;display:flex;align-items:center;gap:8px;background:{{ z.fill }}">
+                <span style="font-size:13px;color:{{ z.ink }};white-space:nowrap">{{ z.name }}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:{{ z.sub }}">{{ z.n }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:0 0 auto;height:44px;border-radius:6px;padding:0 16px;display:flex;align-items:center;gap:8px;background:#6FC6D6;white-space:nowrap">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3.4v9.2M3.4 8h9.2" stroke="#0B1015" stroke-width="1.6" stroke-linecap="round"></path></svg>
+            <span style="font-size:14px;font-weight:500;color:#0B1015">Open tab</span>
+          </div>
+        </div>
+        <div style="overflow-y:auto;overflow-x:hidden;padding:16px;min-height:0">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:12px">
+            <sc-for list="{{ tabSummary }}" as="k" hint-placeholder-count="4">
+              <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:14px 16px">
+                <div style="font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.label }}</div>
+                <div style="height:6px"></div>
+                <div style="display:flex;align-items:baseline;gap:6px">
+                  <sc-if value="{{ k.prefix }}">
+                    <span style="font-size:12px;letter-spacing:.02em;color:#8C9AA6">KES</span>
+                  </sc-if>
+                  <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:24px;line-height:30px;letter-spacing:-.025em;color:{{ k.ink }}">{{ k.value }}</span>
+                </div>
+                <div style="height:4px"></div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <sc-if value="{{ k.dot }}">
+                    <div style="width:5px;height:5px;border-radius:50%;background:{{ k.dot }};flex:0 0 5px"></div>
+                  </sc-if>
+                  <span style="font-size:11px;line-height:15px;color:{{ k.subInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.sub }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="height:12px"></div>
+          <div style="display:flex;align-items:baseline;gap:8px;padding:8px 0 4px">
+            <span style="font-size:11px;line-height:14px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6;white-space:nowrap">Terrace</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:#6B7884">8 tables</span>
+            <div style="flex:1 1 auto;height:1px;background:#232B32"></div>
+          </div>
+          <div style="height:8px"></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:12px">
+            <sc-for list="{{ tables }}" as="t" hint-placeholder-count="8">
+              <div style="border-radius:10px;background:{{ t.fill }};border:1px solid {{ t.stroke }};padding:14px;min-height:148px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:baseline;gap:8px">
+                  <span style="flex:1 1 auto;min-width:0;font-size:18px;line-height:24px;letter-spacing:-.02em;color:{{ t.nameInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span>
+                  <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:#8C9AA6">{{ t.elapsed }}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;min-height:22px;flex-wrap:wrap">
+                  <sc-for list="{{ t.seats }}" as="s" hint-placeholder-count="4">
+                    <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ s.fill }};border:{{ s.border }};opacity:{{ s.op }};font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:{{ s.ink }}">{{ s.no }}</div>
+                  </sc-for>
+                  <sc-if value="{{ t.seatNote }}">
+                    <span style="font-size:11px;color:#8C9AA6;white-space:nowrap">{{ t.seatNote }}</span>
+                  </sc-if>
+                </div>
+                <div style="flex:1 1 auto"></div>
+                <div style="display:flex;align-items:flex-end;gap:8px">
+                  <div style="flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px">
+                    <sc-if value="{{ t.dot }}">
+                      <div style="width:5px;height:5px;border-radius:50%;background:{{ t.dot }};flex:0 0 5px"></div>
+                    </sc-if>
+                    <span style="font-size:11px;line-height:15px;color:{{ t.stateInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.state }}</span>
+                  </div>
+                  <sc-if value="{{ t.total }}">
+                    <div style="flex:0 0 auto;display:flex;align-items:baseline;gap:4px">
+                      <span style="font-size:10px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+                      <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:18px;line-height:24px;letter-spacing:-.02em;color:{{ t.totalInk }}">{{ t.total }}</span>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOrders }}">
+      <div style="flex:1 1 auto;min-width:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:16px;padding:16px;border-bottom:1px solid #232B32;min-width:0;flex-wrap:wrap">
+          <div style="flex:0 1 auto;min-width:0">
+            <div style="font-size:24px;line-height:30px;letter-spacing:-.025em;color:#FBFCFD;white-space:nowrap">Orders</div>
+            <div style="font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap">What the bar has, and what it has done with it</div>
+          </div>
+          <div style="flex:1 1 auto;min-width:8px"></div>
+          <div style="flex:0 0 auto;display:flex;align-items:center;gap:4px">
+            <sc-for list="{{ orderFilters }}" as="f" hint-placeholder-count="4">
+              <div style="height:32px;border-radius:6px;padding:0 12px;display:flex;align-items:center;gap:8px;background:{{ f.fill }}">
+                <span style="font-size:13px;color:{{ f.ink }};white-space:nowrap">{{ f.name }}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:{{ f.sub }}">{{ f.n }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="overflow-y:auto;overflow-x:hidden;padding:16px;min-height:0">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:12px">
+            <sc-for list="{{ orderSummary }}" as="k" hint-placeholder-count="4">
+              <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:14px 16px">
+                <div style="font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.label }}</div>
+                <div style="height:6px"></div>
+                <div style="display:flex;align-items:baseline;gap:6px">
+                  <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:24px;line-height:30px;letter-spacing:-.025em;color:{{ k.ink }}">{{ k.value }}</span>
+                </div>
+                <div style="height:4px"></div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <sc-if value="{{ k.dot }}">
+                    <div style="width:5px;height:5px;border-radius:50%;background:{{ k.dot }};flex:0 0 5px"></div>
+                  </sc-if>
+                  <span style="font-size:11px;line-height:15px;color:{{ k.subInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.sub }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="height:16px"></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-items:start">
+            <sc-for list="{{ orders }}" as="o" hint-placeholder-count="6">
+              <div style="border-radius:10px;background:#151B20;border:1px solid {{ o.stroke }};overflow:hidden">
+                <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #232B32">
+                  <div style="flex:1 1 auto;min-width:0">
+                    <div style="font-size:16px;line-height:22px;letter-spacing:-.01em;color:#FBFCFD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.table }}</div>
+                    <div style="font-size:11px;line-height:15px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.meta }}</div>
+                  </div>
+                  <div style="flex:0 0 auto;display:flex;align-items:center;gap:6px">
+                    <div style="width:5px;height:5px;border-radius:50%;background:{{ o.dot }}"></div>
+                    <span style="font-size:11px;color:{{ o.dot }};white-space:nowrap">{{ o.state }}</span>
+                  </div>
+                </div>
+                <div style="padding:8px 16px 14px">
+                  <sc-for list="{{ o.lines }}" as="l" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:10px;min-height:40px;padding:4px 0">
+                      <div style="flex:0 0 22px;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ l.seatFill }};border:{{ l.seatBorder }};font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:{{ l.seatInk }}">{{ l.seat }}</div>
+                      <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:#8C9AA6">{{ l.q }}</span>
+                      <span style="flex:1 1 auto;min-width:0;font-size:13px;color:{{ l.ink }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.name }}</span>
+                      <span style="flex:0 0 auto;font-size:11px;color:{{ l.noteInk }};white-space:nowrap">{{ l.note }}</span>
+                    </div>
+                  </sc-for>
+                  <div style="height:1px;background:#232B32;margin:8px 0 12px"></div>
+                  <div style="display:flex;align-items:flex-start;gap:8px">
+                    <sc-for list="{{ o.steps }}" as="s" hint-placeholder-count="3">
+                      <div style="flex:1 1 auto;min-width:0">
+                        <div style="display:flex;align-items:center;gap:6px">
+                          <div style="flex:0 0 6px;width:6px;height:6px;border-radius:50%;background:{{ s.dot }}"></div>
+                          <div style="flex:1 1 auto;height:1px;background:{{ s.rule }}"></div>
+                        </div>
+                        <div style="padding-top:6px;font-size:11px;line-height:15px;color:{{ s.ink }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{ o.action }}">
+                    <div style="padding-top:12px">
+                      <div style="height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:6px;background:{{ o.actionFill }};font-size:14px;color:{{ o.actionInk }};white-space:nowrap">{{ o.action }}</div>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isGuests }}">
+      <div style="flex:1 1 auto;min-width:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:16px;padding:16px;border-bottom:1px solid #232B32;flex-wrap:wrap">
+          <div style="flex:0 1 auto;min-width:0">
+            <div style="font-size:24px;line-height:30px;letter-spacing:-.025em;color:#FBFCFD;white-space:nowrap">Guests</div>
+            <div style="font-size:12px;line-height:17px;color:#8C9AA6">Everyone sitting in my section tonight, by seat</div>
+          </div>
+          <div style="flex:1 1 auto;min-width:8px"></div>
+          <div style="flex:0 0 auto;display:flex;align-items:center;gap:4px">
+            <sc-for list="{{ guestFilters }}" as="f" hint-placeholder-count="4">
+              <div style="height:32px;border-radius:6px;padding:0 12px;display:flex;align-items:center;gap:8px;background:{{ f.fill }}">
+                <span style="font-size:13px;color:{{ f.ink }};white-space:nowrap">{{ f.name }}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:{{ f.sub }}">{{ f.n }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="overflow-y:auto;overflow-x:hidden;min-height:0">
+          <div style="padding:16px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:12px">
+              <sc-for list="{{ guestSummary }}" as="k" hint-placeholder-count="4">
+                <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:14px 16px">
+                  <div style="font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.label }}</div>
+                  <div style="height:6px"></div>
+                  <div style="display:flex;align-items:baseline;gap:6px">
+                    <sc-if value="{{ k.prefix }}">
+                      <span style="font-size:12px;letter-spacing:.02em;color:#8C9AA6">KES</span>
+                    </sc-if>
+                    <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:24px;line-height:30px;letter-spacing:-.025em;color:{{ k.ink }}">{{ k.value }}</span>
+                  </div>
+                  <div style="height:4px"></div>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <sc-if value="{{ k.dot }}">
+                      <div style="width:5px;height:5px;border-radius:50%;background:{{ k.dot }};flex:0 0 5px"></div>
+                    </sc-if>
+                    <span style="font-size:11px;line-height:15px;color:{{ k.subInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.sub }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="height:16px"></div>
+            <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;overflow:hidden">
+              <div style="overflow-x:auto">
+                <div style="min-width:680px">
+                  <div style="display:grid;grid-template-columns:64px minmax(140px,1.4fr) 108px minmax(120px,1fr) 100px 108px;gap:12px;padding:10px 16px;background:#232B32">
+                    <sc-for list="{{ guestCols }}" as="c" hint-placeholder-count="6">
+                      <div style="font-size:11px;line-height:14px;letter-spacing:.06em;font-weight:500;text-transform:uppercase;color:#B3BFC9;text-align:{{ c.align }};white-space:nowrap">{{ c.name }}</div>
+                    </sc-for>
+                  </div>
+                  <sc-for list="{{ guests }}" as="g" hint-placeholder-count="8">
+                    <div>
+                      <div style="display:grid;grid-template-columns:64px minmax(140px,1.4fr) 108px minmax(120px,1fr) 100px 108px;gap:12px;padding:12px 16px;align-items:center">
+                        <div style="display:flex">
+                          <div style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ g.seatFill }};border:{{ g.seatBorder }};font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:{{ g.seatInk }}">{{ g.seat }}</div>
+                        </div>
+                        <div style="min-width:0">
+                          <div style="font-size:14px;line-height:19px;color:#FBFCFD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.name }}</div>
+                          <div style="font-size:11px;line-height:15px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.note }}</div>
+                        </div>
+                        <div style="font-size:13px;color:#B3BFC9;white-space:nowrap">{{ g.table }}</div>
+                        <div style="min-width:0;font-size:13px;color:#B3BFC9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.last }}</div>
+                        <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px;color:#D4DCE3">{{ g.spend }}</div>
+                        <div style="display:flex;align-items:center;gap:6px;min-width:0">
+                          <div style="width:5px;height:5px;border-radius:50%;background:{{ g.dot }};flex:0 0 5px"></div>
+                          <span style="font-size:12px;color:{{ g.stateInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.state }}</span>
+                        </div>
+                      </div>
+                      <div style="height:1px;background:#232B32"></div>
+                    </div>
+                  </sc-for>
+                  <div style="display:grid;grid-template-columns:64px minmax(140px,1.4fr) 108px minmax(120px,1fr) 100px 108px;gap:12px;padding:12px 16px;align-items:center">
+                    <div></div>
+                    <div style="font-size:13px;color:#B3BFC9;white-space:nowrap">{{ guestFooter }}</div>
+                    <div></div>
+                    <div></div>
+                    <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:15px;color:#E9BE86">{{ guestTotal }}</div>
+                    <div style="font-size:12px;color:#8C9AA6;white-space:nowrap">Total spend</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReports }}">
+      <div style="flex:1 1 auto;min-width:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:16px;padding:16px;border-bottom:1px solid #232B32;flex-wrap:wrap">
+          <div style="flex:0 1 auto;min-width:0">
+            <div style="font-size:24px;line-height:30px;letter-spacing:-.025em;color:#FBFCFD;white-space:nowrap">My shift</div>
+            <div style="font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap">Started 17:36 · 4h12 on the floor</div>
+          </div>
+          <div style="flex:1 1 auto;min-width:8px"></div>
+          <div style="flex:0 0 auto;display:flex;gap:4px">
+            <sc-for list="{{ reportRanges }}" as="r" hint-placeholder-count="3">
+              <div style="height:32px;border-radius:6px;padding:0 12px;display:flex;align-items:center;background:{{ r.fill }}">
+                <span style="font-size:13px;color:{{ r.ink }};white-space:nowrap">{{ r.name }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="overflow-y:auto;overflow-x:hidden;padding:16px;min-height:0">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:12px">
+            <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+              <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:16px">
+                <div style="font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.label }}</div>
+                <div style="height:8px"></div>
+                <div style="display:flex;align-items:baseline;gap:6px">
+                  <sc-if value="{{ k.prefix }}">
+                    <span style="font-size:12px;letter-spacing:.02em;color:#8C9AA6">KES</span>
+                  </sc-if>
+                  <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:28px;line-height:34px;letter-spacing:-.03em;color:{{ k.ink }}">{{ k.value }}</span>
+                </div>
+                <div style="height:6px"></div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <sc-if value="{{ k.dot }}">
+                    <div style="width:5px;height:5px;border-radius:50%;background:{{ k.dot }};flex:0 0 5px"></div>
+                  </sc-if>
+                  <span style="font-size:12px;line-height:16px;color:{{ k.subInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.sub }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="height:16px"></div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start">
+            <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:16px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+                <span style="font-size:16px;letter-spacing:-.01em;color:#FBFCFD">Sales by hour</span>
+                <span style="font-size:12px;color:#8C9AA6;white-space:nowrap">{{ peakNote }}</span>
+              </div>
+              <div style="height:16px"></div>
+              <div style="display:flex;align-items:flex-end;gap:8px;height:140px">
+                <sc-for list="{{ hours }}" as="h" hint-placeholder-count="7">
+                  <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;height:100%">
+                    <div style="height:{{ h.h }};border-radius:6px;background:{{ h.fill }}"></div>
+                    <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;line-height:13px;color:#8C9AA6">{{ h.label }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:16px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+                <span style="font-size:16px;letter-spacing:-.01em;color:#FBFCFD">What I poured most</span>
+                <span style="font-size:12px;color:#8C9AA6;white-space:nowrap">By count</span>
+              </div>
+              <div style="height:8px"></div>
+              <sc-for list="{{ topItems }}" as="t" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:12px;min-height:40px;padding:6px 0;border-bottom:1px solid #232B32">
+                  <span style="flex:1 1 auto;min-width:0;font-size:14px;color:#FBFCFD;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.name }}</span>
+                  <div style="flex:0 0 88px;height:6px;border-radius:6px;background:#232B32;overflow:hidden">
+                    <div style="width:{{ t.bar }};height:100%;background:#3FAAC0"></div>
+                  </div>
+                  <span style="flex:0 0 32px;text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#B3BFC9">{{ t.n }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="height:16px"></div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start">
+            <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:16px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+                <span style="font-size:16px;letter-spacing:-.01em;color:#FBFCFD">How they paid</span>
+                <span style="font-size:12px;color:#8C9AA6;white-space:nowrap">18 bills settled</span>
+              </div>
+              <div style="height:16px"></div>
+              <div style="display:flex;height:8px;border-radius:6px;overflow:hidden;gap:2px">
+                <sc-for list="{{ payMix }}" as="p" hint-placeholder-count="3">
+                  <div style="width:{{ p.pct }};background:{{ p.fill }}"></div>
+                </sc-for>
+              </div>
+              <div style="height:12px"></div>
+              <sc-for list="{{ payMix }}" as="p" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:10px;min-height:36px;padding:4px 0">
+                  <div style="flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:{{ p.fill }}"></div>
+                  <span style="flex:1 1 auto;min-width:0;font-size:14px;color:#FBFCFD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span>
+                  <span style="flex:0 0 auto;font-size:11px;color:#8C9AA6;white-space:nowrap">{{ p.n }}</span>
+                  <div style="flex:0 0 auto;display:flex;align-items:baseline;gap:4px">
+                    <span style="font-size:10px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px;color:#D4DCE3">{{ p.value }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:16px">
+              <div style="font-size:16px;letter-spacing:-.01em;color:#FBFCFD">What I owe the drawer</div>
+              <div style="height:12px"></div>
+              <sc-for list="{{ shiftLedger }}" as="l" hint-placeholder-count="4">
+                <div style="display:flex;align-items:baseline;gap:12px;min-height:40px;padding:6px 0;border-bottom:1px solid #232B32">
+                  <span style="flex:1 1 auto;min-width:0;font-size:14px;color:#B3BFC9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.label }}</span>
+                  <div style="flex:0 0 auto;display:flex;align-items:baseline;gap:4px">
+                    <span style="font-size:10px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;color:{{ l.ink }}">{{ l.value }}</span>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="height:16px"></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;background:#6FC6D6;font-size:15px;font-weight:500;color:#0B1015;white-space:nowrap">Close my shift · KES 28,450</div>
+                <div style="height:48px;border-radius:6px;padding:0 16px;display:flex;align-items:center;background:#232B32;font-size:14px;color:#B3BFC9;white-space:nowrap">Print my summary</div>
+              </div>
+              <div style="height:8px"></div>
+              <div style="font-size:12px;line-height:17px;color:#8C9AA6;text-wrap:pretty">{{ closeNote }}</div>
+            </div>
+          </div>
+
+          <div style="height:16px"></div>
+
+          <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:16px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+              <span style="font-size:16px;letter-spacing:-.01em;color:#FBFCFD">Lines I took off</span>
+              <span style="font-size:12px;color:#8C9AA6;white-space:nowrap">Every void carries a reason</span>
+            </div>
+            <div style="height:12px"></div>
+            <sc-for list="{{ voidLog }}" as="v" hint-placeholder-count="1">
+              <div style="display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-top:1px solid #232B32">
+                <span style="flex:0 0 44px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8C9AA6;padding-top:2px">{{ v.time }}</span>
+                <div style="flex:1 1 auto;min-width:0">
+                  <div style="font-size:14px;line-height:19px;color:#FBFCFD;text-wrap:pretty">{{ v.title }}</div>
+                  <div style="font-size:12px;line-height:17px;color:#B3BFC9;text-wrap:pretty">{{ v.body }}</div>
+                </div>
+                <div style="flex:0 0 auto;display:flex;align-items:center;gap:6px;padding-top:2px">
+                  <div style="width:5px;height:5px;border-radius:50%;background:{{ v.dot }}"></div>
+                  <span style="font-size:11px;color:{{ v.dot }};white-space:nowrap">{{ v.state }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSettings }}">
+      <div style="flex:1 1 auto;min-width:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:16px;padding:16px;border-bottom:1px solid #232B32;flex-wrap:wrap">
+          <div style="flex:0 1 auto;min-width:0">
+            <div style="font-size:24px;line-height:30px;letter-spacing:-.025em;color:#FBFCFD;white-space:nowrap">Settings</div>
+            <div style="font-size:12px;line-height:17px;color:#8C9AA6">This tablet only. Prices and products are set in the Console.</div>
+          </div>
+          <div style="flex:1 1 auto;min-width:8px"></div>
+          <div style="flex:0 1 240px;height:32px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:6px;background:#232B32;min-width:0">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex:0 0 14px"><circle cx="7" cy="7" r="4.5" stroke="#8C9AA6" stroke-width="1.3"></circle><path d="M10.5 10.5 14 14" stroke="#8C9AA6" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            <span style="flex:1 1 auto;min-width:0;font-size:13px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Search settings</span>
+          </div>
+        </div>
+        <div style="overflow-y:auto;overflow-x:hidden;padding:16px;min-height:0">
+          <div style="max-width:720px">
+            <sc-for list="{{ settingsAll }}" as="s" hint-placeholder-count="7">
+              <div style="padding-bottom:24px">
+                <div style="font-size:11px;line-height:14px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6">{{ s.group }}</div>
+                <div style="height:8px"></div>
+                <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;overflow:hidden">
+                  <sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="4">
+                    <div>
+                      <div style="display:flex;align-items:center;gap:16px;min-height:56px;padding:12px 16px">
+                        <div style="flex:1 1 auto;min-width:0">
+                          <div style="font-size:14px;line-height:19px;color:#FBFCFD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.label }}</div>
+                          <sc-if value="{{ r.help }}">
+                            <div style="font-size:11px;line-height:15px;color:#8C9AA6;text-wrap:pretty">{{ r.help }}</div>
+                          </sc-if>
+                        </div>
+                        <sc-if value="{{ r.value }}">
+                          <span style="flex:0 0 auto;font-size:13px;color:#B3BFC9;white-space:nowrap">{{ r.value }}</span>
+                        </sc-if>
+                        <sc-if value="{{ r.toggle }}">
+                          <div style="flex:0 0 44px;width:44px;height:26px;border-radius:6px;background:{{ r.trackFill }};display:flex;align-items:center;padding:3px;justify-content:{{ r.knob }}">
+                            <div style="width:20px;height:20px;border-radius:6px;background:{{ r.knobFill }}"></div>
+                          </div>
+                        </sc-if>
+                      </div>
+                      <div style="height:1px;background:#232B32"></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+              <div style="flex:0 0 auto;height:48px;border-radius:6px;padding:0 16px;display:flex;align-items:center;background:#232B32;font-size:14px;color:#B3BFC9;white-space:nowrap">Send a diagnostic to Andishi</div>
+              <div style="flex:1 1 auto;min-width:8px"></div>
+              <div style="flex:0 0 auto;height:48px;border-radius:6px;padding:0 16px;display:flex;align-items:center;font-size:14px;color:#E08585;white-space:nowrap">Sign this tablet out of Cool Bliss Spot</div>
+            </div>
+            <div style="height:8px"></div>
+            <div style="font-size:12px;line-height:17px;color:#8C9AA6;text-wrap:pretty">Signing the tablet out needs Joseph's PIN. Held orders send first.</div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isProfile }}">
+      <div style="flex:1 1 auto;min-width:0;overflow-y:auto;overflow-x:hidden">
+        <div style="padding:24px 16px 32px;max-width:880px">
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+            <div style="flex:0 0 72px;width:72px;height:72px;border-radius:10px;background:#17545F;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:500;letter-spacing:-.02em;color:#A8DCE6">AW</div>
+            <div style="flex:1 1 200px;min-width:0">
+              <div style="font-size:28px;line-height:34px;letter-spacing:-.025em;color:#FBFCFD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Amina Wanjiru</div>
+              <div style="font-size:13px;line-height:19px;color:#B3BFC9">Waiter · staff 014 · Terrace section</div>
+              <div style="height:8px"></div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <div style="height:26px;border-radius:6px;padding:0 10px;display:flex;align-items:center;gap:6px;background:#232B32">
+                  <div style="width:5px;height:5px;border-radius:50%;background:#63B98A"></div>
+                  <span style="font-size:11px;color:#63B98A;white-space:nowrap">On shift since 17:36</span>
+                </div>
+                <div style="height:26px;border-radius:6px;padding:0 10px;display:flex;align-items:center;background:#232B32">
+                  <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:#B3BFC9">4h12</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:24px"></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+            <sc-for list="{{ profileStats }}" as="p" hint-placeholder-count="4">
+              <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:16px">
+                <div style="font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.label }}</div>
+                <div style="height:6px"></div>
+                <div style="display:flex;align-items:baseline;gap:6px">
+                  <sc-if value="{{ p.prefix }}">
+                    <span style="font-size:12px;letter-spacing:.02em;color:#8C9AA6">KES</span>
+                  </sc-if>
+                  <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:24px;line-height:30px;letter-spacing:-.025em;color:{{ p.ink }}">{{ p.value }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="height:24px"></div>
+          <div style="font-size:11px;line-height:14px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6">This shift</div>
+          <div style="height:8px"></div>
+          <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;overflow:hidden">
+            <sc-for list="{{ profileRows }}" as="r" hint-placeholder-count="5">
+              <div>
+                <div style="display:flex;align-items:center;gap:16px;min-height:56px;padding:12px 16px">
+                  <div style="flex:1 1 auto;min-width:0">
+                    <div style="font-size:14px;line-height:19px;color:{{ r.ink }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.label }}</div>
+                    <sc-if value="{{ r.help }}">
+                      <div style="font-size:11px;line-height:15px;color:#8C9AA6;text-wrap:pretty">{{ r.help }}</div>
+                    </sc-if>
+                  </div>
+                  <sc-if value="{{ r.value }}">
+                    <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#B3BFC9;white-space:nowrap">{{ r.value }}</span>
+                  </sc-if>
+                  <sc-if value="{{ r.chev }}">
+                    <span style="flex:0 0 auto;font-size:15px;color:#6B7884">›</span>
+                  </sc-if>
+                </div>
+                <div style="height:1px;background:#232B32"></div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="height:24px"></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start">
+            <div>
+              <div style="font-size:11px;line-height:14px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6">Who I am</div>
+              <div style="height:8px"></div>
+              <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;overflow:hidden">
+                <sc-for list="{{ profileMeta }}" as="m" hint-placeholder-count="4">
+                  <div>
+                    <div style="display:flex;align-items:baseline;gap:16px;min-height:48px;padding:12px 16px">
+                      <span style="flex:1 1 auto;min-width:0;font-size:13px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.label }}</span>
+                      <span style="flex:0 0 auto;font-size:14px;color:#FBFCFD;white-space:nowrap">{{ m.value }}</span>
+                    </div>
+                    <div style="height:1px;background:#232B32"></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;line-height:14px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6">What I can do</div>
+              <div style="height:8px"></div>
+              <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;overflow:hidden">
+                <sc-for list="{{ permissions }}" as="p" hint-placeholder-count="6">
+                  <div>
+                    <div style="display:flex;align-items:center;gap:16px;min-height:48px;padding:12px 16px">
+                      <span style="flex:1 1 auto;min-width:0;font-size:14px;color:#FBFCFD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span>
+                      <div style="flex:0 0 auto;display:flex;align-items:center;gap:6px">
+                        <div style="width:5px;height:5px;border-radius:50%;background:{{ p.ink }}"></div>
+                        <span style="font-size:12px;color:{{ p.ink }};white-space:nowrap">{{ p.state }}</span>
+                      </div>
+                    </div>
+                    <div style="height:1px;background:#232B32"></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:24px"></div>
+          <div style="font-size:11px;line-height:14px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6">What I did tonight</div>
+          <div style="height:8px"></div>
+          <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:8px 16px 12px">
+            <sc-for list="{{ activity }}" as="a" hint-placeholder-count="6">
+              <div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #232B32">
+                <span style="flex:0 0 44px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8C9AA6;padding-top:1px">{{ a.time }}</span>
+                <div style="flex:1 1 auto;min-width:0">
+                  <div style="font-size:14px;line-height:19px;color:#FBFCFD;text-wrap:pretty">{{ a.label }}</div>
+                  <div style="font-size:12px;line-height:17px;color:#B3BFC9;text-wrap:pretty">{{ a.meta }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="height:24px"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;background:#6FC6D6;font-size:15px;font-weight:500;color:#0B1015;white-space:nowrap">Hand over the shift</div>
+            <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;background:#232B32;font-size:15px;color:#B3BFC9;white-space:nowrap">Change my PIN</div>
+            <div style="flex:1 1 auto;min-width:8px"></div>
+            <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;font-size:15px;color:#E08585;white-space:nowrap">Sign out</div>
+          </div>
+          <div style="height:8px"></div>
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6;text-wrap:pretty">{{ handOverNote }}</div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ hasScrim }}">
+    <div style="position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(11,16,21,.55)"></div>
+  </sc-if>
+
+  <sc-if value="{{ isPalette }}">
+    <div style="position:absolute;left:50%;top:80px;width:min(640px,calc(100% - 48px));transform:translateX(-50%);border-radius:16px;background:#232B32;border:1px solid #38424B;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:12px;height:56px;padding:0 16px;border-bottom:1px solid #38424B">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex:0 0 16px"><circle cx="7" cy="7" r="4.5" stroke="#8C9AA6" stroke-width="1.3"></circle><path d="M10.5 10.5 14 14" stroke="#8C9AA6" stroke-width="1.3" stroke-linecap="round"></path></svg>
+        <span style="flex:1 1 auto;min-width:0;font-size:16px;color:#FBFCFD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">gil</span>
+        <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8C9AA6">esc to close</span>
+      </div>
+      <div style="padding:8px 8px 12px">
+        <sc-for list="{{ paletteGroups }}" as="pg" hint-placeholder-count="2">
+          <div>
+            <div style="padding:10px 8px 4px;font-size:11px;line-height:14px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6">{{ pg.group }}</div>
+            <sc-for list="{{ pg.items }}" as="i" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;min-height:48px;padding:8px;border-radius:6px;background:{{ i.fill }}">
+                <sc-if value="{{ i.seat }}">
+                  <div style="flex:0 0 28px;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ i.seatFill }};font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#0B1015">{{ i.seat }}</div>
+                </sc-if>
+                <div style="flex:1 1 auto;min-width:0">
+                  <div style="font-size:14px;line-height:19px;color:#FBFCFD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ i.name }}</div>
+                  <div style="font-size:11px;line-height:15px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ i.meta }}</div>
+                </div>
+                <sc-if value="{{ i.trail }}">
+                  <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#B3BFC9;white-space:nowrap">{{ i.trail }}</span>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isModifier }}">
+    <div style="position:absolute;left:0;right:0;bottom:0;border-radius:16px 16px 0 0;background:#232B32;border-top:1px solid #38424B;padding:20px 24px 24px">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <span style="flex:0 1 auto;font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Gilbeys tot</span>
+        <div style="flex:1 1 auto;min-width:8px"></div>
+        <div style="flex:0 0 auto;display:flex;align-items:baseline;gap:4px">
+          <span style="font-size:11px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;color:#B3BFC9">500.00</span>
+        </div>
+      </div>
+      <div style="height:1px;background:#38424B;margin:16px 0"></div>
+      <div style="display:flex;gap:32px;flex-wrap:wrap">
+        <sc-for list="{{ modifierGroups }}" as="m" hint-placeholder-count="3">
+          <div style="flex:0 1 auto;min-width:0">
+            <div style="font-size:12px;line-height:17px;color:#8C9AA6">{{ m.label }}</div>
+            <div style="height:8px"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <sc-for list="{{ m.options }}" as="o" hint-placeholder-count="3">
+                <div style="height:48px;border-radius:6px;padding:0 18px;display:flex;align-items:center;background:{{ o.fill }};font-size:14px;font-weight:{{ o.weight }};color:{{ o.ink }};white-space:nowrap">{{ o.name }}</div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:1px;background:#38424B;margin:20px 0"></div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="flex:0 0 auto;display:flex;align-items:center;gap:12px">
+          <span style="font-size:12px;color:#8C9AA6">Quantity</span>
+          <div style="width:48px;height:48px;border-radius:6px;background:#38424B;display:flex;align-items:center;justify-content:center">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.4 8h9.2" stroke="#D4DCE3" stroke-width="1.6" stroke-linecap="round"></path></svg>
+          </div>
+          <span style="min-width:36px;text-align:center;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:24px;letter-spacing:-.025em;color:#FBFCFD">1</span>
+          <div style="width:48px;height:48px;border-radius:6px;background:#38424B;display:flex;align-items:center;justify-content:center">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3.4v9.2M3.4 8h9.2" stroke="#D4DCE3" stroke-width="1.6" stroke-linecap="round"></path></svg>
+          </div>
+        </div>
+        <div style="flex:1 1 auto;min-width:8px"></div>
+        <div style="flex:0 0 auto;height:48px;display:flex;align-items:center;padding:0 16px;border-radius:6px;font-size:15px;color:#B3BFC9;white-space:nowrap">Keep it</div>
+        <div style="flex:0 0 auto;height:56px;display:flex;align-items:center;padding:0 24px;border-radius:6px;background:#6FC6D6;font-size:16px;font-weight:500;color:#0B1015;white-space:nowrap">Add to Seat 2 · KES 500</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isVoid }}">
+    <div style="position:absolute;left:50%;top:50%;width:min(560px,calc(100% - 48px));transform:translate(-50%,-50%);border-radius:16px;background:#232B32;border:1px solid #38424B;padding:24px">
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD;text-wrap:pretty">Void 1 × Gilbeys tot from Seat 2?</div>
+      <div style="height:6px"></div>
+      <div style="font-size:14px;line-height:20px;color:#B3BFC9;text-wrap:pretty">This removes KES 500.00 from tab 1024. It cannot be undone.</div>
+      <div style="height:16px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="height:40px;border-radius:6px;padding:0 14px;display:flex;align-items:center;background:#38424B;font-size:14px;color:#D4DCE3;white-space:nowrap">Wrong item</div>
+        <div style="height:40px;border-radius:6px;padding:0 14px;display:flex;align-items:center;background:#6FC6D6;font-size:14px;color:#0B1015;white-space:nowrap">Changed mind</div>
+        <div style="height:40px;border-radius:6px;padding:0 14px;display:flex;align-items:center;background:#38424B;font-size:14px;color:#D4DCE3;white-space:nowrap">Ran out</div>
+      </div>
+      <div style="height:16px"></div>
+      <div style="font-size:12px;line-height:17px;color:#8C9AA6">Reason, at least ten characters</div>
+      <div style="min-height:48px;display:flex;align-items:center;border-bottom:1px solid #6B7884;font-size:15px;line-height:22px;color:#FBFCFD;padding:8px 0;text-wrap:pretty">Customer changed mind, wanted a Tusker</div>
+      <div style="display:flex;justify-content:flex-end;padding-top:6px">
+        <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:#8C9AA6">38</span>
+      </div>
+      <div style="height:16px"></div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="height:48px;display:flex;align-items:center;padding:0 16px;border-radius:6px;font-size:15px;color:#FBFCFD;outline:2px solid #3FAAC0;outline-offset:2px;white-space:nowrap">Keep it</div>
+        <div style="flex:1 1 auto;min-width:8px"></div>
+        <div style="height:48px;display:flex;align-items:center;padding:0 20px;border-radius:6px;background:#E08585;font-size:15px;font-weight:500;color:#0B1015;white-space:nowrap">Void the line</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isSeatMenu }}">
+    <div style="position:absolute;left:0;right:0;bottom:0;border-radius:16px 16px 0 0;background:#232B32;border-top:1px solid #38424B;padding:20px 24px 24px">
+      <div style="display:flex;align-items:center;gap:12px;min-height:40px">
+        <div style="flex:0 0 22px;width:22px;height:22px;border-radius:6px;background:#E0A35A;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#0B1015">2</div>
+        <span style="flex:1 1 auto;min-width:0;font-size:16px;color:#FBFCFD;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Seat 2 · Sarah</span>
+        <div style="flex:0 0 auto;display:flex;align-items:baseline;gap:4px">
+          <span style="font-size:11px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;color:#B3BFC9">500.00</span>
+        </div>
+      </div>
+      <div style="height:1px;background:#38424B;margin:12px 0 4px"></div>
+      <div style="min-height:48px;display:flex;align-items:center;font-size:15px;color:#FBFCFD">Label this seat</div>
+      <div style="min-height:48px;display:flex;align-items:center;font-size:15px;color:#FBFCFD">Move every line to another seat</div>
+      <div style="min-height:48px;display:flex;align-items:center;font-size:15px;color:#FBFCFD">Settle Seat 2 · KES 500</div>
+      <div style="height:16px"></div>
+      <div style="min-height:48px;display:flex;align-items:center;font-size:15px;color:#E08585">Remove this seat</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isToast }}">
+    <div style="position:absolute;right:16px;bottom:16px;width:min(420px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="2">
+        <div style="border-radius:10px;background:#232B32;border:1px solid #38424B;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;animation:blissRise 140ms cubic-bezier(.22,1,.36,1)">
+          <div style="flex:0 0 6px;width:6px;height:6px;border-radius:50%;background:{{ t.dot }};margin-top:8px"></div>
+          <div style="flex:1 1 auto;min-width:0">
+            <div style="font-size:14px;line-height:20px;color:#FBFCFD;text-wrap:pretty">{{ t.title }}</div>
+            <sc-if value="{{ t.body }}">
+              <div style="font-size:12px;line-height:17px;color:#B3BFC9;text-wrap:pretty">{{ t.body }}</div>
+            </sc-if>
+          </div>
+          <sc-if value="{{ t.action }}">
+            <span style="flex:0 0 auto;font-size:13px;color:#6FC6D6;white-space:nowrap">{{ t.action }}</span>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;floor&quot;,&quot;tabs&quot;,&quot;orders&quot;,&quot;guests&quot;,&quot;reports&quot;,&quot;settings&quot;,&quot;profile&quot;],&quot;default&quot;:&quot;floor&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Screen&quot;},&quot;overlay&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;none&quot;,&quot;palette&quot;,&quot;modifier&quot;,&quot;seat-menu&quot;,&quot;void&quot;,&quot;toast&quot;],&quot;default&quot;:&quot;none&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Screen&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ready&quot;,&quot;loading&quot;,&quot;sending&quot;],&quot;default&quot;:&quot;ready&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Screen&quot;},&quot;offline&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Screen&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const SEAT = ['#6FC6D6','#E0A35A','#9DC271','#B79BE0','#E58BA4','#7FA8E0','#D9C46B','#6FD2B4'];
+    const seat = n => SEAT[(n - 1) % 8];
+    const screen = this.props.screen || 'floor';
+    const overlay = this.props.overlay || 'none';
+    const offline = !!this.props.offline;
+    const state = this.props.state || 'ready';
+
+    const svg = (paths, stroke, w) => React.createElement('svg', { width:w || 20, height:w || 20, viewBox:'0 0 20 20', fill:'none' },
+      paths.map((d, i) => React.createElement('path', { key:i, d, stroke, strokeWidth:1.35, strokeLinecap:'round', strokeLinejoin:'round' })));
+    const P = (id, w, h) => 'https://images.unsplash.com/photo-' + id + '?auto=format&fit=crop&w=' + w + '&h=' + h + '&q=80';
+
+    const SHOT = {
+      tusker:'1608270586620-248524c67de9', lite:'1566633806327-68e152aaf26d',
+      whitecap:'1567696911980-2eed69a46042', balozi:'1600788886242-5c96aabe3757',
+      guinness:'1571613316887-6f8d5cbf7ef7', heineken:'1618885472179-5e474019f2a9',
+      pilsner:'1436076863939-06870fe779c2', summit:'1514218953589-2d7d37efd2dc',
+      gilbeys:'1608885898957-a559228e8749', gilbeysDouble:'1621263764928-df1444c5e859',
+      smirnoff:'1582106245687-cbb466a9f07f', cane:'1569529465841-dfecdab7503b',
+      morgan:'1517620430776-0ec904756579', jameson:'1527281400683-1aae777175f8',
+      hunters:'1587223962930-cb7f31384c19', cousins:'1510812431401-41d2bd2722f3',
+      nederburg:'1474722883778-792e7990302f', drostdy:'1563227812-0ea4c22e6cc8',
+      coke:'1554866585-cd94860890b7', fanta:'1516997121675-4c2d1684aa3e',
+      sprite:'1551538827-9c037cb4f32a', dasani:'1548839140-29a749e1cf4d',
+      redbull:'1622543925917-763c34d1a86e', tonic:'1581006852262-e4307cf6283a',
+      nyama:'1544025162-d76694265947', mishkaki:'1555939594-58d7cb561ad1',
+      kachumbari:'1512621776951-a57141f2eefd', tilapia:'1519708227418-c8fd9a32b7a2',
+    };
+    const FILTER = 'saturate(.72) contrast(1.07) brightness(.94)';
+    const HUE = { Beer:'#D9C46B', Spirits:'#6FC6D6', Wine:'#B79BE0', 'Soft drinks':'#6FD2B4', Food:'#9DC271' };
+
+    const raw = [
+      ['Tusker 500ml','350.00','Beer','tusker'],
+      ['Tusker Lite 500ml','380.00','Beer','lite'],
+      ['White Cap 500ml','350.00','Beer','whitecap'],
+      ['Balozi 500ml','330.00','Beer','balozi'],
+      ['Guinness 500ml','400.00','Beer','guinness','low','7 left'],
+      ['Heineken 330ml','450.00','Beer','heineken'],
+      ['Pilsner 500ml','330.00','Beer','pilsner'],
+      ['Summit Lager','320.00','Beer','summit'],
+      ['Gilbeys tot','500.00','Spirits','gilbeys','on','1'],
+      ['Gilbeys double','900.00','Spirits','gilbeysDouble','low','3 left'],
+      ['Smirnoff and Coke','650.00','Spirits','smirnoff'],
+      ['Kenya Cane tot','250.00','Spirits','cane'],
+      ['Captain Morgan tot','400.00','Spirits','morgan'],
+      ['Jameson tot','600.00','Spirits','jameson','finished','Finished'],
+      ['Hunters Choice tot','250.00','Spirits','hunters','hold','On hold'],
+      ['Four Cousins glass','600.00','Wine','cousins'],
+      ['Nederburg glass','650.00','Wine','nederburg'],
+      ['Drostdy Hof bottle','1,400.00','Wine','drostdy'],
+      ['Coke 300ml','120.00','Soft drinks','coke'],
+      ['Fanta Orange 300ml','120.00','Soft drinks','fanta'],
+      ['Sprite 300ml','120.00','Soft drinks','sprite'],
+      ['Dasani 500ml','100.00','Soft drinks','dasani'],
+      ['Schweppes tonic','150.00','Soft drinks','tonic'],
+      ['Red Bull 250ml','350.00','Soft drinks','redbull'],
+      ['Nyama choma','900.00','Food','nyama'],
+      ['Mishkaki','450.00','Food','mishkaki'],
+      ['Kachumbari','150.00','Food','kachumbari'],
+      ['Grilled tilapia','1,100.00','Food','tilapia'],
+    ];
+
+    const products = raw.map(([name, price, cat, shot, st, note]) => {
+      const dim = st === 'finished' || st === 'hold';
+      return {
+        name, price, cat, catInk: HUE[cat], img: P(SHOT[shot], 340, 220),
+        qty: st === 'on' ? note : '',
+        stroke: st === 'on' ? '#2A8CA3' : '#232B32',
+        filter: dim ? 'grayscale(1) brightness(.8)' : FILTER,
+        imgOp: dim ? 0.3 : 1, textOp: dim ? 0.5 : 1,
+        addFill: dim ? '#232B32' : '#17545F',
+        addInk: dim ? '#4E5A65' : '#A8DCE6',
+        flag: st === 'low' ? note : st === 'finished' ? 'Finished' : st === 'hold' ? 'On hold' : '',
+        stateInk: st === 'low' ? '#E0A35A' : st === 'finished' ? '#E08585' : st === 'hold' ? '#E0A35A' : '#8C9AA6',
+      };
+    });
+
+    const counts = {};
+    raw.forEach(r => { counts[r[2]] = (counts[r[2]] || 0) + 1; });
+    const on = { fill:'#6FC6D6', ink:'#0B1015', sub:'#17545F' };
+    const off = { fill:'transparent', ink:'#B3BFC9', sub:'#8C9AA6' };
+    const categories = [['All', String(raw.length)]]
+      .concat(['Beer','Spirits','Wine','Soft drinks','Food'].map(k => [k, String(counts[k])]))
+      .map(([name, n], i) => ({ name, n, ...(i === 0 ? on : off) }));
+
+    const surfaces = [
+      ['Floor', ['M2.5 7.8 10 2.6l7.5 5.2v8.7a1.1 1.1 0 0 1-1.1 1.1H3.6a1.1 1.1 0 0 1-1.1-1.1V7.8Z'], true],
+      ['Bar', ['M4 4h12l-4.6 5.4v5.1M7.4 16.4h5.2','M11.4 14.5v1.9'], false],
+      ['Counter', ['M3 8.4h14M4.4 8.4V16h11.2V8.4M6.6 4.4h6.8l1.8 4H4.8l1.8-4Z'], false],
+    ].map(([name, d, active]) => ({
+      name, icon: svg(d, active ? '#A8DCE6' : '#8C9AA6', 16),
+      fill: active ? '#17545F' : 'transparent',
+      ink: active ? '#A8DCE6' : '#B3BFC9',
+    }));
+
+    const navDefs = [
+      ['Floor', 'floor', ['M2.5 7.8 10 2.6l7.5 5.2v8.7a1.1 1.1 0 0 1-1.1 1.1H3.6a1.1 1.1 0 0 1-1.1-1.1V7.8Z'], ''],
+      ['Tabs', 'tabs', ['M3.6 4.6h12.8v10.8H3.6zM3.6 8.4h12.8M8.4 8.4v7'], '5'],
+      ['Orders', 'orders', ['M5.6 3.6h8.8v12.8H5.6zM8.2 7.2h3.6M8.2 10.4h3.6M8.2 13.2h2'], offline ? '4' : ''],
+      ['Guests', 'guests', ['M10 9.4a2.9 2.9 0 1 0 0-5.8 2.9 2.9 0 0 0 0 5.8ZM4.4 16.4a5.6 5.6 0 0 1 11.2 0'], ''],
+      ['My shift', 'reports', ['M3.6 16.4h12.8M6.4 16.4V9.6M10 16.4V5.2M13.6 16.4v-4.8'], ''],
+      ['Settings', 'settings', ['M10 12.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2ZM10 2.8v2M10 15.2v2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M2.8 10h2M15.2 10h2M4.9 15.1l1.4-1.4M13.7 6.3l1.4-1.4'], ''],
+    ];
+    const nav = navDefs.map(([label, key, d, badge]) => {
+      const active = key === screen;
+      return {
+        label, badge, icon: svg(d, active ? '#6FC6D6' : '#8C9AA6', 20),
+        fill: active ? '#232B32' : 'transparent',
+        ink: active ? '#6FC6D6' : '#B3BFC9',
+      };
+    });
+
+    const names = { 1:'Kofi', 2:'Sarah', 3:'James', 4:'Zara' };
+    const strip = [1,2,3,4].map(n => ({
+      glyph:String(n), size:'15px', fill:seat(n), border:'none', ink:'#0B1015',
+      ring: n === 2 ? '2px solid #FBFCFD' : 'none',
+      label: names[n], labelInk: n === 2 ? '#FBFCFD' : '#B3BFC9',
+    }));
+    strip.push({ glyph:'··', size:'15px', fill:'transparent', border:'1px dashed #B3BFC9', ink:'#B3BFC9', ring:'none', label:'Shared', labelInk:'#B3BFC9' });
+
+    const line = (q, name, price, shot, o) => {
+      o = o || {};
+      const poured = o.state === 'poured';
+      return {
+        q: q + ' ×', name, price, img: P(SHOT[shot], 96, 96),
+        imgOp: poured ? 0.55 : 1,
+        ink: poured ? '#B3BFC9' : '#FBFCFD',
+        dot: poured ? '#63B98A' : o.state === 'unsent' ? '#6FC6D6' : o.state === 'ranout' ? '#E08585' : '',
+        note: o.note || (poured ? 'Poured 21:12' : o.state === 'unsent' ? 'Not yet sent' : ''),
+        noteInk: o.state === 'ranout' ? '#E08585' : poured ? '#63B98A' : o.state === 'unsent' ? '#6FC6D6' : '#B3BFC9',
+      };
+    };
+    const group = (no, label, sub, lines) => ({
+      glyph: no ? String(no) : '··',
+      fill: no ? seat(no) : 'transparent',
+      border: no ? 'none' : '1px dashed #B3BFC9',
+      ink: no ? '#0B1015' : '#B3BFC9',
+      label, sub, lines,
+    });
+
+    const groups = [
+      group(1, 'Seat 1 · Kofi', '820.00', [
+        line(2, 'Tusker 500ml', '700.00', 'tusker', { state:'poured' }),
+        line(1, 'Coke 300ml', '120.00', 'coke', { state:'poured' }),
+      ]),
+      group(2, 'Seat 2 · Sarah', '500.00', [
+        line(1, 'Gilbeys tot', '500.00', 'gilbeys', { note:'No ice' }),
+      ]),
+      group(3, 'Seat 3 · James', '650.00', [
+        line(1, 'Smirnoff and Coke', '650.00', 'smirnoff', { state:'unsent' }),
+      ]),
+      group(4, 'Seat 4 · Zara', '380.00', [
+        offline
+          ? line(1, 'Tusker Lite 500ml', '380.00', 'lite', { state:'ranout', note:'Ran out' })
+          : line(1, 'Tusker Lite 500ml', '380.00', 'lite', { state:'poured' }),
+      ]),
+      group(null, 'Shared', '1,050.00', [
+        line(1, 'Nyama choma', '900.00', 'nyama', { state: offline ? 'unsent' : 'poured' }),
+        line(1, 'Kachumbari', '150.00', 'kachumbari', { state:'poured' }),
+      ]),
+    ];
+
+    const chips = (nos, settled) => nos.map(n => ({
+      no:String(n), fill:seat(n), border:'none', ink:'#0B1015',
+      op: (settled && settled.indexOf(n) > -1) ? 0.4 : 1,
+    }));
+    const tables = [
+      { name:'Table 7', seats:chips([1,2,3,4]), elapsed:'1h12', amount:3400, state:'Mine · 1 not yet sent', dot:'#6FC6D6', mine:true },
+      { name:'Table 2', seats:chips([1,2]), elapsed:'0h48', amount:2300, state:'Mine · 2 not yet poured', dot:'#6FC6D6', mine:true },
+      { name:'Table 4', seats:chips([1,2,3],[2]), elapsed:'2h05', amount:2260, state:'Mine · seat 2 settled', dot:'#63B98A', mine:true },
+      { name:'Table 9', seats:chips([1,2]), elapsed:'0h14', amount:1780, state:"Peter's table", dot:'', mine:false },
+      { name:'Table 11', seats:[], elapsed:'0h22', amount:480, state:'Mine · one guest', dot:'', mine:true, seatNote:'One guest, no seats' },
+      { name:'Table 12', seats:[], elapsed:'', amount:0, state:'Available', dot:'', free:true },
+      { name:'Table 14', seats:[], elapsed:'', amount:0, state:'Available', dot:'', free:true },
+      { name:'Table 16', seats:[], elapsed:'', amount:0, state:'Needs clearing', dot:'#E0A35A', free:true },
+    ].map(t => ({
+      total: t.amount ? t.amount.toLocaleString('en-KE', { minimumFractionDigits:2, maximumFractionDigits:2 }) : '',
+      ...t,
+      seatNote: t.seatNote || '',
+      fill: t.free ? 'transparent' : '#151B20',
+      stroke: t.free ? '#232B32' : t.mine ? '#38424B' : '#232B32',
+      nameInk: t.free ? '#B3BFC9' : '#FBFCFD',
+      totalInk: t.mine ? '#E9BE86' : '#D4DCE3',
+      stateInk: t.dot === '#E0A35A' ? '#E0A35A' : t.dot === '#6FC6D6' ? '#6FC6D6' : t.dot === '#63B98A' ? '#63B98A' : '#8C9AA6',
+    }));
+
+    const money = n => n.toLocaleString('en-KE', { minimumFractionDigits:2, maximumFractionDigits:2 });
+    const openTabs = tables.filter(t => !t.free);
+    const myTabs = openTabs.filter(t => t.mine);
+    const floorTotal = openTabs.reduce((a, t) => a + t.amount, 0);
+    const myTotal = myTabs.reduce((a, t) => a + t.amount, 0);
+    const clearing = tables.filter(t => t.state === 'Needs clearing').length;
+    const freeTables = tables.filter(t => t.free && t.state === 'Available').length;
+
+    const zones = [['Terrace', String(tables.length)], ['Main bar','6'], ['Counter','4']]
+      .map(([name, n], i) => ({ name, n, ...(i === 0 ? on : off) }));
+
+    const oline = (s, q, name, o) => {
+      o = o || {};
+      return {
+        seat: s === 'shared' ? '··' : String(s),
+        seatFill: s === 'shared' ? 'transparent' : seat(s),
+        seatBorder: s === 'shared' ? '1px dashed #B3BFC9' : 'none',
+        seatInk: s === 'shared' ? '#B3BFC9' : '#0B1015',
+        q: q + ' ×', name,
+        ink: o.poured ? '#B3BFC9' : '#FBFCFD',
+        note: o.note || '',
+        noteInk: o.stop ? '#E08585' : o.poured ? '#63B98A' : '#8C9AA6',
+      };
+    };
+    const orders = [
+      { table:'Table 7 · order 3', when:'Fired 21:47', state:'At the bar', dot:'#6FC6D6', stroke:'#232B32',
+        lines:[oline(3, 1, 'Smirnoff and Coke', {}), oline(2, 1, 'Gilbeys tot', { note:'no ice' })], action:'' },
+      { table:'Table 7 · order 2', when:'Fired 21:12', state:'Poured', dot:'#63B98A', stroke:'#232B32',
+        lines:[oline(1, 2, 'Tusker 500ml', { poured:true, note:'21:14' }), oline(1, 1, 'Coke 300ml', { poured:true, note:'21:14' })], action:'' },
+      { table:'Table 2 · order 4', when:'Fired 21:44', state:'At the bar', dot:'#6FC6D6', stroke:'#232B32',
+        lines:[oline('shared', 1, 'Nyama choma', { note:'kitchen' }), oline(1, 1, 'Kenya Cane tot', {})], action:'' },
+      { table:'Table 4 · order 1', when:'Fired 21:30', state:'Ran out', dot:'#E08585', stroke:'#E08585',
+        lines:[oline(2, 1, 'Jameson tot', { stop:true, note:'finished' })], action:'Swap it or void it',
+        actionFill:'#E08585', actionInk:'#0B1015' },
+      { table:'Table 11 · order 1', when: offline ? 'Held, not sent' : 'Fired 21:26', state:offline ? 'Held' : 'Poured',
+        dot:offline ? '#6FC6D6' : '#63B98A', stroke:'#232B32',
+        lines:[oline(1, 1, 'Red Bull 250ml', { poured:!offline, note:offline ? 'waiting' : '21:28' }), oline(1, 1, 'Dasani 500ml', { poured:!offline, note:offline ? 'waiting' : '21:28' })], action:'' },
+    ].map(o => ({
+      ...o,
+      meta: o.when + ' · ' + o.lines.length + (o.lines.length === 1 ? ' line' : ' lines'),
+      action:o.action || '', actionFill:o.actionFill || '#232B32', actionInk:o.actionInk || '#D4DCE3',
+    }));
+
+    const NOW = 21 * 60 + 48;
+    const waitOf = when => {
+      const m = when.match(/(\d\d):(\d\d)/);
+      if (!m) return '';
+      const mins = NOW - (parseInt(m[1], 10) * 60 + parseInt(m[2], 10));
+      return mins + ':00';
+    };
+    orders.forEach(o => { o.wait = waitOf(o.when); });
+    const waiting = orders.filter(o => o.state === 'At the bar');
+    const oldest = waiting.reduce((a, o) => parseInt(o.wait, 10) > parseInt(a.wait, 10) ? o : a, waiting[0]);
+    const orderCount = st => String(orders.filter(o => o.state === st).length);
+    const orderFilters = [['All', String(orders.length)], ['At the bar', orderCount('At the bar')],
+      ['Poured', orderCount('Poured')], ['Needs me', orderCount('Ran out')]]
+      .map(([name, n], i) => ({ name, n, ...(i === 0 ? on : off) }));
+
+    const guestCols = [
+      { name:'Seat', align:'left' }, { name:'Guest', align:'left' }, { name:'Table', align:'left' },
+      { name:'Last order', align:'left' }, { name:'Spend', align:'right' }, { name:'State', align:'left' },
+    ];
+    const guest = (s, name, note, table, last, spend, st) => ({
+      seat: s === 'shared' ? '··' : s === 'none' ? '—' : String(s),
+      seatFill: s === 'shared' ? 'transparent' : s === 'none' ? '#38424B' : seat(s),
+      seatBorder: s === 'shared' ? '1px dashed #B3BFC9' : 'none',
+      seatInk: s === 'shared' ? '#B3BFC9' : s === 'none' ? '#B3BFC9' : '#0B1015',
+      name, note, table, last, spend, state: st,
+      dot: st === 'Settled' ? '#63B98A' : st === 'Waiting' ? '#6FC6D6' : '#8C9AA6',
+      stateInk: st === 'Settled' ? '#63B98A' : st === 'Waiting' ? '#6FC6D6' : '#B3BFC9',
+    });
+    const guestRaw = [
+      [1, 'Kofi', 'Regular, Tusker only', 'Table 7', 'Tusker 500ml', 820, 'Drinking'],
+      [2, 'Sarah', 'No ice on anything', 'Table 7', 'Gilbeys tot', 500, 'Drinking'],
+      [3, 'James', 'Paying for the table', 'Table 7', 'Smirnoff and Coke', 650, 'Waiting'],
+      [4, 'Zara', '', 'Table 7', 'Tusker Lite', 380, 'Drinking'],
+      ['shared', 'Shared', 'Split four ways', 'Table 7', 'Nyama choma', 1050, 'Drinking'],
+      [1, 'Mercy', 'Birthday', 'Table 2', 'Kenya Cane tot', 850, 'Waiting'],
+      [2, 'Brian', '', 'Table 2', 'Heineken 330ml', 550, 'Drinking'],
+      ['shared', 'Shared', 'Nyama choma, at the bar', 'Table 2', 'Nyama choma', 900, 'Waiting'],
+      [1, 'Otieno', '', 'Table 4', 'Tusker 500ml', 760, 'Drinking'],
+      [2, 'Kevin', 'Left at 21:31', 'Table 4', 'Kenya Cane tot', 740, 'Settled'],
+      [3, 'Faith', '', 'Table 4', 'Four Cousins glass', 760, 'Drinking'],
+      ['none', 'Njeri', 'One guest, no seat', 'Table 11', 'Red Bull 250ml', 480, 'Waiting'],
+    ];
+    const guests = guestRaw.map(([s, name, note, table, last, spend, st]) =>
+      guest(s, name, note, table, last, money(spend), st));
+    const guestSpend = guestRaw.reduce((a, g) => a + g[5], 0);
+    const people = guestRaw.filter(g => g[1] !== 'Shared').length;
+    const guestState = st => guestRaw.filter(g => g[6] === st).length;
+
+    const kpis = [
+      { label:'My sales tonight', value:'28,450.00', prefix:true, ink:'#E9BE86', sub:'Up 8 per cent on last Sunday', dot:'#63B98A', subInk:'#63B98A' },
+      { label:'Tabs I opened', value:'11', prefix:false, ink:'#FBFCFD', sub:myTabs.length + ' still open', dot:'', subInk:'#B3BFC9' },
+      { label:'Guests served', value:'34', prefix:false, ink:'#FBFCFD', sub:'Average 3 per tab', dot:'', subInk:'#B3BFC9' },
+      { label:'Lines voided', value:'1', prefix:false, ink:'#FBFCFD', sub:'Reason given, approved by Grace', dot:'#63B98A', subInk:'#63B98A' },
+    ];
+    const hourData = [['17:00',22],['18:00',41],['19:00',63],['20:00',100],['21:00',58]];
+    const hours = hourData.map(([label, pct], i) => ({
+      label, h: Math.round(pct * 1.12) + 'px',
+      fill: i === hourData.length - 1 ? '#1F6E82' : pct === 100 ? '#6FC6D6' : '#2A8CA3',
+    }));
+    const peakHour = hourData.reduce((a, h) => h[1] > a[1] ? h : a)[0];
+    const topItems = [
+      { name:'Tusker 500ml', n:'42', bar:'100%' },
+      { name:'Gilbeys tot', n:'26', bar:'62%' },
+      { name:'Coke 300ml', n:'21', bar:'50%' },
+      { name:'Smirnoff and Coke', n:'14', bar:'33%' },
+      { name:'Nyama choma', n:'9', bar:'21%' },
+      { name:'Four Cousins glass', n:'7', bar:'17%' },
+    ];
+    const reportRanges = ['This shift','This week','Last shift']
+      .map((name, i) => ({ name, fill: i === 0 ? '#6FC6D6' : 'transparent', ink: i === 0 ? '#0B1015' : '#B3BFC9' }));
+
+    const toggle = isOn => ({
+      toggle:true, trackFill: isOn ? '#2A8CA3' : '#38424B',
+      knob: isOn ? 'flex-end' : 'flex-start',
+      knobFill: isOn ? '#A8DCE6' : '#8C9AA6',
+    });
+    const settings = [
+      { group:'This tablet', rows:[
+        { label:'Device name', value:'Terrace 2', help:'' },
+        { label:'Zone', value:'Terrace', help:'' },
+        { label:'Keep the screen awake', help:'While a tab is open on this tablet', ...toggle(true) },
+        { label:'Vibrate when an order is poured', help:'', ...toggle(true) },
+      ]},
+      { group:'Printing', rows:[
+        { label:'Bill printer', value:'Counter 1', help:'' },
+        { label:'Print a seat line on every bill', help:'Seat numbers and labels appear on the printed bill', ...toggle(true) },
+        { label:'Ask before printing', help:'', ...toggle(false) },
+      ]},
+      { group:'Sync', rows:[
+        { label:'Last sync', value: offline ? '21:31 · 4 held' : '21:48', help:'' },
+        { label:'Send held orders as soon as there is signal', help:'', ...toggle(true) },
+        { label:'Sync over mobile data', help:'Off means the tablet waits for the bar wifi', ...toggle(false) },
+      ]},
+      { group:'About', rows:[
+        { label:'Bliss version', value:'1.0.4', help:'' },
+        { label:'Cool Bliss Spot', value:'ANDISHI/BLISS/2026/001', help:'' },
+      ]},
+    ].map(g => ({ ...g, rows: g.rows.map(r => ({ value:'', help:'', toggle:false, trackFill:'', knob:'', knobFill:'', ...r })) }));
+
+    const profileStats = [
+      { label:'Sales tonight', value:'28,450.00', prefix:true, ink:'#E9BE86' },
+      { label:'Tabs opened', value:'11', prefix:false, ink:'#FBFCFD' },
+      { label:'Guests served', value:'34', prefix:false, ink:'#FBFCFD' },
+      { label:'Hours on the floor', value:'4h12', prefix:false, ink:'#FBFCFD' },
+    ];
+    const profileRows = [
+      { label:'Tabs still open in my name', value:String(myTabs.length), chev:true, ink:'#FBFCFD', help:'KES ' + money(myTotal) + ' on the floor' },
+      { label:'Orders held on this tablet', value: offline ? '4' : '0', chev:true, ink:'#FBFCFD', help: offline ? 'They send themselves when the signal returns' : '' },
+      { label:'Voids tonight', value:'1', chev:true, ink:'#FBFCFD', help:'Reason given at 20:12' },
+      { label:'My section', value:'Terrace', chev:true, ink:'#FBFCFD', help:'8 tables' },
+      { label:'Shift started', value:'17:36', chev:false, ink:'#B3BFC9', help:'' },
+    ].map(r => ({ value:'', help:'', chev:false, ...r }));
+
+    const paletteGroups = [
+      { group:'Products', items:[
+        { name:'Gilbeys tot', meta:'Spirits · on the Seat 2 ticket', trail:'500.00', fill:'#38424B' },
+        { name:'Gilbeys double', meta:'Spirits · 3 left', trail:'900.00', fill:'transparent' },
+        { name:'Gilbeys 750ml bottle', meta:'Spirits · bottle service', trail:'4,200.00', fill:'transparent' },
+      ]},
+      { group:'Seats and tabs', items:[
+        { seat:'2', seatFill:'#E0A35A', name:'Seat 2 · Sarah', meta:'Table 7 · one line', trail:'500.00', fill:'transparent' },
+      ]},
+    ].map(g => ({ ...g, items: g.items.map(i => ({ seat:'', seatFill:'', trail:'', fill:'transparent', ...i })) }));
+
+    const modOn = { fill:'#6FC6D6', ink:'#0B1015', weight:'500' };
+    const modOff = { fill:'#38424B', ink:'#D4DCE3', weight:'400' };
+    const modifierGroups = [
+      { label:'Serve', options:[['Tot', true],['Double', false]] },
+      { label:'Mixer', options:[['None', true],['Coke', false],['Sprite', false],['Soda water', false]] },
+      { label:'Ice', options:[['Normal', false],['No ice', true]] },
+    ].map(g => ({ label:g.label, options:g.options.map(([name, sel]) => ({ name, ...(sel ? modOn : modOff) })) }));
+
+    const toasts = offline
+      ? [{ dot:'#6FC6D6', title:'Held until the signal returns · 4 orders', body:'Nothing is lost. They send themselves.', action:'' }]
+      : [{ dot:'#63B98A', title:'Order sent to the bar · 2 lines', body:'Table 7, seats 2 and 3.', action:'' },
+         { dot:'#E0A35A', title:'Guinness is running low · 7 left', body:'', action:'Tell the bar' }];
+
+    const word = n => ['No','One','Two','Three','Four','Five','Six','Seven','Eight'][n] || String(n);
+    const stat = (label, value, o) => Object.assign({
+      label, value, prefix:false, ink:'#FBFCFD', sub:'', subInk:'#B3BFC9', dot:'',
+    }, o || {});
+
+    const tabSummary = [
+      stat('Open tabs', String(openTabs.length), { sub: myTabs.length + ' are mine, ' + freeTables + ' tables free' }),
+      stat('On the floor', money(floorTotal), { prefix:true, ink:'#E9BE86', sub:'Unsettled across ' + openTabs.length + ' tabs' }),
+      stat('Longest open', '2h05', { sub:'Table 4, one seat settled' }),
+      stat('Needs clearing', String(clearing), { dot:'#E0A35A', subInk:'#E0A35A', sub:'Table 16, since 21:38' }),
+    ];
+    const tabsMeta = openTabs.length + ' open · KES ' + money(floorTotal) + ' on the floor';
+
+    const orderSummary = [
+      stat('At the bar', orderCount('At the bar'), { dot:'#6FC6D6', subInk:'#6FC6D6', sub:'Oldest fired ' + oldest.when.replace('Fired ', '') }),
+      stat('Poured', orderCount('Poured'), { dot:'#63B98A', subInk:'#63B98A', sub:'All within four minutes' }),
+      stat('Needs me', orderCount('Ran out'), { dot:'#E08585', subInk:'#E08585', sub:'Jameson ran out' }),
+      stat('Longest wait', oldest.wait, { sub: oldest.table }),
+    ];
+
+    const step = (label, st) => ({
+      label,
+      dot: st === 'done' ? '#63B98A' : st === 'now' ? '#6FC6D6' : '#4E5A65',
+      ink: st === 'done' ? '#63B98A' : st === 'now' ? '#6FC6D6' : '#6B7884',
+      rule: st === 'done' ? '#63B98A' : '#38424B',
+    });
+    const timelines = {
+      'Table 7 · order 3': [step('Fired 21:47','done'), step('At the bar','now'), step('Poured','todo')],
+      'Table 7 · order 2': [step('Fired 21:12','done'), step('At the bar','done'), step('Poured 21:14','done')],
+      'Table 2 · order 4': [step('Fired 21:44','done'), step('At the bar','now'), step('Poured','todo')],
+      'Table 4 · order 1': [step('Fired 21:30','done'), step('Ran out 21:33','done'), step('Waiting on me','now')],
+    };
+    const heldSteps = [step('Held on this tablet','now'), step('At the bar','todo'), step('Poured','todo')];
+    const sentSteps = [step('Fired 21:26','done'), step('At the bar','done'), step('Poured 21:28','done')];
+    orders.forEach(o => {
+      o.steps = timelines[o.table] || (offline ? heldSteps : sentSteps);
+    });
+
+    const guestSummary = [
+      stat('In my section', String(people), { sub:'Across ' + myTabs.length + ' tabs' }),
+      stat('Average spend', money(guestSpend / people), { prefix:true, sub:'Per guest tonight' }),
+      stat('Waiting on a drink', String(guestState('Waiting')), { dot:'#6FC6D6', subInk:'#6FC6D6', sub:'James on Table 7, Njeri on Table 11' }),
+      stat('Settled and gone', String(guestState('Settled')), { dot:'#63B98A', subInk:'#63B98A', sub:'Kevin, Table 4 seat 2' }),
+    ];
+    const guestFilters = [['Everyone', String(guestRaw.length)], ['Drinking', String(guestState('Drinking'))],
+      ['Waiting', String(guestState('Waiting'))], ['Settled', String(guestState('Settled'))]]
+      .map(([name, n], i) => ({ name, n, ...(i === 0 ? on : off) }));
+    const guestFooter = people + ' guests tonight';
+    const guestTotal = money(guestSpend);
+
+    const payMix = [
+      { name:'Cash', value:'14,200.00', pct:'50%', fill:'#6FC6D6', n:'9 bills' },
+      { name:'M-Pesa', value:'11,050.00', pct:'39%', fill:'#2A8CA3', n:'7 bills' },
+      { name:'Card', value:'3,200.00', pct:'11%', fill:'#1F6E82', n:'2 bills' },
+    ];
+    const shiftLedger = [
+      { label:'Sales I took', value:'28,450.00', ink:'#FBFCFD', prefix:true },
+      { label:'Service charge collected', value:'1,840.00', ink:'#FBFCFD', prefix:true },
+      { label:'Voided with a reason', value:'500.00', ink:'#E0A35A', prefix:true },
+      { label:'Still open in my name', value:money(myTotal), ink:'#E9BE86', prefix:true },
+    ];
+    const voidLog = [
+      { time:'20:12', title:'1 × Gilbeys tot · Seat 2, Table 4', body:'Customer changed mind, wanted a Tusker instead', state:'Approved by Grace', dot:'#63B98A' },
+    ];
+
+    const settingsExtra = [
+      { group:'Display and language', rows:[
+        { label:'Text size', value:'Standard', help:'Large adds 2px to every body size and keeps every target' },
+        { label:'Language', value:'English', help:'Kiswahili is available on the Console' },
+        { label:'Dim between orders', help:'The screen drops to 40 per cent after two minutes idle', ...toggle(true) },
+      ]},
+      { group:'Seats', rows:[
+        { label:'Default guests on a new tab', value:'2', help:'' },
+        { label:'Ask for a seat label when a tab opens', help:'Off means seats stay numbered until someone labels them', ...toggle(false) },
+        { label:'Put every food line on Shared', help:'Plates are usually split, drinks are not', ...toggle(true) },
+      ]},
+      { group:'Security', rows:[
+        { label:'Lock after', value:'2 minutes', help:'' },
+        { label:'Ask for my PIN before a void', help:'', ...toggle(true) },
+      ]},
+    ].map(g => ({ ...g, rows: g.rows.map(r => ({ value:'', help:'', toggle:false, trackFill:'', knob:'', knobFill:'', ...r })) }));
+    const settingsAll = settings.slice(0, 3).concat(settingsExtra, settings.slice(3));
+
+    const permissions = [
+      { name:'Take orders', state:'Allowed', ink:'#63B98A' },
+      { name:'Move lines between seats', state:'Allowed', ink:'#63B98A' },
+      { name:'Settle a seat in cash', state:'Allowed', ink:'#63B98A' },
+      { name:'Void a line', state:'Needs Grace', ink:'#E0A35A' },
+      { name:'Give a discount', state:'Needs Joseph', ink:'#E0A35A' },
+      { name:'Change a price', state:'Not allowed', ink:'#8C9AA6' },
+    ];
+    const activity = [
+      { time:'21:47', label:'Fired order 3 on Table 7', meta:'2 lines · KES 1,150' },
+      { time:'21:44', label:'Fired order 4 on Table 2', meta:'2 lines · KES 1,150' },
+      { time:'21:31', label:'Settled Seat 2 on Table 4', meta:'Cash · KES 740' },
+      { time:'21:12', label:'Fired order 2 on Table 7', meta:'2 lines · KES 820' },
+      { time:'20:12', label:'Voided 1 × Gilbeys tot', meta:'Reason given · approved by Grace' },
+      { time:'17:36', label:'Started the shift', meta:'Terrace section · tablet Terrace 2' },
+    ];
+    const profileMeta = [
+      { label:'Staff number', value:'014' },
+      { label:'Phone', value:'0722 419 087' },
+      { label:'Employed since', value:'4 Mar 2025' },
+      { label:'Reports to', value:'Grace, cashier' },
+    ];
+
+    return {
+      surfaces, nav, categories, products, strip, groups, tables, zones,
+      tabSummary, orderSummary, guestSummary, guestFilters, payMix, shiftLedger,
+      voidLog, permissions, activity, profileMeta,
+      settingsAll,
+      orders, orderFilters, guestCols, guests, kpis, hours, topItems, reportRanges,
+      settings, profileStats, profileRows, paletteGroups, modifierGroups, toasts,
+      tabsMeta, guestFooter, guestTotal,
+      peakNote: 'Peak ' + peakHour + ' · 21:00 still running',
+      closeNote: word(myTabs.length) + ' tabs are still open in my name. They move to Grace when I close.',
+      handOverNote: 'Handing over moves my ' + myTabs.length + ' open tabs to whoever takes the section. Nothing closes.',
+      avatarFill: screen === 'profile' ? '#2A8CA3' : '#17545F',
+      avatarInk: screen === 'profile' ? '#0B1015' : '#A8DCE6',
+      avatarRing: screen === 'profile' ? '2px solid #6FC6D6' : 'none',
+      avatarRole: screen === 'profile' ? 'My profile' : 'Waiter',
+      avatarRoleInk: screen === 'profile' ? '#6FC6D6' : '#8C9AA6',
+      isFloor: screen === 'floor',
+      isTabs: screen === 'tabs',
+      isOrders: screen === 'orders',
+      isGuests: screen === 'guests',
+      isReports: screen === 'reports',
+      isSettings: screen === 'settings',
+      isProfile: screen === 'profile',
+      isLoading: state === 'loading',
+      showCatalogue: state !== 'loading',
+      isSending: state === 'sending',
+      isPalette: overlay === 'palette',
+      isModifier: overlay === 'modifier',
+      isVoid: overlay === 'void',
+      isSeatMenu: overlay === 'seat-menu',
+      isToast: overlay === 'toast',
+      hasScrim: ['palette','modifier','void','seat-menu'].indexOf(overlay) > -1,
+      connDot: offline ? '#6FC6D6' : '#63B98A',
+      connText: offline ? 'Offline, 4 held' : 'Online',
+      railDot: offline ? '#6FC6D6' : '#63B98A',
+      railState: offline ? 'Holding' : 'Steady',
+      ticketMeta: offline ? '7 lines · 4 held' : '7 lines · 1 not yet sent',
+      fireLabel: state === 'sending' ? 'Sending to the bar' : offline ? 'Hold order · 1 line' : 'Send to bar · 1 line',
+    };
+  }
+}
+
+</script>
+</body>
+</html>

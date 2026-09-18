@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0B1015}
+  a{color:#6FC6D6;text-decoration:none}
+  a:hover{color:#A8DCE6}
+</style>
+</helmet>
+<div style="width:1280px;height:800px;position:relative;overflow:hidden;background:#0B1015;color:#FBFCFD;font-family:'Geist','Helvetica Neue',Helvetica,sans-serif;font-weight:400;font-size:15px;line-height:22px;-webkit-font-smoothing:antialiased">
+
+  <div style="height:712px;padding:20px 24px 0;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;height:36px">
+      <sc-for list="{{ zones }}" as="z" hint-placeholder-count="3">
+        <div style="height:36px;border-radius:6px;padding:0 14px;display:flex;align-items:center;font-size:15px;background:{{ z.fill }};color:{{ z.colour }}">{{ z.name }}</div>
+      </sc-for>
+      <div style="flex:1 1 auto"></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8C9AA6">{{ meta }}</span>
+    </div>
+
+    <div style="height:1px;background:#232B32;margin:16px 0 24px"></div>
+
+    <sc-if value="{{ showGrid }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-wrap:wrap;gap:16px">
+        <sc-for list="{{ cards }}" as="c" hint-placeholder-count="6">
+          <div style="width:240px;height:132px;border-radius:10px;background:{{ c.fill }};border:{{ c.border }};padding:16px;display:flex;flex-direction:column;justify-content:space-between">
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <span style="font-size:20px;line-height:26px;letter-spacing:-.015em;font-weight:500;color:{{ c.ink }}">{{ c.table }}</span>
+              <sc-if value="{{ c.state }}">
+                <span style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">{{ c.state }}</span>
+              </sc-if>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;height:16px">
+              <sc-for list="{{ c.seats }}" as="s" hint-placeholder-count="3">
+                <div style="width:16px;height:16px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:{{ s.fill }};opacity:{{ s.op }};font-family:'JetBrains Mono',monospace;font-weight:500;font-size:9px;color:#0B1015">{{ s.no }}</div>
+              </sc-for>
+              <sc-if value="{{ c.flag }}">
+                <div style="display:flex;align-items:center;gap:6px;margin-left:6px">
+                  <div style="width:6px;height:6px;border-radius:50%;background:#6FC6D6"></div>
+                  <span style="font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#6FC6D6">{{ c.flag }}</span>
+                </div>
+              </sc-if>
+            </div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8C9AA6">{{ c.elapsed }}</span>
+              <div style="display:flex;align-items:baseline;gap:6px">
+                <sc-if value="{{ c.total }}">
+                  <span style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884">KES</span>
+                </sc-if>
+                <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">{{ c.total }}</span>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showEmpty }}">
+      <div style="height:520px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+        <div style="font-size:20px;line-height:26px;letter-spacing:-.015em;font-weight:500;color:#FBFCFD">No tabs open</div>
+        <div style="font-size:15px;color:#B3BFC9">Pick a table to start one.</div>
+        <div style="height:16px"></div>
+        <div style="height:48px;display:inline-flex;align-items:center;padding:0 24px;border-radius:6px;background:#6FC6D6;font-size:17px;font-weight:500;color:#0B1015">Open tab</div>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="height:1px;background:#38424B"></div>
+
+  <div style="height:87px;display:flex;align-items:center;gap:12px;padding:0 24px;background:#151B20">
+    <span style="font-size:15px;color:#FBFCFD">Amina</span>
+    <span style="color:#4E5A65">·</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8C9AA6">4h12</span>
+    <div style="height:22px;border-radius:6px;display:flex;align-items:center;gap:6px;padding:0 8px;background:#232B32;margin-left:8px">
+      <div style="width:6px;height:6px;border-radius:50%;background:#63B98A"></div>
+      <span style="font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#63B98A">Synced</span>
+    </div>
+    <div style="flex:1 1 auto"></div>
+    <div style="height:56px;display:inline-flex;align-items:center;padding:0 24px;border-radius:6px;background:#6FC6D6;font-size:17px;font-weight:500;color:#0B1015">Open tab</div>
+  </div>
+
+  <sc-if value="{{ scrim }}">
+    <div style="position:absolute;left:0;right:0;top:0;height:712px;background:rgba(11,16,21,.55)"></div>
+  </sc-if>
+
+  <sc-if value="{{ sheet }}">
+    <div style="position:absolute;left:0;right:0;bottom:88px;background:#232B32;border-top:1px solid #38424B;border-radius:16px 16px 0 0;padding:24px">
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.015em;font-weight:500;color:#FBFCFD">Open tab on Table 7</div>
+      <div style="height:24px"></div>
+      <div style="display:flex;align-items:flex-start;gap:56px">
+        <div>
+          <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6;margin-bottom:8px">Guests</div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="width:56px;height:56px;border-radius:6px;background:#38424B;display:flex;align-items:center;justify-content:center;font-size:24px;color:#D4DCE3">−</div>
+            <div style="min-width:56px;text-align:center;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:40px;line-height:44px;letter-spacing:-.04em;color:#FBFCFD">{{ guests }}</div>
+            <div style="width:56px;height:56px;border-radius:6px;background:#38424B;display:flex;align-items:center;justify-content:center;font-size:24px;color:#D4DCE3">+</div>
+          </div>
+        </div>
+        <div style="flex:1 1 auto;min-width:0">
+          <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6;margin-bottom:8px">Seats</div>
+          <div style="display:flex;align-items:center;gap:8px;height:40px">
+            <sc-for list="{{ preview }}" as="s" hint-placeholder-count="4">
+              <div style="width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ s.fill }};font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#0B1015">{{ s.no }}</div>
+            </sc-for>
+          </div>
+          <div style="height:19px;margin-top:8px;font-size:13px;line-height:19px;color:#8C9AA6">{{ helper }}</div>
+        </div>
+      </div>
+      <div style="height:20px"></div>
+      <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">Tab name (optional)</div>
+      <div style="height:56px;display:flex;align-items:center;border-bottom:1px solid #6B7884;font-size:17px;color:#8C9AA6">Birthday, Kevin's table</div>
+      <div style="height:24px"></div>
+      <div style="display:flex;align-items:center;gap:24px">
+        <div style="height:48px;display:inline-flex;align-items:center;padding:0 16px;border-radius:6px;font-size:17px;color:#B3BFC9">Keep it</div>
+        <div style="flex:1 1 auto"></div>
+        <div style="height:56px;display:inline-flex;align-items:center;padding:0 24px;border-radius:6px;background:#6FC6D6;font-size:17px;font-weight:500;color:#0B1015">{{ openLabel }}</div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;overlay&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;none&quot;,&quot;open-tab&quot;,&quot;open-tab-one&quot;,&quot;empty&quot;],&quot;default&quot;:&quot;none&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const SEAT = ['#6FC6D6','#E0A35A','#9DC271','#B79BE0','#E58BA4','#7FA8E0','#D9C46B','#6FD2B4'];
+    const fill = n => SEAT[(n - 1) % 8];
+    const ov = this.props.overlay || 'none';
+    const guests = ov === 'open-tab-one' ? 1 : 4;
+
+    const chips = (nos, dim) => nos.map(n => ({ no:String(n), fill:fill(n), op:(dim && dim.indexOf(n) > -1) ? 0.4 : 1 }));
+
+    const cards = [
+      { table:'Table 7', seats:chips([1,2,3,4]), elapsed:'1h12', total:'3,400.00', fill:'#232B32', border:'1px solid #38424B', ink:'#FBFCFD', state:'', flag:'' },
+      { table:'Table 2', seats:chips([1,2]), elapsed:'0h48', total:'1,150.00', fill:'#232B32', border:'1px solid #38424B', ink:'#FBFCFD', state:'', flag:'' },
+      { table:'Table 11', seats:[], elapsed:'0h22', total:'480.00', fill:'#232B32', border:'1px solid #38424B', ink:'#FBFCFD', state:'One seat', flag:'' },
+      { table:'Table 4', seats:chips([1,2,3],[2]), elapsed:'2h05', total:'2,260.00', fill:'#232B32', border:'1px solid #38424B', ink:'#FBFCFD', state:'Seat 2 settled', flag:'' },
+      { table:'Table 9', seats:chips([1,2]), elapsed:'0h14', total:'1,780.00', fill:'#232B32', border:'1px solid #38424B', ink:'#FBFCFD', state:'', flag:'2 not yet sent' },
+      { table:'Table 12', seats:[], elapsed:'', total:'', fill:'transparent', border:'1px dashed #38424B', ink:'#B3BFC9', state:'Available', flag:'' },
+    ];
+
+    return {
+      zones: ['Terrace','Main bar','Counter'].map((name, i) => ({
+        name, fill: i === 0 ? '#3FAAC0' : '#232B32', colour: i === 0 ? '#0B1015' : '#B3BFC9',
+      })),
+      meta: ov === 'empty' ? '0 open · 6 tables free' : '5 open · 1 table free',
+      cards,
+      showGrid: ov !== 'empty',
+      showEmpty: ov === 'empty',
+      scrim: ov === 'open-tab' || ov === 'open-tab-one',
+      sheet: ov === 'open-tab' || ov === 'open-tab-one',
+      guests: String(guests),
+      preview: chips(Array.from({ length: guests }, (_, i) => i + 1)),
+      helper: guests === 1 ? 'One guest. Seats will not be shown.' : 'Four seats. Every line can be attached to one of them.',
+      openLabel: guests === 1 ? 'Open tab' : 'Open tab · 4 seats',
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-weight: var(--font-weight-regular);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* docs/06-design-system.md section 8: focus is always visible, 2px at 2px offset. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-accent-subtle);
+    color: var(--color-ink);
+  }
+
+  button,
+  [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+  }
+
+  button[aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+
+  dialog {
+    color: inherit;
+    max-width: none;
+    max-height: none;
+  }
+
+  dialog::backdrop {
+    background: transparent;
+  }
+
+  /* Touch surfaces: no double-tap zoom delay, no accidental text selection, no rubber banding. */
+  [data-surface='floor'],
+  [data-surface='counter'] {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    overscroll-behavior: none;
+  }
+
+  [data-surface='floor'] :is(input, textarea),
+  [data-surface='counter'] :is(input, textarea) {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-hairline) transparent;
+  }
+
+  [data-motion-highlight] [data-animating] {
+    outline: 1px solid var(--color-focus);
+    outline-offset: 0;
+  }
+}
+
+/* Numbers are always tabular, so totals never reflow as they change. */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* The status chip style, never a sentence. */
+@utility micro-caps {
+  text-transform: uppercase;
+}
+
+@utility press-feedback {
+  transition-property: background-color, color, transform, opacity;
+  transition-duration: var(--bliss-duration-hover);
+  transition-timing-function: var(--bliss-ease-out);
+}
+
+@keyframes bliss-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility spin {
+  animation: bliss-spin 700ms linear infinite;
+}
+
+/*
+ * Reduced motion makes things effectively instant. Opacity fades survive at 80ms, because a hard
+ * cut on a colour change reads as a glitch. The spinner keeps turning: it is the state.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-duration: 80ms !important;
+  }
+}
+
+/*
+ * ---------------------------------------------------------------------------------------------
+ * Atmosphere layer, docs/12-surface-language.md.
+ *
+ * The recipes behind the entry and sign-in screens, as utilities, so every surface draws them
+ * from tokens instead of repeating opacity arithmetic. Hover states sit behind (hover: hover), so
+ * a tap on a tablet never leaves a pane stuck in its hover colour. Press feedback runs on the
+ * 100ms press duration; only colour and border settle over the slower surface duration.
+ * ---------------------------------------------------------------------------------------------
+ */
+
+@keyframes bliss-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* A translucent pane over artwork or photography: the one raised surface on an atmospheric screen. */
+@utility surface-glass {
+  background-color: var(--color-glass);
+  border: 1px solid var(--color-glass-edge);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lift);
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  backdrop-filter: blur(var(--blur-glass));
+}
+
+@utility surface-glass-interactive {
+  transition:
+    background-color var(--bliss-duration-surface) var(--bliss-ease-out),
+    border-color var(--bliss-duration-surface) var(--bliss-ease-out),
+    transform var(--bliss-duration-press) var(--bliss-ease-out);
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--color-glass-hover);
+      border-color: var(--color-glass-edge-hover);
+    }
+  }
+  &:active {
+    transform: scale(var(--bliss-scale-press));
+  }
+}
+
+/* A keypad key: denser glass, a key shadow, and a deeper press. */
+@utility surface-key {
+  background-color: var(--color-glass-strong);
+  border: 1px solid var(--color-glass-edge);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-key);
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  backdrop-filter: blur(var(--blur-glass));
+  transition:
+    background-color var(--bliss-duration-surface) var(--bliss-ease-out),
+    border-color var(--bliss-duration-surface) var(--bliss-ease-out),
+    transform var(--bliss-duration-press) var(--bliss-ease-out);
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--color-glass-strong-hover);
+      border-color: var(--color-glass-edge-hover);
+    }
+  }
+  &:active {
+    transform: scale(var(--bliss-scale-key));
+  }
+}
+
+/* A quiet control that floats over atmosphere: switch profile, a secondary key. */
+@utility surface-veil {
+  background-color: var(--color-veil);
+  border: 1px solid var(--color-veil-edge);
+  -webkit-backdrop-filter: blur(var(--blur-veil));
+  backdrop-filter: blur(var(--blur-veil));
+  transition:
+    background-color var(--bliss-duration-glide) var(--bliss-ease-out),
+    border-color var(--bliss-duration-glide) var(--bliss-ease-out),
+    color var(--bliss-duration-surface) var(--bliss-ease-out),
+    transform var(--bliss-duration-press) var(--bliss-ease-out);
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--color-veil-hover);
+      border-color: var(--color-veil-edge-hover);
+      color: var(--color-ink);
+    }
+  }
+  &:active {
+    transform: scale(var(--bliss-scale-press));
+  }
+}
+
+/*
+ * Mono capitals for a label above content. The capitals are presentation only: write the string
+ * in sentence case, per docs/08, and this renders it in caps.
+ */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-eyebrow);
+  line-height: var(--text-eyebrow--line-height);
+  letter-spacing: var(--text-eyebrow--letter-spacing);
+  font-weight: var(--text-eyebrow--font-weight);
+  text-transform: uppercase;
+}
+
+@utility caps {
+  font-family: var(--font-mono);
+  font-size: var(--text-caps);
+  line-height: var(--text-caps--line-height);
+  letter-spacing: var(--text-caps--letter-spacing);
+  font-weight: var(--text-caps--font-weight);
+  text-transform: uppercase;
+}
+
+/* A hairline that fades out, for dividing a composition rather than a list. */
+@utility rule-fade-x {
+  height: 1px;
+  background-image: linear-gradient(to right, var(--color-hairline), transparent);
+}
+
+@utility rule-fade-y {
+  width: 1px;
+  background-image: linear-gradient(to bottom, transparent, color-mix(in oklab, var(--color-hairline) 50%, transparent), transparent);
+}
+
+/* A name set large on atmosphere: ink falling to muted ink, so it sits in the light. */
+@utility ink-sheen {
+  background-image: linear-gradient(to bottom, var(--color-ink), color-mix(in oklab, var(--color-ink-muted) 80%, transparent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-breathe {
+    animation: none;
+  }
+}
+
+/*
+ * ---------------------------------------------------------------------------------------------
+ * Working surfaces, docs/13-floor-tabs-revamp.md.
+ *
+ * The flat counterpart to the atmosphere layer, for screens a waiter works in: one pane, no blur,
+ * no shadow in the dark. The same interaction contract as glass: hover on pointer devices only,
+ * press on the 100ms press duration.
+ * ---------------------------------------------------------------------------------------------
+ */
+
+/* A raised pane you can tap: a tab card, a table, a choice in a sheet. */
+@utility surface-pane-interactive {
+  background-color: color-mix(in oklab, var(--color-raised) 70%, transparent);
+  border: none;
+  border-radius: 16px;
+  box-shadow: var(--shadow-raised), 0 4px 20px -4px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  transition:
+    border-color var(--bliss-duration-hover) var(--bliss-ease-out),
+    background-color var(--bliss-duration-hover) var(--bliss-ease-out),
+    box-shadow var(--bliss-duration-hover) var(--bliss-ease-out),
+    transform var(--bliss-duration-press) var(--bliss-ease-out);
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--color-raised);
+      box-shadow: var(--shadow-key), inset 0 1px 1px rgba(255, 255, 255, 0.15), inset 0 0 0 1px var(--color-accent-subtle);
+    }
+  }
+  &:active {
+    transform: scale(var(--bliss-scale-press));
+  }
+}
+
+/* Polished premium dot textures for emphasized cards */
+@utility texture-dots-accent {
+  background-image: 
+    radial-gradient(ellipse at 0% 100%, color-mix(in oklab, var(--color-accent) 15%, transparent) 0%, transparent 120%),
+    radial-gradient(color-mix(in oklab, var(--color-accent) 8%, transparent) 1.5px, transparent 1.5px);
+  background-size: 100% 100%, 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+@utility texture-dots-stop {
+  background-image: 
+    radial-gradient(ellipse at 0% 10%, color-mix(in oklab, var(--color-stop) 15%, transparent) 0%, transparent 120%),
+    radial-gradient(color-mix(in oklab, var(--color-stop) 8%, transparent) 1.5px, transparent 1.5px);
+  background-size: 100% 100%, 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+/* An invitation rather than an object: a free table. Sleek solid glass, filled with a warm glow on hover. */
+@utility surface-invite {
+  background-color: color-mix(in oklab, var(--color-page) 10%, transparent);
+  border: 1px solid var(--color-rule-raised);
+  border-radius: 20px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.02);
+  transition:
+    border-color var(--bliss-duration-hover) var(--bliss-ease-out),
+    background-color var(--bliss-duration-hover) var(--bliss-ease-out),
+    box-shadow var(--bliss-duration-hover) var(--bliss-ease-out),
+    transform var(--bliss-duration-press) var(--bliss-ease-out);
+  @media (hover: hover) {
+    &:hover {
+      border-color: var(--color-attention-subtle);
+      background-color: color-mix(in oklab, var(--color-attention) 8%, transparent);
+      box-shadow: 0 8px 24px -8px color-mix(in oklab, var(--color-attention) 30%, transparent), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+    }
+  }
+  &:active {
+    transform: scale(var(--bliss-scale-press));
+  }
+}

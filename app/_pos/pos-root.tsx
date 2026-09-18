@@ -1,0 +1,34 @@
+'use client';
+
+import { initMotion } from '@bliss/ui/motion';
+import { type ReactNode, useEffect } from 'react';
+import { setForcedOffline } from '@/lib/pos/api';
+import { META, getMeta } from '@/lib/pos/db';
+import { ensureDevice } from '@/lib/pos/session';
+import { pruneAcked, startSync, useSync } from '@/lib/pos/sync';
+
+/**
+ * The client root for a staff device, Floor or Counter: motion defaults once, the sync cycle once, and
+ * a first-run gate while the catalogue snapshot lands. After the first pull the device trades from its
+ * own store. docs/14 section 4.
+ */
+export function PosRoot({ children }: { children: ReactNode }) {
+  const sync = useSync();
+
+  useEffect(() => {
+    initMotion();
+    let stop: (() => void) | undefined;
+    void (async () => {
+      setForcedOffline(Boolean(await getMeta<boolean>(META.forceOffline)));
+      stop = startSync();
+      await pruneAcked();
+    })();
+    return () => stop?.();
+  }, []);
+
+  useEffect(() => {
+    if (sync.bootstrapped) void ensureDevice();
+  }, [sync.bootstrapped]);
+
+  return <>{children}</>;
+}

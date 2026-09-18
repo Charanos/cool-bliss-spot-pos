@@ -1,0 +1,18 @@
+{
+  "name": "@bliss/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./seed/catalogue": "./seed/catalogue.ts",
+    "./seed/organisation": "./seed/organisation.ts",
+    "./seed/floor": "./seed/floor.ts",
+    "./seed/history": "./seed/history.ts",
+    "./seed/ids": "./seed/ids.ts",
+    "./seed/types": "./seed/types.ts"
+  },
+  "dependencies": {
+    "@bliss/shared": "workspace:*"
+  }
+}

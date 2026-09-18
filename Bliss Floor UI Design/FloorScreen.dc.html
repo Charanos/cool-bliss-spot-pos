@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0B1015}
+  a{color:#6FC6D6;text-decoration:none}
+  a:hover{color:#A8DCE6}
+</style>
+</helmet>
+<div style="width:1280px;height:800px;position:relative;overflow:hidden;background:#0B1015;color:#FBFCFD;font-family:'Geist','Helvetica Neue',Helvetica,sans-serif;font-weight:400;font-size:15px;line-height:22px;-webkit-font-smoothing:antialiased">
+
+  <div style="display:flex;height:712px">
+
+    <div style="flex:0 0 180px;width:180px;padding-top:16px;overflow:hidden">
+      <div style="padding:0 16px 8px;font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">Zones</div>
+      <sc-for list="{{ zones }}" as="z" hint-placeholder-count="3">
+        <div style="position:relative;height:48px;display:flex;align-items:center;padding:0 16px;font-size:15px;color:{{ z.colour }}">
+          <sc-if value="{{ z.selected }}"><div style="position:absolute;left:0;top:10px;bottom:10px;width:3px;background:#3FAAC0"></div></sc-if>
+          {{ z.name }}
+        </div>
+      </sc-for>
+      <div style="height:24px"></div>
+      <div style="padding:0 16px 8px;font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">My tabs</div>
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+        <div style="position:relative;height:64px;padding:10px 16px 0;display:flex;flex-direction:column;justify-content:flex-start;gap:8px">
+          <sc-if value="{{ t.selected }}"><div style="position:absolute;left:0;top:10px;bottom:10px;width:3px;background:#3FAAC0"></div></sc-if>
+          <div style="display:flex;align-items:baseline;justify-content:space-between">
+            <span style="font-size:17px;line-height:20px;font-weight:500;color:{{ t.colour }}">{{ t.name }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;line-height:19px;color:#B3BFC9">{{ t.total }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;height:16px">
+            <sc-for list="{{ t.seats }}" as="s" hint-placeholder-count="3">
+              <div style="width:16px;height:16px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:{{ s.fill }};opacity:{{ s.op }};font-family:'JetBrains Mono',monospace;font-weight:500;font-size:9px;color:#0B1015">{{ s.no }}</div>
+            </sc-for>
+            <sc-if value="{{ t.unsent }}">
+              <div style="display:flex;align-items:center;gap:4px;margin-left:4px">
+                <div style="width:6px;height:6px;border-radius:50%;background:#6FC6D6"></div>
+                <span style="font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#6FC6D6">{{ t.unsent }}</span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="flex:0 0 1px;background:#232B32"></div>
+
+    <div style="flex:1 1 auto;min-width:0;padding:16px 20px 0;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:8px;height:36px">
+        <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+          <div style="height:36px;border-radius:6px;padding:0 14px;display:flex;align-items:center;font-size:15px;background:{{ c.fill }};color:{{ c.colour }}">{{ c.name }}</div>
+        </sc-for>
+      </div>
+      <div style="height:16px"></div>
+      <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px">
+        <sc-for list="{{ products }}" as="p" hint-placeholder-count="25">
+          <div style="position:relative;height:116px;border-radius:10px;background:#232B32;border:1px solid #38424B;overflow:hidden;opacity:{{ p.op }}">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:{{ p.cat }}"></div>
+            <div style="position:absolute;left:15px;right:12px;top:12px;font-size:17px;line-height:22px;color:#FBFCFD;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ p.name }}</div>
+            <div style="position:absolute;left:15px;bottom:11px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;line-height:22px;color:#B3BFC9">{{ p.price }}</div>
+            <sc-if value="{{ p.count }}">
+              <div style="position:absolute;right:12px;top:12px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:12px;line-height:17px;color:#E0A35A">{{ p.count }}</div>
+            </sc-if>
+            <sc-if value="{{ p.tick }}">
+              <div style="position:absolute;right:0;top:0;width:20px;height:20px;border-top:1px solid #E0A35A;border-right:1px solid #E0A35A"></div>
+            </sc-if>
+            <sc-if value="{{ p.hairline }}">
+              <div style="position:absolute;left:-20%;right:-20%;top:50%;height:1px;background:#4E5A65;transform:rotate(-20deg)"></div>
+            </sc-if>
+            <sc-if value="{{ p.chip }}">
+              <div style="position:absolute;right:11px;bottom:11px;height:22px;border-radius:6px;padding:0 8px;display:flex;align-items:center;gap:6px;background:#38424B">
+                <div style="width:6px;height:6px;border-radius:50%;background:{{ p.chipDot }}"></div>
+                <span style="font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#D4DCE3">{{ p.chip }}</span>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="flex:0 0 1px;background:#232B32"></div>
+
+    <div style="flex:0 0 340px;width:340px;display:flex;flex-direction:column;overflow:hidden">
+      <sc-if value="{{ showStrip }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="height:56px;background:#232B32;border-bottom:1px solid #38424B;display:flex;align-items:center;gap:8px;padding:0 12px;overflow:hidden">
+            <sc-for list="{{ strip }}" as="s" hint-placeholder-count="6">
+              <div style="position:relative;flex:0 0 40px;width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ s.fill }};border:{{ s.border }};opacity:{{ s.op }};outline:{{ s.ring }};outline-offset:2px">
+                <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:{{ s.size }};color:{{ s.ink }}">{{ s.glyph }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:8px;padding:6px 12px 0">
+            <sc-for list="{{ strip }}" as="s" hint-placeholder-count="6">
+              <div style="flex:0 0 40px;width:40px;text-align:center">
+                <div style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap">{{ s.total }}</div>
+                <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#B3BFC9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="flex:1 1 auto;padding:16px 16px 0;overflow:hidden">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+          <div style="padding-bottom:12px">
+            <div style="display:flex;align-items:center;gap:8px;height:24px">
+              <div style="flex:0 0 22px;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ g.fill }};border:{{ g.border }}">
+                <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:{{ g.ink }}">{{ g.glyph }}</span>
+              </div>
+              <span style="flex:1 1 auto;min-width:0;font-size:16px;line-height:22px;color:#B3BFC9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.label }}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;line-height:22px;color:#FBFCFD">{{ g.sub }}</span>
+            </div>
+            <sc-for list="{{ g.lines }}" as="l" hint-placeholder-count="2">
+              <div style="height:48px;display:flex;align-items:center;gap:8px;transform:{{ l.lift }};outline:{{ l.outline }};outline-offset:0;border-radius:6px">
+                <div style="flex:0 0 10px;display:flex;justify-content:center">
+                  <sc-if value="{{ l.dot }}"><div style="width:6px;height:6px;border-radius:50%;background:{{ l.dot }}"></div></sc-if>
+                </div>
+                <span style="flex:0 0 16px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;color:#8C9AA6;text-align:right">{{ l.q }}</span>
+                <div style="flex:1 1 auto;min-width:0">
+                  <div style="font-size:15px;line-height:20px;color:{{ l.ink }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.name }}</div>
+                  <sc-if value="{{ l.note }}">
+                    <div style="font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:{{ l.noteInk }}">{{ l.note }}</div>
+                  </sc-if>
+                </div>
+                <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;color:{{ l.ink }}">{{ l.price }}</span>
+                <span style="flex:0 0 10px;font-size:15px;color:#4E5A65;text-align:right">{{ l.chevron }}</span>
+              </div>
+            </sc-for>
+            <div style="height:1px;background:#38424B;margin-top:12px"></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:1px;background:#38424B"></div>
+
+  <div style="height:87px;display:flex;background:#151B20">
+    <div style="flex:1 1 auto;display:flex;align-items:center;gap:12px;padding:0 20px">
+      <span style="font-size:15px;color:#FBFCFD">{{ waiter }}</span>
+      <span style="color:#4E5A65">·</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8C9AA6">{{ shift }}</span>
+      <div style="height:22px;border-radius:6px;display:flex;align-items:center;gap:6px;padding:0 8px;background:#232B32;margin-left:8px">
+        <div style="width:6px;height:6px;border-radius:50%;background:{{ connDot }}"></div>
+        <span style="font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:{{ connInk }}">{{ connText }}</span>
+      </div>
+      <sc-if value="{{ pending }}">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="width:6px;height:6px;border-radius:50%;background:#6FC6D6"></div>
+          <span style="font-size:13px;color:#6FC6D6">{{ pending }}</span>
+        </div>
+      </sc-if>
+    </div>
+    <div style="flex:0 0 1px;background:#38424B"></div>
+    <div style="flex:0 0 340px;width:340px;display:flex;align-items:center;gap:12px;padding:0 16px">
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <span style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">{{ scopeLabel }}</span>
+          <span style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884">KES</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;line-height:19px;color:#B3BFC9">{{ scopeTotal }}</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px">
+          <span style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">Tab</span>
+          <span style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884">KES</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:24px;line-height:30px;letter-spacing:-.02em;color:#FBFCFD">{{ tabTotal }}</span>
+        </div>
+      </div>
+      <div style="flex:0 0 auto;height:56px;border-radius:6px;background:#6FC6D6;display:flex;align-items:center;padding:0 20px">
+        <span style="font-size:17px;font-weight:500;color:#0B1015">Fire order</span>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ scrim }}">
+    <div style="position:absolute;left:0;right:0;top:0;height:712px;background:rgba(11,16,21,.55)"></div>
+  </sc-if>
+
+  <sc-if value="{{ sheetActions }}">
+    <div style="position:absolute;left:0;right:0;bottom:88px;background:#232B32;border-top:1px solid #38424B;border-radius:16px 16px 0 0;padding:20px 24px 24px">
+      <div style="display:flex;align-items:center;gap:12px;height:40px">
+        <div style="flex:0 0 22px;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#E0A35A">
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#0B1015">2</span>
+        </div>
+        <span style="flex:1 1 auto;font-size:17px;color:#FBFCFD">1 × Gilbeys 750ml tot</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;color:#B3BFC9">500.00</span>
+      </div>
+      <div style="height:1px;background:#38424B;margin:12px 0 8px"></div>
+      <div style="height:48px;display:flex;align-items:center;font-size:17px;color:#FBFCFD">Move to another seat</div>
+      <div style="height:48px;display:flex;align-items:center;font-size:17px;color:#FBFCFD">Add a note</div>
+      <div style="height:16px"></div>
+      <div style="height:48px;display:flex;align-items:center;font-size:17px;color:#E08585">Void the line</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheetMove }}">
+    <div style="position:absolute;left:0;right:0;bottom:88px;background:#232B32;border-top:1px solid #38424B;border-radius:16px 16px 0 0;padding:24px">
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.015em;font-weight:500;color:#FBFCFD">Move 1 × Gilbeys 750ml tot to another seat</div>
+      <div style="height:24px"></div>
+      <div style="display:flex;gap:12px">
+        <sc-for list="{{ movePicker }}" as="s" hint-placeholder-count="5">
+          <div style="width:56px">
+            <div style="width:56px;height:56px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ s.fill }};border:{{ s.border }};opacity:{{ s.op }}">
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:{{ s.size }};color:{{ s.ink }}">{{ s.glyph }}</span>
+            </div>
+            <div style="height:15px;margin-top:6px;text-align:center;font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6">{{ s.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:20px"></div>
+      <div style="height:48px;display:inline-flex;align-items:center;padding:0 16px;border-radius:6px;font-size:17px;color:#B3BFC9">Keep it</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheetSeatMenu }}">
+    <div style="position:absolute;left:0;right:0;bottom:88px;background:#232B32;border-top:1px solid #38424B;border-radius:16px 16px 0 0;padding:20px 24px 24px">
+      <div style="display:flex;align-items:center;gap:12px;height:40px">
+        <div style="flex:0 0 22px;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#E0A35A">
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#0B1015">2</span>
+        </div>
+        <span style="flex:1 1 auto;font-size:17px;color:#FBFCFD">Seat 2 · Kofi</span>
+        <span style="font-size:12px;letter-spacing:.02em;font-weight:500;color:#6B7884">KES</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;color:#B3BFC9">500.00</span>
+      </div>
+      <div style="height:1px;background:#38424B;margin:12px 0 8px"></div>
+      <div style="height:48px;display:flex;align-items:center;font-size:17px;color:#FBFCFD">Label this seat</div>
+      <div style="height:48px;display:flex;align-items:center;font-size:17px;color:#FBFCFD">Settle Seat 2 · KES 500</div>
+      <div style="height:16px"></div>
+      <div style="height:48px;display:flex;align-items:center;font-size:17px;color:#E08585">Remove this seat</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheetLabel }}">
+    <div style="position:absolute;left:0;right:0;bottom:88px;background:#232B32;border-top:1px solid #38424B;border-radius:16px 16px 0 0;padding:24px">
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.015em;font-weight:500;color:#FBFCFD">Label Seat 3</div>
+      <div style="height:20px"></div>
+      <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">Seat label</div>
+      <div style="height:56px;display:flex;align-items:center;border-bottom:1px solid #6B7884;font-size:17px;color:#8C9AA6">Cap, birthday, boss</div>
+      <div style="height:8px"></div>
+      <div style="font-size:13px;line-height:19px;color:#8C9AA6">Only you and the bar see this.</div>
+      <div style="height:24px"></div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="height:48px;display:inline-flex;align-items:center;padding:0 16px;border-radius:6px;font-size:17px;color:#B3BFC9">Keep it</div>
+        <div style="height:48px;display:inline-flex;align-items:center;padding:0 24px;border-radius:6px;background:#6FC6D6;font-size:17px;font-weight:500;color:#0B1015">Save label</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheetModifier }}">
+    <div style="position:absolute;left:0;right:0;bottom:88px;background:#232B32;border-top:1px solid #38424B;border-radius:16px 16px 0 0;padding:24px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <div style="flex:1 1 auto;font-size:20px;line-height:26px;letter-spacing:-.015em;font-weight:500;color:#FBFCFD">Gilbeys 750ml tot</div>
+        <span style="font-size:12px;letter-spacing:.02em;font-weight:500;color:#6B7884">KES</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;color:#B3BFC9">500.00</span>
+      </div>
+      <div style="height:1px;background:#38424B;margin:16px 0"></div>
+      <div style="display:flex;gap:56px">
+        <div>
+          <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6;margin-bottom:8px">Serve</div>
+          <div style="display:flex;gap:8px">
+            <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;background:#6FC6D6;font-size:15px;font-weight:500;color:#0B1015">Tot</div>
+            <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;background:#38424B;font-size:15px;color:#D4DCE3">Double</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6;margin-bottom:8px">Mixer</div>
+          <div style="display:flex;gap:8px">
+            <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;background:#6FC6D6;font-size:15px;font-weight:500;color:#0B1015">None</div>
+            <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;background:#38424B;font-size:15px;color:#D4DCE3">Coke</div>
+            <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;background:#38424B;font-size:15px;color:#D4DCE3">Sprite</div>
+            <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;background:#38424B;font-size:15px;color:#D4DCE3">Soda water</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6;margin-bottom:8px">Ice</div>
+          <div style="display:flex;gap:8px">
+            <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;background:#38424B;font-size:15px;color:#D4DCE3">Normal</div>
+            <div style="height:48px;border-radius:6px;padding:0 20px;display:flex;align-items:center;background:#6FC6D6;font-size:15px;font-weight:500;color:#0B1015">No ice</div>
+          </div>
+        </div>
+      </div>
+      <div style="height:1px;background:#38424B;margin:20px 0"></div>
+      <div style="display:flex;align-items:center;gap:24px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">Quantity</div>
+          <div style="width:48px;height:48px;border-radius:6px;background:#38424B;display:flex;align-items:center;justify-content:center;font-size:20px;color:#D4DCE3">−</div>
+          <div style="width:40px;text-align:center;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:24px;color:#FBFCFD">1</div>
+          <div style="width:48px;height:48px;border-radius:6px;background:#38424B;display:flex;align-items:center;justify-content:center;font-size:20px;color:#D4DCE3">+</div>
+        </div>
+        <div style="flex:1 1 auto"></div>
+        <div style="height:48px;display:inline-flex;align-items:center;padding:0 16px;border-radius:6px;font-size:17px;color:#B3BFC9">Keep it</div>
+        <div style="height:56px;display:inline-flex;align-items:center;padding:0 24px;border-radius:6px;background:#6FC6D6;font-size:17px;font-weight:500;color:#0B1015">Add to Seat 2 · KES 500</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ dialogVoid }}">
+    <div style="position:absolute;left:360px;top:120px;width:560px;background:#232B32;border:1px solid #38424B;border-radius:16px;padding:24px">
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.015em;font-weight:500;color:#FBFCFD">Void 1 × Gilbeys 750ml tot from Seat 2?</div>
+      <div style="height:8px"></div>
+      <div style="font-size:15px;line-height:22px;color:#B3BFC9">This removes KES 500.00 from tab 14. It cannot be undone.</div>
+      <div style="height:20px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="height:40px;border-radius:6px;padding:0 14px;display:flex;align-items:center;background:#38424B;font-size:15px;color:#D4DCE3">Wrong item</div>
+        <div style="height:40px;border-radius:6px;padding:0 14px;display:flex;align-items:center;background:#6FC6D6;font-size:15px;font-weight:500;color:#0B1015">Customer changed mind</div>
+        <div style="height:40px;border-radius:6px;padding:0 14px;display:flex;align-items:center;background:#38424B;font-size:15px;color:#D4DCE3">Ran out</div>
+      </div>
+      <div style="height:20px"></div>
+      <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">Reason (at least 10 characters)</div>
+      <div style="min-height:56px;display:flex;align-items:center;border-bottom:1px solid #6B7884;font-size:17px;line-height:24px;color:#FBFCFD;padding:8px 0">Customer changed mind, wanted a Tusker instead</div>
+      <div style="display:flex;justify-content:flex-end;padding-top:6px">
+        <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:#8C9AA6">46</span>
+      </div>
+      <div style="height:16px"></div>
+      <div style="display:flex;align-items:center;gap:24px">
+        <div style="height:48px;display:inline-flex;align-items:center;padding:0 16px;border-radius:6px;font-size:17px;color:#FBFCFD;outline:2px solid #3FAAC0;outline-offset:2px">Keep it</div>
+        <div style="flex:1 1 auto"></div>
+        <div style="height:48px;display:inline-flex;align-items:center;padding:0 24px;border-radius:6px;background:#E08585;font-size:17px;font-weight:500;color:#0B1015">Void the line</div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;overlay&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;none&quot;,&quot;lifted&quot;,&quot;actions&quot;,&quot;move&quot;,&quot;moved&quot;,&quot;seat-menu&quot;,&quot;seat-label&quot;,&quot;modifier&quot;,&quot;void&quot;],&quot;default&quot;:&quot;none&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;offline&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;hideStrip&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const SEAT = ['#6FC6D6','#E0A35A','#9DC271','#B79BE0','#E58BA4','#7FA8E0','#D9C46B','#6FD2B4'];
+    const seatFill = n => SEAT[(n - 1) % 8];
+    const ov = this.props.overlay || 'none';
+    const offline = !!this.props.offline;
+
+    const CAT = { beer:'#D9C46B', spirit:'#6FC6D6', wine:'#B79BE0', soft:'#6FD2B4', food:'#9DC271' };
+    const raw = [
+      ['Tusker 500ml','350.00','beer'],
+      ['Tusker Lite','380.00','beer'],
+      ['White Cap','350.00','beer'],
+      ['Balozi','330.00','beer'],
+      ['Guinness','400.00','beer','low','7'],
+      ['Pilsner','330.00','beer'],
+      ['Heineken','450.00','beer'],
+      ['Summit Lager','320.00','beer'],
+      ['Gilbeys 750ml tot','500.00','spirit'],
+      ['Gilbeys double','900.00','spirit','last','3'],
+      ['Smirnoff + Coke','650.00','spirit'],
+      ['Kenya Cane tot','250.00','spirit'],
+      ['Jameson tot','600.00','spirit','finished'],
+      ['Captain Morgan tot','400.00','spirit'],
+      ['Hunters Choice tot','250.00','spirit','hold'],
+      ['Four Cousins glass','600.00','wine'],
+      ['Nederburg glass','650.00','wine'],
+      ['Drostdy Hof bottle','1,400.00','wine'],
+      ['Coke 300ml','120.00','soft'],
+      ['Fanta Orange','120.00','soft'],
+      ['Sprite 300ml','120.00','soft'],
+      ['Dasani 500ml','100.00','soft'],
+      ['Red Bull','350.00','soft'],
+      ['Nyama plate','900.00','food'],
+      ['Kachumbari','150.00','food'],
+    ];
+    const products = raw.map(([name, price, cat, state, count]) => ({
+      name, price, cat: CAT[cat],
+      op: (state === 'finished' || state === 'hold') ? 0.4 : 1,
+      count: count || '',
+      tick: state === 'last',
+      hairline: state === 'finished' || state === 'hold',
+      chip: state === 'finished' ? 'Finished' : state === 'hold' ? 'On hold' : '',
+      chipDot: state === 'hold' ? '#E0A35A' : '#E08585',
+    }));
+
+    const categories = ['All','Beer','Spirits','Wine','Soft drinks','Food'].map((name, i) => ({
+      name,
+      fill: i === 0 ? '#3FAAC0' : '#232B32',
+      colour: i === 0 ? '#0B1015' : '#B3BFC9',
+    }));
+
+    const zones = [
+      { name:'Terrace', selected:true },
+      { name:'Main bar', selected:false },
+      { name:'Counter', selected:false },
+    ].map(z => ({ ...z, colour: z.selected ? '#FBFCFD' : '#B3BFC9' }));
+
+    const mkChips = (nos, dim) => nos.map(n => ({
+      no: String(n), fill: seatFill(n), op: (dim && dim.indexOf(n) > -1) ? 0.4 : 1,
+    }));
+    const tabs = [
+      { name:'T7', total:'3,400.00', seats:mkChips([1,2,3,4]), selected:true, unsent:'' },
+      { name:'T2', total:'1,150.00', seats:mkChips([1,2]), selected:false, unsent:'' },
+      { name:'T11', total:'480.00', seats:[], selected:false, unsent:'' },
+    ].map(t => ({ ...t, colour: t.selected ? '#FBFCFD' : '#B3BFC9' }));
+
+    const selectedSeat = ov === 'seat-label' ? 3 : 2;
+    const seatTotals = { 1:'820', 2:'500', 3:'650', 4:'380' };
+    const movedSeatTotals = { 1:'820', 2:'0', 3:'1,150', 4:'380' };
+    const totals = ov === 'moved' ? movedSeatTotals : seatTotals;
+    const strip = [1,2,3,4].map(n => ({
+      glyph:String(n), size:'15px', fill:seatFill(n), border:'none', op:1, ink:'#0B1015',
+      ring: n === selectedSeat ? '2px solid #FBFCFD' : 'none',
+      total: totals[n], label: n === 2 ? 'Kofi' : '',
+    }));
+    strip.push({ glyph:'··', size:'15px', fill:'transparent', border:'1px dashed #B3BFC9', op:1, ink:'#B3BFC9', ring:'none', total:'1,050', label:'Shared' });
+    strip.push({ glyph:'+', size:'17px', fill:'#232B32', border:'1px solid #4E5A65', op:1, ink:'#B3BFC9', ring:'none', total:'', label:'' });
+
+    const line = (q, name, price, opt) => {
+      const o = opt || {};
+      const poured = o.state === 'poured';
+      return {
+        q:String(q), name, price,
+        ink: poured ? '#8C9AA6' : '#FBFCFD',
+        dot: poured ? '#63B98A' : o.state === 'unsent' ? '#6FC6D6' : o.state === 'ranout' ? '#E08585' : '',
+        note: o.note || '',
+        noteInk: o.state === 'ranout' ? '#E08585' : '#B3BFC9',
+        chevron: poured ? '' : '›',
+        lift: o.lift ? 'translateY(-2px)' : 'none',
+        outline: o.lift ? '1px solid #3FAAC0' : 'none',
+      };
+    };
+
+    const lifted = ov === 'lifted';
+    const gil = line(1, 'Gilbeys 750ml tot', '500.00', { note:'No ice', lift:lifted, state: offline ? 'unsent' : '' });
+    const group = (no, label, sub, lines) => ({
+      glyph: no ? String(no) : '··',
+      fill: no ? seatFill(no) : 'transparent',
+      border: no ? 'none' : '1px dashed #B3BFC9',
+      ink: no ? '#0B1015' : '#B3BFC9',
+      label, sub, lines,
+    });
+
+    let groups;
+    if (ov === 'moved') {
+      groups = [
+        group(1, '', '820.00', [
+          line(2, 'Tusker 500ml', '700.00', { state:'poured' }),
+          line(1, 'Coke 300ml', '120.00', { state:'poured' }),
+        ]),
+        group(2, 'Kofi', '0.00', []),
+        group(3, '', '1,150.00', [
+          line(1, 'Smirnoff + Coke', '650.00', { state:'unsent' }),
+          line(1, 'Gilbeys 750ml tot', '500.00', { note:'No ice' }),
+        ]),
+        group(4, '', '380.00', [line(1, 'Tusker Lite', '380.00')]),
+      ];
+    } else {
+      groups = [
+        group(1, '', '820.00', [
+          line(2, 'Tusker 500ml', '700.00', { state:'poured' }),
+          line(1, 'Coke 300ml', '120.00', { state:'poured' }),
+        ]),
+        group(2, 'Kofi', '500.00', [gil]),
+        group(3, '', '650.00', [line(1, 'Smirnoff + Coke', '650.00', { state:'unsent' })]),
+        group(4, '', '380.00', [
+          offline
+            ? line(1, 'Tusker Lite', '380.00', { state:'ranout', note:'Ran out' })
+            : line(1, 'Tusker Lite', '380.00'),
+        ]),
+        group(null, 'Shared', '1,050.00', [
+          line(1, 'Nyama plate', '900.00', { state: offline ? 'unsent' : '' }),
+          line(1, 'Kachumbari', '150.00'),
+        ]),
+      ];
+    }
+
+    const movePicker = [1,2,3,4].map(n => ({
+      glyph:String(n), size:'20px', fill:seatFill(n), border:'none',
+      op: n === 2 ? 0.4 : 1, ink:'#0B1015', note: n === 2 ? 'Current' : '',
+    }));
+    movePicker.push({ glyph:'··', size:'20px', fill:'transparent', border:'1px dashed #B3BFC9', op:1, ink:'#B3BFC9', note:'Shared' });
+
+    return {
+      zones, tabs, categories, products, strip, groups, movePicker,
+      showStrip: this.props.hideStrip ? false : true,
+      waiter:'Amina', shift:'4h12',
+      connDot: offline ? '#6FC6D6' : '#63B98A',
+      connInk: offline ? '#6FC6D6' : '#63B98A',
+      connText: offline ? 'Offline. 4 orders held.' : 'Synced',
+      pending: offline ? '' : '1 not yet sent',
+      scopeLabel: ov === 'seat-label' ? 'Seat 3' : 'Seat 2',
+      scopeTotal: ov === 'moved' ? '0.00' : ov === 'seat-label' ? '650.00' : '500.00',
+      tabTotal:'3,400.00',
+      scrim: ['actions','move','seat-menu','seat-label','modifier','void'].indexOf(ov) > -1,
+      sheetActions: ov === 'actions',
+      sheetMove: ov === 'move',
+      sheetSeatMenu: ov === 'seat-menu',
+      sheetLabel: ov === 'seat-label',
+      sheetModifier: ov === 'modifier',
+      dialogVoid: ov === 'void',
+    };
+  }
+}
+
+</script>
+</body>
+</html>

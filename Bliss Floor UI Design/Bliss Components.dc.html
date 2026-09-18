@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0B1015}
+  body{overflow:hidden}
+  a{color:#6FC6D6;text-decoration:none}
+  a:hover{color:#A8DCE6}
+  ::-webkit-scrollbar{width:6px;height:0}
+  ::-webkit-scrollbar-thumb{background:#38424B;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  @keyframes blissPulse{0%{opacity:.45}50%{opacity:.9}100%{opacity:.45}}
+  @keyframes blissSpin{to{transform:rotate(360deg)}}
+  @keyframes blissRise{from{transform:translateY(8px)}to{transform:translateY(0)}}
+</style>
+</helmet>
+
+<div style="height:100vh;display:grid;grid-template-rows:56px 1fr;background:#0B1015;color:#FBFCFD;font-family:'Geist','Helvetica Neue',Helvetica,sans-serif;font-weight:400;font-size:15px;line-height:22px;letter-spacing:-.006em;-webkit-font-smoothing:antialiased;overflow:hidden">
+
+  <div style="display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid #232B32;min-width:0">
+    <div style="display:flex;align-items:center;gap:8px;flex:0 0 auto">
+      <div style="width:22px;height:22px;position:relative">
+        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:5px;background:#1F6E82"></div>
+        <div style="position:absolute;left:8px;top:0;width:14px;height:14px;border-radius:5px;background:#6FC6D6"></div>
+      </div>
+      <span style="font-size:17px;letter-spacing:-.02em;color:#FBFCFD">bliss</span>
+    </div>
+    <div style="width:1px;height:24px;background:#232B32;flex:0 0 auto"></div>
+    <span style="font-size:15px;color:#B3BFC9;white-space:nowrap">Component library</span>
+    <div style="flex:1 1 auto;min-width:8px"></div>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#8C9AA6;white-space:nowrap">Floor, dark</span>
+  </div>
+
+  <div style="overflow-y:auto;overflow-x:hidden;min-height:0">
+    <div style="padding:32px 24px 56px;max-width:1280px">
+
+      <div style="font-size:28px;line-height:34px;letter-spacing:-.025em;color:#FBFCFD">Every part the Floor is built from</div>
+      <div style="height:8px"></div>
+      <div style="font-size:15px;line-height:22px;color:#B3BFC9;max-width:680px;text-wrap:pretty">Each part is drawn in every state it has. Nothing with a background sits inside anything else with a background, so a part never needs a variant for being nested.</div>
+
+      <div style="height:32px"></div>
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Buttons</div>
+      <div style="height:4px"></div>
+      <div style="font-size:14px;line-height:20px;color:#8C9AA6">48px on Floor. The verb names the outcome and carries the amount or count.</div>
+      <div style="height:16px"></div>
+
+      <sc-for list="{{ buttonRows }}" as="r" hint-placeholder-count="5">
+        <div style="display:flex;align-items:flex-start;gap:20px;padding:12px 0;border-top:1px solid #232B32;flex-wrap:wrap">
+          <span style="flex:0 0 140px;font-size:12px;line-height:19px;color:#8C9AA6">{{ r.label }}</span>
+          <div style="flex:1 1 auto;min-width:0;display:flex;gap:8px;flex-wrap:wrap">
+            <sc-for list="{{ r.items }}" as="b" hint-placeholder-count="4">
+              <div style="height:{{ b.h }};border-radius:6px;padding:{{ b.pad }};display:flex;align-items:center;gap:8px;background:{{ b.fill }};border:{{ b.border }};opacity:{{ b.op }};outline:{{ b.ring }};outline-offset:2px;transform:{{ b.press }};white-space:nowrap">
+                <sc-if value="{{ b.spinner }}">
+                  <div style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(11,16,21,.25);border-top-color:#0B1015;animation:blissSpin 700ms linear infinite"></div>
+                </sc-if>
+                <span style="font-size:{{ b.size }};font-weight:{{ b.weight }};color:{{ b.ink }}">{{ b.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="height:32px"></div>
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Chips</div>
+      <div style="height:16px"></div>
+      <sc-for list="{{ chipRows }}" as="r" hint-placeholder-count="4">
+        <div style="display:flex;align-items:flex-start;gap:20px;padding:12px 0;border-top:1px solid #232B32;flex-wrap:wrap">
+          <span style="flex:0 0 140px;font-size:12px;line-height:19px;color:#8C9AA6">{{ r.label }}</span>
+          <div style="flex:1 1 auto;min-width:0;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <sc-for list="{{ r.items }}" as="c" hint-placeholder-count="5">
+              <div style="height:{{ c.h }};border-radius:6px;padding:{{ c.pad }};display:flex;align-items:center;gap:{{ c.gap }};background:{{ c.fill }};border:{{ c.border }};opacity:{{ c.op }};outline:{{ c.ring }};outline-offset:2px;white-space:nowrap">
+                <sc-if value="{{ c.dot }}">
+                  <div style="width:5px;height:5px;border-radius:50%;background:{{ c.dotInk }}"></div>
+                </sc-if>
+                <span style="font-family:{{ c.family }};font-weight:{{ c.weight }};font-size:{{ c.size }};letter-spacing:{{ c.ls }};color:{{ c.ink }}">{{ c.label }}</span>
+                <sc-if value="{{ c.sub }}">
+                  <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:{{ c.subInk }}">{{ c.sub }}</span>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="height:32px"></div>
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Fields</div>
+      <div style="height:4px"></div>
+      <div style="font-size:14px;line-height:20px;color:#8C9AA6">Underlined, never filled, so no input box sits inside a sheet surface.</div>
+      <div style="height:16px"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px">
+        <sc-for list="{{ fields }}" as="f" hint-placeholder-count="6">
+          <div>
+            <div style="font-size:12px;line-height:17px;color:#8C9AA6">{{ f.label }}</div>
+            <div style="height:48px;display:flex;align-items:center;gap:8px;border-bottom:1px solid {{ f.rule }}">
+              <sc-if value="{{ f.icon }}">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex:0 0 16px"><circle cx="7" cy="7" r="4.5" stroke="#8C9AA6" stroke-width="1.3"></circle><path d="M10.5 10.5 14 14" stroke="#8C9AA6" stroke-width="1.3" stroke-linecap="round"></path></svg>
+              </sc-if>
+              <span style="flex:1 1 auto;min-width:0;font-family:{{ f.family }};font-size:{{ f.size }};color:{{ f.ink }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.value }}</span>
+              <sc-if value="{{ f.suffix }}">
+                <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:#8C9AA6">{{ f.suffix }}</span>
+              </sc-if>
+            </div>
+            <sc-if value="{{ f.help }}">
+              <div style="padding-top:6px;font-size:12px;line-height:17px;color:{{ f.helpInk }}">{{ f.help }}</div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <div>
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6">Quantity</div>
+          <div style="height:48px;display:flex;align-items:center;gap:12px">
+            <div style="width:48px;height:48px;border-radius:6px;background:#232B32;display:flex;align-items:center;justify-content:center">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.4 8h9.2" stroke="#D4DCE3" stroke-width="1.6" stroke-linecap="round"></path></svg>
+            </div>
+            <span style="min-width:40px;text-align:center;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:24px;letter-spacing:-.025em;color:#FBFCFD">2</span>
+            <div style="width:48px;height:48px;border-radius:6px;background:#232B32;display:flex;align-items:center;justify-content:center">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3.4v9.2M3.4 8h9.2" stroke="#D4DCE3" stroke-width="1.6" stroke-linecap="round"></path></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:32px"></div>
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Toasts</div>
+      <div style="height:4px"></div>
+      <div style="font-size:14px;line-height:20px;color:#8C9AA6">Bottom right, one at a time, 4 seconds. The dot plus the sentence, so the state survives greyscale. Never over the Fire order control.</div>
+      <div style="height:16px"></div>
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:520px">
+        <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="5">
+          <div style="border-radius:10px;background:#232B32;border:1px solid #38424B;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;animation:blissRise 140ms cubic-bezier(.22,1,.36,1)">
+            <div style="flex:0 0 6px;width:6px;height:6px;border-radius:50%;background:{{ t.dot }};margin-top:8px"></div>
+            <div style="flex:1 1 auto;min-width:0">
+              <div style="font-size:14px;line-height:20px;color:#FBFCFD;text-wrap:pretty">{{ t.title }}</div>
+              <sc-if value="{{ t.body }}">
+                <div style="font-size:12px;line-height:17px;color:#B3BFC9;text-wrap:pretty">{{ t.body }}</div>
+              </sc-if>
+            </div>
+            <sc-if value="{{ t.action }}">
+              <span style="flex:0 0 auto;font-size:13px;color:#6FC6D6;white-space:nowrap">{{ t.action }}</span>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="height:32px"></div>
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Skeletons</div>
+      <div style="height:4px"></div>
+      <div style="font-size:14px;line-height:20px;color:#8C9AA6">A skeleton takes the exact shape of what is coming, so nothing moves when the data lands. Pulse is 1.2 seconds, ease in out.</div>
+      <div style="height:16px"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;align-items:start">
+
+        <div>
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6;padding-bottom:8px">Product tiles</div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+            <sc-for list="{{ four }}" as="i" hint-placeholder-count="4">
+              <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;overflow:hidden;animation:blissPulse 1200ms cubic-bezier(.65,0,.35,1) infinite;animation-delay:{{ i.delay }}">
+                <div style="height:96px;background:#232B32"></div>
+                <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px">
+                  <div style="height:14px;width:{{ i.w }};border-radius:6px;background:#232B32"></div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="flex:1 1 auto;height:14px;border-radius:6px;background:#232B32"></div>
+                    <div style="flex:0 0 32px;width:32px;height:32px;border-radius:6px;background:#232B32"></div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6;padding-bottom:8px">Ticket rows</div>
+          <sc-for list="{{ four }}" as="i" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:12px;height:56px;animation:blissPulse 1200ms cubic-bezier(.65,0,.35,1) infinite;animation-delay:{{ i.delay }}">
+              <div style="flex:0 0 40px;width:40px;height:40px;border-radius:6px;background:#232B32"></div>
+              <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:6px">
+                <div style="height:13px;width:{{ i.w }};border-radius:6px;background:#232B32"></div>
+                <div style="height:10px;width:44px;border-radius:6px;background:#232B32"></div>
+              </div>
+              <div style="flex:0 0 56px;height:13px;border-radius:6px;background:#232B32"></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div>
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6;padding-bottom:8px">Seat strip and totals</div>
+          <div style="display:flex;gap:12px;animation:blissPulse 1200ms cubic-bezier(.65,0,.35,1) infinite">
+            <sc-for list="{{ five }}" as="i" hint-placeholder-count="5">
+              <div style="flex:0 0 40px;width:40px">
+                <div style="width:40px;height:40px;border-radius:6px;background:#232B32"></div>
+                <div style="margin-top:8px;height:11px;border-radius:6px;background:#232B32"></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="height:24px"></div>
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6;padding-bottom:8px">Tab card</div>
+          <div style="width:240px;border-radius:10px;background:#151B20;border:1px solid #232B32;padding:14px;animation:blissPulse 1200ms cubic-bezier(.65,0,.35,1) infinite">
+            <div style="display:flex;gap:12px;align-items:center">
+              <div style="flex:1 1 auto;height:16px;border-radius:6px;background:#232B32"></div>
+              <div style="flex:0 0 60px;height:16px;border-radius:6px;background:#232B32"></div>
+            </div>
+            <div style="height:14px"></div>
+            <div style="display:flex;gap:4px">
+              <sc-for list="{{ four }}" as="i" hint-placeholder-count="4">
+                <div style="width:22px;height:22px;border-radius:6px;background:#232B32"></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:32px"></div>
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Loaders and progress</div>
+      <div style="height:16px"></div>
+      <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+
+        <div style="flex:0 0 auto">
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6;padding-bottom:12px">Arc, on a surface</div>
+          <div style="display:flex;align-items:center;gap:20px">
+            <div style="width:16px;height:16px;border-radius:50%;border:2px solid #38424B;border-top-color:#6FC6D6;animation:blissSpin 700ms linear infinite"></div>
+            <div style="width:24px;height:24px;border-radius:50%;border:2px solid #38424B;border-top-color:#6FC6D6;animation:blissSpin 700ms linear infinite"></div>
+            <div style="width:40px;height:40px;border-radius:50%;border:3px solid #38424B;border-top-color:#6FC6D6;animation:blissSpin 700ms linear infinite"></div>
+          </div>
+        </div>
+
+        <div style="flex:0 0 auto">
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6;padding-bottom:12px">Inline, with words</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:16px;height:16px;border-radius:50%;border:2px solid #38424B;border-top-color:#6FC6D6;animation:blissSpin 700ms linear infinite"></div>
+              <span style="font-size:14px;color:#B3BFC9;white-space:nowrap">Sending to the bar</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:6px;height:6px;border-radius:50%;background:#6FC6D6;animation:blissPulse 1200ms cubic-bezier(.65,0,.35,1) infinite"></div>
+              <span style="font-size:14px;color:#6FC6D6;white-space:nowrap">4 orders held, waiting for signal</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(11,16,21,.25);border-top-color:#0B1015;animation:blissSpin 700ms linear infinite"></div>
+              <span style="font-size:14px;color:#8C9AA6;white-space:nowrap">On a glacier button, ink flips to frost-950</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex:1 1 240px;min-width:0">
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6;padding-bottom:12px">Determinate, printing a bill</div>
+          <div style="height:6px;border-radius:6px;background:#232B32;overflow:hidden">
+            <div style="width:64%;height:100%;background:#6FC6D6"></div>
+          </div>
+          <div style="padding-top:8px;display:flex;justify-content:space-between;gap:8px">
+            <span style="font-size:12px;color:#B3BFC9;white-space:nowrap">Printing Table 7</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:#8C9AA6">2 of 3</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:32px"></div>
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Empty states</div>
+      <div style="height:4px"></div>
+      <div style="font-size:14px;line-height:20px;color:#8C9AA6">Name what is not there, then offer the one action that changes it. No illustration.</div>
+      <div style="height:16px"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+        <sc-for list="{{ empties }}" as="e" hint-placeholder-count="4">
+          <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;padding:24px;min-height:160px;display:flex;flex-direction:column;justify-content:center;gap:8px">
+            <div style="font-size:16px;line-height:22px;letter-spacing:-.01em;color:#FBFCFD;text-wrap:pretty">{{ e.title }}</div>
+            <div style="font-size:13px;line-height:19px;color:#B3BFC9;text-wrap:pretty">{{ e.body }}</div>
+            <sc-if value="{{ e.action }}">
+              <div style="padding-top:8px">
+                <div style="height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:6px;background:#232B32;font-size:14px;color:#D4DCE3;white-space:nowrap">{{ e.action }}</div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="height:32px"></div>
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Rows and tiles</div>
+      <div style="height:16px"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;align-items:start">
+        <div>
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6;padding-bottom:8px">Ticket row, four states</div>
+          <sc-for list="{{ rows }}" as="l" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 0;border-bottom:1px solid #232B32">
+              <div style="flex:0 0 40px;width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ l.seatFill }};border:{{ l.seatBorder }};font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:{{ l.seatInk }}">{{ l.seat }}</div>
+              <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:#8C9AA6">{{ l.q }}</span>
+              <div style="flex:1 1 auto;min-width:0">
+                <div style="font-size:14px;line-height:19px;color:{{ l.ink }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.name }}</div>
+                <div style="display:flex;align-items:center;gap:6px;height:16px">
+                  <sc-if value="{{ l.dot }}">
+                    <div style="width:5px;height:5px;border-radius:50%;background:{{ l.dot }};flex:0 0 5px"></div>
+                  </sc-if>
+                  <span style="font-size:11px;line-height:15px;color:{{ l.noteInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.note }}</span>
+                </div>
+              </div>
+              <div style="flex:0 0 auto;display:flex;align-items:baseline;gap:4px">
+                <span style="font-size:10px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px;color:{{ l.ink }}">{{ l.price }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div>
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6;padding-bottom:8px">Product tile, four states</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px">
+            <sc-for list="{{ tiles }}" as="p" hint-placeholder-count="4">
+              <div style="border-radius:10px;background:#151B20;border:1px solid {{ p.stroke }};overflow:hidden;display:flex;flex-direction:column">
+                <div style="position:relative;height:88px;background:#232B32;overflow:hidden">
+                  <div style="width:100%;height:100%;background-image:url({{ p.img }});background-size:cover;background-position:center;filter:{{ p.filter }};opacity:{{ p.imgOp }}"></div>
+                  <div style="position:absolute;left:0;right:0;bottom:0;height:48px;background:linear-gradient(to top,#0B1015 4%,rgba(11,16,21,.62) 46%,rgba(11,16,21,0))"></div>
+                  <div style="position:absolute;left:12px;bottom:9px;right:12px;font-family:'JetBrains Mono',monospace;font-size:10px;line-height:13px;letter-spacing:.1em;text-transform:uppercase;color:{{ p.catInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.cat }}</div>
+                  <sc-if value="{{ p.qty }}">
+                    <div style="position:absolute;top:8px;right:8px;min-width:22px;height:22px;border-radius:6px;padding:0 6px;background:#6FC6D6;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:12px;color:#0B1015">{{ p.qty }}</div>
+                  </sc-if>
+                  <sc-if value="{{ p.flag }}">
+                    <div style="position:absolute;top:8px;left:8px;height:20px;border-radius:6px;padding:0 8px;display:flex;align-items:center;gap:6px;background:#0B1015">
+                      <div style="width:5px;height:5px;border-radius:50%;background:{{ p.flagInk }}"></div>
+                      <span style="font-size:10px;line-height:13px;letter-spacing:.04em;color:{{ p.flagInk }};white-space:nowrap">{{ p.flag }}</span>
+                    </div>
+                  </sc-if>
+                </div>
+                <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;opacity:{{ p.textOp }}">
+                  <div style="font-size:14px;line-height:19px;color:#FBFCFD;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.name }}</div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:4px">
+                      <span style="font-size:10px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+                      <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;line-height:20px;color:#D4DCE3">{{ p.price }}</span>
+                    </div>
+                    <div style="flex:0 0 32px;width:32px;height:32px;border-radius:6px;background:{{ p.addFill }};display:flex;align-items:center;justify-content:center">
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2.2v9.6M2.2 7h9.6" stroke="{{ p.addInk }}" stroke-width="1.6" stroke-linecap="round"></path></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:32px"></div>
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Sheets and the one reason dialog</div>
+      <div style="height:4px"></div>
+      <div style="font-size:14px;line-height:20px;color:#8C9AA6">Radius 16, rising to the base layer, which stays visible. One shape for every void, discount, write-off and hold.</div>
+      <div style="height:16px"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start">
+
+        <div style="border-radius:16px;background:#232B32;border:1px solid #38424B;padding:20px">
+          <div style="display:flex;align-items:center;gap:12px;min-height:40px">
+            <div style="flex:0 0 22px;width:22px;height:22px;border-radius:6px;background:#E0A35A;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#0B1015">2</div>
+            <span style="flex:1 1 auto;min-width:0;font-size:15px;color:#FBFCFD;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">1 × Gilbeys tot</span>
+            <div style="flex:0 0 auto;display:flex;align-items:baseline;gap:4px">
+              <span style="font-size:10px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px;color:#B3BFC9">500.00</span>
+            </div>
+          </div>
+          <div style="height:1px;background:#38424B;margin:12px 0 4px"></div>
+          <div style="height:48px;display:flex;align-items:center;font-size:15px;color:#FBFCFD">Move to another seat</div>
+          <div style="height:48px;display:flex;align-items:center;font-size:15px;color:#FBFCFD">Add a note</div>
+          <div style="height:16px"></div>
+          <div style="height:48px;display:flex;align-items:center;font-size:15px;color:#E08585">Void the line</div>
+        </div>
+
+        <div style="border-radius:16px;background:#232B32;border:1px solid #38424B;padding:20px">
+          <div style="font-size:18px;line-height:24px;letter-spacing:-.015em;color:#FBFCFD;text-wrap:pretty">Void 1 × Gilbeys tot from Seat 2?</div>
+          <div style="height:6px"></div>
+          <div style="font-size:13px;line-height:19px;color:#B3BFC9;text-wrap:pretty">This removes KES 500.00 from tab 1024. It cannot be undone.</div>
+          <div style="height:16px"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div style="height:36px;border-radius:6px;padding:0 12px;display:flex;align-items:center;background:#38424B;font-size:13px;color:#D4DCE3;white-space:nowrap">Wrong item</div>
+            <div style="height:36px;border-radius:6px;padding:0 12px;display:flex;align-items:center;background:#6FC6D6;font-size:13px;color:#0B1015;white-space:nowrap">Changed mind</div>
+            <div style="height:36px;border-radius:6px;padding:0 12px;display:flex;align-items:center;background:#38424B;font-size:13px;color:#D4DCE3;white-space:nowrap">Ran out</div>
+          </div>
+          <div style="height:16px"></div>
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6">Reason, at least ten characters</div>
+          <div style="min-height:48px;display:flex;align-items:center;border-bottom:1px solid #6B7884;font-size:15px;line-height:22px;color:#FBFCFD;padding:8px 0;text-wrap:pretty">Customer changed mind, wanted a Tusker</div>
+          <div style="display:flex;justify-content:flex-end;padding-top:6px">
+            <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:#8C9AA6">38</span>
+          </div>
+          <div style="height:12px"></div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="height:48px;display:inline-flex;align-items:center;padding:0 16px;border-radius:6px;font-size:15px;color:#FBFCFD;outline:2px solid #3FAAC0;outline-offset:2px;white-space:nowrap">Keep it</div>
+            <div style="flex:1 1 auto;min-width:8px"></div>
+            <div style="height:48px;display:inline-flex;align-items:center;padding:0 20px;border-radius:6px;background:#E08585;font-size:15px;font-weight:500;color:#0B1015;white-space:nowrap">Void the line</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  renderVals() {
+    const SEAT = ['#6FC6D6','#E0A35A','#9DC271','#B79BE0','#E58BA4','#7FA8E0','#D9C46B','#6FD2B4'];
+    const btn = (label, o) => Object.assign({
+      label, h:'48px', pad:'0 20px', size:'15px', weight:'500',
+      fill:'#6FC6D6', border:'none', ink:'#0B1015', op:1, ring:'none', press:'none', spinner:false,
+    }, o || {});
+
+    const buttonRows = [
+      { label:'Primary', items:[
+        btn('Fire order · 3 lines'),
+        btn('Fire order · 3 lines', { fill:'#A8DCE6' }),
+        btn('Sending to the bar', { spinner:true }),
+        btn('Fire order · 3 lines', { op:0.4 }),
+      ]},
+      { label:'Secondary', items:[
+        btn('Print bill', { fill:'#232B32', ink:'#B3BFC9', weight:'400' }),
+        btn('Print bill', { fill:'#38424B', ink:'#D4DCE3', weight:'400' }),
+        btn('Print bill', { fill:'#232B32', ink:'#B3BFC9', weight:'400', ring:'2px solid #3FAAC0' }),
+        btn('Print bill', { fill:'#232B32', ink:'#B3BFC9', weight:'400', op:0.4 }),
+      ]},
+      { label:'Quiet', items:[
+        btn('Keep it', { fill:'transparent', ink:'#B3BFC9', weight:'400' }),
+        btn('Keep it', { fill:'#232B32', ink:'#FBFCFD', weight:'400' }),
+        btn('Add a note', { fill:'transparent', ink:'#6FC6D6', weight:'400' }),
+      ]},
+      { label:'Destructive', items:[
+        btn('Void the line', { fill:'#E08585' }),
+        btn('Void the line', { fill:'transparent', ink:'#E08585', weight:'400' }),
+      ]},
+      { label:'Sizes', items:[
+        btn('Settle Seat 3 · KES 650', { h:'56px', pad:'0 24px', size:'16px' }),
+        btn('Fire order', { h:'48px' }),
+        btn('Move a line', { h:'44px', pad:'0 16px', size:'14px', fill:'#232B32', ink:'#B3BFC9', weight:'400' }),
+        btn('All', { h:'32px', pad:'0 12px', size:'13px', fill:'#232B32', ink:'#B3BFC9', weight:'400' }),
+      ]},
+    ];
+
+    const chip = (label, o) => Object.assign({
+      label, h:'32px', pad:'0 12px', gap:'8px', family:"'Geist',sans-serif", weight:'400',
+      size:'13px', ls:'0', fill:'#232B32', border:'none', ink:'#B3BFC9', op:1, ring:'none',
+      dot:false, dotInk:'#6FC6D6', sub:'', subInk:'#8C9AA6',
+    }, o || {});
+
+    const seatChip = (n, o) => Object.assign({
+      label:String(n), h:'40px', pad:'0', gap:'0', family:"'JetBrains Mono',monospace",
+      weight:'500', size:'15px', ls:'0', fill:SEAT[(n - 1) % 8], border:'none',
+      ink:'#0B1015', op:1, ring:'none', dot:false, sub:'', subInk:'#8C9AA6',
+    }, { pad:'0 13px' }, o || {});
+
+    const chipRows = [
+      { label:'Filter', items:[
+        chip('All', { fill:'#6FC6D6', ink:'#0B1015', sub:'28', subInk:'#17545F' }),
+        chip('Beer', { fill:'transparent', sub:'8' }),
+        chip('Spirits', { fill:'transparent', sub:'7' }),
+        chip('Wine', { fill:'transparent', sub:'3', op:0.4 }),
+      ]},
+      { label:'Seat, 40px tap', items:[
+        seatChip(1), seatChip(2, { ring:'2px solid #FBFCFD' }), seatChip(3, { op:0.4 }),
+        chip('··', { h:'40px', pad:'0 13px', family:"'JetBrains Mono',monospace", weight:'500', size:'15px', fill:'transparent', border:'1px dashed #B3BFC9', ink:'#B3BFC9' }),
+        chip('+', { h:'40px', pad:'0 13px', family:"'JetBrains Mono',monospace", weight:'500', size:'16px', fill:'transparent', border:'1px solid #38424B', ink:'#B3BFC9' }),
+      ]},
+      { label:'Seat, 22px dense', items:[
+        chip('1', { h:'22px', pad:'0 6px', family:"'JetBrains Mono',monospace", weight:'500', size:'11px', fill:'#6FC6D6', ink:'#0B1015' }),
+        chip('2', { h:'22px', pad:'0 6px', family:"'JetBrains Mono',monospace", weight:'500', size:'11px', fill:'#E0A35A', ink:'#0B1015' }),
+        chip('3', { h:'22px', pad:'0 6px', family:"'JetBrains Mono',monospace", weight:'500', size:'11px', fill:'#9DC271', ink:'#0B1015' }),
+        chip('··', { h:'22px', pad:'0 6px', family:"'JetBrains Mono',monospace", weight:'500', size:'11px', fill:'transparent', border:'1px dashed #B3BFC9', ink:'#B3BFC9' }),
+      ]},
+      { label:'State', items:[
+        chip('Poured 21:12', { h:'22px', pad:'0 8px', gap:'6px', size:'11px', fill:'transparent', ink:'#63B98A', dot:true, dotInk:'#63B98A' }),
+        chip('Not yet sent', { h:'22px', pad:'0 8px', gap:'6px', size:'11px', fill:'transparent', ink:'#6FC6D6', dot:true, dotInk:'#6FC6D6' }),
+        chip('7 left', { h:'22px', pad:'0 8px', gap:'6px', size:'11px', fill:'transparent', ink:'#E0A35A', dot:true, dotInk:'#E0A35A' }),
+        chip('Ran out', { h:'22px', pad:'0 8px', gap:'6px', size:'11px', fill:'transparent', ink:'#E08585', dot:true, dotInk:'#E08585' }),
+        chip('On hold', { h:'22px', pad:'0 8px', gap:'6px', size:'11px', fill:'#0B1015', ink:'#E0A35A', dot:true, dotInk:'#E0A35A' }),
+      ]},
+    ];
+
+    const fields = [
+      { label:'Seat label', value:'Kofi', rule:'#6B7884', ink:'#FBFCFD', size:'15px', family:"'Geist',sans-serif", help:'Only you and the bar see this.', helpInk:'#8C9AA6' },
+      { label:'Tab name, optional', value:'Birthday table', rule:'#38424B', ink:'#FBFCFD', size:'15px', family:"'Geist',sans-serif", help:'', helpInk:'#8C9AA6' },
+      { label:'Search', value:'gil', rule:'#6B7884', ink:'#FBFCFD', size:'15px', family:"'Geist',sans-serif", icon:true, suffix:'⌘K', help:'3 items match', helpInk:'#8C9AA6' },
+      { label:'Amount tendered', value:'700.00', rule:'#6B7884', ink:'#FBFCFD', size:'24px', family:"'JetBrains Mono',monospace", help:'', helpInk:'#8C9AA6' },
+      { label:'Empty field', value:'Cap, birthday, boss', rule:'#38424B', ink:'#6B7884', size:'15px', family:"'Geist',sans-serif", help:'', helpInk:'#8C9AA6' },
+      { label:'Needs attention', value:'Too short', rule:'#E08585', ink:'#FBFCFD', size:'15px', family:"'Geist',sans-serif", help:'A reason needs at least ten characters.', helpInk:'#E08585' },
+    ];
+
+    const toasts = [
+      { dot:'#63B98A', title:'Order sent to the bar · 3 lines', body:'Table 7, seats 2 and 3.', action:'' },
+      { dot:'#6FC6D6', title:'Held until the signal returns · 4 orders', body:'Nothing is lost. They send themselves.', action:'' },
+      { dot:'#E0A35A', title:'Guinness is running low · 7 left', body:'', action:'Tell the bar' },
+      { dot:'#E08585', title:'Tusker Lite ran out', body:'The Seat 4 line needs a swap or a void.', action:'Open it' },
+      { dot:'#63B98A', title:'Seat 2 settled · KES 500', body:'Cash, taken by Grace at 21:48.', action:'Undo' },
+    ];
+
+    const empties = [
+      { title:'No tabs open', body:'Pick a table to start one. Seats are created with the tab.', action:'Open tab' },
+      { title:'Nothing on this ticket yet', body:'Tap a product to add it to Seat 1.', action:'' },
+      { title:'No orders waiting', body:'Everything fired tonight has been poured.', action:'' },
+      { title:'Nothing matches gilbys', body:'Check the spelling, or look under Spirits.', action:'Clear the search' },
+    ];
+
+    const row = (seat, q, name, price, o) => {
+      o = o || {};
+      return {
+        seat: seat === 'shared' ? '··' : String(seat),
+        seatFill: seat === 'shared' ? 'transparent' : SEAT[(seat - 1) % 8],
+        seatBorder: seat === 'shared' ? '1px dashed #B3BFC9' : 'none',
+        seatInk: seat === 'shared' ? '#B3BFC9' : '#0B1015',
+        q: q + ' ×', name, price,
+        ink: o.dim ? '#B3BFC9' : '#FBFCFD',
+        dot: o.dot || '', note: o.note || '', noteInk: o.noteInk || '#8C9AA6',
+      };
+    };
+    const rows = [
+      row(1, 2, 'Tusker 500ml', '700.00', { dim:true, dot:'#63B98A', note:'Poured 21:12', noteInk:'#63B98A' }),
+      row(2, 1, 'Gilbeys tot', '500.00', { note:'No ice' }),
+      row(3, 1, 'Smirnoff and Coke', '650.00', { dot:'#6FC6D6', note:'Not yet sent', noteInk:'#6FC6D6' }),
+      row('shared', 1, 'Nyama choma', '900.00', { dot:'#E08585', note:'Ran out', noteInk:'#E08585' }),
+    ];
+
+    const P = id => 'https://images.unsplash.com/photo-' + id + '?auto=format&fit=crop&w=320&h=200&q=80';
+    const tile = (name, cat, price, img, o) => {
+      o = o || {};
+      const dim = !!o.dim;
+      return {
+        name, cat, price, img: P(img),
+        catInk: cat === 'Beer' ? '#D9C46B' : cat === 'Spirits' ? '#6FC6D6' : '#6FD2B4',
+        stroke: o.on ? '#2A8CA3' : '#232B32',
+        filter: dim ? 'grayscale(1) brightness(.8)' : 'saturate(.72) contrast(1.07) brightness(.94)',
+        imgOp: dim ? 0.3 : 1, textOp: dim ? 0.5 : 1,
+        qty: o.qty || '', flag: o.flag || '',
+        flagInk: o.flag === 'Finished' ? '#E08585' : '#E0A35A',
+        addFill: dim ? '#232B32' : '#17545F',
+        addInk: dim ? '#4E5A65' : '#A8DCE6',
+      };
+    };
+    const tiles = [
+      tile('Tusker 500ml', 'Beer', '350.00', '1608270586620-248524c67de9'),
+      tile('Gilbeys tot', 'Spirits', '500.00', '1608885898957-a559228e8749', { on:true, qty:'2' }),
+      tile('Guinness 500ml', 'Beer', '400.00', '1571613316887-6f8d5cbf7ef7', { flag:'7 left' }),
+      tile('Jameson tot', 'Spirits', '600.00', '1527281400683-1aae777175f8', { dim:true, flag:'Finished' }),
+    ];
+
+    return {
+      buttonRows, chipRows, fields, toasts, empties, rows, tiles,
+      four: [{ delay:'0ms', w:'72%' }, { delay:'120ms', w:'84%' }, { delay:'240ms', w:'64%' }, { delay:'360ms', w:'78%' }],
+      five: [1,2,3,4,5].map(() => ({})),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

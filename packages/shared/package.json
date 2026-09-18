@@ -1,0 +1,25 @@
+{
+  "name": "@bliss/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./money": "./src/money/index.ts",
+    "./id": "./src/id/uuidv7.ts",
+    "./time": "./src/time/index.ts",
+    "./availability": "./src/availability/evaluate.ts",
+    "./pricing": "./src/pricing/index.ts",
+    "./seats": "./src/seats/seats.ts",
+    "./reason": "./src/reason/reason.ts",
+    "./format": "./src/format/index.ts",
+    "./domain": "./src/domain/index.ts",
+    "./sync": "./src/sync/payloads.ts",
+    "./identity": "./src/identity/surfaces.ts",
+    "./trade": "./src/trade/places.ts",
+    "./settlement": "./src/settlement/settle.ts"
+  },
+  "peerDependencies": {
+    "zod": "4.6.5"
+  }
+}

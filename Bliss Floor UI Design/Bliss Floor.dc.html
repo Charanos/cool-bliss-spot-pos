@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#06090B}
+  a{color:#6FC6D6;text-decoration:none}
+  a:hover{color:#A8DCE6}
+</style>
+</helmet>
+
+<div style="background:#06090B;color:#B3BFC9;font-family:'Geist','Helvetica Neue',Helvetica,sans-serif;font-weight:400;font-size:15px;line-height:22px;padding:72px;display:flex;flex-direction:column;gap:72px;width:max-content;-webkit-font-smoothing:antialiased">
+
+  <div style="width:1672px;display:flex;align-items:flex-end;gap:40px">
+    <div style="flex:1 1 auto">
+      <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884">Cool Bliss Spot · ANDISHI/BLISS/2026/001</div>
+      <div style="height:12px"></div>
+      <div style="font-size:40px;line-height:44px;letter-spacing:-.025em;font-weight:500;color:#FBFCFD">Bliss, the Floor surface</div>
+      <div style="height:12px"></div>
+      <div style="font-size:17px;line-height:24px;color:#B3BFC9;max-width:720px">Every drink belongs to a person, not just a table. Fifteen screens and two specification sheets for the waiter surface, drawn to the one pane rule.</div>
+    </div>
+    <div style="flex:0 0 360px">
+      <sc-for list="{{ facts }}" as="f" hint-placeholder-count="5">
+        <div style="display:flex;gap:16px;padding:8px 0;border-top:1px solid #151B20">
+          <span style="flex:0 0 120px;font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884;padding-top:3px">{{ f.k }}</span>
+          <span style="flex:1 1 auto;font-size:13px;line-height:19px;color:#B3BFC9">{{ f.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-if value="{{ showTokens }}" hint-placeholder-val="{{ true }}">
+    <div style="width:1672px">
+      <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884">Tokens in use</div>
+      <div style="height:16px"></div>
+      <div style="display:flex;gap:56px;flex-wrap:wrap">
+        <sc-for list="{{ ramps }}" as="r" hint-placeholder-count="4">
+          <div>
+            <div style="font-size:13px;line-height:19px;color:#FBFCFD">{{ r.name }}</div>
+            <div style="height:8px"></div>
+            <div style="display:flex;gap:4px">
+              <sc-for list="{{ r.swatches }}" as="s" hint-placeholder-count="8">
+                <div style="width:44px">
+                  <div style="height:44px;border-radius:6px;background:{{ s.hex }};border:{{ s.border }}"></div>
+                  <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;line-height:13px;color:#6B7884;text-align:center">{{ s.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="width:1672px;height:1px;background:#151B20"></div>
+
+  <div>
+    <div style="font-size:28px;line-height:34px;letter-spacing:-.02em;font-weight:500;color:#FBFCFD">Ordering</div>
+    <div style="height:8px"></div>
+    <div style="font-size:15px;color:#8C9AA6">Three taps to a fired order: table, tile, fire. Four if the seat changes.</div>
+  </div>
+
+  <div style="display:flex;gap:32px">
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F1</span>
+        <span style="font-size:17px;color:#FBFCFD">Ordering, default</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#6B7884">1280 × 800 · dark</span>
+      </div>
+      <div style="outline:1px solid #232B32;width:1280px;height:800px">
+        <dc-import name="FloorScreen" overlay="none" hint-size="1280px,800px"></dc-import>
+      </div>
+    </div>
+    <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:0 0 360px">
+        <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884;padding-bottom:12px">Notes</div>
+        <sc-for list="{{ notesF1 }}" as="n" hint-placeholder-count="7">
+          <div style="padding:10px 0;border-top:1px solid #151B20;font-size:13px;line-height:19px;color:#B3BFC9">{{ n }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="display:flex;gap:32px">
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F2</span>
+        <span style="font-size:17px;color:#FBFCFD">Ordering, offline</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#6B7884">same screen, no connection</span>
+      </div>
+      <div style="outline:1px solid #232B32;width:1280px;height:800px">
+        <dc-import name="FloorScreen" overlay="none" offline="{{ true }}" hint-size="1280px,800px"></dc-import>
+      </div>
+    </div>
+    <sc-if value="{{ showNotes }}">
+      <div style="flex:0 0 360px">
+        <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884;padding-bottom:12px">Notes</div>
+        <sc-for list="{{ notesF2 }}" as="n" hint-placeholder-count="5">
+          <div style="padding:10px 0;border-top:1px solid #151B20;font-size:13px;line-height:19px;color:#B3BFC9">{{ n }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="width:1672px;height:1px;background:#151B20"></div>
+
+  <div>
+    <div style="font-size:28px;line-height:34px;letter-spacing:-.02em;font-weight:500;color:#FBFCFD">Tabs</div>
+    <div style="height:8px"></div>
+    <div style="font-size:15px;color:#8C9AA6">The view a waiter starts a shift on, and the one sheet that opens a tab.</div>
+  </div>
+
+  <div style="display:flex;gap:32px">
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F3</span>
+        <span style="font-size:17px;color:#FBFCFD">Tab list</span>
+      </div>
+      <div style="outline:1px solid #232B32;width:1280px;height:800px">
+        <dc-import name="FloorTabs" overlay="none" hint-size="1280px,800px"></dc-import>
+      </div>
+    </div>
+    <sc-if value="{{ showNotes }}">
+      <div style="flex:0 0 360px">
+        <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884;padding-bottom:12px">Notes</div>
+        <sc-for list="{{ notesF3 }}" as="n" hint-placeholder-count="5">
+          <div style="padding:10px 0;border-top:1px solid #151B20;font-size:13px;line-height:19px;color:#B3BFC9">{{ n }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="display:flex;gap:32px">
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F4</span>
+        <span style="font-size:17px;color:#FBFCFD">Open tab, four guests</span>
+      </div>
+      <div style="outline:1px solid #232B32;width:1280px;height:800px">
+        <dc-import name="FloorTabs" overlay="open-tab" hint-size="1280px,800px"></dc-import>
+      </div>
+      <div style="height:40px"></div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F5</span>
+        <span style="font-size:17px;color:#FBFCFD">Open tab, one guest</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#6B7884">the feature disappears</span>
+      </div>
+      <div style="outline:1px solid #232B32;width:1280px;height:800px">
+        <dc-import name="FloorTabs" overlay="open-tab-one" hint-size="1280px,800px"></dc-import>
+      </div>
+      <div style="height:40px"></div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F6</span>
+        <span style="font-size:17px;color:#FBFCFD">No tabs open</span>
+      </div>
+      <div style="outline:1px solid #232B32;width:1280px;height:800px">
+        <dc-import name="FloorTabs" overlay="empty" hint-size="1280px,800px"></dc-import>
+      </div>
+    </div>
+    <sc-if value="{{ showNotes }}">
+      <div style="flex:0 0 360px">
+        <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884;padding-bottom:12px">Notes</div>
+        <sc-for list="{{ notesF4 }}" as="n" hint-placeholder-count="6">
+          <div style="padding:10px 0;border-top:1px solid #151B20;font-size:13px;line-height:19px;color:#B3BFC9">{{ n }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="width:1672px;height:1px;background:#151B20"></div>
+
+  <div>
+    <div style="font-size:28px;line-height:34px;letter-spacing:-.02em;font-weight:500;color:#FBFCFD">The seat selector</div>
+    <div style="height:8px"></div>
+    <div style="font-size:15px;color:#8C9AA6">The most important control in the product, drawn at rail width in every state it has.</div>
+  </div>
+
+  <div style="display:flex;gap:32px">
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F7</span>
+        <span style="font-size:17px;color:#FBFCFD">Seat selector states</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#6B7884">340 px rail width, actual size</span>
+      </div>
+      <div style="width:1280px;background:#0B1015;outline:1px solid #232B32;padding:32px;display:flex;flex-wrap:wrap;gap:32px">
+        <sc-for list="{{ strips }}" as="st" hint-placeholder-count="7">
+          <div style="width:340px">
+            <div style="display:flex;align-items:baseline;gap:8px;height:19px">
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:12px;color:#6FC6D6">{{ st.no }}</span>
+              <span style="font-size:13px;line-height:19px;color:#8C9AA6">{{ st.caption }}</span>
+            </div>
+            <div style="height:12px"></div>
+            <div style="height:160px;border-top:1px solid #232B32;border-bottom:1px solid #232B32;overflow:hidden">
+              <sc-if value="{{ st.present }}">
+                <div>
+                  <div style="height:56px;background:#232B32;border-bottom:1px solid #38424B;display:flex;align-items:center;gap:8px;padding:0 12px;overflow:hidden">
+                    <div style="display:flex;align-items:center;gap:8px;transform:{{ st.offset }}">
+                      <sc-for list="{{ st.items }}" as="s" hint-placeholder-count="6">
+                        <div style="flex:0 0 40px;width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ s.fill }};border:{{ s.border }};opacity:{{ s.op }};outline:{{ s.ring }};outline-offset:2px">
+                          <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:{{ s.size }};color:{{ s.ink }}">{{ s.glyph }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:8px;padding:6px 12px 0;overflow:hidden">
+                    <div style="display:flex;gap:8px;transform:{{ st.offset }}">
+                      <sc-for list="{{ st.items }}" as="s" hint-placeholder-count="6">
+                        <div style="flex:0 0 40px;width:40px;text-align:center">
+                          <div style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap">{{ s.total }}</div>
+                          <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#B3BFC9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</div>
+                          <div style="font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6;white-space:nowrap">{{ s.micro }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ st.absent }}">
+                <div style="padding:16px 16px 0">
+                  <div style="height:48px;display:flex;align-items:center;gap:8px">
+                    <div style="flex:0 0 10px;display:flex;justify-content:center"><div style="width:6px;height:6px;border-radius:50%;background:#63B98A"></div></div>
+                    <span style="flex:0 0 16px;font-family:'JetBrains Mono',monospace;font-size:15px;color:#8C9AA6;text-align:right">2</span>
+                    <span style="flex:1 1 auto;font-size:15px;color:#8C9AA6">Tusker 500ml</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;color:#8C9AA6">700.00</span>
+                  </div>
+                  <div style="height:48px;display:flex;align-items:center;gap:8px">
+                    <div style="flex:0 0 10px"></div>
+                    <span style="flex:0 0 16px;font-family:'JetBrains Mono',monospace;font-size:15px;color:#8C9AA6;text-align:right">1</span>
+                    <span style="flex:1 1 auto;font-size:15px;color:#FBFCFD">Coke 300ml</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;color:#FBFCFD">120.00</span>
+                    <span style="flex:0 0 10px;font-size:15px;color:#4E5A65;text-align:right">›</span>
+                  </div>
+                  <div style="height:1px;background:#38424B;margin-top:4px"></div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <sc-if value="{{ showNotes }}">
+      <div style="flex:0 0 360px">
+        <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884;padding-bottom:12px">Notes</div>
+        <sc-for list="{{ notesF7 }}" as="n" hint-placeholder-count="6">
+          <div style="padding:10px 0;border-top:1px solid #151B20;font-size:13px;line-height:19px;color:#B3BFC9">{{ n }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="display:flex;gap:32px">
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F8</span>
+        <span style="font-size:17px;color:#FBFCFD">Long press on a seat chip</span>
+      </div>
+      <div style="outline:1px solid #232B32;width:1280px;height:800px">
+        <dc-import name="FloorScreen" overlay="seat-menu" hint-size="1280px,800px"></dc-import>
+      </div>
+      <div style="height:40px"></div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F9</span>
+        <span style="font-size:17px;color:#FBFCFD">Label a seat</span>
+      </div>
+      <div style="outline:1px solid #232B32;width:1280px;height:800px">
+        <dc-import name="FloorScreen" overlay="seat-label" hint-size="1280px,800px"></dc-import>
+      </div>
+    </div>
+    <sc-if value="{{ showNotes }}">
+      <div style="flex:0 0 360px">
+        <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884;padding-bottom:12px">Notes</div>
+        <sc-for list="{{ notesF8 }}" as="n" hint-placeholder-count="5">
+          <div style="padding:10px 0;border-top:1px solid #151B20;font-size:13px;line-height:19px;color:#B3BFC9">{{ n }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="width:1672px;height:1px;background:#151B20"></div>
+
+  <div>
+    <div style="font-size:28px;line-height:34px;letter-spacing:-.02em;font-weight:500;color:#FBFCFD">Moving a line between seats</div>
+    <div style="height:8px"></div>
+    <div style="font-size:15px;color:#8C9AA6">Four frames. The line keeps its identity, its fire time and its price derivation. It is a move, not a void and re-add.</div>
+  </div>
+
+  <div style="display:flex;gap:32px">
+    <div>
+      <sc-for list="{{ moveFrames }}" as="m" hint-placeholder-count="4">
+        <div style="padding-bottom:40px">
+          <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">{{ m.id }}</span>
+            <span style="font-size:17px;color:#FBFCFD">{{ m.title }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#6B7884">{{ m.meta }}</span>
+          </div>
+          <div style="outline:1px solid #232B32;width:1280px;height:800px">
+            <dc-import name="FloorScreen" overlay="{{ m.overlay }}" hint-size="1280px,800px"></dc-import>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ showNotes }}">
+      <div style="flex:0 0 360px">
+        <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884;padding-bottom:12px">Notes</div>
+        <sc-for list="{{ notesMove }}" as="n" hint-placeholder-count="7">
+          <div style="padding:10px 0;border-top:1px solid #151B20;font-size:13px;line-height:19px;color:#B3BFC9">{{ n }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="width:1672px;height:1px;background:#151B20"></div>
+
+  <div>
+    <div style="font-size:28px;line-height:34px;letter-spacing:-.02em;font-weight:500;color:#FBFCFD">Adding with options, and taking a line off</div>
+  </div>
+
+  <div style="display:flex;gap:32px">
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F14</span>
+        <span style="font-size:17px;color:#FBFCFD">Modifier sheet, long press on a tile</span>
+      </div>
+      <div style="outline:1px solid #232B32;width:1280px;height:800px">
+        <dc-import name="FloorScreen" overlay="modifier" hint-size="1280px,800px"></dc-import>
+      </div>
+      <div style="height:40px"></div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F15</span>
+        <span style="font-size:17px;color:#FBFCFD">Void the line, the one reason dialog</span>
+      </div>
+      <div style="outline:1px solid #232B32;width:1280px;height:800px">
+        <dc-import name="FloorScreen" overlay="void" hint-size="1280px,800px"></dc-import>
+      </div>
+    </div>
+    <sc-if value="{{ showNotes }}">
+      <div style="flex:0 0 360px">
+        <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884;padding-bottom:12px">Notes</div>
+        <sc-for list="{{ notesSheets }}" as="n" hint-placeholder-count="6">
+          <div style="padding:10px 0;border-top:1px solid #151B20;font-size:13px;line-height:19px;color:#B3BFC9">{{ n }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="width:1672px;height:1px;background:#151B20"></div>
+
+  <div>
+    <div style="font-size:28px;line-height:34px;letter-spacing:-.02em;font-weight:500;color:#FBFCFD">The seat chip</div>
+    <div style="height:8px"></div>
+    <div style="font-size:15px;color:#8C9AA6">Colour is assigned by seat number modulo 8 and never chosen by a user. The chip always carries its number, so colour never carries meaning alone.</div>
+  </div>
+
+  <div style="display:flex;gap:32px">
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:#6FC6D6">F16</span>
+        <span style="font-size:17px;color:#FBFCFD">Seat chip specification</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#6B7884">dark left, light right</span>
+      </div>
+      <div style="width:1280px;outline:1px solid #232B32;display:flex;flex-wrap:wrap">
+        <div style="width:640px;background:#0B1015;padding:32px">
+          <div style="font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6">Dark theme</div>
+          <div style="height:20px"></div>
+          <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">Eight colours, 40 px tap size</div>
+          <div style="height:8px"></div>
+          <div style="display:flex;gap:8px">
+            <sc-for list="{{ eight }}" as="s" hint-placeholder-count="8">
+              <div style="width:40px;height:40px;border-radius:6px;background:{{ s.fill }};display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#0B1015">{{ s.no }}</div>
+            </sc-for>
+          </div>
+          <div style="height:20px"></div>
+          <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">Same eight, 22 px dense</div>
+          <div style="height:8px"></div>
+          <div style="display:flex;gap:8px">
+            <sc-for list="{{ eight }}" as="s" hint-placeholder-count="8">
+              <div style="width:22px;height:22px;border-radius:6px;background:{{ s.fill }};display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#0B1015">{{ s.no }}</div>
+            </sc-for>
+          </div>
+          <div style="height:24px"></div>
+          <div style="height:1px;background:#232B32"></div>
+          <div style="height:24px"></div>
+          <div style="display:flex;gap:40px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">Shared</div>
+              <div style="height:8px"></div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:40px;height:40px;border-radius:6px;border:1px dashed #B3BFC9;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#B3BFC9">··</div>
+                <div style="width:22px;height:22px;border-radius:6px;border:1px dashed #B3BFC9;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#B3BFC9">··</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">Selected</div>
+              <div style="height:8px"></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:2px">
+                <div style="width:40px;height:40px;border-radius:6px;background:#E0A35A;outline:2px solid #FBFCFD;outline-offset:2px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#0B1015">2</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">Settled</div>
+              <div style="height:8px"></div>
+              <div style="text-align:center;width:40px">
+                <div style="width:40px;height:40px;border-radius:6px;background:#9DC271;opacity:.4;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#0B1015">3</div>
+                <div style="margin-top:6px;font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6">Settled</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#8C9AA6">With a label</div>
+              <div style="height:8px"></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:22px;height:22px;border-radius:6px;background:#E0A35A;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#0B1015">2</div>
+                  <span style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#B3BFC9">Kofi</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:22px;height:22px;border-radius:6px;background:#B79BE0;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#0B1015">4</div>
+                  <span style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#B3BFC9">Birthday table</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="width:640px;background:#FBFCFD;padding:32px">
+          <div style="font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#4E5A65">Light theme</div>
+          <div style="height:20px"></div>
+          <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#4E5A65">Eight colours, 40 px tap size</div>
+          <div style="height:8px"></div>
+          <div style="display:flex;gap:8px">
+            <sc-for list="{{ eight }}" as="s" hint-placeholder-count="8">
+              <div style="width:40px;height:40px;border-radius:6px;background:{{ s.fill }};display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#0B1015">{{ s.no }}</div>
+            </sc-for>
+          </div>
+          <div style="height:20px"></div>
+          <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#4E5A65">Same eight, 22 px dense</div>
+          <div style="height:8px"></div>
+          <div style="display:flex;gap:8px">
+            <sc-for list="{{ eight }}" as="s" hint-placeholder-count="8">
+              <div style="width:22px;height:22px;border-radius:6px;background:{{ s.fill }};display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#0B1015">{{ s.no }}</div>
+            </sc-for>
+          </div>
+          <div style="height:24px"></div>
+          <div style="height:1px;background:#E7ECF0"></div>
+          <div style="height:24px"></div>
+          <div style="display:flex;gap:40px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#4E5A65">Shared</div>
+              <div style="height:8px"></div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:40px;height:40px;border-radius:6px;border:1px dashed #4E5A65;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#4E5A65">··</div>
+                <div style="width:22px;height:22px;border-radius:6px;border:1px dashed #4E5A65;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#4E5A65">··</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#4E5A65">Selected</div>
+              <div style="height:8px"></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:2px">
+                <div style="width:40px;height:40px;border-radius:6px;background:#E0A35A;outline:2px solid #0B1015;outline-offset:2px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#0B1015">2</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#4E5A65">Settled</div>
+              <div style="height:8px"></div>
+              <div style="text-align:center;width:40px">
+                <div style="width:40px;height:40px;border-radius:6px;background:#9DC271;opacity:.4;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#0B1015">3</div>
+                <div style="margin-top:6px;font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#4E5A65">Settled</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#4E5A65">With a label</div>
+              <div style="height:8px"></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:22px;height:22px;border-radius:6px;background:#E0A35A;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#0B1015">2</div>
+                  <span style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#38424B">Kofi</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:22px;height:22px;border-radius:6px;background:#B79BE0;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:#0B1015">4</div>
+                  <span style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#38424B">Birthday table</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="width:1280px;height:1px;background:#232B32"></div>
+
+        <div style="width:1280px;background:#0B1015;padding:40px;display:flex;gap:72px">
+          <div style="flex:0 0 520px">
+            <div style="font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6">Geometry at 4x</div>
+            <div style="height:24px"></div>
+            <div style="display:flex;align-items:center;gap:40px">
+              <div style="width:176px;height:176px;display:flex;align-items:center;justify-content:center">
+                <div style="width:160px;height:160px;border-radius:24px;background:#6FC6D6;outline:8px solid #FBFCFD;outline-offset:8px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:44px;color:#0B1015">1</div>
+              </div>
+              <div style="flex:1 1 auto">
+                <sc-for list="{{ geometry }}" as="g" hint-placeholder-count="5">
+                  <div style="display:flex;gap:12px;padding:6px 0;border-top:1px solid #232B32">
+                    <span style="flex:1 1 auto;font-size:13px;line-height:19px;color:#B3BFC9">{{ g.k }}</span>
+                    <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;line-height:19px;color:#FBFCFD">{{ g.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1 1 auto">
+            <div style="font-size:10px;line-height:13px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:#8C9AA6">Nine variants on a thermal print</div>
+            <div style="height:24px"></div>
+            <div style="background:#FBFCFD;padding:20px;border-radius:10px">
+              <div style="display:flex;gap:8px;filter:grayscale(1)">
+                <sc-for list="{{ eight }}" as="s" hint-placeholder-count="8">
+                  <div style="width:40px;height:40px;border-radius:6px;background:{{ s.fill }};display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#0B1015">{{ s.no }}</div>
+                </sc-for>
+                <div style="width:40px;height:40px;border-radius:6px;border:1px dashed #4E5A65;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#4E5A65">··</div>
+              </div>
+            </div>
+            <div style="height:12px"></div>
+            <div style="font-size:13px;line-height:19px;color:#8C9AA6">In monochrome the eight fills collapse towards each other. The number is what survives, which is why the chip carries it.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ showNotes }}">
+      <div style="flex:0 0 360px">
+        <div style="font-size:12px;line-height:15px;letter-spacing:.02em;font-weight:500;color:#6B7884;padding-bottom:12px">Notes</div>
+        <sc-for list="{{ notesChip }}" as="n" hint-placeholder-count="7">
+          <div style="padding:10px 0;border-top:1px solid #151B20;font-size:13px;line-height:19px;color:#B3BFC9">{{ n }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Board&quot;},&quot;showTokens&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Board&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const SEAT = ['#6FC6D6','#E0A35A','#9DC271','#B79BE0','#E58BA4','#7FA8E0','#D9C46B','#6FD2B4'];
+    const fill = n => SEAT[(n - 1) % 8];
+    const chip = (n, o) => Object.assign({
+      glyph:String(n), size:'15px', fill:fill(n), border:'none', op:1, ink:'#0B1015',
+      ring:'none', total:'', label:'', micro:'',
+    }, o || {});
+    const shared = o => Object.assign({
+      glyph:'··', size:'15px', fill:'transparent', border:'1px dashed #B3BFC9', op:1,
+      ink:'#B3BFC9', ring:'none', total:'', label:'', micro:'',
+    }, o || {});
+    const plus = o => Object.assign({
+      glyph:'+', size:'17px', fill:'#232B32', border:'1px solid #4E5A65', op:1,
+      ink:'#B3BFC9', ring:'none', total:'', label:'', micro:'',
+    }, o || {});
+    const ring = '2px solid #FBFCFD';
+
+    const strips = [
+      { no:'1', caption:'Four seats, none labelled, Seat 1 selected', offset:'none', items:[
+        chip(1, { ring, total:'820' }), chip(2, { total:'500' }), chip(3, { total:'650' }),
+        chip(4, { total:'380' }), shared({ total:'1,050' }), plus(),
+      ]},
+      { no:'2', caption:'Two seats labelled, Seat 2 selected', offset:'none', items:[
+        chip(1, { total:'820' }), chip(2, { ring, total:'500', label:'Kofi' }),
+        chip(3, { total:'650' }), chip(4, { total:'380', label:'Birthday' }),
+        shared({ total:'1,050' }), plus(),
+      ]},
+      { no:'3', caption:'Seven seats, scrolled, clipped at both edges', offset:'translateX(-28px)', items:[
+        chip(1, { total:'820' }), chip(2, { total:'500' }), chip(3, { ring, total:'650' }),
+        chip(4, { total:'380' }), chip(5, { total:'0' }), chip(6, { total:'240' }),
+        chip(7, { total:'0' }), shared({ total:'1,050' }), plus(),
+      ]},
+      { no:'4', caption:'Seat 3 settled, not selectable', offset:'none', items:[
+        chip(1, { total:'820' }), chip(2, { ring, total:'500', label:'Kofi' }),
+        chip(3, { op:0.4, total:'650', micro:'Settled' }), chip(4, { total:'380' }),
+        shared({ total:'1,050' }), plus(),
+      ]},
+      { no:'5', caption:'Shared selected', offset:'none', items:[
+        chip(1, { total:'820' }), chip(2, { total:'500' }), chip(3, { total:'650' }),
+        chip(4, { total:'380' }), shared({ ring, total:'1,050', label:'Shared' }), plus(),
+      ]},
+      { no:'6', caption:'Add seat, pressed', offset:'none', items:[
+        chip(1, { total:'820' }), chip(2, { total:'500' }), chip(3, { total:'650' }),
+        chip(4, { total:'380' }), shared({ total:'1,050' }),
+        plus({ fill:'#4E5A65', ink:'#FBFCFD', micro:'Pressed' }),
+      ]},
+      { no:'7', caption:'One seat tab, the strip is absent', offset:'none', absent:true },
+    ].map(s => ({ ...s, present: !s.absent, absent: !!s.absent }));
+
+    const swatch = (hex, label, light) => ({ hex, label, border: light ? '1px solid #232B32' : 'none' });
+
+    return {
+      showNotes: this.props.showNotes ?? true,
+      showTokens: this.props.showTokens ?? true,
+      facts: [
+        { k:'Surface', v:'Floor, the waiter surface' },
+        { k:'Device', v:'10 inch Android tablet, 1280 × 800 landscape' },
+        { k:'Theme', v:'Dark only. The room is dim.' },
+        { k:'Motion', v:'140 ms ceiling, ease out cubic-bezier(.22,1,.36,1)' },
+        { k:'Drawn', v:'16 Sep 2026, against design system v1.0' },
+      ],
+      ramps: [
+        { name:'Frost', swatches:[
+          swatch('#FBFCFD','0', true), swatch('#E7ECF0','100', true), swatch('#B3BFC9','300'),
+          swatch('#8C9AA6','400'), swatch('#4E5A65','600'), swatch('#38424B','700'),
+          swatch('#232B32','800'), swatch('#0B1015','950', true),
+        ]},
+        { name:'Glacier and ember', swatches:[
+          swatch('#A8DCE6','g200'), swatch('#6FC6D6','g300'), swatch('#3FAAC0','g400'),
+          swatch('#1F6E82','g600'), swatch('#E9BE86','e300'), swatch('#E0A35A','e400'),
+        ]},
+        { name:'Signals, dark', swatches:[
+          swatch('#63B98A','poured'), swatch('#E0A35A','low'), swatch('#E08585','stop'), swatch('#6FC6D6','info'),
+        ]},
+        { name:'Seats, by seat_no mod 8', swatches: SEAT.map((h, i) => swatch(h, String(i + 1))) },
+      ],
+      notesF1: [
+        'Three columns on one pane. The 1 px verticals are the only grouping device between them: no column has a background of its own.',
+        'Tiles are the single raised surface, frost-800 with a 1 px frost-700 hairline. Inside a tile nothing else carries a background, so the 3 px category edge is a bar, not a container.',
+        'Availability reads without colour: Guinness carries a remaining count, Gilbeys double adds the corner tick, Jameson and Hunters Choice drop to 40 per cent with a diagonal hairline and a worded chip.',
+        'Seat 2 is selected, ringed 2 px frost-0 at 2 px offset. Its label sits under the total, never inside the chip.',
+        'Seat 1 reads as poured: reduced contrast, a Poured dot, no chevron, no longer editable. Seat 3 carries an Info dot and the base layer states 1 not yet sent.',
+        'Ticket lines are 48 px so a swipe target clears the Floor minimum, and every swipe action also exists in the long press sheet.',
+        'The base layer never scrolls and nothing ever covers it. Tab total is the only 24 px figure on the screen; Fire order is the only filled glacier control.',
+      ],
+      notesF2: [
+        'Offline is a normal operating mode here, so it is stated in the base layer and never as a red banner, a toast or a modal.',
+        'Connection chip reads Offline. 4 orders held. in Info, with the dot plus the sentence, so the state survives greyscale.',
+        'Four lines carry Info dots. Nothing is blocked: the tap still adds the line locally and the network stays out of the interaction path.',
+        'Tusker Lite ran out while the tablet was offline. The line keeps its seat chip, takes a Stop dot and the words Ran out, and the void action arrives prefilled at the counter.',
+        'Prices, totals and the Fire order action stay live. Being offline changes what is said, not what can be done.',
+      ],
+      notesF3: [
+        'Tab cards are 240 × 132 at radius 10, the one raised surface. Seat chips sit directly on the card.',
+        'Table 11 has one seat and therefore no chips at all. The feature disappears when it is not useful.',
+        'Table 4 shows a settled seat at 40 per cent with the state named in words beside the label.',
+        'Table 9 carries an Info dot and a count rather than a spinner or a banner.',
+        'Table 12 is free: a dashed hairline, no fill, no figure. An available table is not an empty card with zeros in it.',
+      ],
+      notesF4: [
+        'The sheet rises to the base layer and stops there, so the waiter, the shift clock and the connection state stay visible while a tab is opened.',
+        'Guest count is the only 40 px figure on the sheet. The seat chips that will be created preview live beneath it, which is how the seat model gets taught without a tour.',
+        'At one guest the preview shows a single chip and states plainly that seats will not be shown, so nobody hunts for a strip that is deliberately absent.',
+        'Actions are Keep it and Open tab · 4 seats. No OK, no Cancel, and the action carries its count.',
+        'F6 is the healthy empty state: nothing has happened yet, so it offers the one action that starts a shift.',
+        'Zones are chips here rather than a rail, because the tab list uses the full width.',
+      ],
+      notesF7: [
+        'Strip is 56 px of frost-800 with 40 px chips at 8 px gaps. Totals and labels sit below it on the page, so the strip stays a single band and not a box containing boxes.',
+        'Order is fixed: seats ascending, then Shared, then add. A waiter learns one position per function.',
+        'Selection is a 2 px frost-0 ring at 2 px offset. Never a size change, never a glow.',
+        'Above six seats the strip scrolls with native momentum and the clipped chips at both edges are the affordance. No gradient mask.',
+        'A settled seat drops to 40 per cent and the word settled appears beneath. It is not selectable and colour alone never says so.',
+        'State 7 is the design decision: on a one seat tab the whole strip is absent, not disabled, and the ticket rail begins at the top of the column.',
+      ],
+      notesF8: [
+        'Long press on a chip gives the three things a seat can have done to it. Sheet is frost-800 at radius 16, one level of depth, no nested containers.',
+        'Settle this seat carries its amount, because the cashier and the waiter say the same sentence out loud.',
+        'Remove this seat is the destructive action: last, in Stop, and 16 px clear of anything else. A seat with lines on it cannot be removed until they are moved or voided.',
+        'Labelling uses an underlined field rather than a filled input, so no input box sits inside the sheet surface.',
+        'Helper text says who can see the label. Actions are Keep it and Save label.',
+      ],
+      moveFrames: [
+        { id:'F10', title:'Line long pressed', meta:'no menu yet', overlay:'lifted' },
+        { id:'F11', title:'Line actions', overlay:'actions', meta:'sheet stops at the base layer' },
+        { id:'F12', title:'Pick the seat', overlay:'move', meta:'no confirmation step after this' },
+        { id:'F13', title:'After the move', overlay:'moved', meta:'Seat 2 empty, Seat 3 holds the line' },
+      ],
+      notesMove: [
+        'F10: the row lifts 2 px and takes a 1 px glacier-400 outline. That is the whole affordance. No menu, no scrim, no colour change to the text.',
+        'F11: the sheet rises from the bottom and stops at the base layer, which stays fully visible. The line and its price head the sheet, so the object being acted on is never hidden.',
+        'Void the line sits last, in Stop, 16 px clear of the other two. Destructive never sits within 16 px of a primary.',
+        'F12: 56 px chips, the current seat marked with the word current and not selectable, Shared included as a destination.',
+        'Picking a seat commits. There is no confirmation step, because the move is reversible by moving it back.',
+        'F13: the row now sits in the Seat 3 group and Seat 2 reads 0.00. GSAP Flip at 140 ms with ease inOut, the row physically travelling between groups.',
+        'The line keeps its identity, its fire time and its price derivation. It is a move, not a void and re-add.',
+      ],
+      notesSheets: [
+        'F14: long press on a tile opens options instead of adding immediately. A plain tap always adds in under 100 ms.',
+        'Option groups are label plus a row of chips, separated by space and one hairline. Selected is a glacier-300 fill with frost-950 text; unselected is one step of the ramp, never an outline inside an outline.',
+        'The action carries the destination and the money: Add to Seat 2 · KES 500. Changing the serve or the mixer rewrites that figure.',
+        'F15: one reason dialog shape for every void, discount, write-off, hold and adjustment.',
+        'The title names the line and the seat. The body states the amount it removes, the tab it leaves and that it cannot be undone.',
+        'Quick chips populate the field rather than replacing it, and the 10 character minimum is stated before it is enforced. Keep it holds the focus ring; the destructive action is never the default focus.',
+      ],
+      eight: SEAT.map((f, i) => ({ fill:f, no:String(i + 1) })),
+      geometry: [
+        { k:'Tap target, Floor selector', v:'40 px' },
+        { k:'Dense chip, rails and bills', v:'22 px' },
+        { k:'Radius', v:'6 px' },
+        { k:'Number', v:'JetBrains Mono 500, 11 px' },
+        { k:'Selected ring', v:'2 px at 2 px offset' },
+      ],
+      notesChip: [
+        'Colour is assigned by seat_no modulo 8 from a fixed palette. It is never chosen by a user and never random, so Seat 2 is the same object on a tablet, a bar screen and a printed bill.',
+        'Every seat fill carries frost-950 text and clears 4.5:1 against it.',
+        'Shared is a dashed outline with a two dot glyph, never a ninth colour. Shared is a different kind of thing, not another guest.',
+        'On light the Shared outline steps from frost-300 to frost-600 so the boundary clears 3:1 against frost-0. It is the one token substitution on this sheet.',
+        'Selected is a 2 px ring, frost-0 on dark and frost-950 on light, at 2 px offset. Not a size change.',
+        'Settled is 40 per cent opacity with the word settled beneath. Opacity alone would be a colour only signal.',
+        'A label is truncated at 14 characters beside the chip, with the full value in the title attribute. The chip itself never contains anything but its number.',
+      ],
+      strips,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0B1015;overflow:hidden}
+  a{color:#6FC6D6;text-decoration:none}
+  a:hover{color:#A8DCE6}
+  ::-webkit-scrollbar{width:6px;height:0}
+  ::-webkit-scrollbar-thumb{background:#38424B;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<div style="height:100vh;display:grid;grid-template-rows:56px 1fr;background:#0B1015;color:#FBFCFD;font-family:'Geist','Helvetica Neue',Helvetica,sans-serif;font-weight:400;font-size:15px;line-height:22px;letter-spacing:-.006em;-webkit-font-smoothing:antialiased;overflow:hidden">
+
+  
+
+  <div style="display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid #232B32;min-width:0">
+    <div style="display:flex;align-items:center;gap:8px;flex:0 0 auto">
+      <div style="width:22px;height:22px;position:relative">
+        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:5px;background:#1F6E82"></div>
+        <div style="position:absolute;left:8px;top:0;width:14px;height:14px;border-radius:5px;background:#6FC6D6"></div>
+      </div>
+      <span style="font-size:17px;letter-spacing:-.02em;color:#FBFCFD">bliss</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 40px; flex: 0 0 auto; margin-left: 26px">
+      <sc-for list="{{ surfaces }}" as="s" hint-placeholder-count="3">
+        <div style="height: 32px; border-radius: 75px; padding: 0 12px; display: flex; align-items: center; gap: 7px; background: {{ s.fill }}">
+          <div style="width:16px;height:16px">{{ s.icon }}</div>
+          <span style="font-size:13px;color:{{ s.ink }};white-space:nowrap">{{ s.name }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="flex:1 1 auto;min-width:8px"></div>
+
+    
+
+    <div style="flex: 0 1 296px; height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 6px; background: #232B32; min-width: 0; margin-left: -8px; margin-right: -8px">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex:0 0 14px"><circle cx="7" cy="7" r="4.5" stroke="#8C9AA6" stroke-width="1.3"></circle><path d="M10.5 10.5 14 14" stroke="#8C9AA6" stroke-width="1.3" stroke-linecap="round"></path></svg>
+      <span style="flex:1 1 auto;font-size:13px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Search items, seats, tabs</span>
+      <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8C9AA6">⌘K</span>
+    </div><div style="display:flex;align-items:center;gap:16px;flex:0 0 auto">
+      
+      <div style="text-align:right;line-height:15px">
+        <div style="font-family: 'JetBrains Mono',monospace; font-variant-numeric: tabular-nums; font-size: 13px; color: #E7ECF0; margin-left: 23px; margin-right: 23px">21:48</div>
+        <div style="font-size: 10px; color: #8C9AA6; white-space: nowrap; margin-left: 23px; margin-right: 23px">Sun, 6 Sep 2026</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        
+        <div style="width: 32px; height: 32px; border-radius: 37px; background: #17545F; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; letter-spacing: .02em; color: #A8DCE6; margin-left: -19px; margin-right: -19px">AW</div><div style="line-height:15px">
+          <div style="font-size: 13px; color: #E7ECF0; white-space: nowrap; margin-left: 23px; margin-right: 23px">Amina</div>
+          <div style="font-size: 10px; color: #8C9AA6; margin-left: 23px; margin-right: 23px">Waiter</div>
+        </div>
+      </div>
+    </div>
+  </div><div style="display:grid;grid-template-columns:76px 1fr minmax(320px,384px);min-height:0;overflow:hidden">
+
+    <div style="border-right: 1px solid #232B32; display: flex; flex-direction: column; align-items: center; padding: 8px 0 16px; gap: 15px; overflow: hidden; padding-top: 19px">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="6">
+        <div style="position: relative; width: 60px; height: 56px; border-radius: 12px; background: {{ n.fill }}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto">
+          <div style="width:20px;height:20px">{{ n.icon }}</div>
+          <span style="font-size:11px;line-height:14px;color:{{ n.ink }}">{{ n.label }}</span>
+          <sc-if value="{{ n.badge }}">
+            <div style="position:absolute;top:6px;right:6px;min-width:18px;height:18px;border-radius:6px;padding:0 4px;background:#6FC6D6;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:11px;color:#0B1015">{{ n.badge }}</div>
+          </sc-if>
+        </div>
+      </sc-for>
+      <div style="flex:1 1 auto"></div>
+      <div style="width:60px;display:flex;flex-direction:column;align-items:center;gap:6px">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3.2 7.4a10 10 0 0 1 13.6 0M5.8 10.6a6.4 6.4 0 0 1 8.4 0M8.4 13.8a2.6 2.6 0 0 1 3.2 0" stroke="#63B98A" stroke-width="1.4" stroke-linecap="round"></path><circle cx="10" cy="16.6" r="1" fill="#63B98A"></circle></svg>
+        <span style="font-size:10px;line-height:13px;color:#8C9AA6;text-align:center">All systems</span>
+        <div style="display:flex;align-items:center;gap:4px">
+          <div style="width:5px;height:5px;border-radius:50%;background:#63B98A"></div>
+          <span style="font-size:10px;line-height:13px;color:#63B98A">steady</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-rows:auto auto 1fr;min-width:0;min-height:0;overflow:hidden">
+
+      <div style="display:flex;align-items:flex-start;gap:16px;padding:16px;border-bottom:1px solid #232B32;min-width:0">
+        <div style="flex:0 1 auto;min-width:0">
+          <div style="display:flex;align-items:baseline;gap:12px;min-width:0">
+            <span style="font-size:24px;line-height:30px;letter-spacing:-.025em;color:#FBFCFD;white-space:nowrap">Table 7</span>
+            <span style="font-size:12px;color:#B3BFC9;white-space:nowrap">4 guests</span>
+          </div>
+          <div style="font-size:12px;line-height:17px;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tab 1024 · Terrace · open 1h12</div>
+        </div>
+        <div style="flex:1 1 auto;min-width:8px"></div>
+        <div style="flex:0 0 auto;display:flex;gap:12px;overflow-x:auto;overflow-y:hidden">
+          <sc-for list="{{ strip }}" as="s" hint-placeholder-count="5">
+            <div style="flex:0 0 40px;width:40px">
+              <div style="width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ s.fill }};border:{{ s.border }};outline:{{ s.ring }};outline-offset:2px">
+                <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:{{ s.size }};color:{{ s.ink }}">{{ s.glyph }}</span>
+              </div>
+              <div style="margin-top:6px;text-align:center;font-size:11px;line-height:14px;color:{{ s.labelInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0px; height: 56px; padding: 0 16px; border-bottom: 1px solid #232B32; min-width: 0">
+        <div style="display: flex; align-items: center; gap: 21px; flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden">
+          <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+            <div style="height: 32px; border-radius: 6px; padding: 0 12px; display: flex; align-items: center; gap: 8px; background: {{ c.fill }}; flex: 0 0 auto">
+              <span style="font-size:13px;color:{{ c.ink }};white-space:nowrap">{{ c.name }}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:{{ c.sub }}">{{ c.n }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="flex:0 0 auto;display:flex;gap:4px">
+          <div style="width:32px;height:32px;border-radius:6px;background:#232B32;display:flex;align-items:center;justify-content:center">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2.5 2.5h4.5v4.5H2.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5H2.5zM9 9h4.5v4.5H9z" stroke="#6FC6D6" stroke-width="1.3" stroke-linejoin="round"></path></svg>
+          </div>
+          <div style="width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="#8C9AA6" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          </div>
+        </div>
+      </div>
+
+      <div style="overflow-y:auto;overflow-x:hidden;padding:16px;min-height:0">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(164px,1fr));gap:12px">
+          <sc-for list="{{ products }}" as="p" hint-placeholder-count="20">
+            <div style="border-radius:10px;background:#151B20;border:1px solid {{ p.stroke }};overflow:hidden;display:flex;flex-direction:column;transition:border-color 140ms cubic-bezier(.22,1,.36,1)" style-hover="border-color:#4E5A65">
+              <div style="position:relative;height:96px;background:#232B32;overflow:hidden">
+                <div style="width:100%;height:100%;background-image:url({{ p.img }});background-size:cover;background-position:center;filter:{{ p.filter }};opacity:{{ p.imgOp }}"></div>
+                <div style="position:absolute;left:0;right:0;bottom:0;height:52px;background:linear-gradient(to top,#0B1015 4%,rgba(11,16,21,.62) 46%,rgba(11,16,21,0))"></div>
+                <div style="position:absolute;left:12px;bottom:9px;right:12px;font-family:'JetBrains Mono',monospace;font-size:10px;line-height:13px;letter-spacing:.1em;text-transform:uppercase;color:{{ p.catInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.cat }}</div>
+                <sc-if value="{{ p.qty }}">
+                  <div style="position:absolute;top:8px;right:8px;min-width:22px;height:22px;border-radius:6px;padding:0 6px;background:#6FC6D6;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:12px;color:#0B1015">{{ p.qty }}</div>
+                </sc-if>
+                <sc-if value="{{ p.flag }}">
+                  <div style="position:absolute;top:8px;left:8px;height:20px;border-radius:6px;padding:0 8px;display:flex;align-items:center;gap:6px;background:#0B1015">
+                    <div style="width:5px;height:5px;border-radius:50%;background:{{ p.stateInk }}"></div>
+                    <span style="font-size:10px;line-height:13px;letter-spacing:.04em;color:{{ p.stateInk }};white-space:nowrap">{{ p.flag }}</span>
+                  </div>
+                </sc-if>
+              </div>
+              <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1 1 auto;opacity:{{ p.textOp }}">
+                <div style="font-size:14px;line-height:19px;color:#FBFCFD;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.name }}</div>
+                <div style="flex:1 1 auto"></div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:4px">
+                    <span style="font-size:10px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;line-height:20px;letter-spacing:-.01em;color:#D4DCE3">{{ p.price }}</span>
+                  </div>
+                  <div style="flex:0 0 32px;width:32px;height:32px;border-radius:6px;background:{{ p.addFill }};display:flex;align-items:center;justify-content:center;transition:background-color 140ms cubic-bezier(.22,1,.36,1)">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2.2v9.6M2.2 7h9.6" stroke="{{ p.addInk }}" stroke-width="1.6" stroke-linecap="round"></path></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="border-left:1px solid #232B32;display:grid;grid-template-rows:56px 1fr auto;min-width:0;min-height:0;overflow:hidden">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 16px;border-bottom:1px solid #232B32">
+        <span style="font-size:16px;letter-spacing:-.01em;color:#FBFCFD">The ticket</span>
+        <span style="font-size:12px;color:#8C9AA6;white-space:nowrap">{{ ticketMeta }}</span>
+      </div>
+
+      <div style="overflow-y:auto;overflow-x:hidden;padding:0 16px 16px;min-height:0">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+          <div style="padding-top:16px">
+            <div style="display:flex;align-items:center;gap:8px;height:24px">
+              <div style="flex:0 0 22px;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ g.fill }};border:{{ g.border }}">
+                <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:{{ g.ink }}">{{ g.glyph }}</span>
+              </div>
+              <span style="flex:1 1 auto;min-width:0;font-size:13px;color:#B3BFC9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.label }}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8C9AA6">{{ g.sub }}</span>
+            </div>
+            <sc-for list="{{ g.lines }}" as="l" hint-placeholder-count="2">
+              <div style="min-height:56px;display:flex;align-items:center;gap:12px;padding:8px 0">
+                <div style="flex:0 0 40px;width:40px;height:40px;border-radius:6px;overflow:hidden;background:#38424B">
+                  <div style="width:100%;height:100%;background-image:url({{ l.img }});background-size:cover;background-position:center;filter:saturate(.72) contrast(1.07);opacity:{{ l.imgOp }}"></div>
+                </div>
+                <div style="flex:1 1 auto;min-width:0">
+                  <div style="display:flex;align-items:baseline;gap:8px">
+                    <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:#8C9AA6;flex:0 0 auto">{{ l.q }}</span>
+                    <span style="font-size:14px;line-height:19px;color:{{ l.ink }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.name }}</span>
+                  </div>
+                  <sc-if value="{{ l.note }}">
+                    <div style="display:flex;align-items:center;gap:6px;height:16px">
+                      <sc-if value="{{ l.dot }}">
+                        <div style="width:5px;height:5px;border-radius:50%;background:{{ l.dot }};flex:0 0 5px"></div>
+                      </sc-if>
+                      <span style="font-size:11px;line-height:15px;color:{{ l.noteInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.note }}</span>
+                    </div>
+                  </sc-if>
+                </div>
+                <div style="flex:0 0 auto;display:flex;align-items:baseline;gap:4px">
+                  <span style="font-size:10px;letter-spacing:.03em;color:#8C9AA6">KES</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px;color:{{ l.ink }}">{{ l.price }}</span>
+                </div>
+              </div>
+            </sc-for>
+            <div style="height:1px;background:#232B32;margin-top:8px"></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="padding:16px;border-top:1px solid #232B32">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+          <span style="font-size:12px;color:#8C9AA6">{{ scopeLabel }}</span>
+          <div style="display:flex;align-items:baseline;gap:6px">
+            <span style="font-size:12px;letter-spacing:.02em;color:#8C9AA6">KES</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#B3BFC9">{{ scopeTotal }}</span>
+          </div>
+        </div>
+        <div style="height:6px"></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+          <span style="font-size:13px;color:#B3BFC9">Tab total</span>
+          <div style="display:flex;align-items:baseline;gap:6px">
+            <span style="font-size:12px;letter-spacing:.02em;color:#8C9AA6">KES</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:28px;line-height:34px;letter-spacing:-.025em;color:#E9BE86">{{ tabTotal }}</span>
+          </div>
+        </div>
+        <div style="height:16px"></div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:0 0 auto;height:48px;border-radius:6px;padding:0 16px;display:flex;align-items:center;gap:8px;background:#232B32;white-space:nowrap">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M6 7.5V3.5h8v4M6 14.5H4.2A1.2 1.2 0 0 1 3 13.3V8.7a1.2 1.2 0 0 1 1.2-1.2h11.6A1.2 1.2 0 0 1 17 8.7v4.6a1.2 1.2 0 0 1-1.2 1.2H14M6 12h8v4.5H6z" stroke="#B3BFC9" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <span style="font-size:14px;color:#B3BFC9">Print bill</span>
+          </div>
+          <div style="flex:1 1 auto;height:48px;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:8px;background:#6FC6D6;white-space:nowrap;transition:background-color 140ms cubic-bezier(.22,1,.36,1)" style-hover="background:#A8DCE6">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M17 3 9 11M17 3l-5.4 14.4-2.6-6.4L2.6 8.4 17 3Z" stroke="#0B1015" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <span style="font-size:15px;font-weight:500;letter-spacing:-.01em;color:#0B1015">{{ fireLabel }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;offline&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const SEAT = ['#6FC6D6','#E0A35A','#9DC271','#B79BE0','#E58BA4','#7FA8E0','#D9C46B','#6FD2B4'];
+    const seat = n => SEAT[(n - 1) % 8];
+    const offline = !!this.props.offline;
+    const P = (id, w, h) => 'https://images.unsplash.com/photo-' + id + '?auto=format&fit=crop&w=' + w + '&h=' + h + '&q=80';
+    const svg = (paths, stroke, w) => React.createElement('svg', { width: w || 20, height: w || 20, viewBox:'0 0 20 20', fill:'none' },
+      paths.map((d, i) => React.createElement('path', { key:i, d, stroke, strokeWidth:1.35, strokeLinecap:'round', strokeLinejoin:'round' })));
+
+    const SHOT = {
+      tusker:'1608270586620-248524c67de9', lite:'1566633806327-68e152aaf26d',
+      whitecap:'1567696911980-2eed69a46042', balozi:'1600788886242-5c96aabe3757',
+      guinness:'1571613316887-6f8d5cbf7ef7', heineken:'1618885472179-5e474019f2a9',
+      pilsner:'1436076863939-06870fe779c2', summit:'1514218953589-2d7d37efd2dc',
+      gilbeys:'1608885898957-a559228e8749', gilbeysDouble:'1621263764928-df1444c5e859',
+      smirnoff:'1582106245687-cbb466a9f07f', cane:'1569529465841-dfecdab7503b',
+      morgan:'1517620430776-0ec904756579', jameson:'1527281400683-1aae777175f8',
+      hunters:'1587223962930-cb7f31384c19',
+      cousins:'1510812431401-41d2bd2722f3', nederburg:'1474722883778-792e7990302f',
+      drostdy:'1563227812-0ea4c22e6cc8',
+      coke:'1554866585-cd94860890b7', fanta:'1516997121675-4c2d1684aa3e',
+      sprite:'1551538827-9c037cb4f32a', dasani:'1548839140-29a749e1cf4d',
+      redbull:'1622543925917-763c34d1a86e', tonic:'1581006852262-e4307cf6283a',
+      nyama:'1544025162-d76694265947', mishkaki:'1555939594-58d7cb561ad1',
+      kachumbari:'1512621776951-a57141f2eefd', tilapia:'1519708227418-c8fd9a32b7a2',
+    };
+    const FILTER = 'saturate(.72) contrast(1.07) brightness(.94)';
+    const HUE = { Beer:'#D9C46B', Spirits:'#6FC6D6', Wine:'#B79BE0', 'Soft drinks':'#6FD2B4', Food:'#9DC271' };
+
+    const raw = [
+      ['Tusker 500ml','350.00','Beer','tusker'],
+      ['Tusker Lite 500ml','380.00','Beer','lite'],
+      ['White Cap 500ml','350.00','Beer','whitecap'],
+      ['Balozi 500ml','330.00','Beer','balozi'],
+      ['Guinness 500ml','400.00','Beer','guinness','low','Running low, 7 left'],
+      ['Heineken 330ml','450.00','Beer','heineken'],
+      ['Pilsner 500ml','330.00','Beer','pilsner'],
+      ['Summit Lager','320.00','Beer','summit'],
+      ['Gilbeys tot','500.00','Spirits','gilbeys','on','1'],
+      ['Gilbeys double','900.00','Spirits','gilbeysDouble','low','Running low, 3 left'],
+      ['Smirnoff and Coke','650.00','Spirits','smirnoff'],
+      ['Kenya Cane tot','250.00','Spirits','cane'],
+      ['Captain Morgan tot','400.00','Spirits','morgan'],
+      ['Jameson tot','600.00','Spirits','jameson','finished','Finished'],
+      ['Hunters Choice tot','250.00','Spirits','hunters','hold','On hold'],
+      ['Four Cousins glass','600.00','Wine','cousins'],
+      ['Nederburg glass','650.00','Wine','nederburg'],
+      ['Drostdy Hof bottle','1,400.00','Wine','drostdy'],
+      ['Coke 300ml','120.00','Soft drinks','coke'],
+      ['Fanta Orange 300ml','120.00','Soft drinks','fanta'],
+      ['Sprite 300ml','120.00','Soft drinks','sprite'],
+      ['Dasani 500ml','100.00','Soft drinks','dasani'],
+      ['Schweppes tonic','150.00','Soft drinks','tonic'],
+      ['Red Bull 250ml','350.00','Soft drinks','redbull'],
+      ['Nyama choma','900.00','Food','nyama'],
+      ['Mishkaki','450.00','Food','mishkaki'],
+      ['Kachumbari','150.00','Food','kachumbari'],
+      ['Grilled tilapia','1,100.00','Food','tilapia'],
+    ];
+
+    const products = raw.map(([name, price, cat, shot, state, note]) => {
+      const dim = state === 'finished' || state === 'hold';
+      return {
+        name, price, cat, catInk: HUE[cat], img: P(SHOT[shot], 340, 220),
+        qty: state === 'on' ? note : '',
+        stroke: state === 'on' ? '#2A8CA3' : '#232B32',
+        filter: dim ? 'grayscale(1) brightness(.8)' : FILTER,
+        imgOp: dim ? 0.3 : 1,
+        textOp: dim ? 0.5 : 1,
+        addFill: dim ? '#232B32' : '#17545F',
+        addInk: dim ? '#4E5A65' : '#A8DCE6',
+        flag: state === 'low' ? note.replace('Running low, ', '') : state === 'finished' ? 'Finished' : state === 'hold' ? 'On hold' : '',
+        stateInk: state === 'low' ? '#E0A35A' : state === 'finished' ? '#E08585' : state === 'hold' ? '#E0A35A' : '#8C9AA6',
+      };
+    });
+
+    const counts = {};
+    raw.forEach(r => { counts[r[2]] = (counts[r[2]] || 0) + 1; });
+    const catOn = { fill:'#6FC6D6', ink:'#0B1015', sub:'#17545F' };
+    const catOff = { fill:'transparent', ink:'#B3BFC9', sub:'#8C9AA6' };
+    const categories = [['All', String(raw.length)]]
+      .concat(['Beer','Spirits','Wine','Soft drinks','Food'].map(k => [k, String(counts[k])]))
+      .map(([name, n], i) => ({ name, n, ...(i === 0 ? catOn : catOff) }));
+
+    const surfaces = [
+      ['Floor', ['M2.5 7.8 10 2.6l7.5 5.2v8.7a1.1 1.1 0 0 1-1.1 1.1H3.6a1.1 1.1 0 0 1-1.1-1.1V7.8Z'], true],
+      ['Bar', ['M4 4h12l-4.6 5.4v5.1M7.4 16.4h5.2','M11.4 14.5v1.9'], false],
+      ['Counter', ['M3 8.4h14M4.4 8.4V16h11.2V8.4M6.6 4.4h6.8l1.8 4H4.8l1.8-4Z'], false],
+    ].map(([name, d, on]) => ({
+      name, icon: svg(d, on ? '#A8DCE6' : '#8C9AA6', 16),
+      fill: on ? '#17545F' : 'transparent',
+      ink: on ? '#A8DCE6' : '#B3BFC9',
+    }));
+
+    const nav = [
+      ['Floor', ['M2.5 7.8 10 2.6l7.5 5.2v8.7a1.1 1.1 0 0 1-1.1 1.1H3.6a1.1 1.1 0 0 1-1.1-1.1V7.8Z'], true, ''],
+      ['Tabs', ['M3.6 4.6h12.8v10.8H3.6zM3.6 8.4h12.8M8.4 8.4v7'], false, '7'],
+      ['Orders', ['M5.6 3.6h8.8v12.8H5.6zM8.2 7.2h3.6M8.2 10.4h3.6M8.2 13.2h2'], false, ''],
+      ['Guests', ['M10 9.4a2.9 2.9 0 1 0 0-5.8 2.9 2.9 0 0 0 0 5.8ZM4.4 16.4a5.6 5.6 0 0 1 11.2 0'], false, ''],
+      ['Reports', ['M3.6 16.4h12.8M6.4 16.4V9.6M10 16.4V5.2M13.6 16.4v-4.8'], false, ''],
+      ['Settings', ['M10 12.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2ZM10 2.8v2M10 15.2v2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M2.8 10h2M15.2 10h2M4.9 15.1l1.4-1.4M13.7 6.3l1.4-1.4'], false, ''],
+    ].map(([label, d, on, badge]) => ({
+      label, badge, icon: svg(d, on ? '#6FC6D6' : '#8C9AA6', 20),
+      fill: on ? '#232B32' : 'transparent',
+      ink: on ? '#6FC6D6' : '#B3BFC9',
+    }));
+
+    const names = { 1:'Kofi', 2:'Sarah', 3:'James', 4:'Zara' };
+    const strip = [1,2,3,4].map(n => ({
+      glyph:String(n), size:'15px', fill:seat(n), border:'none', ink:'#0B1015',
+      ring: n === 2 ? '2px solid #FBFCFD' : 'none',
+      label: names[n], labelInk: n === 2 ? '#FBFCFD' : '#B3BFC9',
+    }));
+    strip.push({ glyph:'··', size:'15px', fill:'transparent', border:'1px dashed #B3BFC9', ink:'#B3BFC9', ring:'none', label:'Shared', labelInk:'#B3BFC9' });
+
+    const line = (q, name, price, shot, o) => {
+      o = o || {};
+      const poured = o.state === 'poured';
+      return {
+        q: q + ' ×', name, price, img: P(SHOT[shot], 96, 96),
+        imgOp: poured ? 0.5 : 1,
+        ink: poured ? '#8C9AA6' : '#FBFCFD',
+        dot: poured ? '#63B98A' : o.state === 'unsent' ? '#6FC6D6' : o.state === 'ranout' ? '#E08585' : '',
+        note: o.note || (poured ? 'Poured 21:12' : o.state === 'unsent' ? 'Not yet sent' : ''),
+        noteInk: o.state === 'ranout' ? '#E08585' : poured ? '#63B98A' : o.state === 'unsent' ? '#6FC6D6' : '#B3BFC9',
+      };
+    };
+    const group = (no, label, sub, lines) => ({
+      glyph: no ? String(no) : '··',
+      fill: no ? seat(no) : 'transparent',
+      border: no ? 'none' : '1px dashed #B3BFC9',
+      ink: no ? '#0B1015' : '#B3BFC9',
+      label, sub, lines,
+    });
+
+    const groups = [
+      group(1, 'Seat 1 · Kofi', '820.00', [
+        line(2, 'Tusker 500ml', '700.00', 'tusker', { state:'poured' }),
+        line(1, 'Coke 300ml', '120.00', 'coke', { state:'poured' }),
+      ]),
+      group(2, 'Seat 2 · Sarah', '500.00', [
+        line(1, 'Gilbeys tot', '500.00', 'gilbeys', { note:'No ice' }),
+      ]),
+      group(3, 'Seat 3 · James', '650.00', [
+        line(1, 'Smirnoff and Coke', '650.00', 'smirnoff', { state:'unsent' }),
+      ]),
+      group(4, 'Seat 4 · Zara', '380.00', [
+        offline
+          ? line(1, 'Tusker Lite 500ml', '380.00', 'lite', { state:'ranout', note:'Ran out' })
+          : line(1, 'Tusker Lite 500ml', '380.00', 'lite', { state:'poured' }),
+      ]),
+      group(null, 'Shared', '1,050.00', [
+        line(1, 'Nyama choma', '900.00', 'nyama', { state: offline ? 'unsent' : 'poured' }),
+        line(1, 'Kachumbari', '150.00', 'kachumbari', { state:'poured' }),
+      ]),
+    ];
+
+    return {
+      products, categories, surfaces, nav, strip, groups,
+      connDot: offline ? '#6FC6D6' : '#63B98A',
+      connText: offline ? 'Offline, 4 held' : 'Online',
+      ticketMeta: offline ? '7 lines · 4 held' : '7 lines · 1 not yet sent',
+      scopeLabel: 'Seat 2 · Sarah',
+      scopeTotal: '500.00',
+      tabTotal: '3,400.00',
+      fireLabel: offline ? 'Hold order · 1 line' : 'Send to bar · 1 line',
+    };
+  }
+}
+
+</script>
+</body>
+</html>

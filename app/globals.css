@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+@import '@bliss/ui/styles.css';
+
+/* Design canvases and documentation are not product code. */
+@source not '../Bliss Floor UI Design';
+@source not '../docs';
+@source not '../packages/db';

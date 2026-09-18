@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0B1015}
+  body{overflow:hidden}
+  a{color:#6FC6D6;text-decoration:none}
+  a:hover{color:#A8DCE6}
+  ::-webkit-scrollbar{width:6px;height:0}
+  ::-webkit-scrollbar-thumb{background:#38424B;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<div style="height:100vh;display:grid;grid-template-rows:56px 1fr;background:#0B1015;color:#FBFCFD;font-family:'Geist','Helvetica Neue',Helvetica,sans-serif;font-weight:400;font-size:15px;line-height:22px;letter-spacing:-.006em;-webkit-font-smoothing:antialiased;overflow:hidden">
+
+  <div style="display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid #232B32;min-width:0">
+    <div style="display:flex;align-items:center;gap:8px;flex:0 0 auto">
+      <div style="width:22px;height:22px;position:relative">
+        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:5px;background:#1F6E82"></div>
+        <div style="position:absolute;left:8px;top:0;width:14px;height:14px;border-radius:5px;background:#6FC6D6"></div>
+      </div>
+      <span style="font-size:17px;letter-spacing:-.02em;color:#FBFCFD">bliss</span>
+    </div>
+    <div style="width:1px;height:24px;background:#232B32;flex:0 0 auto"></div>
+    <span style="font-size:15px;color:#B3BFC9;white-space:nowrap">Design tokens</span>
+    <div style="flex:1 1 auto;min-width:8px"></div>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#8C9AA6;white-space:nowrap">v1.0 · 6 Sep 2026</span>
+  </div>
+
+  <div style="overflow-y:auto;overflow-x:hidden;min-height:0">
+    <div style="padding:32px 24px 56px;max-width:1280px">
+
+      <div style="font-size:28px;line-height:34px;letter-spacing:-.025em;color:#FBFCFD">One pane, three radii, no bold</div>
+      <div style="height:8px"></div>
+      <div style="font-size:15px;line-height:22px;color:#B3BFC9;max-width:680px;text-wrap:pretty">Every value the four surfaces are allowed to use. Nothing outside this sheet appears in the product. Grouping is done with space and a single hairline, never with a box inside a box.</div>
+
+      <div style="height:32px"></div>
+
+      <sc-for list="{{ ramps }}" as="r" hint-placeholder-count="5">
+        <div style="padding-bottom:24px">
+          <div style="display:flex;align-items:baseline;gap:12px">
+            <span style="font-size:16px;letter-spacing:-.01em;color:#FBFCFD;white-space:nowrap">{{ r.name }}</span>
+            <span style="font-size:13px;color:#8C9AA6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.note }}</span>
+          </div>
+          <div style="height:12px"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ r.swatches }}" as="s" hint-placeholder-count="10">
+              <div style="width:104px">
+                <div style="height:64px;border-radius:10px;background:{{ s.hex }};border:1px solid {{ s.stroke }};display:flex;align-items:flex-end;padding:8px">
+                  <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:{{ s.ink }}">{{ s.label }}</span>
+                </div>
+                <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:15px;color:#8C9AA6">{{ s.hex }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="height:1px;background:#232B32;margin:8px 0 32px"></div>
+
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Type</div>
+      <div style="height:4px"></div>
+      <div style="font-size:14px;line-height:20px;color:#8C9AA6">Geist Sans for words, JetBrains Mono with tabular figures for numbers. Weight never exceeds 500.</div>
+      <div style="height:16px"></div>
+      <sc-for list="{{ type }}" as="t" hint-placeholder-count="8">
+        <div style="display:flex;align-items:baseline;gap:20px;padding:10px 0;border-top:1px solid #232B32">
+          <span style="flex:0 0 128px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:15px;color:#8C9AA6">{{ t.spec }}</span>
+          <span style="flex:0 1 auto;min-width:0;font-family:{{ t.family }};font-weight:{{ t.weight }};font-size:{{ t.size }};line-height:{{ t.lh }};letter-spacing:{{ t.ls }};color:{{ t.ink }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.sample }}</span>
+          <div style="flex:1 1 auto;min-width:8px"></div>
+          <span style="flex:0 0 auto;font-size:12px;color:#6B7884;white-space:nowrap">{{ t.use }}</span>
+        </div>
+      </sc-for>
+
+      <div style="height:32px"></div>
+      <div style="height:1px;background:#232B32;margin-bottom:32px"></div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:32px;align-items:start">
+
+        <div>
+          <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Space</div>
+          <div style="height:4px"></div>
+          <div style="font-size:14px;line-height:20px;color:#8C9AA6">Thirteen steps. Nothing in between.</div>
+          <div style="height:16px"></div>
+          <sc-for list="{{ space }}" as="s" hint-placeholder-count="13">
+            <div style="display:flex;align-items:center;gap:12px;height:28px">
+              <span style="flex:0 0 32px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:#B3BFC9;text-align:right">{{ s.n }}</span>
+              <div style="height:8px;border-radius:6px;background:#3FAAC0;width:{{ s.w }}"></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div>
+          <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Shape and elevation</div>
+          <div style="height:4px"></div>
+          <div style="font-size:14px;line-height:20px;color:#8C9AA6">Three radii. One elevation. There is no elevation two.</div>
+          <div style="height:16px"></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <sc-for list="{{ radii }}" as="r" hint-placeholder-count="3">
+              <div style="width:104px">
+                <div style="height:64px;border-radius:{{ r.r }};background:#232B32;border:1px solid #38424B"></div>
+                <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:15px;color:#B3BFC9">{{ r.r }}</div>
+                <div style="font-size:11px;line-height:15px;color:#6B7884">{{ r.use }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="height:20px"></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <div style="flex:1 1 180px;min-width:0;border-radius:10px;background:#232B32;border:1px solid #38424B;padding:14px">
+              <div style="font-size:13px;color:#FBFCFD">Dark elevation</div>
+              <div style="font-size:11px;line-height:15px;color:#8C9AA6">frost-800 with a frost-700 hairline. No shadow, because shadows do not exist in the dark.</div>
+            </div>
+            <div style="flex:1 1 180px;min-width:0;border-radius:10px;background:#F4F7F9;border:1px solid #D4DCE3;box-shadow:0 1px 2px rgba(11,16,21,.05);padding:14px">
+              <div style="font-size:13px;color:#151B20">Light elevation</div>
+              <div style="font-size:11px;line-height:15px;color:#4E5A65">frost-50, frost-200 hairline, 0 1px 2px rgba(11,16,21,.05).</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Motion</div>
+          <div style="height:4px"></div>
+          <div style="font-size:14px;line-height:20px;color:#8C9AA6">Ceilings by surface. No bounce, no elastic.</div>
+          <div style="height:16px"></div>
+          <sc-for list="{{ motion }}" as="m" hint-placeholder-count="7">
+            <div style="display:flex;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid #232B32">
+              <span style="flex:1 1 auto;min-width:0;font-size:13px;color:#B3BFC9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.k }}</span>
+              <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:#FBFCFD">{{ m.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div>
+          <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Targets and contrast</div>
+          <div style="height:4px"></div>
+          <div style="font-size:14px;line-height:20px;color:#8C9AA6">No state is signalled by colour alone.</div>
+          <div style="height:16px"></div>
+          <sc-for list="{{ access }}" as="a" hint-placeholder-count="6">
+            <div style="display:flex;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid #232B32">
+              <span style="flex:1 1 auto;min-width:0;font-size:13px;color:#B3BFC9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.k }}</span>
+              <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:#FBFCFD">{{ a.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="height:32px"></div>
+      <div style="height:1px;background:#232B32;margin-bottom:32px"></div>
+
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">The seat chip</div>
+      <div style="height:4px"></div>
+      <div style="font-size:14px;line-height:20px;color:#8C9AA6">Colour by seat number modulo eight, never chosen by a user. The chip always carries its number.</div>
+      <div style="height:16px"></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">
+        <sc-for list="{{ seatSpec }}" as="s" hint-placeholder-count="10">
+          <div style="width:96px">
+            <div style="height:56px;display:flex;align-items:center;justify-content:center">
+              <div style="width:40px;height:40px;border-radius:6px;background:{{ s.fill }};border:{{ s.border }};opacity:{{ s.op }};outline:{{ s.ring }};outline-offset:2px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:{{ s.ink }}">{{ s.glyph }}</div>
+            </div>
+            <div style="text-align:center;font-size:11px;line-height:15px;color:#B3BFC9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</div>
+            <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;line-height:14px;color:#6B7884">{{ s.hex }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="height:32px"></div>
+      <div style="height:1px;background:#232B32;margin-bottom:32px"></div>
+
+      <div style="font-size:20px;line-height:26px;letter-spacing:-.02em;color:#FBFCFD">Words</div>
+      <div style="height:4px"></div>
+      <div style="font-size:14px;line-height:20px;color:#8C9AA6">Sentence case. Buttons are verbs naming their outcome, carrying the amount or count.</div>
+      <div style="height:16px"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+        <sc-for list="{{ copy }}" as="c" hint-placeholder-count="8">
+          <div style="display:flex;gap:12px;padding:10px 0;border-top:1px solid #232B32">
+            <div style="flex:1 1 auto;min-width:0">
+              <div style="font-size:13px;line-height:18px;color:#63B98A">{{ c.yes }}</div>
+              <div style="font-size:13px;line-height:18px;color:#E08585;text-decoration:line-through">{{ c.no }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  renderVals() {
+    const dark = hex => {
+      const n = parseInt(hex.slice(1), 16);
+      const l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255));
+      return l > 150 ? '#0B1015' : '#FBFCFD';
+    };
+    const sw = (hex, label) => ({
+      hex, label, ink: dark(hex),
+      stroke: hex === '#0B1015' || hex === '#FBFCFD' ? '#38424B' : 'transparent',
+    });
+
+    const ramps = [
+      { name:'Frost', note:'cool grey with a faint blue-green cast, never warm', swatches:[
+        sw('#FBFCFD','0'), sw('#F4F7F9','50'), sw('#E7ECF0','100'), sw('#D4DCE3','200'),
+        sw('#B3BFC9','300'), sw('#8C9AA6','400'), sw('#6B7884','500'), sw('#4E5A65','600'),
+        sw('#38424B','700'), sw('#232B32','800'), sw('#151B20','900'), sw('#0B1015','950'),
+      ]},
+      { name:'Glacier', note:'iced blue, the only primary', swatches:[
+        sw('#A8DCE6','200'), sw('#6FC6D6','300'), sw('#3FAAC0','400'),
+        sw('#2A8CA3','500'), sw('#1F6E82','600'), sw('#17545F','700'),
+      ]},
+      { name:'Ember', note:'money that needs looking at, and attention states', swatches:[
+        sw('#E9BE86','300'), sw('#E0A35A','400'), sw('#97591A','600'),
+      ]},
+      { name:'Signals, dark surfaces', note:'used on Floor, Counter and Bar', swatches:[
+        sw('#63B98A','poured'), sw('#E0A35A','low'), sw('#E08585','stop'), sw('#6FC6D6','info'),
+      ]},
+      { name:'Signals, light surfaces', note:'used on Console only', swatches:[
+        sw('#2E7D52','poured'), sw('#97591A','low'), sw('#A33232','stop'), sw('#1F6E82','info'),
+      ]},
+    ];
+
+    const G = "'Geist','Helvetica Neue',Helvetica,sans-serif";
+    const M = "'JetBrains Mono',monospace";
+    const type = [
+      { spec:'Geist 500 · 40/44', family:G, weight:'500', size:'40px', lh:'44px', ls:'-.025em', ink:'#FBFCFD', sample:'Table 7', use:'guest count, one per sheet' },
+      { spec:'Geist 400 · 28/34', family:G, weight:'400', size:'28px', lh:'34px', ls:'-.025em', ink:'#FBFCFD', sample:'Stock and variance', use:'page title' },
+      { spec:'Geist 400 · 24/30', family:G, weight:'400', size:'24px', lh:'30px', ls:'-.025em', ink:'#FBFCFD', sample:'Table 7 · 4 guests', use:'screen heading' },
+      { spec:'Geist 400 · 20/26', family:G, weight:'400', size:'20px', lh:'26px', ls:'-.015em', ink:'#FBFCFD', sample:'Smirnoff and Coke', use:'bar view line' },
+      { spec:'Geist 400 · 16/22', family:G, weight:'400', size:'16px', lh:'22px', ls:'-.01em', ink:'#FBFCFD', sample:'The ticket', use:'pane heading' },
+      { spec:'Geist 400 · 15/22', family:G, weight:'400', size:'15px', lh:'22px', ls:'-.006em', ink:'#FBFCFD', sample:'Send to bar · 1 line', use:'body, primary action' },
+      { spec:'Geist 400 · 14/19', family:G, weight:'400', size:'14px', lh:'19px', ls:'-.006em', ink:'#FBFCFD', sample:'Gilbeys tot', use:'tile and row name' },
+      { spec:'Geist 400 · 12/17', family:G, weight:'400', size:'12px', lh:'17px', ls:'0', ink:'#B3BFC9', sample:'Tab 1024 · Terrace · open 1h12', use:'meta' },
+      { spec:'Geist 500 · 11/14 · .08em', family:G, weight:'500', size:'11px', lh:'14px', ls:'.08em', ink:'#8C9AA6', sample:'TONIGHT', use:'section overline, uppercase' },
+      { spec:'Mono 500 · 28/34', family:M, weight:'500', size:'28px', lh:'34px', ls:'-.03em', ink:'#E9BE86', sample:'3,400.00', use:'the one figure that matters' },
+      { spec:'Mono 400 · 15/20', family:M, weight:'400', size:'15px', lh:'20px', ls:'-.01em', ink:'#D4DCE3', sample:'500.00', use:'prices' },
+      { spec:'Mono 400 · 12/17', family:M, weight:'400', size:'12px', lh:'17px', ls:'0', ink:'#8C9AA6', sample:'21:48 · 0h38', use:'clocks, counts, quantities' },
+    ];
+
+    const steps = [2,4,6,8,12,16,20,24,32,40,56,72,96];
+    const space = steps.map(n => ({ n:String(n), w: n + 'px' }));
+
+    const radii = [
+      { r:'6px', use:'controls and chips' },
+      { r:'10px', use:'tiles and panes' },
+      { r:'16px', use:'sheets' },
+    ];
+
+    const motion = [
+      { k:'Floor ceiling', v:'140 ms' },
+      { k:'Bar ceiling', v:'160 ms' },
+      { k:'Counter ceiling', v:'240 ms' },
+      { k:'Console ceiling', v:'400 ms' },
+      { k:'Ease out', v:'.22, 1, .36, 1' },
+      { k:'Ease in', v:'.64, 0, .78, 0' },
+      { k:'Ease in out', v:'.65, 0, .35, 1' },
+      { k:'Snap, press release only', v:'.34, 1.3, .64, 1' },
+    ];
+
+    const access = [
+      { k:'Body text', v:'4.5:1' },
+      { k:'Large text and UI boundaries', v:'3:1' },
+      { k:'Focus ring', v:'2px glacier-400, 2px offset' },
+      { k:'Touch target, Floor', v:'48 × 48' },
+      { k:'Touch target, Counter', v:'44 × 44' },
+      { k:'Minimum gap between targets', v:'8px' },
+    ];
+
+    const SEAT = ['#6FC6D6','#E0A35A','#9DC271','#B79BE0','#E58BA4','#7FA8E0','#D9C46B','#6FD2B4'];
+    const seatSpec = SEAT.map((hex, i) => ({
+      glyph:String(i + 1), fill:hex, border:'none', ink:'#0B1015', op:1, ring:'none',
+      label:'Seat ' + (i + 1), hex,
+    }));
+    seatSpec.push({ glyph:'··', fill:'transparent', border:'1px dashed #B3BFC9', ink:'#B3BFC9', op:1, ring:'none', label:'Shared', hex:'dashed frost-300' });
+    seatSpec.push({ glyph:'2', fill:'#E0A35A', border:'none', ink:'#0B1015', op:1, ring:'2px solid #FBFCFD', label:'Selected', hex:'2px frost-0 ring' });
+    seatSpec.push({ glyph:'3', fill:'#9DC271', border:'none', ink:'#0B1015', op:0.4, ring:'none', label:'Settled', hex:'40 per cent, word beside' });
+
+    const copy = [
+      { yes:'Fire order · 3 lines', no:'Submit' },
+      { yes:'Settle Seat 3 · KES 650', no:'OK' },
+      { yes:'Void the line', no:'Delete' },
+      { yes:'Keep it', no:'Cancel' },
+      { yes:'Finished', no:'Out of stock' },
+      { yes:'On hold', no:"86'd" },
+      { yes:'Poured 21:12', no:'Served!' },
+      { yes:'6 Sep 2026 · 21:48', no:'09/06/26 9:48 PM' },
+    ];
+
+    return { ramps, type, space, radii, motion, access, seatSpec, copy };
+  }
+}
+
+</script>
+</body>
+</html>

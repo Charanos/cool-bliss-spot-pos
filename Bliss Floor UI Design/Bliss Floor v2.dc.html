@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0B1015;overflow:hidden}
+  a{color:#6FC6D6;text-decoration:none}
+  a:hover{color:#A8DCE6}
+  ::-webkit-scrollbar{width:6px;height:0}
+  ::-webkit-scrollbar-thumb{background:#38424B;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<div style="height:100vh;display:grid;grid-template-rows:64px 1fr;background:#0B1015;color:#FBFCFD;font-family:'Geist','Helvetica Neue',Helvetica,sans-serif;font-weight:400;font-size:15px;line-height:22px;-webkit-font-smoothing:antialiased;overflow:hidden">
+
+  <div style="display:flex;align-items:center;gap:20px;padding:0 20px;border-bottom:1px solid #232B32;min-width:0">
+    <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto">
+      <div style="width:26px;height:26px;position:relative">
+        <div style="position:absolute;left:0;top:4px;width:16px;height:16px;border-radius:5px;background:#1F6E82"></div>
+        <div style="position:absolute;left:8px;top:0;width:16px;height:16px;border-radius:5px;background:#6FC6D6"></div>
+      </div>
+      <span style="font-size:19px;letter-spacing:-.015em;color:#FBFCFD">bliss</span>
+    </div>
+
+    <div style="width:1px;height:26px;background:#232B32;flex:0 0 auto"></div>
+
+    <div style="display:flex;align-items:center;gap:2px;flex:0 0 auto">
+      <sc-for list="{{ zones }}" as="z" hint-placeholder-count="3">
+        <div style="height:34px;border-radius:6px;padding:0 13px;display:flex;align-items:center;gap:8px;background:{{ z.fill }};color:{{ z.ink }};font-size:14px;white-space:nowrap">
+          {{ z.name }}
+          <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:{{ z.count }}">{{ z.n }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="flex:1 1 auto;min-width:16px;display:flex;justify-content:flex-end">
+      <div style="width:100%;max-width:280px;height:34px;border-radius:6px;background:#151B20;border:1px solid #232B32;display:flex;align-items:center;gap:8px;padding:0 11px;min-width:0">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex:0 0 14px"><circle cx="7" cy="7" r="4.6" stroke="#6B7884" stroke-width="1.4"></circle><path d="M10.4 10.4 14 14" stroke="#6B7884" stroke-width="1.4" stroke-linecap="round"></path></svg>
+        <span style="font-size:14px;color:#6B7884;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Search the list</span>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:14px;flex:0 0 auto">
+      <div style="height:26px;border-radius:6px;display:flex;align-items:center;gap:7px;padding:0 9px;background:#151B20;border:1px solid #232B32">
+        <div style="width:6px;height:6px;border-radius:50%;background:{{ connDot }}"></div>
+        <span style="font-size:10px;letter-spacing:.08em;font-weight:500;text-transform:uppercase;color:{{ connDot }};white-space:nowrap">{{ connText }}</span>
+      </div>
+      <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8C9AA6">21:40</span>
+      <div style="display:flex;align-items:center;gap:9px">
+        <div style="width:30px;height:30px;border-radius:6px;background:#2A8CA3;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:#0B1015">AW</div>
+        <div style="line-height:15px">
+          <div style="font-size:13px;color:#FBFCFD;white-space:nowrap">Amina</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6B7884">4h12</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:68px 1fr minmax(300px,364px);min-height:0;overflow:hidden">
+
+    <div style="border-right:1px solid #232B32;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;overflow:hidden">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+        <div style="width:48px;height:48px;border-radius:6px;background:{{ n.fill }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;flex:0 0 auto">
+          <div style="width:20px;height:20px">{{ n.icon }}</div>
+          <span style="font-size:10px;line-height:13px;letter-spacing:.02em;color:{{ n.ink }}">{{ n.label }}</span>
+        </div>
+      </sc-for>
+      <div style="flex:1 1 auto"></div>
+      <div style="width:48px;height:48px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12.5 14.5v1.5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5V4A1.5 1.5 0 0 1 5 2.5h6a1.5 1.5 0 0 1 1.5 1.5v1.5M9 10h8.5m0 0-2.6-2.6M17.5 10l-2.6 2.6" stroke="#6B7884" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-rows:auto 1fr;min-width:0;min-height:0;overflow:hidden">
+      <div style="padding:16px 20px 12px;border-bottom:1px solid #232B32;min-width:0">
+        <div style="display:flex;align-items:baseline;gap:12px;min-width:0">
+          <span style="font-size:22px;line-height:28px;letter-spacing:-.02em;color:#FBFCFD;white-space:nowrap">Table 7</span>
+          <span style="font-size:13px;color:#8C9AA6;white-space:nowrap">Terrace · 4 guests · open 1h12</span>
+          <div style="flex:1 1 auto;min-width:8px"></div>
+          <div style="display:flex;align-items:center;gap:8px;flex:0 1 auto;overflow-x:auto;overflow-y:hidden;padding-bottom:1px">
+            <sc-for list="{{ tabSwitch }}" as="t" hint-placeholder-count="3">
+              <div style="height:30px;border-radius:6px;padding:0 10px;display:flex;align-items:center;gap:7px;background:{{ t.fill }};border:1px solid {{ t.stroke }}">
+                <span style="font-size:13px;color:{{ t.ink }}">{{ t.name }}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:{{ t.sub }}">{{ t.total }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="height:12px"></div>
+        <div style="display:flex;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;min-width:0;padding-bottom:2px">
+          <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+            <div style="height:32px;border-radius:6px;padding:0 12px;display:flex;align-items:center;gap:8px;background:{{ c.fill }};border:1px solid {{ c.stroke }};flex:0 0 auto">
+              <span style="font-size:13px;color:{{ c.ink }};white-space:nowrap">{{ c.name }}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;color:{{ c.sub }}">{{ c.n }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="overflow-y:auto;overflow-x:hidden;padding:16px 20px 24px;min-height:0">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px">
+          <sc-for list="{{ products }}" as="p" hint-placeholder-count="20">
+            <div style="border-radius:10px;background:#151B20;border:1px solid #232B32;overflow:hidden;display:flex;flex-direction:column">
+              <div style="position:relative;height:104px;background:#1B2228;overflow:hidden">
+                <img src="{{ p.img }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;filter:{{ p.filter }};opacity:{{ p.imgOp }}">
+                <div style="position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(to top,rgba(11,16,21,.92),rgba(11,16,21,0))"></div>
+                <div style="position:absolute;left:10px;bottom:8px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;letter-spacing:.04em;color:{{ p.catInk }};text-transform:uppercase">{{ p.catLabel }}</div>
+                <sc-if value="{{ p.badge }}">
+                  <div style="position:absolute;right:8px;top:8px;height:22px;border-radius:6px;padding:0 8px;display:flex;align-items:center;gap:6px;background:rgba(11,16,21,.82);border:1px solid {{ p.badgeStroke }}">
+                    <div style="width:5px;height:5px;border-radius:50%;background:{{ p.badgeStroke }}"></div>
+                    <span style="font-size:10px;letter-spacing:.06em;font-weight:500;text-transform:uppercase;color:{{ p.badgeStroke }};white-space:nowrap">{{ p.badge }}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ p.qty }}">
+                  <div style="position:absolute;right:8px;bottom:8px;min-width:22px;height:22px;border-radius:6px;padding:0 6px;background:#6FC6D6;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:12px;color:#0B1015">{{ p.qty }}</div>
+                </sc-if>
+              </div>
+              <div style="padding:10px 12px 11px;display:flex;flex-direction:column;gap:6px;flex:1 1 auto;opacity:{{ p.textOp }}">
+                <div style="font-size:14px;line-height:19px;color:#FBFCFD;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ p.name }}</div>
+                <div style="flex:1 1 auto"></div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+                  <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px;color:#D4DCE3">{{ p.price }}</span>
+                  <span style="font-size:11px;color:#6B7884;white-space:nowrap">{{ p.foot }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="border-left:1px solid #232B32;display:grid;grid-template-rows:auto auto 1fr auto;min-width:0;min-height:0;overflow:hidden">
+
+      <div style="padding:14px 16px 12px;border-bottom:1px solid #232B32">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+          <span style="font-size:15px;color:#FBFCFD">The ticket</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:#8C9AA6">{{ ticketMeta }}</span>
+        </div>
+      </div>
+
+      <div style="padding:12px 16px 14px;border-bottom:1px solid #232B32;overflow:hidden">
+        <div style="display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding-bottom:2px">
+          <sc-for list="{{ strip }}" as="s" hint-placeholder-count="6">
+            <div style="flex:0 0 40px;width:40px">
+              <div style="width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ s.fill }};border:{{ s.border }};opacity:{{ s.op }};outline:{{ s.ring }};outline-offset:2px">
+                <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:{{ s.size }};color:{{ s.ink }}">{{ s.glyph }}</span>
+              </div>
+              <div style="margin-top:7px;text-align:center">
+                <div style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11px;line-height:15px;color:{{ s.totalInk }};white-space:nowrap">{{ s.total }}</div>
+                <div style="font-size:10px;line-height:14px;letter-spacing:.02em;color:#8C9AA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="overflow-y:auto;overflow-x:hidden;padding:4px 16px 12px;min-height:0">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+          <div style="padding-top:12px">
+            <div style="display:flex;align-items:center;gap:9px;height:26px">
+              <div style="flex:0 0 22px;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ g.fill }};border:{{ g.border }}">
+                <span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:{{ g.ink }}">{{ g.glyph }}</span>
+              </div>
+              <span style="flex:1 1 auto;min-width:0;font-size:13px;letter-spacing:.02em;color:#8C9AA6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.label }}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#D4DCE3">{{ g.sub }}</span>
+            </div>
+            <sc-for list="{{ g.lines }}" as="l" hint-placeholder-count="2">
+              <div style="min-height:46px;display:flex;align-items:center;gap:10px;padding:4px 0">
+                <div style="flex:0 0 34px;width:34px;height:34px;border-radius:6px;overflow:hidden;background:#1B2228">
+                  <img src="{{ l.img }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;opacity:{{ l.imgOp }}">
+                </div>
+                <div style="flex:1 1 auto;min-width:0">
+                  <div style="display:flex;align-items:baseline;gap:6px">
+                    <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:#6B7884;flex:0 0 auto">{{ l.q }}</span>
+                    <span style="font-size:14px;line-height:19px;color:{{ l.ink }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.name }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;height:14px">
+                    <sc-if value="{{ l.dot }}">
+                      <div style="width:5px;height:5px;border-radius:50%;background:{{ l.dot }};flex:0 0 5px"></div>
+                    </sc-if>
+                    <span style="font-size:10px;line-height:14px;letter-spacing:.06em;text-transform:uppercase;color:{{ l.noteInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.note }}</span>
+                  </div>
+                </div>
+                <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px;color:{{ l.ink }};flex:0 0 auto">{{ l.price }}</span>
+              </div>
+            </sc-for>
+            <div style="height:1px;background:#232B32;margin-top:10px"></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="padding:14px 16px 16px;border-top:1px solid #232B32">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+          <span style="font-size:12px;letter-spacing:.02em;color:#8C9AA6">{{ scopeLabel }}</span>
+          <div style="display:flex;align-items:baseline;gap:5px">
+            <span style="font-size:11px;letter-spacing:.02em;color:#6B7884">KES</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#B3BFC9">{{ scopeTotal }}</span>
+          </div>
+        </div>
+        <div style="height:6px"></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+          <span style="font-size:12px;letter-spacing:.02em;color:#8C9AA6">Tab total</span>
+          <div style="display:flex;align-items:baseline;gap:6px">
+            <span style="font-size:11px;letter-spacing:.02em;color:#6B7884">KES</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:26px;line-height:30px;letter-spacing:-.02em;color:#E9BE86">{{ tabTotal }}</span>
+          </div>
+        </div>
+        <div style="height:14px"></div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:0 0 auto;height:48px;border-radius:6px;padding:0 14px;display:flex;align-items:center;background:#151B20;border:1px solid #38424B;font-size:14px;color:#B3BFC9;white-space:nowrap">Print bill</div>
+          <div style="flex:1 1 auto;height:48px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#6FC6D6;font-size:16px;font-weight:500;color:#0B1015;white-space:nowrap">{{ fireLabel }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;offline&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const SEAT = ['#6FC6D6','#E0A35A','#9DC271','#B79BE0','#E58BA4','#7FA8E0','#D9C46B','#6FD2B4'];
+    const fill = n => SEAT[(n - 1) % 8];
+    const offline = !!this.props.offline;
+    const P = id => 'https://images.unsplash.com/' + id + '?auto=format&fit=crop&w=420&h=300&q=80';
+
+    const IMG = {
+      beer:      P('photo-1535958636474-b021ee887b13'),
+      beerBottle:P('photo-1514362545857-3bc16c4c7d1b'),
+      stout:     P('photo-1571613316887-6f8d5cbf7ef7'),
+      lager:     P('photo-1608270586620-248524c67de9'),
+      gin:       P('photo-1514362545857-3bc16c4c7d1b'),
+      whisky:    P('photo-1527281400683-1aae777175f8'),
+      cocktail:  P('photo-1551538827-9c037cb4f32a'),
+      rum:       P('photo-1569529465841-dfecdab7503b'),
+      wine:      P('photo-1510812431401-41d2bd2722f3'),
+      wineGlass: P('photo-1474722883778-792e7990302f'),
+      soda:      P('photo-1581006852262-e4307cf6283a'),
+      cola:      P('photo-1554866585-cd94860890b7'),
+      water:     P('photo-1548839140-29a749e1cf4d'),
+      energy:    P('photo-1622543925917-763c34d1a86e'),
+      food:      P('photo-1544025162-d76694265947'),
+      salad:     P('photo-1512621776951-a57141f2eefd'),
+    };
+    const CAT = { Beer:'#D9C46B', Spirits:'#6FC6D6', Wine:'#B79BE0', Soft:'#6FD2B4', Food:'#9DC271' };
+
+    const raw = [
+      ['Tusker 500ml','350.00','Beer','beer','',''],
+      ['Tusker Lite 500ml','380.00','Beer','lager','',''],
+      ['White Cap 500ml','350.00','Beer','beerBottle','',''],
+      ['Guinness 500ml','400.00','Beer','stout','low','7 left'],
+      ['Balozi 500ml','330.00','Beer','beer','',''],
+      ['Heineken 330ml','450.00','Beer','lager','',''],
+      ['Gilbeys tot','500.00','Spirits','gin','','750ml bottle'],
+      ['Gilbeys double','900.00','Spirits','gin','low','3 left'],
+      ['Jameson tot','600.00','Spirits','whisky','finished',''],
+      ['Smirnoff and Coke','650.00','Spirits','cocktail','',''],
+      ['Kenya Cane tot','250.00','Spirits','rum','',''],
+      ['Hunters Choice tot','250.00','Spirits','whisky','hold',''],
+      ['Four Cousins glass','600.00','Wine','wineGlass','',''],
+      ['Nederburg bottle','2,400.00','Wine','wine','','750ml'],
+      ['Coke 300ml','120.00','Soft','cola','',''],
+      ['Fanta Orange 300ml','120.00','Soft','soda','',''],
+      ['Dasani 500ml','100.00','Soft','water','',''],
+      ['Red Bull 250ml','350.00','Soft','energy','',''],
+      ['Nyama choma plate','900.00','Food','food','','served hot'],
+      ['Kachumbari','150.00','Food','salad','',''],
+    ];
+
+    const products = raw.map(([name, price, cat, img, state, foot]) => {
+      const dim = state === 'finished' || state === 'hold';
+      return {
+        name, price, img: IMG[img],
+        catLabel: cat, catInk: CAT[cat],
+        badge: state === 'finished' ? 'Finished' : state === 'hold' ? 'On hold' : '',
+        badgeStroke: state === 'hold' ? '#E0A35A' : '#E08585',
+        qty: name === 'Gilbeys tot' ? '1' : '',
+        filter: dim ? 'grayscale(1)' : 'none',
+        imgOp: dim ? 0.3 : 1,
+        textOp: dim ? 0.45 : 1,
+        foot: state === 'low' ? foot : (foot || ''),
+      };
+    });
+
+    const chipBase = { fill:'#151B20', stroke:'#232B32', ink:'#B3BFC9', sub:'#6B7884' };
+    const chipOn = { fill:'#6FC6D6', stroke:'#6FC6D6', ink:'#0B1015', sub:'#17545F' };
+
+    const categories = [
+      ['All', '78'], ['Beer', '24'], ['Spirits', '31'], ['Wine', '8'], ['Soft drinks', '11'], ['Food', '4'],
+    ].map(([name, n], i) => ({ name, n, ...(i === 0 ? chipOn : chipBase) }));
+
+    const zones = [
+      ['Terrace','5'], ['Main bar','3'], ['Counter','1'],
+    ].map(([name, n], i) => ({
+      name, n,
+      fill: i === 0 ? '#232B32' : 'transparent',
+      ink: i === 0 ? '#FBFCFD' : '#8C9AA6',
+      count: i === 0 ? '#8C9AA6' : '#4E5A65',
+    }));
+
+    const tabSwitch = [
+      ['T7','3,400'], ['T2','1,150'], ['T11','480'],
+    ].map(([name, total], i) => ({
+      name, total,
+      fill: i === 0 ? '#232B32' : 'transparent',
+      stroke: i === 0 ? '#38424B' : '#232B32',
+      ink: i === 0 ? '#FBFCFD' : '#8C9AA6',
+      sub: i === 0 ? '#B3BFC9' : '#4E5A65',
+    }));
+
+    const icon = (d, on) => React.createElement('svg', { width:20, height:20, viewBox:'0 0 20 20', fill:'none' },
+      React.createElement('path', { d, stroke: on ? '#6FC6D6' : '#8C9AA6', strokeWidth:1.4, strokeLinecap:'round', strokeLinejoin:'round' }));
+    const navDefs = [
+      ['Floor','M2.5 7.5 10 2.5l7.5 5v9a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-9Z', true],
+      ['Tabs','M3.5 4.5h13v11h-13zM3.5 8.5h13M8.5 8.5v7', false],
+      ['Stock','M4 6.5h12v10H4zM7 6.5V4a3 3 0 0 1 6 0v2.5', false],
+      ['Bills','M5.5 3.5h9v13l-4.5-2.5L5.5 16.5zM8 7.5h4M8 10.5h4', false],
+      ['Shift','M10 3.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13ZM10 6.5V10l2.5 1.5', false],
+    ];
+    const nav = navDefs.map(([label, d, on]) => ({
+      label, icon: icon(d, on),
+      fill: on ? '#232B32' : 'transparent',
+      ink: on ? '#6FC6D6' : '#8C9AA6',
+    }));
+
+    const seatTotals = { 1:'820', 2:'500', 3:'650', 4:'380' };
+    const strip = [1,2,3,4].map(n => ({
+      glyph:String(n), size:'15px', fill:fill(n), border:'none', op:1, ink:'#0B1015',
+      ring: n === 2 ? '2px solid #FBFCFD' : 'none',
+      total: seatTotals[n], totalInk: n === 2 ? '#FBFCFD' : '#8C9AA6',
+      label: n === 2 ? 'Kofi' : '',
+    }));
+    strip.push({ glyph:'··', size:'15px', fill:'transparent', border:'1px dashed #B3BFC9', op:1, ink:'#B3BFC9', ring:'none', total:'1,050', totalInk:'#8C9AA6', label:'Shared' });
+    strip.push({ glyph:'+', size:'17px', fill:'#151B20', border:'1px solid #4E5A65', op:1, ink:'#B3BFC9', ring:'none', total:'', totalInk:'#8C9AA6', label:'' });
+
+    const line = (q, name, price, img, o) => {
+      o = o || {};
+      const poured = o.state === 'poured';
+      return {
+        q: q + ' ×', name, price, img: IMG[img],
+        imgOp: poured ? 0.45 : 1,
+        ink: poured ? '#8C9AA6' : '#FBFCFD',
+        dot: poured ? '#63B98A' : o.state === 'unsent' ? '#6FC6D6' : o.state === 'ranout' ? '#E08585' : '',
+        note: o.note || (poured ? 'Poured 21:12' : o.state === 'unsent' ? 'Not yet sent' : ''),
+        noteInk: o.state === 'ranout' ? '#E08585' : poured ? '#63B98A' : o.state === 'unsent' ? '#6FC6D6' : '#8C9AA6',
+      };
+    };
+    const group = (no, label, sub, lines) => ({
+      glyph: no ? String(no) : '··',
+      fill: no ? fill(no) : 'transparent',
+      border: no ? 'none' : '1px dashed #B3BFC9',
+      ink: no ? '#0B1015' : '#B3BFC9',
+      label, sub, lines,
+    });
+
+    const groups = [
+      group(1, 'Seat 1', '820.00', [
+        line(2, 'Tusker 500ml', '700.00', 'beer', { state:'poured' }),
+        line(1, 'Coke 300ml', '120.00', 'cola', { state:'poured' }),
+      ]),
+      group(2, 'Seat 2 · Kofi', '500.00', [
+        line(1, 'Gilbeys tot', '500.00', 'gin', { note:'No ice' }),
+      ]),
+      group(3, 'Seat 3', '650.00', [
+        line(1, 'Smirnoff and Coke', '650.00', 'cocktail', { state:'unsent' }),
+      ]),
+      group(4, 'Seat 4', '380.00', [
+        offline
+          ? line(1, 'Tusker Lite 500ml', '380.00', 'lager', { state:'ranout', note:'Ran out' })
+          : line(1, 'Tusker Lite 500ml', '380.00', 'lager', { state:'poured' }),
+      ]),
+      group(null, 'Shared', '1,050.00', [
+        line(1, 'Nyama choma plate', '900.00', 'food', { state: offline ? 'unsent' : 'poured' }),
+        line(1, 'Kachumbari', '150.00', 'salad', { state:'poured' }),
+      ]),
+    ];
+
+    return {
+      zones, tabSwitch, categories, products, nav, strip, groups,
+      connDot: offline ? '#6FC6D6' : '#63B98A',
+      connText: offline ? 'Offline · 4 held' : 'Synced',
+      ticketMeta: offline ? '7 lines · 4 held' : '7 lines · 1 not yet sent',
+      scopeLabel: 'Seat 2 · Kofi',
+      scopeTotal: '500.00',
+      tabTotal: '3,400.00',
+      fireLabel: offline ? 'Hold order · 1 line' : 'Fire order · 1 line',
+    };
+  }
+}
+
+</script>
+</body>
+</html>
