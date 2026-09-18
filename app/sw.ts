@@ -1,7 +1,6 @@
 import { defaultCache } from '@serwist/next/worker';
 import type { PrecacheEntry, SerwistGlobalConfig } from 'serwist';
-import { CacheFirst, ExpirationPlugin, NetworkFirst, Serwist, StaleWhileRevalidate } from 'serwist';
-
+import { CacheFirst, ExpirationPlugin, NetworkFirst, NetworkOnly, Serwist, StaleWhileRevalidate } from 'serwist';
 // Declare the Serwist global scope so TypeScript knows about __SW_MANIFEST.
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -68,14 +67,10 @@ const serwist = new Serwist({
       }),
     },
 
-    // API routes — NetworkFirst, short TTL; never serve stale data silently.
+    // API routes — NetworkOnly; the sync engine handles offline scenarios, so we must never serve stale API data.
     {
       matcher: ({ url }) => url.pathname.startsWith('/api/'),
-      handler: new NetworkFirst({
-        cacheName: 'bliss-api',
-        plugins: [new ExpirationPlugin({ maxEntries: 32, maxAgeSeconds: 60 })],
-        networkTimeoutSeconds: 5,
-      }),
+      handler: new NetworkOnly(),
     },
 
     // Everything else from the default Serwist cache strategy.
