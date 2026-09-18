@@ -80,8 +80,11 @@ export function initMotion(): void {
   if (initialised || typeof window === 'undefined') return;
   initialised = true;
 
-  gsap.defaults({ duration: 0.16, ease: ease.out, overwrite: 'auto' });
+  // force3D ensures GSAP always uses translate3d/matrix3d — GPU-composited paths only.
+  gsap.defaults({ duration: 0.16, ease: ease.out, overwrite: 'auto', force3D: true });
   gsap.globalTimeline.timeScale(1);
+  // Smooth over hiccups up to 500ms; clamp the simulated delta to 33ms so missed frames
+  // don't cause a visible "jump" on a busy POS tablet.
   gsap.ticker.lagSmoothing(500, 33);
 
   const mm = gsap.matchMedia();
@@ -95,7 +98,14 @@ export function initMotion(): void {
   nav
     .getBattery?.()
     .then((battery) => {
-      const check = () => motionStore.set({ lowPower: !battery.charging && battery.level < 0.15 });
+      const check = () => {
+        const low = !battery.charging && battery.level < 0.15;
+        motionStore.set({ lowPower: low });
+        // Cap the GSAP ticker to 60fps on low power; ProMotion (120Hz) iPads burn
+        // significantly more energy running animations at their native refresh rate.
+        if (low) gsap.ticker.fps(60);
+        else gsap.ticker.fps(-1); // -1 = use requestAnimationFrame natively
+      };
       check();
       battery.addEventListener('levelchange', check);
       battery.addEventListener('chargingchange', check);
@@ -197,6 +207,11 @@ export function play(name: AnimationName, build: () => gsap.core.Animation | nul
   lanes.set(laneKey, animation);
 
   const targets = options.targets ? (Array.isArray(options.targets) ? options.targets : [options.targets]) : [];
+
+  // Promote targets to their own compositor layer before the first frame.
+  // This avoids the browser promoting mid-animation, which causes a flash.
+  for (const t of targets) (t as HTMLElement).style.willChange = 'transform, opacity';
+
   if (state.highlight) for (const t of targets) t.setAttribute('data-animating', '');
 
   let last = performance.now();
@@ -207,7 +222,12 @@ export function play(name: AnimationName, build: () => gsap.core.Animation | nul
     last = now;
   };
   const cleanup = () => {
-    for (const t of targets) t.removeAttribute('data-animating');
+    for (const t of targets) {
+      t.removeAttribute('data-animating');
+      // Demote the layer after animation — prevents GPU memory from accumulating on a
+      // tablet that's been running for an 8-hour shift without a page reload.
+      (t as HTMLElement).style.willChange = '';
+    }
     const current = running.get(spec.surface);
     if (current) running.set(spec.surface, current.filter((a) => a !== animation));
     if (lanes.get(laneKey) === animation) lanes.delete(laneKey);

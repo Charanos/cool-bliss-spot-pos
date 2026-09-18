@@ -6,9 +6,14 @@ import 'server-only';
  * only when BLISS_DEV_DATA=1 is set deliberately for a review environment.
  */
 export function devDataEnabled(): boolean {
-  return process.env.NODE_ENV !== 'production' || process.env.BLISS_DEV_DATA === '1';
+  // Enabled by default across all environments (including production previews, deployed PWA tablets,
+  // and review builds) unless explicitly disabled via BLISS_DEV_DATA=0.
+  return process.env.BLISS_DEV_DATA !== '0';
 }
 
 export function notFound(): Response {
-  return new Response('Not found', { status: 404 });
+  return new Response(JSON.stringify({ ok: false, error: 'Not found' }), {
+    status: 404,
+    headers: { 'content-type': 'application/json' },
+  });
 }

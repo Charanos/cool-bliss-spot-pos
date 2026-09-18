@@ -3,6 +3,7 @@ import nextPlugin from '@next/eslint-plugin-next';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
+import globals from 'globals';
 import bliss from './packages/config/eslint-plugin/index.js';
 
 const FLOOR_FILES = ['app/(floor)/**/*.{ts,tsx}', 'packages/ui/src/components/floor/**/*.{ts,tsx}', 'packages/ui/src/motion/floor.ts'];
@@ -12,12 +13,21 @@ export default tseslint.config(
     ignores: [
       '.next/**',
       'node_modules/**',
+      'public/**',
       'Bliss Floor UI Design/**',
       'docs/**',
       'next-env.d.ts',
       '**/*.tmp.*',
       'packages/config/eslint-plugin/**',
     ],
+  },
+  {
+    files: ['scripts/**/*.{js,mjs,ts}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

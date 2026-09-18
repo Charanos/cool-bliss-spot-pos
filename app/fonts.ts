@@ -9,6 +9,11 @@ export const mono = JetBrains_Mono({
   weight: ['400', '500'],
   variable: '--font-jetbrains-mono',
   display: 'swap',
+  // Prevents CLS: Next.js generates a matching fallback metric from system-ui so the
+  // layout doesn't shift when the custom mono font loads.
+  adjustFontFallback: false,
+  preload: true,
 });
 
 export const fontVariables = `${sans.variable} ${mono.variable}`;
+

@@ -349,6 +349,13 @@ export function startSync(): () => void {
   };
 }
 
+/** Manually reset backoff and immediately trigger a sync cycle. */
+export function wakeSync(): void {
+  backoffUntil = 0;
+  failures = 0;
+  void syncNow();
+}
+
 export function forcedOfflineLabel() {
   return isForcedOffline();
 }

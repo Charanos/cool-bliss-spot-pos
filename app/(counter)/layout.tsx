@@ -1,6 +1,7 @@
 import { colour } from '@bliss/ui/tokens';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { SWRegister } from '../_components/sw-register';
 import { fontVariables } from '../fonts';
 import '../globals.css';
 
@@ -10,6 +11,9 @@ export const metadata: Metadata = {
   manifest: '/counter/manifest.webmanifest',
   applicationName: 'Bliss Counter',
   appleWebApp: { capable: true, title: 'Bliss Counter', statusBarStyle: 'black-translucent' },
+  icons: {
+    apple: '/counter/icon.svg',
+  },
 };
 
 export const viewport: Viewport = {
@@ -26,7 +30,10 @@ export const viewport: Viewport = {
 export default function CounterRootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-KE" data-theme="dark" data-surface="counter" className={fontVariables}>
-      <body className="min-h-dvh overflow-hidden bg-page text-ink antialiased">{children}</body>
+      <body className="min-h-dvh overflow-hidden bg-page text-ink antialiased">
+        <SWRegister />
+        {children}
+      </body>
     </html>
   );
 }

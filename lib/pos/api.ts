@@ -33,9 +33,13 @@ async function request<T>(path: string, init: RequestInit & { json?: unknown } =
   } catch {
     throw new NetworkUnavailable();
   }
-  if (response.status >= 500) throw new NetworkUnavailable();
+  if (response.status >= 500 || response.status === 404) throw new NetworkUnavailable();
   const text = await response.text();
-  return { status: response.status, body: text ? fromWire<T>(text) : (undefined as T) };
+  try {
+    return { status: response.status, body: text ? fromWire<T>(text) : (undefined as T) };
+  } catch {
+    throw new NetworkUnavailable();
+  }
 }
 
 export const api = {

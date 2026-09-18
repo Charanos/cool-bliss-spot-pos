@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react';
 import { useOutlet, useStaffDirectory } from '@/lib/pos/queries';
 import { signIn, useDevice, useSession } from '@/lib/pos/session';
 import { staffPhoto } from '@/lib/pos/staff-photos';
-import { useSync } from '@/lib/pos/sync';
+import { useSync, wakeSync } from '@/lib/pos/sync';
 
 const ROLE_LABEL: Record<string, string> = {
   waiter: 'Waiter',
@@ -166,7 +166,14 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
                     ))}
               </ul>
               {!sync.bootstrapped && sync.link !== 'synced' ? (
-                <p className="mt-8 text-body text-low">No connection. This {deviceWord} needs the network once to fetch the menu and the team.</p>
+                <div className="mt-12 flex items-center justify-between gap-12 rounded-sm border border-amber-500/20 bg-amber-500/10 px-16 py-10">
+                  <p className="text-body text-amber-200">
+                    No connection. This {deviceWord} needs the network once to fetch the menu and the team.
+                  </p>
+                  <VeilButton onClick={() => wakeSync()} className="shrink-0">
+                    Retry
+                  </VeilButton>
+                </div>
               ) : null}
             </div>
           </>
