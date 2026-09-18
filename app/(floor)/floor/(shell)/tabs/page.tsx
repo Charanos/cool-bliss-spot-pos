@@ -118,10 +118,10 @@ export default function TabsPage() {
       </header>
 
       {/* ── Workspace: Two Columns ─────────────────────────────────── */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-col tablet:flex-row flex-1 min-h-0 overflow-y-auto tablet:overflow-y-hidden no-scrollbar">
         
         {/* ── Main Column: Free Tables ─────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-24 pb-[160px] pt-24">
+        <div className="order-2 tablet:order-1 flex-1 tablet:overflow-y-auto no-scrollbar px-16 tablet:px-24 pb-[160px] tablet:pt-24">
           {loading ? (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-16">
               {Array.from({ length: 8 }, (_, i) => (
@@ -178,7 +178,7 @@ export default function TabsPage() {
         </div>
 
         {/* ── Right Rail: Open Tabs ────────────────────────────────── */}
-        <aside className="w-[360px] shrink-0 overflow-y-auto no-scrollbar border-l border-rule-raised/30 bg-sunken/30 shadow-[-1px_0_0_rgba(255,255,255,0.03),-12px_0_40px_-12px_rgba(0,0,0,0.2)] px-16 pb-[160px] pt-24 backdrop-blur-md">
+        <aside className="order-1 tablet:order-2 w-full tablet:w-[360px] shrink-0 tablet:overflow-y-auto no-scrollbar tablet:border-l tablet:border-rule-raised/30 tablet:bg-sunken/30 tablet:shadow-[-1px_0_0_rgba(255,255,255,0.03),-12px_0_40px_-12px_rgba(0,0,0,0.2)] px-16 pb-24 tablet:pb-[160px] pt-24 tablet:backdrop-blur-md">
           {loading ? (
             <div className="flex flex-col gap-12">
               {Array.from({ length: 4 }, (_, i) => (
