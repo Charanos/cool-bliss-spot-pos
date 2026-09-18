@@ -82,26 +82,42 @@ export default function TabsPage() {
     <div className="relative flex h-full flex-col min-h-0 bg-transparent overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────── */}
       <header className="shrink-0 z-10 border-b border-rule-raised/20 bg-page/85 px-24 pb-16 pt-24 backdrop-blur-md shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-x-24 gap-y-12">
-          <div className="flex items-center gap-16 min-w-0 flex-1">
-            <h1 className="text-heading font-medium tracking-tight text-ink">Tabs</h1>
+        <div className="flex flex-col gap-12 tablet:flex-row tablet:items-center tablet:justify-between tablet:gap-x-24">
+          <div className="flex flex-col gap-10 tablet:flex-row tablet:items-center tablet:gap-16 min-w-0">
+            <div className="flex items-center justify-between gap-12 tablet:w-auto">
+              <h1 className="text-heading font-medium tracking-tight text-ink">Tabs</h1>
+              <div className="tablet:hidden shrink-0">
+                <Segmented
+                  label="Whose tabs"
+                  size="md"
+                  value={scope}
+                  onChange={setScope}
+                  options={[
+                    { value: 'mine', label: 'Mine' },
+                    { value: 'everyone', label: 'Everyone' },
+                  ]}
+                />
+              </div>
+            </div>
             
             {/* Prominent Stats Pill */}
-            <div className="hidden tablet:block h-24 w-px bg-rule-raised/60" aria-hidden="true" />
-            <div className="flex items-center rounded-dot bg-sunken/80 px-12 py-4 border border-rule-raised/30 shadow-inner">
-              <MetaLine items={summaryItems} />
+            <div className="hidden tablet:block h-24 w-px bg-rule-raised/60 shrink-0" aria-hidden="true" />
+            <div className="flex items-center rounded-full bg-sunken/80 px-12 py-6 tablet:px-16 border border-rule-raised/30 shadow-inner w-fit max-w-full overflow-hidden">
+              <MetaLine items={summaryItems} className="flex-nowrap whitespace-nowrap overflow-hidden text-ellipsis" />
             </div>
           </div>
-          <Segmented
-            label="Whose tabs"
-            size="md"
-            value={scope}
-            onChange={setScope}
-            options={[
-              { value: 'mine', label: 'Mine' },
-              { value: 'everyone', label: 'Everyone' },
-            ]}
-          />
+          <div className="hidden tablet:block shrink-0">
+            <Segmented
+              label="Whose tabs"
+              size="md"
+              value={scope}
+              onChange={setScope}
+              options={[
+                { value: 'mine', label: 'Mine' },
+                { value: 'everyone', label: 'Everyone' },
+              ]}
+            />
+          </div>
         </div>
         <FilterChips
           label="Zone"
