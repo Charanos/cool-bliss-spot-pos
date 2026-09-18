@@ -10,9 +10,13 @@ declare global {
 
 declare const self: WorkerGlobalScope;
 
+// The Serwist webpack plugin requires the string 'self.__SW_MANIFEST' to be present.
+// We assign it to an ignored variable so it compiles, but we don't actually use it for precaching.
+const _ignoredManifest = self.__SW_MANIFEST;
+
 const serwist = new Serwist({
-  // We omit precacheEntries to ensure the app functions exclusively online
-  // and does not load stale offline bundles.
+  // We explicitly pass an empty array to ensure no stale offline bundles are precached
+  precacheEntries: [],
   skipWaiting: true,
   clientsClaim: true,
   runtimeCaching: [

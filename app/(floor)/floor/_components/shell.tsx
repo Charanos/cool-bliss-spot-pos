@@ -51,30 +51,29 @@ function DockLink({ item, active }: { item: DockNavItem; active: boolean }) {
       aria-current={active ? 'page' : undefined}
       title={item.label}
       className={cx(
-        'relative flex size-[46px] tablet:size-[50px] desktop:size-[56px] flex-col items-center justify-center rounded-full transition-colors press-feedback active:scale-95',
-        active ? 'text-ink' : 'text-ink-subtle hover:bg-control-hover/50 hover:text-ink',
+        'relative flex h-[60px] min-w-[60px] tablet:h-[68px] tablet:min-w-[68px] flex-col items-center justify-center rounded-[18px] transition-all press-feedback active:scale-95 gap-1',
+        active ? 'text-accent' : 'text-ink-subtle hover:text-ink',
       )}
     >
-      <span className="relative flex items-center justify-center">
-        <Glyph size={23} stroke={ICON_STROKE} aria-hidden="true" className={cx(active ? "drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]" : "", "desktop:scale-110")} />
-        {item.badge ? (
-          <CountBadge
-            count={item.badge}
-            tone={item.badgeTone ?? 'accent'}
-            className="absolute -right-[10px] -top-[6px] shadow-sm ring-2 ring-sunken scale-90 desktop:scale-100"
-          />
-        ) : null}
-        {item.alertDot ? (
-          <span
-            aria-hidden="true"
-            className="absolute -right-[3px] -top-[2px] size-2 rounded-dot bg-stop shadow-sm ring-2 ring-sunken"
-          />
-        ) : null}
+      <Glyph size={24} stroke={ICON_STROKE} aria-hidden="true" className={cx("transition-transform", active ? "scale-110" : "")} />
+      <span className={cx("text-[10px] tablet:text-[11px] font-medium tracking-wide", active ? "text-accent" : "")}>
+        {item.label}
       </span>
       {/* Sleek Mac-style active dot */}
       {active && (
-        <span className="absolute bottom-[3px] desktop:bottom-[4px] size-[4px] rounded-full bg-accent shadow-[0_0_8px_var(--color-accent)]" />
+        <span className="absolute bottom-[4px] tablet:bottom-[6px] size-[4px] rounded-full bg-accent shadow-[0_0_8px_var(--color-accent)]" />
       )}
+      {item.badge ? (
+        <span className={cx("absolute right-[10px] top-[6px] flex h-[16px] min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold ring-2 ring-raised shadow-sm", item.badgeTone === 'stop' ? 'bg-stop text-stop-ink' : 'bg-accent text-accent-ink')}>
+          {item.badge}
+        </span>
+      ) : null}
+      {item.alertDot ? (
+        <span
+          aria-hidden="true"
+          className="absolute right-[12px] top-[8px] size-2 rounded-full bg-stop shadow-sm ring-2 ring-raised"
+        />
+      ) : null}
     </Link>
   );
 }
@@ -289,66 +288,63 @@ export function FloorShell({ children }: { children: ReactNode }) {
         {/* ── Floating Bottom Dock (Sleek Dashboard Glass Dock) ──────────── */}
         <footer
           className={cx(
-            'pointer-events-none fixed bottom-16 desktop:bottom-24 z-40 flex transition-all duration-300',
+            'pointer-events-none fixed bottom-6 tablet:bottom-8 desktop:bottom-10 z-40 flex transition-all duration-300',
             pathname.startsWith('/floor/tabs') ? 'tablet:justify-start justify-center' : 'justify-center',
             isTabDetail
-              ? 'tablet:left-[180px] tablet:right-[340px] px-4 tablet:px-16 inset-x-0'
-              : pathname === '/floor/tabs'
-                ? 'inset-x-0 px-8 tablet:px-24'
-                : 'inset-x-0 px-4 tablet:px-8 desktop:px-12',
+              ? 'tablet:left-[180px] tablet:right-[340px] px-0 tablet:px-8 inset-x-0'
+              : 'inset-x-0 px-0 tablet:px-8 desktop:px-12',
           )}
         >
           <nav
             aria-label="Floor Navigation"
-            style={{
-              backdropFilter: 'blur(40px)',
-              WebkitBackdropFilter: 'blur(40px)',
-              backgroundColor: 'rgba(12, 18, 24, 0.85)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              boxShadow: '0 20px 40px -8px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.06)',
-            }}
             className={cx(
-              'pointer-events-auto flex items-center justify-between rounded-full shadow-2xl transition-all duration-300',
-              'px-5 py-2.5 tablet:px-7 tablet:py-3 desktop:px-9 desktop:py-3.5 gap-3 tablet:gap-5 desktop:gap-8',
+              'pointer-events-auto flex items-center rounded-[24px] tablet:rounded-[32px] shadow-lift transition-all duration-300',
+              'justify-between',
+              'px-4 py-2 tablet:px-6 tablet:py-3 desktop:px-8 desktop:py-3.5 gap-2 tablet:gap-5 desktop:gap-6',
+              'bg-raised border border-rule-raised',
               isTabDetail
-                ? 'w-full tablet:max-w-[540px] desktop:max-w-[780px] wide:max-w-[840px]'
-                : 'w-auto max-w-[calc(100%-32px)]',
+                ? 'w-full max-w-[calc(100%-16px)] tablet:max-w-[540px] desktop:max-w-[780px] wide:max-w-[840px]'
+                : 'w-full max-w-[calc(100%-16px)] tablet:w-auto tablet:max-w-none',
             )}
           >
-            {/* Nav icons group (Hidden on mobile inside Tab Detail to make room for Fire Order) */}
-            <div className={cx("flex items-center gap-2 tablet:gap-4 desktop:gap-6 shrink-0", isTabDetail ? "hidden tablet:flex" : "")}>
-              <DockLink item={navTabs} active={pathname.startsWith('/floor/tabs')} />
-              <DockLink item={navOrders} active={pathname.startsWith('/floor/orders')} />
+            {/* Scrollable Nav icons group */}
+            <div className="flex-1 overflow-x-auto no-scrollbar relative flex items-center [mask-image:linear-gradient(to_right,black_85%,transparent_100%)] tablet:[mask-image:none]">
+              <div className="flex items-center gap-1 tablet:gap-3 shrink-0 w-max pr-6 tablet:pr-0">
+                <DockLink item={navTabs} active={pathname.startsWith('/floor/tabs')} />
+                <DockLink item={navOrders} active={pathname.startsWith('/floor/orders')} />
 
-              {/* Separator */}
-              <div className="mx-1 tablet:mx-2 desktop:mx-4 h-[24px] desktop:h-[28px] w-px" style={{ background: 'rgba(255,255,255,0.08)' }} aria-hidden="true" />
+                {/* Separator */}
+                <div className="mx-1 tablet:mx-2 desktop:mx-3 h-[24px] w-px bg-rule-raised/50" aria-hidden="true" />
 
-              <DockLink item={navShift} active={pathname.startsWith('/floor/shift')} />
-              <DockLink item={navSettings} active={pathname.startsWith('/floor/settings')} />
+                <DockLink item={navShift} active={pathname.startsWith('/floor/shift')} />
+                <DockLink item={navSettings} active={pathname.startsWith('/floor/settings')} />
+              </div>
             </div>
 
-            {/* Right side: Search + Action */}
-            <div className="flex items-center gap-2 tablet:gap-4 desktop:gap-6 shrink-0">
+            {/* Separator between scrollable nav and fixed actions */}
+            <div className="hidden tablet:block h-[24px] w-px bg-rule-raised/50 shrink-0 mx-1" aria-hidden="true" />
+
+            {/* Right side: Fixed Search + Action */}
+            <div className="flex items-center gap-2 tablet:gap-4 desktop:gap-5 shrink-0 pl-1 tablet:pl-0">
               {/* Search button */}
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
                 aria-label="Quick search"
-                style={{ background: 'rgba(255,255,255,0.06)' }}
-                className="flex size-[48px] tablet:size-[56px] items-center justify-center rounded-full text-ink-subtle hover:text-ink transition-colors active:scale-95 press-feedback shrink-0"
+                className="flex size-[60px] tablet:size-[68px] items-center justify-center rounded-[18px] text-ink-subtle hover:text-ink transition-all active:scale-95 press-feedback shrink-0"
               >
-                <IconSearch size={22} stroke={ICON_STROKE} aria-hidden="true" className="desktop:scale-110" />
+                <IconSearch size={24} stroke={ICON_STROKE} aria-hidden="true" className="transition-transform" />
               </button>
 
               {/* Separator */}
               {pathname.startsWith('/floor/tabs') && (
-                <div className="h-[24px] desktop:h-[28px] w-px mx-0 tablet:mx-1 desktop:mx-2" style={{ background: 'rgba(255,255,255,0.08)' }} aria-hidden="true" />
+                <div className="h-[24px] w-px mx-1 tablet:mx-2 shrink-0 bg-rule-raised/50" aria-hidden="true" />
               )}
 
-              {/* Primary Action Slot (Walk-up tab, Fire order, End shift) portaled here */}
+              {/* Primary Action Slot */}
               <div
                 ref={setActionTarget}
-                className="flex items-center gap-2 tablet:gap-4 desktop:gap-6 empty:hidden shrink-0"
+                className="flex items-center gap-2 tablet:gap-4 shrink-0 empty:hidden"
               />
             </div>
           </nav>

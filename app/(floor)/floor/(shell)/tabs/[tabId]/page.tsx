@@ -8,7 +8,7 @@ import { MetaLine } from '@bliss/ui/components/working';
 import { SeatSelector } from '@bliss/ui/components/floor/seat-selector';
 import { useNow } from '@bliss/ui/hooks';
 import { orderFire } from '@bliss/ui/motion/floor';
-import { IconArrowsRightLeft, IconFlame, IconUserPlus } from '@tabler/icons-react';
+import { IconArrowsRightLeft, IconFlame, IconUserPlus, IconReceipt2 } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams, useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
@@ -217,12 +217,13 @@ export default function TabScreen() {
       <BaseAction>
         <Button
           variant="secondary"
-          size="lg"
+          size="xl"
+          icon={IconReceipt2}
+          iconOnly={true}
           onClick={() => setMobileTicketOpen(!mobileTicketOpen)}
-          className="tablet:hidden !rounded-full px-20 h-[48px] text-[14px] font-semibold shadow-md bg-sunken border border-rule-raised/50 hover:bg-control"
-        >
-          {mobileTicketOpen ? 'Hide' : 'Ticket'}
-        </Button>
+          className="tablet:hidden !rounded-[18px] size-[60px] shadow-md bg-sunken border border-rule-raised/50 hover:bg-control shrink-0"
+          aria-label={mobileTicketOpen ? 'Hide ticket' : 'View ticket'}
+        />
         <Button
           variant="primary"
           size="xl"
@@ -230,9 +231,9 @@ export default function TabScreen() {
           loading={firing}
           disabled={!detail || detail.draftCount === 0}
           onClick={() => void onFire()}
-          className="!rounded-full px-20 tablet:px-28 h-[48px] tablet:h-[56px] min-w-[140px] tablet:min-w-[180px] desktop:min-w-[280px] desktop:max-w-[340px] whitespace-nowrap text-[14px] tablet:text-[15px] font-semibold shadow-[0_8px_32px_-8px_var(--color-accent)] disabled:!bg-white/5 disabled:!text-ink-disabled disabled:shadow-none [&:not(:disabled)]:!bg-accent [&:not(:disabled)]:!text-accent-ink hover:[&:not(:disabled)]:scale-[1.02] hover:[&:not(:disabled)]:shadow-[0_12px_48px_-8px_var(--color-accent)] transition-all"
+          className="!rounded-[18px] tablet:!rounded-full px-12 tablet:px-28 h-[60px] tablet:h-[68px] min-w-[120px] tablet:min-w-[180px] desktop:min-w-[280px] desktop:max-w-[340px] whitespace-nowrap text-[14px] tablet:text-[15px] font-semibold shadow-[0_8px_32px_-8px_var(--color-accent)] disabled:!bg-white/5 disabled:!text-ink-disabled disabled:shadow-none [&:not(:disabled)]:!bg-accent [&:not(:disabled)]:!text-accent-ink hover:[&:not(:disabled)]:scale-[1.02] hover:[&:not(:disabled)]:shadow-[0_12px_48px_-8px_var(--color-accent)] transition-all shrink-0"
         >
-          {detail && detail.draftCount > 0 ? `Fire · ${detail.draftCount}` : 'Fire order'}
+          {detail && detail.draftCount > 0 ? `Fire · ${detail.draftCount}` : 'Fire'}
         </Button>
       </BaseAction>
 
