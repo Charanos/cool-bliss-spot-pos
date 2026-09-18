@@ -27,8 +27,10 @@ export const TicketColumn = forwardRef<
     timezone: string;
     metaItems: Array<{ key: string; text: string; mono?: boolean } | null>;
     onLineAction: (lineId: string, action: RowAction) => void;
+    mobileOpen?: boolean;
+    onCloseMobile?: () => void;
   }
->(function TicketColumn({ detail, timezone, metaItems, onLineAction }, ref) {
+>(function TicketColumn({ detail, timezone, metaItems, onLineAction, mobileOpen, onCloseMobile }, ref) {
   const listRef = useRef<HTMLDivElement>(null);
   const pendingFlip = useRef<FlipState | null>(null);
   const known = useRef<Set<string> | null>(null);
@@ -68,16 +70,26 @@ export const TicketColumn = forwardRef<
     detail.selected === 'shared' ? 'Shared' : selectedSeat ? `Seat ${selectedSeat.seatNo}${selectedSeat.label ? ` · ${displaySeatLabel(selectedSeat.label)}` : ''}` : null;
 
   return (
-    <section aria-label="Ticket" className="flex min-h-0 w-rail-ticket shrink-0 flex-col bg-page/50 shadow-[inset_1px_0_8px_rgba(0,0,0,0.15)] z-10 relative">
+    <section aria-label="Ticket" className={cx(
+      "flex flex-col z-40 bg-page shadow-[inset_1px_0_8px_rgba(0,0,0,0.15)]",
+      mobileOpen ? "fixed inset-0 min-h-dvh safe-bottom" : "hidden tablet:flex min-h-0 w-rail-ticket shrink-0 relative"
+    )}>
       {/* ── Title section moved from center panel ──────────────────────── */}
-      <div className="flex flex-col justify-center shrink-0 px-24 border-b border-rule h-[88px]">
-        <h1 className="text-title font-medium tracking-tight text-ink leading-tight truncate">
-          {detail?.label ?? '\u00a0'}
-        </h1>
-        {metaItems.length > 0 && (
-          <div className="flex items-center min-w-0 pt-2">
-            <MetaLine items={metaItems} className="flex-nowrap whitespace-nowrap overflow-hidden text-ellipsis text-body-sm text-ink-muted" />
-          </div>
+      <div className="flex shrink-0 items-center justify-between px-24 border-b border-rule h-[88px]">
+        <div className="flex flex-col justify-center min-w-0">
+          <h1 className="text-title font-medium tracking-tight text-ink leading-tight truncate">
+            {detail?.label ?? '\u00a0'}
+          </h1>
+          {metaItems.length > 0 && (
+            <div className="flex items-center min-w-0 pt-2">
+              <MetaLine items={metaItems} className="flex-nowrap whitespace-nowrap overflow-hidden text-ellipsis text-body-sm text-ink-muted" />
+            </div>
+          )}
+        </div>
+        {mobileOpen && (
+          <button type="button" onClick={onCloseMobile} className="p-8 -mr-8 text-ink-subtle hover:text-ink transition-colors font-medium text-body-sm active:scale-95 press-feedback">
+            Done
+          </button>
         )}
       </div>
 

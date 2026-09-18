@@ -42,7 +42,7 @@ export function TablesRail({
   return (
     <aside
       aria-label="Zones and my tabs"
-      className="flex min-h-0 w-rail-tables shrink-0 flex-col bg-page/60 border-r border-rule shadow-[2px_0_20px_-4px_rgba(0,0,0,0.4)] relative z-10 select-none"
+      className="hidden tablet:flex min-h-0 w-rail-tables shrink-0 flex-col bg-page/60 border-r border-rule shadow-[2px_0_20px_-4px_rgba(0,0,0,0.4)] relative z-10 select-none"
     >
       {/* ── 1. Zone filter section ──────────────────────────────────── */}
       <div className="shrink-0 px-8 pt-12">

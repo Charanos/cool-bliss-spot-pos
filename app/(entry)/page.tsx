@@ -46,7 +46,7 @@ export default function EntryPage() {
     <>
       <AmbientBarArtwork />
 
-      <main className="mx-auto flex min-h-dvh max-w-[1040px] flex-col justify-between px-24 py-40 tablet:px-32 tablet:py-56">
+      <main className="mx-auto flex min-h-dvh max-w-[1040px] flex-col justify-between px-16 py-24 tablet:px-32 tablet:py-56">
         <header className="flex items-center justify-between">
           <BlissMark size={64} label="Bliss" />
         </header>
@@ -61,7 +61,7 @@ export default function EntryPage() {
                 {hello}{', '}<span className="text-ink-muted">{ask}</span>
               </span>
             </h1>
-            <p className="mt-20 max-w-[54ch] text-body-lg text-ink-muted">Every order is kept by the seat, so the bill, the bar and the stock always agree.</p>
+            <p className="mt-16 tablet:mt-20 max-w-[54ch] text-body tablet:text-body-lg text-ink-muted">Every order is kept by the seat, so the bill, the bar and the stock always agree.</p>
           </div>
 
           <ul className="grid grid-cols-1 gap-24 tablet:grid-cols-2">
@@ -139,7 +139,7 @@ function SurfaceCard({ href, badge, title, body, telemetry, emphasis }: { href: 
         <ActionNode />
       </span>
       <span className="relative z-10 my-auto block py-16">
-        <span className="block text-title-lg font-medium text-ink tablet:text-heading">{title}</span>
+        <span className="block text-title tablet:text-heading font-medium text-ink">{title}</span>
         <span className="mt-8 block text-body-sm text-ink-muted">{body}</span>
       </span>
       <span className="relative z-10 flex items-center justify-between pt-8">{telemetry}</span>

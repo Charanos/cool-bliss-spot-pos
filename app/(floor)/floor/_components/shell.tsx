@@ -246,7 +246,7 @@ export function FloorShell({ children }: { children: ReactNode }) {
           {/* Right: Telemetry + Staff Profile */}
           <div className="flex flex-1 items-center justify-end gap-16 tablet:gap-20">
             {/* Live Clock & Date */}
-            <div className="text-right leading-tight select-none">
+            <div className="hidden tablet:block text-right leading-tight select-none">
               <div className="font-mono tabular text-body-sm font-medium text-ink">
                 {formatTime(now)}
               </div>
@@ -290,11 +290,11 @@ export function FloorShell({ children }: { children: ReactNode }) {
         <footer
           className={cx(
             'pointer-events-none fixed bottom-16 desktop:bottom-24 z-40 flex transition-all duration-300',
-            pathname.startsWith('/floor/tabs') ? 'justify-start' : 'justify-center',
+            pathname.startsWith('/floor/tabs') ? 'tablet:justify-start justify-center' : 'justify-center',
             isTabDetail
-              ? 'left-[180px] right-[340px] px-16'
+              ? 'tablet:left-[180px] tablet:right-[340px] px-4 tablet:px-16 inset-x-0'
               : pathname === '/floor/tabs'
-                ? 'inset-x-0 px-24'
+                ? 'inset-x-0 px-8 tablet:px-24'
                 : 'inset-x-0 px-4 tablet:px-8 desktop:px-12',
           )}
         >

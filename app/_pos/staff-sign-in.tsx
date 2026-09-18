@@ -98,8 +98,8 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
   };
 
   return (
-    <div className="relative grid h-dvh grid-cols-[minmax(320px,2fr)_3fr] bg-page">
-      <section className="relative flex flex-col justify-between overflow-hidden p-40">
+    <div className="relative flex h-dvh flex-col tablet:grid tablet:grid-cols-[minmax(320px,2fr)_3fr] bg-page">
+      <section className="relative flex min-h-[180px] tablet:min-h-0 shrink-0 tablet:shrink flex-col justify-between overflow-hidden p-24 tablet:p-40">
         <PhotoBackdrop src={backdrop} />
 
         <div className="relative z-10">
@@ -119,7 +119,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
         <FadeRule orientation="y" className="absolute bottom-[10%] right-0 top-[10%] z-20" />
       </section>
 
-      <section className="relative flex min-h-0 flex-1 flex-col justify-between overflow-y-auto p-40">
+      <section className="relative flex min-h-0 flex-1 flex-col justify-between overflow-y-auto p-24 tablet:p-40">
         <AmbientTerminalArtwork />
         {!person ? (
           <>
