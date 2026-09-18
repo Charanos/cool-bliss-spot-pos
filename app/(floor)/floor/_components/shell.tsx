@@ -315,8 +315,8 @@ export function FloorShell({ children }: { children: ReactNode }) {
                 : 'w-auto max-w-[calc(100%-32px)]',
             )}
           >
-            {/* Nav icons group */}
-            <div className="flex items-center gap-1.5 tablet:gap-2.5 desktop:gap-3.5 shrink-0">
+            {/* Nav icons group (Hidden on mobile inside Tab Detail to make room for Fire Order) */}
+            <div className={cx("flex items-center gap-1.5 tablet:gap-2.5 desktop:gap-3.5 shrink-0", isTabDetail ? "hidden tablet:flex" : "")}>
               <DockLink item={navTabs} active={pathname.startsWith('/floor/tabs')} />
               <DockLink item={navOrders} active={pathname.startsWith('/floor/orders')} />
 

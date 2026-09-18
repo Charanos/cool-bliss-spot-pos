@@ -234,9 +234,9 @@ export default function TabsPage() {
           size="xl"
           icon={IconPlus}
           onClick={() => setSheet({ open: true, table: null })}
-          className="w-[260px] !rounded-full shadow-md !bg-ink !text-page hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(255,255,255,0.15)] transition-all"
+          className="w-[48px] tablet:w-[260px] h-[48px] tablet:h-auto p-0 tablet:px-24 gap-0 tablet:gap-12 !rounded-full shadow-md !bg-ink !text-page hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(255,255,255,0.15)] transition-all flex items-center justify-center overflow-hidden"
         >
-          Open a walk-up tab
+          <span className="hidden tablet:inline">Open a walk-up tab</span>
         </Button>
       </BaseAction>
 
