@@ -316,39 +316,39 @@ export function FloorShell({ children }: { children: ReactNode }) {
             )}
           >
             {/* Nav icons group (Hidden on mobile inside Tab Detail to make room for Fire Order) */}
-            <div className={cx("flex items-center gap-1.5 tablet:gap-2.5 desktop:gap-3.5 shrink-0", isTabDetail ? "hidden tablet:flex" : "")}>
+            <div className={cx("flex items-center gap-2 tablet:gap-4 desktop:gap-6 shrink-0", isTabDetail ? "hidden tablet:flex" : "")}>
               <DockLink item={navTabs} active={pathname.startsWith('/floor/tabs')} />
               <DockLink item={navOrders} active={pathname.startsWith('/floor/orders')} />
 
               {/* Separator */}
-              <div className="mx-2 tablet:mx-3 desktop:mx-4 h-[22px] desktop:h-[26px] w-px" style={{ background: 'rgba(255,255,255,0.08)' }} aria-hidden="true" />
+              <div className="mx-1 tablet:mx-2 desktop:mx-4 h-[24px] desktop:h-[28px] w-px" style={{ background: 'rgba(255,255,255,0.08)' }} aria-hidden="true" />
 
               <DockLink item={navShift} active={pathname.startsWith('/floor/shift')} />
               <DockLink item={navSettings} active={pathname.startsWith('/floor/settings')} />
             </div>
 
             {/* Right side: Search + Action */}
-            <div className="flex items-center gap-2.5 tablet:gap-4 desktop:gap-6 shrink-0">
+            <div className="flex items-center gap-2 tablet:gap-4 desktop:gap-6 shrink-0">
               {/* Search button */}
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
                 aria-label="Quick search"
                 style={{ background: 'rgba(255,255,255,0.06)' }}
-                className="flex size-[42px] tablet:size-[46px] desktop:size-[50px] items-center justify-center rounded-full text-ink-subtle hover:text-ink transition-colors active:scale-95 press-feedback"
+                className="flex size-[48px] tablet:size-[56px] items-center justify-center rounded-full text-ink-subtle hover:text-ink transition-colors active:scale-95 press-feedback shrink-0"
               >
-                <IconSearch size={20} stroke={ICON_STROKE} aria-hidden="true" className="desktop:scale-110" />
+                <IconSearch size={22} stroke={ICON_STROKE} aria-hidden="true" className="desktop:scale-110" />
               </button>
 
               {/* Separator */}
               {pathname.startsWith('/floor/tabs') && (
-                <div className="h-[22px] desktop:h-[26px] w-px mx-1 desktop:mx-2" style={{ background: 'rgba(255,255,255,0.08)' }} aria-hidden="true" />
+                <div className="h-[24px] desktop:h-[28px] w-px mx-0 tablet:mx-1 desktop:mx-2" style={{ background: 'rgba(255,255,255,0.08)' }} aria-hidden="true" />
               )}
 
               {/* Primary Action Slot (Walk-up tab, Fire order, End shift) portaled here */}
               <div
                 ref={setActionTarget}
-                className="flex items-center empty:hidden"
+                className="flex items-center gap-2 tablet:gap-4 desktop:gap-6 empty:hidden shrink-0"
               />
             </div>
           </nav>

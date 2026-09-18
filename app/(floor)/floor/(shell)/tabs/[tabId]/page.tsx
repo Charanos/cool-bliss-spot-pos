@@ -219,18 +219,18 @@ export default function TabScreen() {
           variant="secondary"
           size="lg"
           onClick={() => setMobileTicketOpen(!mobileTicketOpen)}
-          className="tablet:hidden !rounded-full px-20 h-[42px] text-[13.5px] font-semibold shadow-[0_8px_32px_-8px_rgba(0,0,0,0.2)] bg-page/90 backdrop-blur-md border border-rule"
+          className="tablet:hidden !rounded-full px-20 h-[48px] text-[14px] font-semibold shadow-md bg-sunken border border-rule-raised/50 hover:bg-control"
         >
           {mobileTicketOpen ? 'Hide' : 'Ticket'}
         </Button>
         <Button
           variant="primary"
-          size="lg"
+          size="xl"
           icon={IconFlame}
           loading={firing}
           disabled={!detail || detail.draftCount === 0}
           onClick={() => void onFire()}
-          className="!rounded-full px-20 tablet:px-24 desktop:px-28 h-[42px] tablet:h-[46px] desktop:h-[50px] min-w-[120px] tablet:min-w-[180px] desktop:min-w-[280px] desktop:max-w-[340px] whitespace-nowrap text-[13.5px] tablet:text-[14.5px] desktop:text-[15px] font-semibold shadow-[0_8px_32px_-8px_var(--color-accent)] disabled:!bg-white/5 disabled:!text-ink-disabled disabled:shadow-none [&:not(:disabled)]:!bg-accent [&:not(:disabled)]:!text-accent-ink hover:[&:not(:disabled)]:scale-[1.02] hover:[&:not(:disabled)]:shadow-[0_12px_48px_-8px_var(--color-accent)] transition-all"
+          className="!rounded-full px-20 tablet:px-28 h-[48px] tablet:h-[56px] min-w-[140px] tablet:min-w-[180px] desktop:min-w-[280px] desktop:max-w-[340px] whitespace-nowrap text-[14px] tablet:text-[15px] font-semibold shadow-[0_8px_32px_-8px_var(--color-accent)] disabled:!bg-white/5 disabled:!text-ink-disabled disabled:shadow-none [&:not(:disabled)]:!bg-accent [&:not(:disabled)]:!text-accent-ink hover:[&:not(:disabled)]:scale-[1.02] hover:[&:not(:disabled)]:shadow-[0_12px_48px_-8px_var(--color-accent)] transition-all"
         >
           {detail && detail.draftCount > 0 ? `Fire · ${detail.draftCount}` : 'Fire order'}
         </Button>
