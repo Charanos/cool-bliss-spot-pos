@@ -99,7 +99,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
 
   return (
     <div className="relative flex h-dvh flex-col tablet:grid tablet:grid-cols-[minmax(320px,2fr)_3fr] bg-page">
-      <section className="relative flex min-h-[180px] tablet:min-h-0 shrink-0 tablet:shrink flex-col justify-between overflow-hidden p-24 tablet:p-40">
+      <section className="hidden tablet:flex relative min-h-[180px] tablet:min-h-0 shrink-0 tablet:shrink flex-col justify-between overflow-hidden p-24 tablet:p-40">
         <PhotoBackdrop src={backdrop} />
 
         <div className="relative z-10">
