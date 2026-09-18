@@ -86,18 +86,6 @@ export default function TabsPage() {
           <div className="flex flex-col gap-10 tablet:flex-row tablet:items-center tablet:gap-16 min-w-0">
             <div className="flex items-center justify-between gap-12 tablet:w-auto">
               <h1 className="text-heading font-medium tracking-tight text-ink">Tabs</h1>
-              <div className="tablet:hidden shrink-0">
-                <Segmented
-                  label="Whose tabs"
-                  size="md"
-                  value={scope}
-                  onChange={setScope}
-                  options={[
-                    { value: 'mine', label: 'Mine' },
-                    { value: 'everyone', label: 'Everyone' },
-                  ]}
-                />
-              </div>
             </div>
             
             {/* Prominent Stats Pill */}
