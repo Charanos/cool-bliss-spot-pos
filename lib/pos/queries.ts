@@ -267,47 +267,99 @@ export function useStaffDirectory(): StaffDirectoryEntry[] | undefined {
   return useLiveQuery(() => posDb().staff.toArray(), []);
 }
 
+export interface FiredOrderLine {
+  line: OrderLine;
+  name: string;
+  seatNo: number | null;
+  state: TicketLineState;
+  modifiers: string[];
+}
+
 export interface FiredOrderView {
   orderId: string;
   tabId: string;
   label: string;
   firedAt: number;
   unsent: boolean;
-  lines: { line: OrderLine; name: string; seatNo: number | null; state: TicketLineState }[];
-  state: 'held' | 'at_bar' | 'poured' | 'needs_you';
+  lines: FiredOrderLine[];
+  state: 'held' | 'at_bar' | 'poured' | 'served' | 'needs_you';
+  deliveredAt?: number;
+  waiterName?: string;
+  waiterId?: string;
+  zoneName?: string;
+  total: Cents;
 }
 
-export function useFiredOrders(staffId: string | undefined): FiredOrderView[] | undefined {
+export function useFiredOrders(staffId?: string | null): FiredOrderView[] | undefined {
   return useLiveQuery(async () => {
-    if (!staffId) return [];
+    if (staffId === undefined) return [];
     const db = posDb();
-    const [tabs, orders, lines, seats, variants, tables, unsent] = await Promise.all([
-      db.tabs.where('assignedTo').equals(staffId).toArray(),
+    const [tabs, orders, lines, seats, variants, tables, zones, staff, modifiers, modDefs, unsent, allMeta] = await Promise.all([
+      staffId === null
+        ? db.tabs.where('status').anyOf('open', 'part_settled', 'settling').toArray()
+        : db.tabs.where('assignedTo').equals(staffId).toArray(),
       db.orders.toArray(),
       db.lines.toArray(),
       db.seats.toArray(),
       db.variants.toArray(),
       db.serviceTables.toArray(),
+      db.zones.toArray(),
+      db.staff.toArray(),
+      db.lineModifiers.toArray(),
+      db.modifiers.toArray(),
       unsentOrderIds(),
+      db.meta.toArray(),
     ]);
-    const mine = new Map(tabs.filter((t) => t.status === 'open' || t.status === 'part_settled').map((t) => [t.id, t]));
+    const relevantTabs = new Map(
+      tabs
+        .filter((t) => t.status === 'open' || t.status === 'part_settled' || t.status === 'settling')
+        .map((t) => [t.id, t]),
+    );
+    const deliveredOrders = new Map<string, { deliveredAt: number; deliveredBy: string }>();
+    for (const m of allMeta) {
+      if (typeof m.key === 'string' && m.key.startsWith('orderDelivered:')) {
+        const oId = m.key.slice('orderDelivered:'.length);
+        deliveredOrders.set(oId, m.value as { deliveredAt: number; deliveredBy: string });
+      }
+    }
     const nameOf = new Map(variants.map((v) => [v.id, v.name]));
+    const modifierNameOf = new Map(modDefs.map((m) => [m.id, m.name]));
+    const staffNameOf = new Map(staff.map((s) => [s.id, s.displayName]));
+    const zoneNameOf = new Map(zones.map((z) => [z.id, z.name]));
+    const tableById = new Map(tables.map((t) => [t.id, t]));
+
     return orders
-      .filter((o) => mine.has(o.tabId) && o.status !== 'draft' && o.firedAt)
+      .filter((o) => relevantTabs.has(o.tabId) && o.status !== 'draft' && o.firedAt)
       .sort((a, b) => (b.firedAt ?? 0) - (a.firedAt ?? 0))
       .map((o) => {
-        const tab = mine.get(o.tabId)!;
-        const table = tables.find((t) => t.id === tab.serviceTableId);
+        const tab = relevantTabs.get(o.tabId)!;
+        const table = tab.serviceTableId ? tableById.get(tab.serviceTableId) : undefined;
         const own = lines
           .filter((l) => l.orderId === o.id && l.status !== 'voided')
-          .map((l) => ({ line: l, name: nameOf.get(l.productVariantId) ?? '', seatNo: seats.find((s) => s.id === l.tabSeatId)?.seatNo ?? null, state: lineState(l, unsent) }));
+          .map((l) => {
+            const lineMods = modifiers
+              .filter((m) => m.orderLineId === l.id)
+              .map((m) => modifierNameOf.get(m.modifierId) ?? '')
+              .filter(Boolean);
+            return {
+              line: l,
+              name: nameOf.get(l.productVariantId) ?? '',
+              seatNo: seats.find((s) => s.id === l.tabSeatId)?.seatNo ?? null,
+              state: lineState(l, unsent),
+              modifiers: lineMods,
+            };
+          });
+        const delivery = deliveredOrders.get(o.id);
+        const isAllPoured = own.length > 0 && own.every((l) => l.state === 'poured');
         const state: FiredOrderView['state'] = unsent.has(o.id)
           ? 'held'
           : own.some((l) => l.state === 'ran_out')
             ? 'needs_you'
-            : own.every((l) => l.state === 'poured')
-              ? 'poured'
-              : 'at_bar';
+            : delivery
+              ? 'served'
+              : isAllPoured
+                ? 'poured'
+                : 'at_bar';
         return {
           orderId: o.id,
           tabId: o.tabId,
@@ -316,6 +368,11 @@ export function useFiredOrders(staffId: string | undefined): FiredOrderView[] | 
           unsent: unsent.has(o.id),
           lines: own,
           state,
+          deliveredAt: delivery?.deliveredAt,
+          waiterName: staffNameOf.get(tab.assignedTo) ?? '',
+          waiterId: tab.assignedTo,
+          zoneName: tab.zoneId ? zoneNameOf.get(tab.zoneId) : undefined,
+          total: sum(own.map((l) => l.line.lineTotalCents)),
         };
       })
       .filter((o) => o.lines.length > 0);

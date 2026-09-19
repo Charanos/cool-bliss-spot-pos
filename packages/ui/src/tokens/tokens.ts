@@ -37,6 +37,7 @@ export const colour = {
   },
   signal: {
     poured: { light: '#2E7D52', dark: '#63B98A' },
+    served: { light: '#235896', dark: '#7FA8E0' },
     low: { light: '#97591A', dark: '#E0A35A' },
     stop: { light: '#A33232', dark: '#E08585' },
     info: { light: '#1F6E82', dark: '#6FC6D6' },
@@ -104,6 +105,7 @@ export const themes = {
     'attention-subtle': e[300],
     money: e[300],
     poured: s.poured.dark,
+    served: s.served.dark,
     low: s.low.dark,
     stop: s.stop.dark,
     'stop-ink': f[950],
@@ -130,6 +132,8 @@ export const themes = {
     /* Working surfaces, docs/13-floor-tabs-revamp.md: a tint on the row it marks, never a nested box. */
     'accent-wash': alpha(g[300], 10),
     'stop-wash': alpha(s.stop.dark, 10),
+    'poured-wash': alpha(s.poured.dark, 10),
+    'served-wash': alpha(s.served.dark, 10),
   },
   light: {
     page: f[0],
@@ -156,6 +160,7 @@ export const themes = {
     'attention-subtle': e[600],
     money: f[900],
     poured: s.poured.light,
+    served: s.served.light,
     low: s.low.light,
     stop: s.stop.light,
     'stop-ink': f[0],
@@ -182,6 +187,8 @@ export const themes = {
     glint: f[0],
     'accent-wash': alpha(g[600], 8),
     'stop-wash': alpha(s.stop.light, 8),
+    'poured-wash': alpha(s.poured.light, 8),
+    'served-wash': alpha(s.served.light, 8),
   },
 } as const;
 

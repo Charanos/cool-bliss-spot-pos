@@ -206,6 +206,7 @@
   --color-attention-subtle: var(--bliss-attention-subtle);
   --color-money: var(--bliss-money);
   --color-poured: var(--bliss-poured);
+  --color-served: var(--bliss-served);
   --color-low: var(--bliss-low);
   --color-stop: var(--bliss-stop);
   --color-stop-ink: var(--bliss-stop-ink);
@@ -230,6 +231,8 @@
   --color-glint: var(--bliss-glint);
   --color-accent-wash: var(--bliss-accent-wash);
   --color-stop-wash: var(--bliss-stop-wash);
+  --color-poured-wash: var(--bliss-poured-wash);
+  --color-served-wash: var(--bliss-served-wash);
   --color-scrim: var(--bliss-scrim);
   --shadow-raised: var(--bliss-shadow-raised);
   --shadow-lift: var(--bliss-shadow-lift);
@@ -263,6 +266,7 @@
   --bliss-attention-subtle: #97591A;
   --bliss-money: #151B20;
   --bliss-poured: #2E7D52;
+  --bliss-served: #235896;
   --bliss-low: #97591A;
   --bliss-stop: #A33232;
   --bliss-stop-ink: #FBFCFD;
@@ -287,6 +291,8 @@
   --bliss-glint: #FBFCFD;
   --bliss-accent-wash: color-mix(in oklab, #1F6E82 8%, transparent);
   --bliss-stop-wash: color-mix(in oklab, #A33232 8%, transparent);
+  --bliss-poured-wash: color-mix(in oklab, #2E7D52 8%, transparent);
+  --bliss-served-wash: color-mix(in oklab, #235896 8%, transparent);
   --bliss-scrim: rgba(11, 16, 21, 0.55);
   --bliss-shadow-raised: 0 1px 2px rgba(11, 16, 21, 0.05);
   --bliss-shadow-lift: 0 12px 32px -12px rgba(11, 16, 21, 0.12);
@@ -319,6 +325,7 @@
   --bliss-attention-subtle: #E9BE86;
   --bliss-money: #E9BE86;
   --bliss-poured: #63B98A;
+  --bliss-served: #7FA8E0;
   --bliss-low: #E0A35A;
   --bliss-stop: #E08585;
   --bliss-stop-ink: #0B1015;
@@ -343,6 +350,8 @@
   --bliss-glint: #FBFCFD;
   --bliss-accent-wash: color-mix(in oklab, #6FC6D6 10%, transparent);
   --bliss-stop-wash: color-mix(in oklab, #E08585 10%, transparent);
+  --bliss-poured-wash: color-mix(in oklab, #63B98A 10%, transparent);
+  --bliss-served-wash: color-mix(in oklab, #7FA8E0 10%, transparent);
   --bliss-scrim: rgba(11, 16, 21, 0.55);
   --bliss-shadow-raised: none;
   --bliss-shadow-lift: 0 12px 32px -8px rgba(0, 0, 0, 0.5);

@@ -464,3 +464,65 @@ export async function fireOrder(tabId: string): Promise<number> {
   return fired;
 }
 
+/* ----------------------------------------------------------- order delivery */
+
+/**
+ * Mark an order as delivered/served to the table by the floor waiter.
+ * Flow distinction: Counter bartender pours (lines become poured/servedAt);
+ * Floor waiter takes drinks to the table and records delivery.
+ */
+export async function markOrderDelivered(orderId: string): Promise<void> {
+  const ctx = await context();
+  await setMeta(META.orderDelivered(orderId), {
+    deliveredAt: Date.now(),
+    deliveredBy: ctx.session.staffId,
+  });
+  afterCommit();
+}
+
+/**
+ * Revert order delivery status back to poured.
+ */
+export async function unmarkOrderDelivered(orderId: string): Promise<void> {
+  await posDb().meta.delete(META.orderDelivered(orderId));
+  afterCommit();
+}
+
+/**
+ * Mark all active orders for a given tab as delivered/served to the table.
+ */
+export async function markTableOrdersDelivered(tabId: string): Promise<void> {
+  const ctx = await context();
+  const db = posDb();
+  const orders = await db.orders.where('tabId').equals(tabId).toArray();
+  const now = Date.now();
+  for (const o of orders) {
+    await setMeta(META.orderDelivered(o.id), {
+      deliveredAt: now,
+      deliveredBy: ctx.session.staffId,
+    });
+  }
+  afterCommit();
+}
+
+/**
+ * Mark an order's pending lines as poured in local database.
+ */
+export async function markOrderPoured(orderId: string): Promise<void> {
+  const ctx = await context();
+  const db = posDb();
+  const now = Date.now();
+  await db.transaction('rw', [db.lines], async () => {
+    const lines = await db.lines.where('orderId').equals(orderId).toArray();
+    const pending = lines.filter((l) => l.status === 'pending');
+    if (pending.length === 0) return;
+    await db.lines.bulkUpdate(
+      pending.map((l) => ({
+        key: l.id,
+        changes: { status: 'served' as const, servedAt: now, servedBy: ctx.session.staffId },
+      })),
+    );
+  });
+  afterCommit();
+}
+

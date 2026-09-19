@@ -176,6 +176,7 @@ export const META = {
   businessDate: 'businessDate',
   bootstrapped: 'bootstrapped',
   selectedSeat: (tabId: string) => `selectedSeat:${tabId}`,
+  orderDelivered: (orderId: string) => `orderDelivered:${orderId}`,
   forceOffline: 'dev.forceOffline',
   onboarded: 'onboarded',
 } as const;

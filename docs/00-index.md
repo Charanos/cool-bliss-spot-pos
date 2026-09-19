@@ -61,6 +61,10 @@ This is not a rename. Roughly a third of the previous system is gone and one sig
 
 9. `09-claude-code-prompts.md`: eight phased build prompts.
 10. `10-claude-design-prompts.md`: screen-by-screen design prompts.
+11. `12-surface-language.md`: the atmosphere layer (entry, sign-in).
+12. `13-floor-tabs-revamp.md`: floor tabs, tab cards, table selector, and dialogs.
+13. `14-surfaces-counter-and-sync.md`: counter surfaces and sync topology.
+14. `15-floor-orders-revamp.md`: floor orders, live ticket queue, distinct tokens (`served`/`poured`), action modal, and shift handoff.
 
 ---
 

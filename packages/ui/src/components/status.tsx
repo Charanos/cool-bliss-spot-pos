@@ -1,9 +1,10 @@
 import { cx } from '../lib/cx';
 
-export type Tone = 'poured' | 'low' | 'stop' | 'info' | 'neutral' | 'accent';
+export type Tone = 'poured' | 'served' | 'low' | 'stop' | 'info' | 'neutral' | 'accent';
 
 const dotTone: Record<Tone, string> = {
   poured: 'bg-poured',
+  served: 'bg-served',
   low: 'bg-low',
   stop: 'bg-stop',
   info: 'bg-info',
@@ -13,6 +14,7 @@ const dotTone: Record<Tone, string> = {
 
 const textTone: Record<Tone, string> = {
   poured: 'text-poured',
+  served: 'text-served',
   low: 'text-low',
   stop: 'text-stop',
   info: 'text-info',
