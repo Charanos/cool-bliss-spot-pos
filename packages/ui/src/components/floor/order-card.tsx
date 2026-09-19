@@ -273,7 +273,6 @@ export function OrderCard({
                   <Badge tone="served" className="px-6 py-2 tablet:px-8 tablet:py-2 font-mono text-micro tablet:text-badge shrink-0">
                     <Dot tone="served" />
                     <span>
-                      <span className="hidden tablet:inline">Served · </span>
                       <span>{deliveredAt ? formatTime(deliveredAt, timezone) : (l.servedAt ? formatTime(l.servedAt, timezone) : 'Served')}</span>
                     </span>
                   </Badge>
@@ -281,7 +280,6 @@ export function OrderCard({
                   <Badge tone="poured" className="px-6 py-2 tablet:px-8 tablet:py-2 font-mono text-micro tablet:text-badge shrink-0">
                     <Dot tone="poured" />
                     <span>
-                      <span className="hidden tablet:inline">Poured · </span>
                       <span>{l.servedAt ? formatTime(l.servedAt, timezone) : 'Poured'}</span>
                     </span>
                   </Badge>
@@ -323,7 +321,7 @@ export function OrderCard({
             </div>
           </div>
         ) : isPoured ? (
-          <div className="flex items-center justify-between gap-8 rounded-xl bg-poured-wash px-10 py-6 tablet:px-12 tablet:py-8 text-body-sm text-poured transition-colors group-hover:bg-poured/[0.14]">
+          <div className="flex items-center justify-between gap-8 rounded-lg bg-poured-wash px-10 py-6 tablet:px-12 tablet:py-8 text-body-sm text-poured transition-colors group-hover:bg-poured/[0.14]">
             <div className="flex items-center gap-6 tablet:gap-8 min-w-0">
               <IconCheck size={15} stroke={ICON_STROKE} className="shrink-0 text-poured" />
               <span className="text-micro tablet:text-body-sm font-medium truncate">
