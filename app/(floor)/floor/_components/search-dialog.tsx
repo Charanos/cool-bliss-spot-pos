@@ -5,7 +5,7 @@ import { formatKes } from '@bliss/shared/money';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { CountBadge } from '@bliss/ui/components/working';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconArrowRight, IconLayoutGrid, IconSearch, IconSparkles, IconX } from '@tabler/icons-react';
+import { IconArrowRight, IconLayoutGrid, IconSearch, IconTag, IconX } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { posDb } from '@/lib/pos/db';
@@ -268,7 +268,7 @@ export function SearchDialog({ open, onClose }: SearchDialogProps) {
                     >
                       <div className="flex items-center gap-12 min-w-0">
                         <div className="flex size-control-sm items-center justify-center rounded-md bg-control text-ink-subtle">
-                          <IconSparkles size={18} stroke={ICON_STROKE} />
+                          <IconTag size={18} stroke={ICON_STROKE} />
                         </div>
                         <div className="min-w-0">
                           <div className="truncate text-body font-medium">{item.name}</div>

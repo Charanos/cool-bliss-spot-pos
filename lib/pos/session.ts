@@ -39,6 +39,10 @@ export async function bindDevice(device: BoundDevice) {
   await setMeta(META.deviceId, device);
 }
 
+export async function unbindDevice() {
+  await setMeta(META.deviceId, null);
+}
+
 export function useDevice(): BoundDevice | null | undefined {
   return useLiveQuery(async () => (await getMeta<BoundDevice>(META.deviceId)) ?? null, []);
 }

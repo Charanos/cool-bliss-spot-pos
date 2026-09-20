@@ -59,7 +59,7 @@ export function ShiftTabCard({
   return (
     <div
       className={cx(
-        'relative flex flex-col justify-between overflow-hidden rounded-lg p-18 mr-12 tablet:p-20 gap-16 transition-all duration-200 select-none group',
+        'relative flex flex-col justify-between overflow-hidden rounded-lg p-18 m-8 tablet:p-20 gap-16 transition-all duration-200 select-none group',
         // Sleek frosted glass tactile raised surface
         'bg-raised/70 backdrop-blur-md border border-rule-raised/40 shadow-lift',
         selected

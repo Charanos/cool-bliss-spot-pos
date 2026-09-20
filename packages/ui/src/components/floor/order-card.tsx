@@ -308,7 +308,7 @@ export function OrderCard({
       {/* ── Footer / Action Banners ────────────────────────────────── */}
       <div className="mt-12 tablet:mt-14">
         {isNeedsYou ? (
-          <div className="flex items-center justify-between rounded-xl bg-stop-wash px-10 py-6 tablet:px-12 tablet:py-8 text-body-sm text-stop transition-colors group-hover:bg-stop/[0.18]">
+          <div className="flex items-center justify-between rounded-lg bg-stop-wash px-10 py-6 tablet:px-12 tablet:py-8 text-body-sm text-stop transition-colors group-hover:bg-stop/[0.18]">
             <div className="flex items-center gap-6 tablet:gap-8 min-w-0">
               <IconAlertCircle size={15} stroke={ICON_STROKE} className="shrink-0 text-stop animate-breathe" />
               <span className="text-micro tablet:text-body-sm font-medium truncate">

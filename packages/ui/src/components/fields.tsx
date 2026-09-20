@@ -175,9 +175,14 @@ export function SelectField({ label, helper, options, id, className, hideLabel, 
   return (
     <FieldFrame label={label} helper={helper} htmlFor={fieldId} hideLabel={hideLabel}>
       <div className={cx(underline, 'relative h-control-md')}>
-        <select {...rest} id={fieldId} className={cx('h-full min-w-0 flex-1 appearance-none bg-transparent pr-24 text-body text-ink outline-none', className)}>
+        <select
+          {...rest}
+          id={fieldId}
+          style={{ colorScheme: 'inherit', ...rest.style }}
+          className={cx('h-full w-full min-w-0 flex-1 appearance-none bg-transparent pr-24 text-body text-ink outline-none cursor-pointer', className)}
+        >
           {options.map((o) => (
-            <option key={o.value} value={o.value}>
+            <option key={o.value} value={o.value} className="bg-raised text-ink py-6">
               {o.label}
             </option>
           ))}

@@ -267,7 +267,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
               type="button"
               disabled={submitting}
               onClick={() => handleAction(() => unmarkOrderDelivered(order.orderId))}
-              className="shrink-0 px-12 py-7 rounded-xl text-micro font-mono uppercase tracking-wider text-ink-subtle hover:text-stop hover:bg-stop-wash border-t border-b border-rule-raised/20 transition-all font-medium flex items-center gap-6 cursor-pointer"
+              className="shrink-0 px-12 py-7 rounded-md text-micro font-mono uppercase tracking-wider text-ink-subtle hover:text-stop hover:bg-stop-wash border-t border-b border-rule-raised/20 transition-all font-medium flex items-center gap-6 cursor-pointer"
             >
               <IconRotateClockwise size={13} stroke={ICON_STROKE} />
               <span>Undo delivery</span>
@@ -321,7 +321,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                 onClose();
                 router.push(`/floor/tabs/${order.tabId}`);
               }}
-              className="shrink-0 px-12 py-7 rounded-xl text-micro font-mono uppercase tracking-wider text-stop hover:bg-stop/20 border-t border-b border-stop/30 transition-all font-medium flex items-center gap-6 cursor-pointer"
+              className="shrink-0 px-12 py-7 rounded-md text-micro font-mono uppercase tracking-wider text-stop hover:bg-stop/20 border-t border-b border-stop/30 transition-all font-medium flex items-center gap-6 cursor-pointer"
             >
               <span>Resolve tab</span>
               <IconChevronRight size={13} stroke={ICON_STROKE} />
@@ -340,7 +340,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
               className="w-full flex items-center justify-between p-12 desktop:p-14 rounded-[16px] hover:bg-control-hover border-t border-rule-raised/20 transition-all text-left group cursor-pointer"
             >
               <div className="flex items-center gap-12 min-w-0">
-                <div className="size-36 rounded-xl bg-served-wash flex items-center justify-center shrink-0">
+                <div className="size-36 rounded-md bg-served-wash flex items-center justify-center shrink-0">
                   <IconChecks size={20} stroke={ICON_STROKE} className="text-served" />
                 </div>
                 <div className="flex flex-col min-w-0">
@@ -366,7 +366,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
               }}
               className="flex items-center gap-12 p-12 desktop:p-14 rounded-[16px] hover:bg-control-hover transition-colors text-left group cursor-pointer border-t border-rule-raised/15"
             >
-              <div className="size-36 rounded-xl bg-wash flex items-center justify-center shrink-0 text-ink-subtle group-hover:text-ink transition-colors">
+              <div className="size-36 rounded-md bg-wash flex items-center justify-center shrink-0 text-ink-subtle group-hover:text-ink transition-colors">
                 <IconReceipt size={20} stroke={ICON_STROKE} />
               </div>
               <div className="flex flex-col min-w-0">
@@ -383,7 +383,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
               }}
               className="flex items-center gap-12 p-12 desktop:p-14 rounded-[16px] hover:bg-control-hover transition-colors text-left group cursor-pointer border-t border-rule-raised/15"
             >
-              <div className="size-36 rounded-xl bg-wash flex items-center justify-center shrink-0 text-ink-subtle group-hover:text-ink transition-colors">
+              <div className="size-36 rounded-md bg-wash flex items-center justify-center shrink-0 text-ink-subtle group-hover:text-ink transition-colors">
                 <IconArrowsExchange size={20} stroke={ICON_STROKE} />
               </div>
               <div className="flex flex-col min-w-0">
@@ -421,7 +421,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
 
         {/* Error notification if mutation fails */}
         {error ? (
-          <div className="rounded-xl border border-stop/30 bg-stop-wash px-16 py-12 text-stop text-body-sm font-medium">
+          <div className="rounded-lg border border-stop/30 bg-stop-wash px-16 py-12 text-stop text-body-sm font-medium">
             {error}
           </div>
         ) : null}

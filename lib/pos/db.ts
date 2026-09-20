@@ -179,4 +179,9 @@ export const META = {
   orderDelivered: (orderId: string) => `orderDelivered:${orderId}`,
   forceOffline: 'dev.forceOffline',
   onboarded: 'onboarded',
+  deviceNickname: 'device.nickname',
+  preferredZone: 'device.preferredZone',
+  ticketTarget: 'device.ticketTarget',
+  screenKeepAwake: 'device.screenKeepAwake',
+  hapticsEnabled: 'device.hapticsEnabled',
 } as const;

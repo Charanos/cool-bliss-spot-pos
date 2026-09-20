@@ -179,7 +179,7 @@ export function TablesRail({
         })}
 
         {shown.length === 0 ? (
-          <li className="px-8 py-16 text-center rounded-xl border border-rule bg-page/20">
+          <li className="px-8 py-16 text-center rounded-lg border border-rule bg-page/20">
             <p className="caps text-ink-subtle">No tabs in this zone</p>
           </li>
         ) : null}
