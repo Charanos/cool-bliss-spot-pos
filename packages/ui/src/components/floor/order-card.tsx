@@ -127,7 +127,7 @@ export function OrderCard({
       className={cx(
         paneClass({ emphasis }),
         'group relative flex w-full flex-col justify-between rounded-[20px] tablet:rounded-[22px] p-12 tablet:p-20 text-left transition-all duration-300 min-h-[200px] cursor-pointer select-none',
-        'bg-raised/70 backdrop-blur-md border',
+        'bg-raised/70 backdrop-blur-glass border',
         isNeedsYou && 'border-stop/40 hover:border-stop/70 shadow-[0_8px_32px_-8px_color-mix(in_oklab,var(--color-stop)_25%,transparent)]',
         isPoured && 'border-poured/45 hover:border-poured/75 shadow-[0_8px_32px_-8px_color-mix(in_oklab,var(--color-poured)_20%,transparent)]',
         isServed && 'border-served/40 hover:border-served/70 shadow-[0_8px_32px_-8px_color-mix(in_oklab,var(--color-served)_18%,transparent)]',
@@ -140,16 +140,16 @@ export function OrderCard({
         <div className="flex items-start justify-between gap-8 tablet:gap-12">
           <div className="flex flex-col min-w-0 flex-1">
             <div className="flex items-center gap-6 tablet:gap-8 min-w-0 flex-wrap">
-              <span className="truncate text-subtitle tablet:text-title font-medium tracking-tight text-ink" title={label}>
+              <span className="truncate text-subtitle tablet:text-title font-medium text-ink" title={label}>
                 {label}
               </span>
               {zoneName ? (
-                <Badge tone="neutral" className="!rounded-full px-6 py-1.5 tablet:px-8 tablet:py-2 font-mono text-micro tracking-wider">
+                <Badge tone="neutral" className="!rounded-full px-6 py-6 tablet:px-8 tablet:py-2 font-mono text-micro ">
                   {zoneName}
                 </Badge>
               ) : null}
               {!mine && waiter ? (
-                <span className="shrink-0 truncate rounded-full bg-sunken/60 px-6 py-1 tablet:px-8 tablet:py-1.5 font-mono text-micro text-ink-subtle max-w-[100px]">
+                <span className="shrink-0 truncate rounded-full bg-sunken/60 px-6 py-4 tablet:px-8 tablet:py-6 font-mono text-micro text-ink-subtle max-w-[100px]">
                   {waiter}
                 </span>
               ) : null}
@@ -177,28 +177,28 @@ export function OrderCard({
           {/* Card Top-Right Status Badge & 3-Dot Action Trigger */}
           <div className="shrink-0 flex items-center gap-6">
             {isNeedsYou ? (
-              <Badge tone="stop" className="!rounded-full px-8 py-3 tablet:px-10 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-stop)_20%,transparent)]">
+              <Badge tone="stop" className="!rounded-full px-8 py-12 tablet:px-12 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-stop)_20%,transparent)]">
                 <IconAlertCircle size={13} stroke={ICON_STROKE} className="shrink-0 animate-breathe" />
                 <span>Needs you</span>
               </Badge>
             ) : isPoured ? (
-              <Badge tone="poured" className="!rounded-full px-8 py-3 tablet:px-10 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-poured)_15%,transparent)]">
+              <Badge tone="poured" className="!rounded-full px-8 py-12 tablet:px-12 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-poured)_15%,transparent)]">
                 <Dot tone="poured" />
                 <span>Poured · Ready</span>
               </Badge>
             ) : isServed ? (
-              <Badge tone="served" className="!rounded-full px-8 py-3 tablet:px-10 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-served)_15%,transparent)]">
+              <Badge tone="served" className="!rounded-full px-8 py-12 tablet:px-12 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-served)_15%,transparent)]">
                 <Dot tone="served" />
                 <span>Served</span>
               </Badge>
             ) : isHeld ? (
-              <Badge tone="attention" className="!rounded-full px-8 py-3 tablet:px-10 tablet:py-4">
+              <Badge tone="attention" className="!rounded-full px-8 py-12 tablet:px-12 tablet:py-4">
                 <Dot tone="low" />
                 <span>Held</span>
               </Badge>
             ) : (
-              <Badge tone="accent" className="!rounded-full px-8 py-3 tablet:px-10 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-accent)_15%,transparent)]">
-                <span className="size-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--color-accent)] animate-breathe" />
+              <Badge tone="accent" className="!rounded-full px-8 py-12 tablet:px-12 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-accent)_15%,transparent)]">
+                <span className="size-6 rounded-full bg-accent shadow-[0_0_8px_var(--color-accent)] animate-breathe" />
                 <span>At the bar</span>
               </Badge>
             )}
@@ -252,7 +252,7 @@ export function OrderCard({
                 <div className="flex flex-1 flex-col min-w-0 pr-4 tablet:pr-8">
                   <span
                     className={cx(
-                      'truncate text-micro tablet:text-body-sm font-medium leading-tight',
+                      'truncate text-micro tablet:text-body-sm font-medium ',
                       l.state === 'ran_out' ? 'text-stop' : 'text-ink',
                     )}
                     title={l.name}
@@ -260,7 +260,7 @@ export function OrderCard({
                     {l.name}
                   </span>
                   {l.modifiers && l.modifiers.length > 0 ? (
-                    <span className="truncate font-mono text-[9px] tablet:text-micro text-ink-subtle mt-1">
+                    <span className="truncate font-mono text-[9px] tablet:text-micro text-ink-subtle mt-4">
                       {l.modifiers.join(' · ')}
                     </span>
                   ) : null}
@@ -295,7 +295,7 @@ export function OrderCard({
                   </Badge>
                 ) : (
                   <Badge tone="neutral" className="px-6 py-2 tablet:px-8 tablet:py-2 font-mono text-micro tablet:text-badge shrink-0">
-                    <span className="size-1 rounded-full bg-accent/70 animate-breathe" />
+                    <span className="size-4 rounded-full bg-accent/70 animate-breathe" />
                     <span>Waiting</span>
                   </Badge>
                 )}
@@ -306,22 +306,22 @@ export function OrderCard({
       </div>
 
       {/* ── Footer / Action Banners ────────────────────────────────── */}
-      <div className="mt-12 tablet:mt-14">
+      <div className="mt-12 tablet:mt-16">
         {isNeedsYou ? (
-          <div className="flex items-center justify-between rounded-lg bg-stop-wash px-10 py-6 tablet:px-12 tablet:py-8 text-body-sm text-stop transition-colors group-hover:bg-stop/[0.18]">
+          <div className="flex items-center justify-between rounded-lg bg-stop-wash px-12 py-6 tablet:px-12 tablet:py-8 text-body-sm text-stop transition-colors group-hover:bg-stop/[0.18]">
             <div className="flex items-center gap-6 tablet:gap-8 min-w-0">
               <IconAlertCircle size={15} stroke={ICON_STROKE} className="shrink-0 text-stop animate-breathe" />
               <span className="text-micro tablet:text-body-sm font-medium truncate">
                 Item ran out. Tap to swap or void.
               </span>
             </div>
-            <div className="flex items-center gap-4 font-mono text-micro uppercase tracking-wider text-stop shrink-0 font-medium">
+            <div className="flex items-center gap-4 font-mono text-micro uppercase text-stop shrink-0 font-medium">
               <span>Resolve</span>
-              <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-1" />
+              <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-4" />
             </div>
           </div>
         ) : isPoured ? (
-          <div className="flex items-center justify-between gap-8 rounded-lg bg-poured-wash px-10 py-6 tablet:px-12 tablet:py-8 text-body-sm text-poured transition-colors group-hover:bg-poured/[0.14]">
+          <div className="flex items-center justify-between gap-8 rounded-lg bg-poured-wash px-12 py-6 tablet:px-12 tablet:py-8 text-body-sm text-poured transition-colors group-hover:bg-poured/[0.14]">
             <div className="flex items-center gap-6 tablet:gap-8 min-w-0">
               <IconCheck size={15} stroke={ICON_STROKE} className="shrink-0 text-poured" />
               <span className="text-micro tablet:text-body-sm font-medium truncate">
@@ -335,15 +335,15 @@ export function OrderCard({
                   e.stopPropagation();
                   onMarkServed();
                 }}
-                className="shrink-0 rounded-lg bg-poured px-12 py-6 font-mono text-micro font-medium uppercase tracking-wider text-page hover:brightness-110 active:scale-95 transition-all shadow-sm flex items-center gap-6"
+                className="shrink-0 rounded-lg bg-poured px-12 py-6 font-mono text-micro font-medium uppercase text-page hover:brightness-110 active:scale-95 transition-all shadow-raised flex items-center gap-6"
               >
                 <IconCheck size={14} stroke={2.5} className="text-page" />
                 <span>Mark served</span>
               </button>
             ) : (
-              <div className="flex items-center gap-4 font-mono text-micro uppercase tracking-wider text-poured shrink-0 font-medium">
+              <div className="flex items-center gap-4 font-mono text-micro uppercase text-poured shrink-0 font-medium">
                 <span>Open tab</span>
-                <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-1" />
+                <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-4" />
               </div>
             )}
           </div>
@@ -351,7 +351,7 @@ export function OrderCard({
           <div className="flex items-center justify-between pt-6 border-t border-rule-raised/20 text-body-sm text-ink-subtle">
             {total !== undefined ? (
               <div className="flex flex-col items-baseline gap-6 font-mono text-micro tablet:text-body-sm text-ink-subtle">
-                <span className="text-micro uppercase tracking-wider">Total</span>
+                <span className="text-micro uppercase ">Total</span>
                 <Money value={total} size="num-sm" decimals="whole" tone="default" />
               </div>
             ) : (
@@ -367,7 +367,7 @@ export function OrderCard({
               )}
               <div className="flex items-center gap-4 font-mono text-micro tablet:text-body-sm text-ink-subtle group-hover:text-accent transition-colors font-medium">
                 <span>View tab</span>
-                <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-1" />
+                <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-4" />
               </div>
             </div>
           </div>
@@ -375,7 +375,7 @@ export function OrderCard({
           <div className="flex items-center justify-between pt-6 border-t border-rule-raised/20 text-body-sm text-ink-subtle">
             {total !== undefined ? (
               <div className="flex flex-col items-baseline gap-6 font-mono text-micro tablet:text-body-sm text-ink-subtle">
-                <span className="text-micro uppercase tracking-wider">Total</span>
+                <span className="text-micro uppercase ">Total</span>
                 <Money value={total} size="num-sm" decimals="whole" tone="default" />
               </div>
             ) : (
@@ -383,7 +383,7 @@ export function OrderCard({
             )}
             <div className="flex items-center gap-4 font-mono text-micro tablet:text-body-sm text-ink-subtle group-hover:text-accent transition-colors font-medium">
               <span>View tab</span>
-              <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-1" />
+              <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-4" />
             </div>
           </div>
         )}

@@ -69,7 +69,7 @@ export function ShiftsTable({
       sortValue: (r) => r.tabsOpened,
       csv: (r) => r.tabsOpened,
       cell: (r) => (
-        <span className="flex flex-col items-end leading-tight">
+        <span className="flex flex-col items-end ">
           <NumCell>{r.tabsOpened}</NumCell>
           {r.tabsHandedOver > 0 ? <span className="text-body-sm text-ink-subtle">{r.tabsHandedOver} to {r.handoverTo ?? 'the next shift'}</span> : null}
         </span>

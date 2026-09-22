@@ -5,7 +5,13 @@ const withSerwist = withSerwistInit({
   swSrc: 'app/sw.ts',
   swDest: 'public/sw.js',
   disable: process.env.NODE_ENV === 'development',
-  reloadOnOnline: true,
+  // A tablet that comes back into range must not reload the page under a waiter who is mid-order.
+  // The sync cycle already notices the network itself, and nothing is lost by staying put.
+  reloadOnOnline: false,
+  // The page the worker falls back to when a navigation has no network and no cached copy. Its
+  // revision changes per build, so a tablet holding an older copy fetches the new one. Written
+  // inline because Next compiles this file on its own and a top level const does not survive it.
+  additionalPrecacheEntries: [{ url: '/offline', revision: process.env.VERCEL_GIT_COMMIT_SHA ?? String(Date.now()) }],
 });
 
 const config: NextConfig = {

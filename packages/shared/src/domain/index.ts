@@ -348,6 +348,15 @@ export interface Tab {
   status: TabStatus;
   mergedIntoTabId: Id | null;
   closedAt: EpochMs | null;
+  /**
+   * When the guests left and the table was cleared for the next party. docs/16 section 8.
+   *
+   *   null       settled, but the guests are still at the table: it holds the table
+   *   a time     cleared, and archived with the night's record
+   *   undefined  a tab from before this existed, treated as cleared
+   */
+  clearedAt?: EpochMs | null;
+  clearedBy?: Id | null;
 }
 
 export type SeatStatus = 'active' | 'settled' | 'removed';
@@ -382,6 +391,9 @@ export interface Order {
   clientCreatedAt: EpochMs;
   serverReceivedAt: EpochMs | null;
   note: string | null;
+  /** When the waiter set the round down at the table: poured is the counter's word, delivered is theirs. */
+  deliveredAt?: EpochMs | null;
+  deliveredBy?: Id | null;
 }
 
 export type LineStatus = 'draft' | 'pending' | 'served' | 'voided';

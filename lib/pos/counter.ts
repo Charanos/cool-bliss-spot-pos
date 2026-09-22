@@ -150,7 +150,7 @@ export async function settle(input: SettleInput): Promise<string> {
       const remaining = billableLines(await db.lines.where('tabId').equals(input.tabId).toArray(), billed).length;
       const splitOpen = input.split ? (await db.bills.filter((b) => b.splitGroupId === input.split!.groupId).count()) < input.split.count : false;
       if (remaining === 0 && !splitOpen) {
-        await db.tabs.update(input.tabId, { status: 'settled', closedAt: now });
+        await db.tabs.update(input.tabId, { status: 'settled', closedAt: now, clearedAt: null, clearedBy: null });
         for (const s of active) if (s.id !== settledSeat) await db.seats.update(s.id, { status: 'settled', settledBillId: billId, settledAt: now });
       } else {
         await db.tabs.update(input.tabId, { status: 'part_settled' });
@@ -222,7 +222,8 @@ export interface OpenTabBlock {
   label: string;
   tabNumber: number | null;
   waiter: string;
-  total: Cents;
+  /** Named for the wire: only fields ending in Cents come back as money. lib/wire.ts. */
+  totalCents: Cents;
   seats: { seatNo: number; settled: boolean }[];
 }
 
@@ -243,8 +244,8 @@ export async function drawerPreflight(): Promise<OpenTabBlock[]> {
 }
 
 /** Lock the count. Only the reply carries the expected figure, and it is stored now that it may exist. */
-export async function countDrawer(sessionId: string, counted: Cents): Promise<{ view: DrawerRow; needsReason: boolean; threshold: Cents }> {
-  const result = await drawerCall<{ view: DrawerRow; needsReason: boolean; threshold: Cents }>({ action: 'count', sessionId, countedCents: toJSON(counted) });
+export async function countDrawer(sessionId: string, counted: Cents): Promise<{ view: DrawerRow; needsReason: boolean; thresholdCents: Cents }> {
+  const result = await drawerCall<{ view: DrawerRow; needsReason: boolean; thresholdCents: Cents }>({ action: 'count', sessionId, countedCents: toJSON(counted) });
   await posDb().drawers.put(result.view);
   return result;
 }

@@ -86,7 +86,7 @@ export function SettingsCard({
       className={cx(
         'relative flex flex-col overflow-hidden rounded-lg p-20 tablet:p-24 desktop:p-32 transition-all duration-200 select-none group',
         // Sleek frosted glass surface with depth
-        'bg-raised/70 backdrop-blur-md border border-rule-raised/40 shadow-lift',
+        'bg-raised/70 backdrop-blur-glass border border-rule-raised/40 shadow-lift',
         t.borderHover,
         className,
       )}
@@ -105,7 +105,7 @@ export function SettingsCard({
         <div className="flex items-center gap-12 min-w-0">
           <div
             className={cx(
-              'size-[32px] rounded-md flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105',
+              'size-[32px] rounded-md flex items-center justify-center shrink-0 shadow-raised transition-transform group-hover:scale-105',
               t.iconWrap,
             )}
           >
@@ -113,11 +113,11 @@ export function SettingsCard({
           </div>
 
           <div className="flex flex-col min-w-0">
-            <h2 className="text-title font-medium tracking-tight text-ink truncate leading-tight">
+            <h2 className="text-title font-medium text-ink truncate ">
               {title}
             </h2>
             {subtitle ? (
-              <span className="font-mono text-micro text-ink-subtle truncate mt-2">
+              <span className="mt-2 font-mono text-micro text-ink-subtle pad:truncate">
                 {subtitle}
               </span>
             ) : null}

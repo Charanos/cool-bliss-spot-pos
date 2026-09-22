@@ -14,7 +14,8 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { OpenTabSheet, tableLabel } from '../../_components/open-tab-sheet';
-import { useOpenTabs, useZonesAndTables } from '@/lib/pos/queries';
+import { useOpenTabs, useOutlet, useSeatedTabs, useZonesAndTables } from '@/lib/pos/queries';
+import { SeatedTabs } from '@/app/_pos/seated-tabs';
 import { useSession } from '@/lib/pos/session';
 import { formatElapsed } from '@bliss/shared/format';
 
@@ -35,7 +36,13 @@ export default function TabsPage() {
   const [scope, setScope] = useState<'mine' | 'everyone'>('mine');
   const [sheet, setSheet] = useState<{ open: boolean; table: ServiceTable | null }>({ open: false, table: null });
 
-  const occupied = useMemo(() => new Set((tabs ?? []).map((t) => t.tab.serviceTableId).filter(Boolean)), [tabs]);
+  const seated = useSeatedTabs();
+  const outlet = useOutlet();
+  // A table is taken while it has a tab being ordered on, or a paid one whose guests have not left.
+  const occupied = useMemo(
+    () => new Set([...(tabs ?? []).map((t) => t.tab.serviceTableId), ...(seated ?? []).map((t) => t.tab.serviceTableId)].filter(Boolean)),
+    [tabs, seated],
+  );
   const visibleTabs = (tabs ?? []).filter(
     (t) => (scope === 'everyone' || t.tab.assignedTo === session?.staffId) && (zone === 'all' || t.tab.zoneId === zone),
   );
@@ -81,20 +88,21 @@ export default function TabsPage() {
   return (
     <div className="relative flex h-full flex-col min-h-0 bg-transparent overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <header className="shrink-0 z-10 border-b border-rule-raised/20 bg-page/85 px-24 pb-16 pt-24 backdrop-blur-md shadow-sm">
-        <div className="flex flex-col gap-12 tablet:flex-row tablet:items-center tablet:justify-between tablet:gap-x-24">
-          <div className="flex flex-col gap-10 tablet:flex-row tablet:items-center tablet:gap-16 min-w-0">
-            <div className="flex items-center justify-between gap-12 tablet:w-auto">
-              <h1 className="text-heading font-medium tracking-tight text-ink">Tabs</h1>
-            </div>
-            
-            {/* Prominent Stats Pill */}
-            <div className="hidden tablet:block h-24 w-px bg-rule-raised/60 shrink-0" aria-hidden="true" />
-            <div className="flex items-center rounded-full bg-sunken/80 px-12 py-6 tablet:px-16 border border-rule-raised/30 shadow-inner w-fit max-w-full overflow-hidden">
-              <MetaLine items={summaryItems} className="flex-nowrap whitespace-nowrap overflow-hidden text-ellipsis" />
+      <header className="shrink-0 z-10 border-b border-rule-raised/20 bg-page/85 px-12 pb-12 pt-12 backdrop-blur-glass pad:px-24 pad:pb-16 pad:pt-20 short:py-6">
+        <div className="flex flex-col gap-12 pad:flex-row pad:items-center pad:justify-between pad:gap-x-24">
+          <div className="flex min-w-0 flex-wrap items-center gap-8 pad:flex-nowrap pad:gap-16">
+            <h1 className="text-title-lg font-medium text-ink pad:text-heading short:text-title">Tabs</h1>
+
+            <div className="hidden h-24 w-px shrink-0 bg-rule-raised/60 pad:block" aria-hidden="true" />
+
+            <div className="flex w-fit max-w-full items-center overflow-hidden rounded-dot border border-rule-raised/30 bg-sunken/80 px-12 py-4 pad:py-6 tablet:px-16">
+              <MetaLine items={summaryItems} className="flex-nowrap overflow-hidden text-ellipsis whitespace-nowrap" />
             </div>
           </div>
-          <div className="hidden tablet:block shrink-0">
+
+          {/* A waiter on a phone needs "everyone" as much as one on a tablet: taking over a table
+              they did not open is the whole point of the filter. */}
+          <div className="shrink-0">
             <Segmented
               label="Whose tabs"
               size="md"
@@ -113,7 +121,7 @@ export default function TabsPage() {
           value={zone}
           onChange={setZone}
           options={zoneOptions}
-          className="mt-20 overflow-x-auto no-scrollbar"
+          className="mt-12 overflow-x-auto no-scrollbar pad:mt-20 short:mt-6"
         />
       </header>
 
@@ -121,14 +129,16 @@ export default function TabsPage() {
       <div className="flex flex-col tablet:flex-row flex-1 min-h-0 overflow-y-auto tablet:overflow-y-hidden no-scrollbar">
         
         {/* ── Main Column: Free Tables ─────────────────────────────── */}
-        <div className="order-2 tablet:order-1 flex-1 tablet:overflow-y-auto no-scrollbar px-16 tablet:px-24 pb-[160px] tablet:pt-24">
+        <div className="order-2 flex-1 px-12 pb-24 pt-16 no-scrollbar tablet:order-1 tablet:overflow-y-auto tablet:px-24 tablet:pt-24">
           {loading ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-16">
+            <div className="grid grid-cols-2 gap-8 pad:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] pad:gap-16">
               {Array.from({ length: 8 }, (_, i) => (
                 <Skeleton key={i} className="min-h-card-tab rounded-md" />
               ))}
             </div>
           ) : (
+            <>
+            <SeatedTabs tabs={seated ?? []} timezone={outlet?.timezone ?? 'Africa/Nairobi'} onOpen={(id) => router.push(`/floor/tabs/${id}`)} />
             <section aria-labelledby="free-tables-heading">
               <SectionHeader
                 id="free-tables-heading"
@@ -137,7 +147,7 @@ export default function TabsPage() {
                 className="mb-16"
               />
               {freeTables.length > 0 ? (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-16">
+                <div className="grid grid-cols-2 gap-8 pad:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] pad:gap-16">
                   {freeTables.map((table) => (
                     <FreeTableCard
                       key={table.id}
@@ -174,13 +184,14 @@ export default function TabsPage() {
                 />
               )}
             </section>
+            </>
           )}
         </div>
 
         {/* ── Right Rail: Open Tabs ────────────────────────────────── */}
-        <aside className="order-1 tablet:order-2 w-full tablet:w-[360px] shrink-0 tablet:overflow-y-auto no-scrollbar tablet:border-l tablet:border-rule-raised/30 tablet:bg-sunken/30 tablet:shadow-[-1px_0_0_rgba(255,255,255,0.03),-12px_0_40px_-12px_rgba(0,0,0,0.2)] px-16 pb-24 tablet:pb-[160px] pt-24 tablet:backdrop-blur-md">
+        <aside className="order-1 w-full shrink-0 px-12 pb-16 pt-16 no-scrollbar tablet:order-2 tablet:w-[360px] tablet:overflow-y-auto tablet:border-l tablet:border-rule-raised/30 tablet:bg-sunken/30 tablet:px-16 tablet:pb-24 tablet:pt-24 tablet:backdrop-blur-glass">
           {loading ? (
-            <div className="flex flex-col gap-12">
+            <div className="grid grid-cols-2 gap-8 tablet:flex tablet:flex-col tablet:gap-12">
               {Array.from({ length: 4 }, (_, i) => (
                 <Skeleton key={i} className="min-h-card-tab rounded-[20px]" />
               ))}
@@ -195,7 +206,7 @@ export default function TabsPage() {
               />
               
               {visibleTabs.length > 0 ? (
-                <div className="flex flex-col gap-12">
+                <div className="grid grid-cols-2 gap-8 tablet:flex tablet:flex-col tablet:gap-12">
                   {visibleTabs.map((t) => (
                     <TabCard
                       key={t.tab.id}
@@ -229,15 +240,9 @@ export default function TabsPage() {
 
       {/* ── Base layer action ───────────────────────────────────────── */}
       <BaseAction>
-        <Button
-          variant="secondary"
-          size="xl"
-          icon={IconPlus}
-          iconOnly={true}
-          onClick={() => setSheet({ open: true, table: null })}
-          className="size-[60px] tablet:size-[68px] !rounded-full shadow-[0_16px_32px_-8px_rgba(0,0,0,0.8)] !bg-ink !text-page hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(255,255,255,0.2)] transition-all shrink-0"
-          aria-label="Open a walk-up tab"
-        />
+        <Button variant="secondary" size="xl" icon={IconPlus} onClick={() => setSheet({ open: true, table: null })}>
+          Walk-up tab
+        </Button>
       </BaseAction>
 
       <OpenTabSheet

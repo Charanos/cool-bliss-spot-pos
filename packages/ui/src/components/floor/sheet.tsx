@@ -13,19 +13,20 @@ const floorMotion: OverlayMotion = {
   },
 };
 
-/** The Floor's base layer height, which every sheet stops above. */
-export const FLOOR_BASE_HEIGHT = 72;
-
 /**
- * A centered dialog on the Floor — tablet-first, so sheets no longer anchor to the bottom edge.
+ * The Floor's working overlay: a sheet at the bottom edge of a phone, where the thumb is, and a
+ * centred dialog from a tablet up, where the hand is already in the middle of the screen.
  * sheet.enter is 140ms.
  */
 export function Sheet(props: Omit<OverlayProps, 'motion' | 'placement' | 'bottomOffset'> & { children: ReactNode; keepBase?: boolean }) {
-  const { width = 'md', ...rest } = props;
-  return <Overlay {...rest} width={width} placement="dialog" motion={floorMotion} />;
+  const { width = 'md', keepBase: _keepBase, ...rest } = props;
+  return <Overlay {...rest} width={width} placement="adaptive" motion={floorMotion} />;
 }
 
-/** A centred dialog on the Floor, for the reason dialog and anything needing a PIN. */
+/**
+ * A dialog that asks for a decision: a reason, a PIN, a confirmation. Centred on every screen,
+ * because it is short and it is a question, not a working surface.
+ */
 export function FloorDialog(props: Omit<OverlayProps, 'motion' | 'placement' | 'bottomOffset'>) {
-  return <Overlay {...props} placement="dialog" motion={floorMotion} bottomOffset={FLOOR_BASE_HEIGHT} />;
+  return <Overlay {...props} placement="dialog" motion={floorMotion} />;
 }

@@ -277,7 +277,7 @@ export function dropCash(p: OutboxPayload<'drawer.drop'>, actor: Actor): void {
 
 /** Tabs that must be settled or voided before the drawer closes for the business day. */
 export function closePreflight() {
-  return trade.openTabs().map((s) => ({ tabId: s.tab.id, label: s.tableLabel, tabNumber: s.tab.tabNumber, waiter: identity.displayName(s.tab.assignedTo), total: s.total, seats: s.seats.filter((x) => x.status !== 'removed').map((x) => ({ seatNo: x.seatNo, settled: x.status === 'settled' })) }));
+  return trade.openTabs().map((s) => ({ tabId: s.tab.id, label: s.tableLabel, tabNumber: s.tab.tabNumber, waiter: identity.displayName(s.tab.assignedTo), totalCents: s.total, seats: s.seats.filter((x) => x.status !== 'removed').map((x) => ({ seatNo: x.seatNo, settled: x.status === 'settled' })) }));
 }
 
 /**
@@ -302,7 +302,7 @@ export function countDrawer(input: { sessionId: string; countedCents: Cents; act
     touch('drawerSessions', session.id);
   }
   const outlet = identity.outlet();
-  return { view: drawerProjection(session), threshold: outlet.drawerVarianceThresholdCents, needsReason: session.varianceCents !== null && compare(abs(session.varianceCents), outlet.drawerVarianceThresholdCents) > 0 };
+  return { view: drawerProjection(session), thresholdCents: outlet.drawerVarianceThresholdCents, needsReason: session.varianceCents !== null && compare(abs(session.varianceCents), outlet.drawerVarianceThresholdCents) > 0 };
 }
 
 /** Close a counted drawer. A variance over the outlet threshold needs a reason. A closed drawer never reopens. */

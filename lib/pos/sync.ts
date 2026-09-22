@@ -3,7 +3,10 @@
 import type { AvailabilityEntry, AvailabilityState } from '@bliss/shared/domain';
 import type { OutboxEntry } from '@bliss/shared/sync';
 import { useSyncExternalStore } from 'react';
+import { REJECTION_COPY, type RejectionCode } from '@bliss/shared/sync';
+import { notify } from '@bliss/ui/components/notices';
 import { NetworkUnavailable, api, isForcedOffline } from './api';
+import { haptic } from './haptics';
 import { META, posDb, getMeta, setMeta } from './db';
 
 /**
@@ -152,7 +155,9 @@ async function applyTrade(rows: TradeRows, full: boolean) {
   if (rows.bills.length > 0) await db.bills.bulkPut(rows.bills as AnyRows);
   if (rows.billLines.length > 0) await db.billLines.bulkPut(rows.billLines as AnyRows);
   if (rows.tenders.length > 0) await db.tenders.bulkPut(rows.tenders as AnyRows);
-  if (rows.drawers.length > 0) await db.drawers.bulkPut(rows.drawers as AnyRows);
+  // A drawer with a drop or an open still unsent keeps the device's copy until those land.
+  const drawers = rows.drawers.filter((d) => !held.has(d.id));
+  if (drawers.length > 0) await db.drawers.bulkPut(drawers as AnyRows);
 }
 
 async function applyPull(body: PullBody) {
@@ -221,7 +226,11 @@ async function applyPull(body: PullBody) {
     await setMeta(META.bootstrapped, true);
     await setMeta(META.lastPulledAt, Date.now());
   });
-  if (changed.length > 0) publish({ announcements: changed.slice(-3) });
+  if (changed.length > 0) {
+    publish({ announcements: changed.slice(-3) });
+    for (const message of changed) notify({ tone: 'warning', key: `stock:${message}`, title: message, body: 'It is off the grid on every device until it is restocked.' });
+    haptic('warning');
+  }
 }
 
 export async function pull(): Promise<void> {
@@ -265,6 +274,7 @@ export async function drain(): Promise<void> {
 
   await db.outbox.bulkUpdate(batch.map((e) => ({ key: e.id, changes: { status: 'inflight' as const, attempts: e.attempts + 1 } })));
   let results: PushResult[];
+  const refused: PushResult[] = [];
   try {
     const { body } = await api.post<{ results: PushResult[] }>('/api/dev/sync/push', { entries: batch });
     results = body.results;
@@ -273,17 +283,32 @@ export async function drain(): Promise<void> {
     throw error;
   }
 
-  await db.transaction('rw', db.outbox, db.lines, async () => {
+  await db.transaction('rw', db.outbox, db.lines, db.drawers, async () => {
     for (const result of results) {
       if (result.status === 'acked') {
         await db.outbox.update(result.id, { status: 'acked', ackedAt: Date.now() });
         for (const lineId of result.stockConflictLineIds ?? []) await db.lines.update(lineId, { stockConflict: true });
       } else {
         await db.outbox.update(result.id, { status: 'rejected', rejectionCode: result.code ?? 'REJECTED', rejectionDetail: result.detail });
+        refused.push(result);
+        // A drawer the server refused to open never existed. Take the device's optimistic copy away,
+        // so the drawer the server does have, which the next pull brings, is the only one on screen.
+        const entry = batch.find((b) => b.id === result.id);
+        if (entry?.kind === 'drawer.open') await db.drawers.delete(entry.aggregateId);
       }
     }
   });
   await setMeta(META.lastPushedAt, Date.now());
+  for (const r of refused) {
+    notify({
+      tone: 'error',
+      key: 'rejected',
+      count: true,
+      title: 'A change could not be sent',
+      body: REJECTION_COPY[r.code as RejectionCode] ?? r.detail ?? 'The server refused it. A manager can see why in Console, Settings, Sync.',
+    });
+  }
+  if (refused.length > 0) haptic('error');
 }
 
 async function recount(link?: LinkState) {
@@ -313,6 +338,7 @@ export async function syncNow(): Promise<void> {
     await recount();
     if (Date.now() < backoffUntil && !queued) return;
     const wasHolding = snapshot.link === 'offline' && snapshot.heldOrders > 0;
+    const wasDown = snapshot.bootstrapped && (snapshot.link === 'offline' || snapshot.link === 'unreachable');
     try {
       await pull();
       if (wasHolding) publish({ link: 'sending' });
@@ -323,13 +349,20 @@ export async function syncNow(): Promise<void> {
       backoffUntil = 0;
       await recount('synced');
       publish({ lastSyncedAt: Date.now() });
+      if (wasDown) {
+        notify({ tone: 'success', key: 'link', title: 'Back online', body: before > 0 ? `${before} held ${before === 1 ? 'change' : 'changes'} sent.` : 'Everything on this device is up to date.' });
+      }
     } catch (error) {
       if (!(error instanceof NetworkUnavailable)) console.error('[sync]', error);
       failures += 1;
       backoffUntil = Date.now() + Math.min(30_000, 1000 * 2 ** Math.min(failures, 5));
       const db = posDb();
       const held = await db.outbox.where('status').anyOf('pending', 'inflight').count();
+      const wasUp = snapshot.bootstrapped && (snapshot.link === 'synced' || snapshot.link === 'sending');
       await recount(held > 0 ? 'offline' : 'unreachable');
+      if (wasUp && failures === 1) {
+        notify({ tone: 'warning', key: 'link', title: 'This device is offline', body: 'Keep working. Everything is kept here and sends when the network is back.' });
+      }
     }
   } finally {
     running = false;

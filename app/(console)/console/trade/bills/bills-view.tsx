@@ -86,7 +86,7 @@ export function BillsView({
       width: 'minmax(180px,1.4fr)',
       csv: (r) => r.tenders.map((t) => `${TENDER_LABEL[t.kind]} ${formatDecimal(t.amount)}${t.reference ? ` ${t.reference}` : ''}`).join('; '),
       cell: (r) => (
-        <span className="flex min-w-0 flex-col leading-tight">
+        <span className="flex min-w-0 flex-col ">
           <span className="truncate text-body text-ink">{r.tenders.map((t) => TENDER_LABEL[t.kind]).join(' and ') || '··'}</span>
           {r.tenders.some((t) => t.reference) ? (
             <span className="truncate font-mono tabular text-num-sm text-ink-subtle">

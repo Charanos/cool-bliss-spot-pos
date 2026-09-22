@@ -56,26 +56,26 @@ export default function SettingsPage() {
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-transparent overflow-hidden">
       {/* ── Sticky Frosted Header & Hardware Telemetry ──────────────── */}
-      <header className="shrink-0 z-10 border-b border-rule-raised/20 bg-page/85 px-16 tablet:px-24 desktop:px-32 py-20 tablet:py-24 backdrop-blur-md shadow-sm">
+      <header className="shrink-0 z-10 border-b border-rule-raised/20 bg-page/85 px-16 tablet:px-24 desktop:px-32 py-20 tablet:py-24 backdrop-blur-glass shadow-raised">
         <div className="flex flex-col gap-12 tablet:gap-16">
           {/* Main Masthead Row */}
           <div className="flex flex-col tablet:flex-row tablet:items-center justify-between gap-16 tablet:gap-20">
             {/* Left: Icon + Title + Operational Status Badge */}
             <div className="flex items-center gap-16 min-w-0">
               <div className="flex items-center gap-8 min-w-0 flex-wrap">
-                <h1 className="text-title-lg font-medium tracking-tight text-ink truncate leading-none">
+                <h1 className="text-title-lg font-medium text-ink truncate leading-none">
                   Settings
                 </h1>
 
                 <Badge
                   tone="neutral"
-                  className="!rounded-dot px-8 py-1 font-mono text-micro uppercase tracking-wider"
+                  className="!rounded-dot px-8 py-4 font-mono text-micro uppercase "
                 >
                   Tablet Node
                 </Badge>
 
                 {/* Connection Live Chip */}
-                <div className="hidden tablet:flex items-center px-8 py-1 rounded-dot bg-wash border border-rule-raised/30 font-mono text-micro">
+                <div className="hidden tablet:flex items-center px-8 py-4 rounded-dot bg-control border border-rule-raised/30 font-mono text-micro">
                   <ConnectionChip
                     state={
                       sync.link === 'synced'
@@ -93,16 +93,16 @@ export default function SettingsPage() {
             </div>
 
             {/* Right: Instant One-Tap Sync Action */}
-            <div className="flex items-center gap-10 shrink-0">
+            <div className="flex items-center gap-8 shrink-0">
               <Button
                 variant="secondary"
                 size="md"
                 icon={IconRefresh}
                 disabled={isSyncing}
                 onClick={() => void handleSync()}
-                className="!rounded-dot px-16 text-body-sm font-medium border border-rule-raised/40 hover:border-accent/40 transition-all shadow-sm"
+                className="!rounded-dot px-16 text-body-sm font-medium border border-rule-raised/40 hover:border-accent/40 transition-all shadow-raised"
               >
-                <span className={cx(isSyncing && 'animate-spin inline-block')}>
+                <span className={cx(isSyncing && 'spin inline-block')}>
                   {isSyncing ? 'Syncing...' : 'Sync now'}
                 </span>
               </Button>
@@ -157,7 +157,7 @@ export default function SettingsPage() {
                 subtitle="Live frame execution telemetry & animation curves"
                 tone="attention"
                 badge={
-                  <Badge tone="attention" className="!rounded-dot px-8 py-1 font-mono text-micro">
+                  <Badge tone="attention" className="!rounded-dot px-8 py-4 font-mono text-micro">
                     Debug Gesture Active
                   </Badge>
                 }
@@ -211,7 +211,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="flex flex-col gap-8 pt-8">
-                    <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
+                    <span className="font-mono text-micro uppercase text-ink-subtle">
                       Last {Math.min(50, motion.log.length)} animations
                     </span>
                     <ul className="max-h-[220px] overflow-y-auto rounded-lg bg-sunken/60 border border-rule-raised/30 p-12 tablet:p-16 divide-y divide-rule-raised/20">

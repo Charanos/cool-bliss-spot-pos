@@ -68,7 +68,7 @@ export function TablesRail({
                 className={cx(
                   'group relative flex h-[34px] w-full items-center justify-between gap-8 rounded-lg px-8 text-left text-body-sm transition-all duration-150 ease-out press-feedback',
                   selected
-                    ? 'bg-control font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_-2px_rgba(0,0,0,0.35)]'
+                    ? 'bg-control font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_-2px_rgba(0,0,0,0.35)]'
                     : 'text-ink-muted hover:bg-control-hover/40 hover:text-ink',
                 )}
               >
@@ -129,8 +129,8 @@ export function TablesRail({
                 <span className="flex items-baseline justify-between gap-6">
                   <span
                     className={cx(
-                      'truncate text-body-sm tracking-tight',
-                      current ? 'font-semibold text-ink' : 'font-medium text-ink-muted group-hover:text-ink',
+                      'truncate text-body-sm ',
+                      current ? 'font-medium text-ink' : 'font-medium text-ink-muted group-hover:text-ink',
                     )}
                   >
                     {t.label}

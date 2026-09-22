@@ -1,0 +1,199 @@
+'use client';
+
+import { formatDate, formatTime } from '@bliss/shared/format';
+import { ICON_STROKE, type TablerIcon } from '@bliss/ui/components/icon';
+import { Dot, type Tone } from '@bliss/ui/components/status';
+import { CountBadge, MetaLine, type MetaItem } from '@bliss/ui/components/working';
+import { useHydrated, useNow } from '@bliss/ui/hooks';
+import { cx } from '@bliss/ui/lib/cx';
+import { IconBuildingStore, IconLayoutGrid } from '@tabler/icons-react';
+import Link from 'next/link';
+import type { ReactNode, Ref } from 'react';
+
+/**
+ * The chrome both staff surfaces wear. docs/16-responsive-and-offline.md.
+ *
+ * The Floor and the Counter are one product at two stations, so they share one top bar, one surface
+ * switcher and one dock. What differs is what goes in them, never how they behave: a waiter who
+ * moves from the floor to the counter mid-shift already knows where everything is.
+ */
+
+/* ------------------------------------------------------------------ top bar */
+
+/**
+ * Three columns, so the centre stays centred without covering either side. 48px on a phone, 56 from
+ * a tablet up, 40 on a short screen, and every edge that meets the frame pays back its inset.
+ */
+export function TopBar({ start, centre, end }: { start: ReactNode; centre: ReactNode; end: ReactNode }) {
+  return (
+    <header className="safe-t safe-x relative z-10 shrink-0 border-b border-rule/10 bg-page/20 backdrop-blur-glass">
+      <div className="grid h-strip-compact grid-cols-[1fr_auto_1fr] items-center gap-8 px-12 pad:h-strip pad:gap-16 pad:px-16 tablet:px-20 short:h-control-md">
+        <div className="flex min-w-0 items-center gap-12 tablet:gap-16">{start}</div>
+        {centre}
+        <div className="flex min-w-0 items-center justify-end gap-12 tablet:gap-16">{end}</div>
+      </div>
+    </header>
+  );
+}
+
+export type Surface = 'floor' | 'counter';
+
+const SURFACES: readonly { key: Surface; label: string; href: string; icon: TablerIcon }[] = [
+  { key: 'floor', label: 'Floor', href: '/floor/tabs', icon: IconLayoutGrid },
+  { key: 'counter', label: 'Counter', href: '/counter/orders', icon: IconBuildingStore },
+];
+
+/** Floor and Counter, side by side. The one you are on is marked, the other is a link. */
+export function SurfaceSwitcher({ current }: { current: Surface }) {
+  return (
+    <nav aria-label="Surfaces" className="flex items-center gap-2 rounded-dot border border-rule-raised/30 bg-sunken/50 p-2">
+      {SURFACES.map((s) => {
+        const Glyph = s.icon;
+        return s.key === current ? (
+          <span key={s.key} aria-current="page" className="flex h-control-sm items-center gap-6 rounded-dot bg-accent/15 px-12 text-body-sm font-medium text-accent-text">
+            <Glyph size={16} stroke={ICON_STROKE} aria-hidden="true" />
+            <span>{s.label}</span>
+          </span>
+        ) : (
+          <Link key={s.key} href={s.href} aria-label={`Switch to the ${s.label}`} className="flex h-control-sm items-center gap-6 rounded-dot px-12 text-body-sm text-ink-subtle press-feedback hover:bg-page hover:text-ink">
+            <Glyph size={16} stroke={ICON_STROKE} aria-hidden="true" />
+            <span className="hidden compact:inline">{s.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+/** The time and date, from a tablet up. Rendered after hydration so server and client agree. */
+export function LiveClock({ timeZone }: { timeZone?: string }) {
+  const now = useNow(30_000);
+  const hydrated = useHydrated();
+  return (
+    <div className="hidden text-right pad:block" suppressHydrationWarning>
+      <div className="font-mono tabular text-body-sm font-medium text-ink">{hydrated ? formatTime(now, timeZone) : ''}</div>
+      <div className="text-micro text-ink-subtle">{hydrated ? formatDate(now, timeZone) : ''}</div>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------------- dock */
+
+export interface DockItem {
+  href: string;
+  label: string;
+  icon: TablerIcon;
+  /** A count on the icon: open tabs, waiting tickets. */
+  badge?: number;
+  badgeTone?: 'accent' | 'stop';
+  /** A status on the icon when a count would say too much: the drawer, a sync problem. */
+  dot?: Tone;
+  dotLabel?: string;
+  /** A keyboard shortcut, shown as a hint on a desktop. */
+  shortcut?: string;
+}
+
+const ITEM =
+  'relative flex h-dock-item min-w-dock-item flex-1 flex-col items-center justify-center gap-2 rounded-md press-feedback pad:h-dock-item-lg pad:min-w-dock-item-lg pad:flex-none pad:px-12 short:h-control-lg short:flex-row short:gap-8';
+
+/**
+ * A dock item. The whole box is the target: 56px on a phone, 64 from a tablet up, which clears the
+ * 48px floor minimum with a thumb's worth of margin. docs/06 section 6.1.
+ */
+export function DockLink({ item, active }: { item: DockItem; active: boolean }) {
+  const Glyph = item.icon;
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? 'page' : undefined}
+      title={item.shortcut ? `${item.label} (${item.shortcut})` : undefined}
+      className={cx(ITEM, active ? 'text-accent' : 'text-ink-subtle hover:text-ink')}
+    >
+      <span className="relative">
+        <Glyph size={24} stroke={ICON_STROKE} aria-hidden="true" />
+        {item.badge ? <CountBadge count={item.badge} tone={item.badgeTone ?? 'accent'} className="absolute -right-12 -top-6" /> : null}
+        {item.dot ? (
+          <span aria-hidden="true" className="absolute -right-4 -top-2">
+            <Dot tone={item.dot} />
+          </span>
+        ) : null}
+      </span>
+      <span className="text-label short:hidden">
+        {item.label}
+        {item.badge ? <span className="sr-only">, {item.badge}</span> : null}
+        {item.dot && item.dotLabel ? <span className="sr-only">, {item.dotLabel}</span> : null}
+      </span>
+      {active ? <span aria-hidden="true" className="absolute inset-x-12 bottom-2 h-px rounded-dot bg-accent" /> : null}
+    </Link>
+  );
+}
+
+/** A dock item that acts rather than navigates, such as search. */
+export function DockButton({ label, icon: Glyph, onClick, shortcut }: { label: string; icon: TablerIcon; onClick: () => void; shortcut?: string }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={label} title={shortcut ? `${label} (${shortcut})` : undefined} className={cx(ITEM, 'text-ink-subtle hover:text-ink')}>
+      <Glyph size={24} stroke={ICON_STROKE} aria-hidden="true" />
+      <span className="text-label short:hidden">{label.split(' ')[0]}</span>
+    </button>
+  );
+}
+
+/**
+ * The dock. It floats over the page on every screen, and still sits in the flow of the shell's
+ * column, so the view above it ends where it begins and nothing is ever covered.
+ *
+ * The page's primary action lives in it, through BaseAction, so the thing to do next is always in
+ * the same place under the thumb. Below `inlineFrom` the action sits in a full width row above the
+ * nav; from there up it joins the nav in one pill.
+ *
+ *   floor    inline from `pad`: a waiter's actions are one button
+ *   counter  inline from `tablet`: settling carries an amount, and a 768 tablet needs the room
+ */
+export function Dock({ nav, actionRef, inlineFrom = 'pad', label }: { nav: ReactNode; actionRef: Ref<HTMLDivElement>; inlineFrom?: 'pad' | 'tablet'; label: string }) {
+  const pad = inlineFrom === 'pad';
+  return (
+    <footer className="safe-b safe-x shrink-0 [--bliss-gutter-b:8px] [--bliss-gutter-x:8px] pad:[--bliss-gutter-b:12px] pad:[--bliss-gutter-x:16px] short:[--bliss-gutter-b:6px]">
+      <div
+        className={cx(
+          'mx-auto flex w-full flex-col gap-8 rounded-lg border border-glass-edge bg-glass px-8 py-6 shadow-lift backdrop-blur-glass',
+          pad ? 'pad:w-fit pad:flex-row pad:items-center pad:gap-16 pad:px-12 pad:py-8' : 'pad:px-12 pad:py-8 tablet:w-fit tablet:flex-row tablet:items-center tablet:gap-16',
+        )}
+      >
+        <div ref={actionRef} className={cx('flex items-center gap-8 empty:hidden [&>*]:flex-1', pad ? 'pad:order-last pad:[&>*]:flex-none' : 'tablet:order-last tablet:[&>*]:flex-none')} />
+        <nav aria-label={label} className={cx('flex items-center justify-between gap-2', pad ? 'pad:gap-8' : 'pad:gap-8 tablet:justify-start')}>
+          {nav}
+        </nav>
+      </div>
+    </footer>
+  );
+}
+
+/* ------------------------------------------------------------- page header */
+
+/**
+ * A working page's header, the same on both surfaces: the title, a pill of live facts, whatever
+ * the page needs on the right, and its filters underneath. One row from a tablet held upright,
+ * half the padding on a short screen.
+ */
+export function PageHeader({ title, facts, aside, children }: { title: ReactNode; facts?: readonly (MetaItem | null | false)[]; aside?: ReactNode; children?: ReactNode }) {
+  return (
+    <header className="z-10 shrink-0 border-b border-rule-raised/20 bg-page/85 px-12 pb-12 pt-12 backdrop-blur-glass pad:px-24 pad:pb-16 pad:pt-20 short:py-6">
+      <div className="flex flex-col gap-12 pad:flex-row pad:items-center pad:justify-between pad:gap-x-24">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-16 gap-y-8">
+          <h1 className="shrink-0 whitespace-nowrap text-title-lg font-medium text-ink pad:text-heading short:text-title">{title}</h1>
+          {facts && facts.some(Boolean) ? (
+            <>
+              <div className="hidden h-24 w-px shrink-0 bg-rule-raised/60 desktop:block" aria-hidden="true" />
+              {/* One line, always: when the row is too narrow the pill drops under the title rather than folding up. */}
+              <div className="flex max-w-full items-center overflow-x-auto rounded-dot border border-rule-raised/30 bg-sunken/80 px-12 py-4 no-scrollbar pad:py-6 tablet:px-16">
+                <MetaLine items={facts} className="w-max whitespace-nowrap" />
+              </div>
+            </>
+          ) : null}
+        </div>
+        {aside ? <div className="flex shrink-0 items-center gap-12">{aside}</div> : null}
+      </div>
+      {children ? <div className="mt-12 pad:mt-16 short:mt-6">{children}</div> : null}
+    </header>
+  );
+}

@@ -66,6 +66,22 @@ export const lineVoidPayload = z.object({
 export const tabMovePayload = z.object({ v: z.literal(1), tabId: id, fromTableId: id.nullable(), toTableId: id });
 export const tabHandoverPayload = z.object({ v: z.literal(1), tabIds: z.array(id).min(1), toStaffId: id });
 
+/**
+ * The guests have left. docs/16 section 8. A settled tab lets go of its table; an open tab with
+ * nothing on it closes, with a reason; `undo` puts a cleared tab back on its table if nobody has
+ * sat down there since.
+ */
+export const tabClearPayload = z.object({
+  v: z.literal(1),
+  tabId: id,
+  at: z.number().int(),
+  undo: z.boolean().default(false),
+  reason: reason.nullable().default(null),
+});
+
+/** The waiter set the round down at the table. `undo` takes the mark back. */
+export const orderDeliverPayload = z.object({ v: z.literal(1), orderId: id, tabId: id, at: z.number().int(), undo: z.boolean().default(false) });
+
 /* ------------------------------------------------------------- the Counter, docs/14 */
 
 /** The counter pours lines. Idempotent: a line already poured stays as it was. */
@@ -122,6 +138,8 @@ export const outboxPayloads = {
   'line.void': lineVoidPayload,
   'tab.move': tabMovePayload,
   'tab.handover': tabHandoverPayload,
+  'tab.clear': tabClearPayload,
+  'order.deliver': orderDeliverPayload,
 } as const;
 
 export type OutboxKind = keyof typeof outboxPayloads;
@@ -170,7 +188,9 @@ export type RejectionCode =
   | 'TENDER_MISMATCH'
   | 'DRAWER_NOT_OPEN'
   | 'DRAWER_ALREADY_OPEN'
-  | 'WRONG_SURFACE';
+  | 'WRONG_SURFACE'
+  | 'TAB_NOT_SETTLED'
+  | 'TABLE_TAKEN';
 
 /** Plain sentences for rejection codes, for the device that has to explain one. docs/08 section 6. */
 export const REJECTION_COPY: Record<RejectionCode, string> = {
@@ -190,4 +210,6 @@ export const REJECTION_COPY: Record<RejectionCode, string> = {
   DRAWER_NOT_OPEN: 'Cash needs an open drawer on this device.',
   DRAWER_ALREADY_OPEN: 'A drawer is already open on this device.',
   WRONG_SURFACE: 'This change belongs to another kind of device.',
+  TAB_NOT_SETTLED: 'That table still has something to pay, so it cannot be cleared yet.',
+  TABLE_TAKEN: 'New guests are already at that table, so the old tab stays cleared.',
 };

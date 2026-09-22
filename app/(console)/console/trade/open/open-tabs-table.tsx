@@ -56,7 +56,7 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
       sortValue: (r) => r.openedAt,
       csv: (r) => new Date(r.openedAt).toISOString(),
       cell: (r) => (
-        <span className="flex flex-col items-end leading-tight" title={`Opened ${formatTime(r.openedAt, timezone)}`}>
+        <span className="flex flex-col items-end " title={`Opened ${formatTime(r.openedAt, timezone)}`}>
           <NumCell tone={now - r.openedAt > LONG_OPEN_MS ? 'low' : 'default'}>{formatElapsed(Math.max(0, now - r.openedAt))}</NumCell>
           <span className="font-mono tabular text-num-sm text-ink-subtle">{formatTime(r.openedAt, timezone)}</span>
         </span>
@@ -87,7 +87,7 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
       sortValue: (r) => r.lines,
       csv: (r) => r.lines,
       cell: (r) => (
-        <span className="flex flex-col items-end leading-tight">
+        <span className="flex flex-col items-end ">
           <NumCell>{r.lines}</NumCell>
           {r.pending > 0 ? <span className="text-body-sm text-info">{r.pending} at the bar</span> : null}
         </span>

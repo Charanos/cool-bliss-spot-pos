@@ -3,7 +3,8 @@ import 'server-only';
 import type { OrderLine, Tab, TabSeat } from '@bliss/shared/domain';
 import { type Cents, ZERO, add, sum } from '@bliss/shared/money';
 import type { IsoDate } from '@bliss/shared/time';
-import { tabLabel } from '@bliss/shared/trade';
+import { isSeated, tabLabel } from '@bliss/shared/trade';
+import { dataset } from '../_data/source';
 import { tradeTables } from './schema';
 
 export function zones() {
@@ -88,6 +89,12 @@ export function openTabs(): TabSummary[] {
     .tabs.filter((t) => t.status === 'open' || t.status === 'part_settled' || t.status === 'settling')
     .sort((a, b) => a.openedAt - b.openedAt)
     .map(summarise);
+}
+
+/** Tonight's tabs that are paid but still at their table. docs/16 section 8. */
+export function seatedTabs(): Tab[] {
+  const date = dataset().currentBusinessDate;
+  return tradeTables().tabs.filter((t) => t.businessDate === date && isSeated(t));
 }
 
 export function tabsOn(date: IsoDate): Tab[] {

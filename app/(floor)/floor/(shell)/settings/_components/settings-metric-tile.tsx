@@ -66,13 +66,13 @@ export function SettingsMetricTile({
   return (
     <div
       className={cx(
-        'rounded-lg border p-16 tablet:p-20 flex flex-col justify-between gap-10 transition-all',
+        'rounded-lg border p-16 tablet:p-20 flex flex-col justify-between gap-8 transition-all',
         t.wrap,
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-10">
-        <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle truncate">
+      <div className="flex items-center justify-between gap-8">
+        <span className="font-mono text-micro uppercase text-ink-subtle truncate">
           {label}
         </span>
         {Icon ? <Icon size={16} stroke={ICON_STROKE} className={t.icon} /> : null}

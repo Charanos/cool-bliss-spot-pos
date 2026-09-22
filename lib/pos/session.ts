@@ -3,6 +3,7 @@
 import type { PermissionKey, RoleKey } from '@bliss/shared/domain';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { api } from './api';
+import { wakeSync } from './sync';
 import { META, currentSurface, getMeta, posDb, setMeta } from './db';
 
 export interface StaffSession {
@@ -32,6 +33,11 @@ export async function ensureDevice(): Promise<BoundDevice | null> {
   if (!first) return null;
   const bound = { id: first.id, label: first.label };
   await setMeta(META.deviceId, bound);
+  // The first pull ran before this device knew who it was, so it carried nothing that belongs to a
+  // device: its open drawer, its bills today. Rewind the cursor and pull the whole picture again,
+  // now with the id on it.
+  await setMeta(META.tradeCursor, -1);
+  wakeSync();
   return bound;
 }
 

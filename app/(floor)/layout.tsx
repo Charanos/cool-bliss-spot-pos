@@ -12,7 +12,9 @@ export const metadata: Metadata = {
   applicationName: 'Bliss Floor',
   appleWebApp: { capable: true, title: 'Bliss Floor', statusBarStyle: 'black-translucent' },
   icons: {
-    apple: '/floor/icon.svg',
+    // iOS reads this one and has never supported SVG here.
+    apple: '/icon/192',
+    icon: [{ url: '/icon/192', type: 'image/png' }],
   },
 };
 

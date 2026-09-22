@@ -32,7 +32,7 @@ export function SettingsRow({ label, value, helper, icon: Icon, className }: Set
         <div className="flex flex-col min-w-0">
           <span className="text-body-sm font-medium text-ink-subtle truncate">{label}</span>
           {helper ? (
-            <span className="font-mono text-micro text-ink-disabled truncate">{helper}</span>
+            <span className="font-mono text-micro text-ink-disabled pad:truncate">{helper}</span>
           ) : null}
         </div>
       </div>

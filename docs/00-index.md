@@ -65,6 +65,7 @@ This is not a rename. Roughly a third of the previous system is gone and one sig
 12. `13-floor-tabs-revamp.md`: floor tabs, tab cards, table selector, and dialogs.
 13. `14-surfaces-counter-and-sync.md`: counter surfaces and sync topology.
 14. `15-floor-orders-revamp.md`: floor orders, live ticket queue, distinct tokens (`served`/`poured`), action modal, and shift handoff.
+15. `16-responsive-and-offline.md`: the device ladder, the dead class checker, the service worker, what offline honestly covers, notices and undo, the table lifecycle and history.
 
 ---
 

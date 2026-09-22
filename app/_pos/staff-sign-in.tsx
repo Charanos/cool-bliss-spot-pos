@@ -119,16 +119,16 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
         <FadeRule orientation="y" className="absolute bottom-[10%] right-0 top-[10%] z-20" />
       </section>
 
-      <section className="relative flex min-h-0 flex-1 flex-col justify-between overflow-y-auto p-24 tablet:p-40">
+      <section className="safe-x safe-b relative flex min-h-0 flex-1 flex-col justify-between overflow-y-auto p-16 pad:p-24 tablet:p-40">
         <AmbientTerminalArtwork />
         {!person ? (
           <>
             <header className="relative z-10 flex flex-col items-end text-right">
-              <h1 className="mt-32 font-mono text-title-lg font-medium text-ink tablet:text-heading">Sign in to {device?.label ?? SURFACE_NAME[surface]}</h1>
+              <h1 className="mt-16 font-mono text-title font-medium text-balance text-ink pad:mt-32 pad:text-title-lg tablet:text-heading">Sign in to {device?.label ?? SURFACE_NAME[surface]}</h1>
               <p className="mt-12 text-body text-ink-subtle">Choose your name, then enter your PIN.</p>
             </header>
 
-            <div className="relative z-10 mt-auto flex flex-col gap-16 pt-32">
+            <div className="relative z-10 mt-auto flex flex-col gap-16 pt-20 pad:pt-32">
               <div className="flex items-center justify-between">
                 <Eyebrow as="h2" id={teamId}>
                   Who is working
@@ -136,7 +136,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
                 <span className="font-mono tabular text-num-sm text-ink-muted">{people.length === 1 ? '1 on the team' : `${people.length} on the team`}</span>
               </div>
 
-              <ul aria-labelledby={teamId} className="grid grid-cols-1 gap-12 tablet:grid-cols-2 tablet:gap-16">
+              <ul aria-labelledby={teamId} className="grid grid-cols-1 gap-12 pad:grid-cols-2 pad:gap-16">
                 {!sync.bootstrapped && people.length === 0
                   ? Array.from({ length: 4 }, (_, i) => (
                       <li key={i}>
@@ -166,8 +166,8 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
                     ))}
               </ul>
               {!sync.bootstrapped && sync.link !== 'synced' ? (
-                <div className="mt-12 flex items-center justify-between gap-12 rounded-sm border border-amber-500/20 bg-amber-500/10 px-16 py-10">
-                  <p className="text-body text-amber-200">
+                <div className="mt-12 flex items-center justify-between gap-12 rounded-sm border border-low/20 bg-low/10 px-16 py-8">
+                  <p className="text-body text-low">
                     No connection. This {deviceWord} needs the network once to fetch the menu and the team.
                   </p>
                   <VeilButton onClick={() => wakeSync()} className="shrink-0">

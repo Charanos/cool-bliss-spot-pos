@@ -265,8 +265,15 @@ export const size = {
   'rail-console': 220,
   'panel-tender': 420,
   strip: 56,
+  /** The top bar on a phone, and on any screen shorter than the `short` variant's ceiling. */
+  'strip-compact': 48,
   base: 72,
+  /** The base layer on a phone: one action and the person's name, nothing else. */
+  'base-compact': 60,
   'base-console': 40,
+  /** A dock item: the whole tap target, icon over label. */
+  'dock-item': 56,
+  'dock-item-lg': 64,
   dot: 6,
   avatar: 64,
   'avatar-lg': 96,
@@ -315,7 +322,20 @@ export const motion = {
   feedbackMs: 100,
 } as const;
 
-export const breakpoints = { tablet: 960, desktop: 1280, wide: 1440 } as const;
+/**
+ * Mobile first, in the devices this actually runs on. docs/16-responsive-and-offline.md.
+ *
+ *   base      a phone held upright, 360 to 430 wide
+ *   compact   a phone on its side, and the small tablets the outlet keeps as spares
+ *   pad       a tablet upright, 768: the Floor's own device in portrait
+ *   tablet    a tablet on its side, the Floor and Counter at 10 inches
+ *   desktop   the Console, and a counter on a monitor
+ *   wide      a large monitor in the office
+ *
+ * Height matters as much as width on a phone on its side, where 360px of height has to hold a
+ * header, a list and a dock: the `short` variant in base.css answers that.
+ */
+export const breakpoints = { compact: 480, pad: 768, tablet: 960, desktop: 1280, wide: 1440 } as const;
 
 /**
  * Every text on surface pair used in the product, with its use and the measured WCAG ratio.

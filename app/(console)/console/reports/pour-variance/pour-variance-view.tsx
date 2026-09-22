@@ -49,7 +49,7 @@ export function PourVarianceView({
       sortValue: (r) => Math.abs(r.variancePct),
       csv: (r) => r.variancePct.toFixed(2),
       cell: (r) => (
-        <span className="flex flex-col items-end leading-tight">
+        <span className="flex flex-col items-end ">
           <NumCell tone={r.outside ? 'stop' : 'muted'}>{`${r.variancePct > 0 ? '+' : ''}${r.variancePct.toFixed(1)}%`}</NumCell>
           <span className="font-mono tabular text-num-sm text-ink-subtle">allow {r.tolerancePct}%</span>
         </span>
@@ -73,7 +73,7 @@ export function PourVarianceView({
 
   return (
     <>
-      <RevealSection className="mb-24 flex flex-wrap items-end gap-x-48 gap-y-16 border-b border-hairline pb-20">
+      <RevealSection className="mb-24 flex flex-wrap items-end gap-x-40 gap-y-16 border-b border-hairline pb-20">
         <div>
           <span className="text-label text-ink-subtle">Between counts</span>
           <p className="font-mono tabular text-num text-ink">{period}</p>

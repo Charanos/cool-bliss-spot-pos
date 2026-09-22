@@ -46,7 +46,7 @@ export function SeatGroupHeader({
   const heading = seat === 'shared' ? 'Shared' : label ? `Seat ${seat} · ${displaySeatLabel(label)}` : `Seat ${seat}`;
   return (
     <div className={cx('flex items-baseline justify-between gap-8 pb-8', settled && 'opacity-60')}>
-      <span className="min-w-0 flex-1 truncate text-subtitle font-medium tracking-tight text-ink" title={label ?? undefined}>
+      <span className="min-w-0 flex-1 truncate text-subtitle font-medium text-ink" title={label ?? undefined}>
         {heading}
       </span>
       {settled ? <StatusChip status="settled" /> : null}
@@ -92,21 +92,21 @@ export function TicketLineView({ qty, name, lineTotal, state, detail, pouredAt, 
       <div className="min-w-0 flex-1 flex flex-col justify-center">
         <div className="flex items-center gap-6 min-w-0">
           <span className={cx('font-mono tabular text-body-sm font-medium shrink-0', poured ? 'text-ink-subtle' : 'text-accent')}>
-            {qty} <span className="text-[11px] text-ink-subtle font-normal">×</span>
+            {qty} <span className="text-[11px] text-ink-subtle font-regular">×</span>
           </span>
-          <span className={cx('block truncate text-body-sm font-medium leading-tight', poured ? 'text-ink-muted' : 'text-ink')}>{name}</span>
+          <span className={cx('block truncate text-body-sm font-medium ', poured ? 'text-ink-muted' : 'text-ink')}>{name}</span>
         </div>
 
         {detail || state === 'unsent' || state === 'poured' || state === 'ran_out' ? (
           <div className="flex items-center gap-8 pt-4 min-w-0 text-label text-ink-subtle">
             {detail ? <span className="truncate">{detail}</span> : null}
             {state === 'unsent' ? (
-              <span className="inline-flex items-center gap-5 text-info">
+              <span className="inline-flex items-center gap-20 text-info">
                 <Dot tone="info" />
                 Not yet sent
               </span>
             ) : state === 'poured' ? (
-              <span className="inline-flex items-center gap-5 text-poured">
+              <span className="inline-flex items-center gap-20 text-poured">
                 <Dot tone="poured" />
                 {pouredAt ? `Poured ${pouredAt}` : 'Poured'}
               </span>

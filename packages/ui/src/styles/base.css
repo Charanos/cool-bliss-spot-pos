@@ -99,6 +99,68 @@
   }
 }
 
+/*
+ * ---------------------------------------------------------------------------------------------
+ * Device variants. docs/16-responsive-and-offline.md.
+ *
+ * Width alone does not describe a phone on its side: 844 wide is past the `compact` breakpoint
+ * while 390 of height has to hold a header, a list and a dock. `short` is the one that decides
+ * whether chrome collapses, and it is a height query, so it also catches a tablet with the
+ * keyboard up.
+ */
+
+/* A phone on its side, or any screen too short to spend height on chrome. */
+@custom-variant short (@media (max-height: 34rem));
+/* Enough height for a header, a list that breathes and a dock. */
+@custom-variant tall (@media (min-height: 48rem));
+/* A finger, not a mouse: targets grow, hover styles are not the whole story. */
+@custom-variant touch (@media (pointer: coarse));
+@custom-variant mouse (@media (pointer: fine));
+/* Installed to the home screen, where the browser's own chrome is gone. */
+@custom-variant standalone (@media (display-mode: standalone));
+
+/*
+ * The notch, the home indicator and the rounded corners. `viewportFit: 'cover'` in the layout puts
+ * the app under them, so every edge that touches the frame pays the inset back. The fallbacks keep
+ * these working in a browser that does not know env().
+ */
+/*
+ * Each one adds its own gutter to the inset rather than replacing the padding, because a class
+ * that sets `padding-left` would otherwise silently beat the `px-8` sitting next to it. Set the
+ * gutter where it is used: `safe-x [--bliss-gutter-x:8px] pad:[--bliss-gutter-x:16px]`.
+ */
+@utility safe-t {
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--bliss-gutter-t, 0px));
+}
+
+@utility safe-b {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--bliss-gutter-b, 0px));
+}
+
+@utility safe-x {
+  padding-left: calc(env(safe-area-inset-left, 0px) + var(--bliss-gutter-x, 0px));
+  padding-right: calc(env(safe-area-inset-right, 0px) + var(--bliss-gutter-x, 0px));
+}
+
+/* For a floating element that sits above the home indicator rather than padding itself. */
+@utility inset-safe-b {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--bliss-inset-b, 0px));
+}
+
+/*
+ * A scroll region inside a flex column. On iOS a child of a flex parent will not shrink below its
+ * content without this, which is how a list ends up pushing a dock off the screen instead of
+ * scrolling. Momentum scrolling and scroll containment come with it, so a list at its end never
+ * drags the page behind it.
+ */
+@utility scroll-region {
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Numbers are always tabular, so totals never reflow as they change. */
 @utility tabular {
   font-variant-numeric: tabular-nums;
@@ -134,6 +196,83 @@
 }
 
 /*
+ * Feedback motion. docs/16 section 7. Short and quiet: a notice slides in from the top bar, an
+ * added item bumps once, a count pops. None of it repeats, and none of it waits for the network.
+ */
+@keyframes bliss-notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bliss-notice-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+@keyframes bliss-notice-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes bliss-bump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes bliss-flash {
+  0% {
+    box-shadow: 0 0 0 0 var(--color-accent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+@utility notice-in {
+  animation: bliss-notice-in 180ms var(--bliss-ease-out) both;
+}
+
+@utility notice-out {
+  animation: bliss-notice-out 160ms var(--ease-in) both;
+}
+
+/* The draining hairline under a notice. Its duration is set inline, per notice. */
+@utility notice-timer {
+  animation-name: bliss-notice-timer;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+/* Once, on a count or an icon that just changed. Remount the element to replay it. */
+@utility bump {
+  animation: bliss-bump 240ms var(--bliss-ease-out);
+}
+
+/* A ring that ripples out of something just added, such as a tile or a cart line. */
+@utility flash {
+  animation: bliss-flash 420ms var(--bliss-ease-out);
+}
+
+/*
  * Reduced motion makes things effectively instant. Opacity fades survive at 80ms, because a hard
  * cut on a colour change reads as a glitch. The spinner keeps turning: it is the state.
  */
@@ -142,6 +281,18 @@
   ::before,
   ::after {
     transition-duration: 80ms !important;
+  }
+}
+
+/* Movement goes; the notice still arrives and leaves, as a fade. The timer keeps draining: it is information. */
+@media (prefers-reduced-motion: reduce) {
+  .bump,
+  .flash {
+    animation: none;
+  }
+  .notice-in,
+  .notice-out {
+    animation-duration: 80ms;
   }
 }
 

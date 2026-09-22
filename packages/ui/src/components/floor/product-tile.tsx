@@ -59,6 +59,11 @@ export interface ProductTileProps {
   imageUrl: string | null;
   onAdd: (variantId: string) => void;
   onLongPress: (variantId: string) => void;
+  /**
+   * How many of this item are already on the current seat's draft, or in the counter's cart. A tap
+   * that lands shows here at once: the count bumps and a ring ripples out of the tile.
+   */
+  inCart?: number;
 }
 
 /**
@@ -87,6 +92,7 @@ export const ProductTile = memo(function ProductTile({
   imageUrl,
   onAdd,
   onLongPress,
+  inCart = 0,
 }: ProductTileProps) {
   const ref = useRef<HTMLButtonElement>(null);
   const hairlineRef = useRef<HTMLSpanElement>(null);
@@ -122,15 +128,27 @@ export const ProductTile = memo(function ProductTile({
       type="button"
       {...press}
       aria-disabled={finished || undefined}
-      aria-label={`${name}${price ? `, ${formatKes(price)}` : ''}${stateWords}`}
+      aria-label={`${name}${price ? `, ${formatKes(price)}` : ''}${stateWords}${inCart > 0 ? `, ${inCart} added` : ''}`}
       data-variant-id={variantId}
       className={cx(
         'group relative flex min-h-[192px] min-w-0 flex-col overflow-hidden rounded-[16px] bg-[#161F27] text-left will-change-transform',
         'shadow-[0_4px_16px_rgba(0,0,0,0.3)]',
-        'transition-all duration-[300ms] ease-out hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,0,0,0.5)] active:scale-[0.98]',
+        'transition-all duration-[300ms] ease-out hover:-translate-y-4 hover:shadow-[0_12px_28px_rgba(0,0,0,0.5)] active:scale-[0.98]',
         finished && 'cursor-default opacity-40',
       )}
     >
+      {inCart > 0 ? (
+        <>
+          <span key={`ring-${inCart}`} aria-hidden="true" className="flash pointer-events-none absolute inset-0 z-30 rounded-[16px]" />
+          <span
+            key={`count-${inCart}`}
+            aria-hidden="true"
+            className="bump absolute left-8 top-8 z-30 flex h-24 min-w-24 items-center justify-center rounded-dot bg-accent px-6 font-mono tabular text-num-sm text-accent-ink shadow-raised"
+          >
+            ×{inCart}
+          </span>
+        </>
+      ) : null}
       <span aria-hidden="true" className="relative block h-[96px] w-full shrink-0 overflow-hidden bg-[#11181F]">
         {imageUrl && !imageFailed ? (
           <>
@@ -163,7 +181,7 @@ export const ProductTile = memo(function ProductTile({
 
         {/* Category Overlay Label (Bottom Left) */}
         <span
-          className="absolute bottom-[6px] left-[14px] text-[10px] font-bold tracking-[0.14em] uppercase z-10 select-none"
+          className="absolute bottom-[6px] left-[14px] text-[10px] font-medium tracking-[0.14em] uppercase z-10 select-none"
           style={{ color: CATEGORY_COLOR[category] ?? '#8C9AA6' }}
         >
           {GLYPH_NAME[glyph] ?? 'ITEM'}
@@ -180,7 +198,7 @@ export const ProductTile = memo(function ProductTile({
                   ? 'attention'
                   : 'neutral'
           }
-          className="absolute top-[8px] right-[8px] z-20 backdrop-blur-md bg-[#0B1015]/85 shadow-sm px-[7px] py-[3px] text-[10px] font-semibold tracking-wider rounded-[6px]"
+          className="absolute top-[8px] right-[8px] z-20 backdrop-blur-glass bg-[#0B1015]/85 shadow-raised px-[7px] py-[3px] text-[10px] font-medium rounded-[6px]"
         >
           {held
             ? (count > 0 ? `On hold · ${count}` : 'On hold')
@@ -192,7 +210,7 @@ export const ProductTile = memo(function ProductTile({
 
       <span className="relative z-10 flex flex-1 flex-col justify-between px-[14px] pb-[12px] pt-[8px]">
         <span
-          className="line-clamp-2 min-h-[38px] text-[14px] font-medium tracking-tight text-[#F4F7F9] leading-[19px]"
+          className="line-clamp-2 min-h-[38px] text-[14px] font-medium text-[#F4F7F9] leading-[19px]"
           title={name}
         >
           {name}
@@ -207,7 +225,7 @@ export const ProductTile = memo(function ProductTile({
 
           <span
             aria-hidden="true"
-            className="flex size-[30px] shrink-0 items-center justify-center rounded-[8px] bg-[#1E3B40] text-[#3CD4D3] shadow-sm transition-all duration-200 group-hover:bg-[#275359] group-hover:scale-105 active:scale-90"
+            className="flex size-[30px] shrink-0 items-center justify-center rounded-[8px] bg-[#1E3B40] text-[#3CD4D3] shadow-raised transition-all duration-200 group-hover:bg-[#275359] group-hover:scale-105 active:scale-90"
           >
             <IconPlus size={17} stroke={2.5} />
           </span>

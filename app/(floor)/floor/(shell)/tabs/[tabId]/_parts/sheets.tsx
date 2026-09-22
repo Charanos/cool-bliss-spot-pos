@@ -139,12 +139,12 @@ export function ModifierSheet({
       <div className="flex flex-col gap-24 py-4">
         {/* Modifier groups */}
         {data?.groups.map(({ group, modifiers }) => (
-          <fieldset key={group.id} className="flex flex-col gap-10">
+          <fieldset key={group.id} className="flex flex-col gap-8">
             <div className="flex items-center justify-between px-2">
-              <legend className="font-mono text-[11px] font-medium tracking-wider uppercase text-ink-subtle">
+              <legend className="font-mono text-[11px] font-medium uppercase text-ink-subtle">
                 {group.name}
               </legend>
-              <span className="font-mono text-[10px] tracking-wide text-ink-disabled uppercase">
+              <span className="font-mono text-[10px] text-ink-disabled uppercase">
                 {group.maxSelect > 1 ? `choose up to ${group.maxSelect}` : 'choose one'}
               </span>
             </div>
@@ -160,7 +160,7 @@ export function ModifierSheet({
                     className={cx(
                       'inline-flex min-h-[44px] items-center gap-8 rounded-sm px-16 text-body transition-all press-feedback',
                       on
-                        ? 'bg-sunken/80 text-ink font-medium shadow-sm ring-1 ring-rule-raised/50'
+                        ? 'bg-sunken/80 text-ink font-medium shadow-raised ring-1 ring-rule-raised/50'
                         : 'bg-sunken/40 text-ink-muted ring-1 ring-transparent hover:bg-sunken/60 hover:text-ink',
                     )}
                   >
@@ -178,7 +178,7 @@ export function ModifierSheet({
         ))}
 
         {/* Quantity in a sunken card */}
-        <div className="flex items-center justify-between rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-sm">
+        <div className="flex items-center justify-between rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-raised">
           <div className="flex flex-col gap-2">
             <span className="text-body font-medium text-ink">Quantity</span>
             <span className="text-body-sm text-ink-subtle">
@@ -202,7 +202,7 @@ export function ModifierSheet({
           <label htmlFor="modifier-note-input" className="px-2 text-body font-medium text-ink">
             Note for the bar (optional)
           </label>
-          <div className="flex h-[52px] items-center rounded-lg bg-sunken/60 px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50 shadow-sm">
+          <div className="flex h-[52px] items-center rounded-lg bg-sunken/60 px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50 shadow-raised">
             <input
               id="modifier-note-input"
               type="text"
@@ -261,13 +261,13 @@ export function FinishedSheet({ variantId, onClose }: { variantId: string | null
       footer={footerActions}
     >
       <div className="flex flex-col gap-16 py-4">
-        <div className="flex items-center gap-12 rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-sm">
+        <div className="flex items-center gap-12 rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-raised">
           <StatusChip status={held ? 'on_hold' : 'finished'} />
           <span className="text-body font-medium text-ink">
             {held ? 'Currently on hold' : 'Item is finished'}
           </span>
         </div>
-        <p className="text-body text-ink leading-relaxed px-2">
+        <p className="text-body text-ink px-2">
           {held
             ? `${name} is on hold. A supervisor can take it off hold in the Console when the bar is ready.`
             : `${name} is finished. A supervisor can put it back if the bar has more.`}
@@ -317,7 +317,7 @@ export function SeatMenuSheet({
       footer={footerActions}
     >
       <div className="flex flex-col gap-16 py-2">
-        <div className="flex items-center justify-between rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-sm">
+        <div className="flex items-center justify-between rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-raised">
           <div className="flex items-center gap-12">
             <SeatChip seat={seat.seatNo} size="row" label={seat.label} />
             <span className="text-body font-medium text-ink">
@@ -325,7 +325,7 @@ export function SeatMenuSheet({
             </span>
           </div>
           <div className="text-right">
-            <span className="block font-mono text-[10px] tracking-wide uppercase text-ink-subtle">Seat Total</span>
+            <span className="block font-mono text-[10px] uppercase text-ink-subtle">Seat Total</span>
             <Money value={seat.total} size="num" tone="default" />
           </div>
         </div>
@@ -346,7 +346,7 @@ export function SeatMenuSheet({
         />
 
         {error ? (
-          <div className="rounded-2xl border border-stop/20 bg-stop/10 px-16 py-12">
+          <div className="rounded-lg border border-stop/20 bg-stop/10 px-16 py-12">
             <p role="alert" className="text-body font-medium text-stop">
               {error}
             </p>
@@ -424,7 +424,7 @@ export function LabelSeatSheet({
             {value.length}/{SEAT_LABEL_MAX}
           </span>
         </div>
-        <div className="flex h-[52px] items-center rounded-lg bg-sunken/60 px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50 shadow-sm">
+        <div className="flex h-[52px] items-center rounded-lg bg-sunken/60 px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50 shadow-raised">
           <input
             id="seat-label-input"
             data-autofocus=""
@@ -502,7 +502,7 @@ export function LineSheet({
     >
       <div className="flex flex-col gap-16 py-2">
         {line && draft ? (
-          <div className="flex items-center justify-between rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-sm">
+          <div className="flex items-center justify-between rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-raised">
             <div className="flex flex-col gap-2">
               <span className="text-body font-medium text-ink">Quantity</span>
               <span className="text-body-sm text-ink-subtle">Not fired yet</span>
@@ -512,7 +512,7 @@ export function LineSheet({
                 type="button"
                 aria-label={line.qty === 1 ? 'Clear the line' : 'One fewer'}
                 onClick={() => onQty(line.qty - 1)}
-                className="flex h-full w-[40px] shrink-0 items-center justify-center text-ink font-light transition-colors hover:bg-white/[0.06] active:bg-white/[0.08] press-feedback"
+                className="flex h-full w-[40px] shrink-0 items-center justify-center text-ink font-regular transition-colors hover:bg-glass-hover active:bg-glass-strong press-feedback"
               >
                 {line.qty === 1 ? <IconX size={18} stroke={1.75} className="text-stop" /> : '−'}
               </button>
@@ -523,7 +523,7 @@ export function LineSheet({
                 type="button"
                 aria-label="One more"
                 onClick={() => onQty(line.qty + 1)}
-                className="flex h-full w-[40px] shrink-0 items-center justify-center text-ink font-light transition-colors hover:bg-white/[0.06] active:bg-white/[0.08] press-feedback"
+                className="flex h-full w-[40px] shrink-0 items-center justify-center text-ink font-regular transition-colors hover:bg-glass-hover active:bg-glass-strong press-feedback"
               >
                 +
               </button>
@@ -581,7 +581,7 @@ export function MoveLineSheet({
       footer={footerActions}
     >
       <div className="py-4">
-        <div className="rounded-lg bg-sunken/60 p-16 shadow-sm ring-1 ring-rule-raised/20">
+        <div className="rounded-lg bg-sunken/60 p-16 shadow-raised ring-1 ring-rule-raised/20">
           <div className="flex flex-wrap gap-16 justify-center" role="group" aria-label="Seats">
             {[
               ...detail.activeSeats.map((s) => ({ key: s.id as SeatSelection, seat: s.seatNo as number | 'shared', label: s.label })),
@@ -676,7 +676,7 @@ export function NoteSheet({
             {value.length}/140
           </span>
         </div>
-        <div className="flex h-[52px] items-center rounded-lg bg-sunken/60 px-16 shadow-sm ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50">
+        <div className="flex h-[52px] items-center rounded-lg bg-sunken/60 px-16 shadow-raised ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50">
           <input
             id="line-note-input"
             data-autofocus=""
@@ -797,16 +797,16 @@ export function MoveTabSheet({
     >
       <div className="py-4">
         {freeTables.length === 0 ? (
-          <div className="rounded-lg bg-sunken/60 p-20 text-center shadow-sm ring-1 ring-rule-raised/20">
+          <div className="rounded-lg bg-sunken/60 p-20 text-center shadow-raised ring-1 ring-rule-raised/20">
             <p className="text-body text-ink-muted">Every table is taken right now.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-10">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-8">
             {freeTables.map((t) => (
               <InviteButton
                 key={t.id}
                 onClick={() => void onMove(t.id).then(onClose)}
-                className="flex min-h-[76px] flex-col justify-center rounded-lg bg-sunken/60 px-14 shadow-sm ring-1 ring-rule-raised/20 transition-all hover:bg-sunken/80 hover:ring-rule-raised/40 press-feedback"
+                className="flex min-h-[76px] flex-col justify-center rounded-lg bg-sunken/60 px-16 shadow-raised ring-1 ring-rule-raised/20 transition-all hover:bg-sunken/80 hover:ring-rule-raised/40 press-feedback"
               >
                 <span className="text-subtitle font-medium text-ink">{tableLabel(t)}</span>
                 <span className="mt-2 text-body-sm text-ink-subtle">{t.seats === 1 ? '1 seat' : `${t.seats} seats`}</span>

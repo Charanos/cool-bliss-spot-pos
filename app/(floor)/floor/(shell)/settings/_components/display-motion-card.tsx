@@ -236,15 +236,15 @@ export function DisplayMotionCard() {
       tone="neutral"
       badge={
         motion.forcedReduced ? (
-          <Badge tone="attention" className="!rounded-dot px-8 py-2 font-mono text-micro uppercase tracking-wider">
+          <Badge tone="attention" className="!rounded-dot px-8 py-2 font-mono text-micro uppercase ">
             Instant Mode (0ms)
           </Badge>
         ) : motion.timeScale < 0.8 ? (
-          <Badge tone="accent" className="!rounded-dot px-8 py-2 font-mono text-micro uppercase tracking-wider">
+          <Badge tone="accent" className="!rounded-dot px-8 py-2 font-mono text-micro uppercase ">
             Rush Pacing (0.5x)
           </Badge>
         ) : (
-          <Badge tone="neutral" className="!rounded-dot px-8 py-2 font-mono text-micro uppercase tracking-wider">
+          <Badge tone="neutral" className="!rounded-dot px-8 py-2 font-mono text-micro uppercase ">
             140ms Budget · Active
           </Badge>
         )
@@ -256,7 +256,7 @@ export function DisplayMotionCard() {
           {/* Tile 1: Frame Target */}
           <div className="rounded-lg border border-rule-raised/30 bg-sunken/60 p-16 flex flex-col justify-between gap-8 transition-colors">
             <div className="flex items-center justify-between gap-8">
-              <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
+              <span className="font-mono text-micro uppercase text-ink-subtle">
                 Frame Budget
               </span>
               <IconGauge size={16} stroke={ICON_STROKE} className="text-ink-muted shrink-0" />
@@ -274,7 +274,7 @@ export function DisplayMotionCard() {
           {/* Tile 2: Compositor Engine */}
           <div className="rounded-lg border border-rule-raised/30 bg-sunken/60 p-16 flex flex-col justify-between gap-8 transition-colors">
             <div className="flex items-center justify-between gap-8">
-              <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
+              <span className="font-mono text-micro uppercase text-ink-subtle">
                 Compositor
               </span>
               <IconBolt size={16} stroke={ICON_STROKE} className="text-accent-text shrink-0" />
@@ -292,7 +292,7 @@ export function DisplayMotionCard() {
           {/* Tile 3: Power Governor & Battery Telemetry */}
           <div className="rounded-lg border border-rule-raised/30 bg-sunken/60 p-16 flex flex-col justify-between gap-8 transition-colors">
             <div className="flex items-center justify-between gap-8">
-              <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
+              <span className="font-mono text-micro uppercase text-ink-subtle">
                 Power Governor
               </span>
               {battery.charging ? (
@@ -306,7 +306,7 @@ export function DisplayMotionCard() {
                 {battery.supported && battery.level !== null ? (
                   <>
                     <span>{battery.level}%</span>
-                    <span className="text-body-sm text-ink-subtle font-sans font-normal">
+                    <span className="text-body-sm text-ink-subtle font-sans font-regular">
                       {battery.charging ? 'Docked' : 'Battery'}
                     </span>
                   </>
@@ -340,7 +340,7 @@ export function DisplayMotionCard() {
                   </Badge>
                 ) : null}
               </div>
-              <span className="text-body-sm text-ink-subtle leading-relaxed">
+              <span className="text-body-sm text-ink-subtle ">
                 Things change instantly without animations. Easing curves, counter tweens, and sheet slides execute at 0ms.
               </span>
             </div>
@@ -387,7 +387,7 @@ export function DisplayMotionCard() {
                   className={cx(
                     'flex flex-col items-start p-12 rounded-md border text-left transition-all cursor-pointer select-none',
                     preset.active
-                      ? 'bg-accent/15 border-accent/60 shadow-sm'
+                      ? 'bg-accent/15 border-accent/60 shadow-raised'
                       : 'bg-raised/70 border-rule-raised/30 hover:bg-raised hover:border-rule-raised/60',
                   )}
                 >
@@ -421,7 +421,7 @@ export function DisplayMotionCard() {
               <span className="text-body-sm font-medium">
                 Low Battery Conservation Throttling Active
               </span>
-              <p className="text-body-sm text-attention leading-relaxed">
+              <p className="text-body-sm text-attention ">
                 Tablet battery is below 15%. All decorative easing curves and number rollups are paused to prevent frame drops and preserve terminal uptime until docked on charge.
               </p>
             </div>
@@ -443,7 +443,7 @@ export function DisplayMotionCard() {
                   </Badge>
                 ) : null}
               </div>
-              <span className="text-body-sm text-ink-subtle leading-relaxed">
+              <span className="text-body-sm text-ink-subtle ">
                 Prevents the tablet display from dimming or locking while open on the restaurant floor.
               </span>
               {!wakeLockSupported ? (
@@ -476,7 +476,7 @@ export function DisplayMotionCard() {
                   </Badge>
                 ) : null}
               </div>
-              <span className="text-body-sm text-ink-subtle leading-relaxed">
+              <span className="text-body-sm text-ink-subtle ">
                 Sharpens ticket borders, button outlines, and action sheets for bright daylight and terrace ambient glare.
               </span>
             </div>
@@ -518,7 +518,7 @@ export function DisplayMotionCard() {
           </div>
 
           {/* Visual Benchmark Pulse Bar */}
-          <div className="relative h-12 w-full rounded-md bg-wash overflow-hidden border border-rule-raised/30 mt-4">
+          <div className="relative h-12 w-full rounded-md bg-control overflow-hidden border border-rule-raised/30 mt-4">
             <div
               className={cx(
                 'h-full bg-accent rounded-md',
@@ -554,7 +554,7 @@ export function DisplayMotionCard() {
         </div>
 
         {/* ── Section 6: Design System Architectural Note ─────────────── */}
-        <p className="font-mono text-micro text-ink-subtle leading-relaxed px-4">
+        <p className="font-mono text-micro text-ink-subtle px-4">
           Bliss operates on a strict 16ms frame budget (140ms maximum ceiling). When motion reduction is active, transitions and money counters execute immediately without easing curves.
         </p>
       </div>

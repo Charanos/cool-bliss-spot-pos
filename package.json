@@ -12,7 +12,7 @@
     "build": "next build --webpack",
     "start": "next start --port 3000",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint . && node scripts/check-styles.mjs",
+    "lint": "eslint . && node scripts/check-styles.mjs && node scripts/check-classes.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "tokens:build": "tsx scripts/build-tokens.ts",

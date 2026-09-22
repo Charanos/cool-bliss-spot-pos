@@ -1,5 +1,5 @@
 import Link, { type LinkProps } from 'next/link';
-import { type ButtonHTMLAttributes, Fragment, type HTMLAttributes, type ReactNode } from 'react';
+import { type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from 'react';
 import { cx } from '../lib/cx';
 import { Eyebrow } from './atmosphere';
 import { SeatChip, type SeatChipSize } from './seat-chip';
@@ -71,7 +71,7 @@ const COUNT_TONE: Record<CountTone, string> = {
   accent: 'bg-accent text-accent-ink',
   stop: 'bg-stop text-stop-ink',
   neutral: 'bg-control-hover text-ink',
-  attention: 'bg-attention !text-[#000000]',
+  attention: 'bg-attention text-seat-ink',
 };
 
 /**
@@ -107,14 +107,15 @@ export function MetaLine({ items, className }: { items: readonly (MetaItem | nul
   return (
     <p className={cx('flex min-w-0 flex-wrap items-baseline gap-x-8 gap-y-2 text-body-sm text-ink-muted', className)}>
       {shown.map((item, i) => (
-        <Fragment key={item.key}>
+        // The dot travels with the fact that follows it, so a line that wraps never ends on a dot.
+        <span key={item.key} className="inline-flex min-w-0 items-baseline gap-x-8">
           {i > 0 ? (
             <span aria-hidden="true" className="text-ink-disabled">
               ·
             </span>
           ) : null}
           <span className={cx('min-w-0 truncate', item.mono && 'font-mono tabular text-num-sm')}>{item.text}</span>
-        </Fragment>
+        </span>
       ))}
     </p>
   );
@@ -139,15 +140,17 @@ export function SeatChipStack({ seats, max = 6, size = 'tile', className, overla
   const name = `${seats.length} ${seats.length === 1 ? 'seat' : 'seats'}${settled > 0 ? `, ${settled} settled` : ''}`;
   if (overlapping) {
     return (
-      <span role="img" aria-label={name} className={cx('inline-flex items-center p-[4px] rounded-full bg-sunken/60 shadow-[inset_0_1px_6px_rgba(0,0,0,0.9)]', className)}>
+      // `w-fit` keeps the group the width of its chips: as a flex child it would otherwise stretch
+      // to the card and read as an empty bar with two chips in the corner.
+      <span role="img" aria-label={name} className={cx('inline-flex w-fit items-center self-start rounded-dot border border-rule-raised/30 bg-sunken/60 p-4', className)}>
         <span className="flex items-center -space-x-[4px]">
           {shown.map((s, i) => (
-            <span key={s.seatNo} className="relative flex shadow-[2px_0_6px_rgba(0,0,0,0.3)] rounded-full" style={{ zIndex: shown.length - i }}>
+            <span key={s.seatNo} className="relative flex rounded-dot" style={{ zIndex: shown.length - i }}>
               <SeatChip seat={s.seatNo} size={size} settled={s.settled} label={s.label} className="pointer-events-none" />
             </span>
           ))}
         </span>
-        {hidden > 0 ? <span className="pl-4 pr-6 font-mono tabular text-[11px] font-medium text-ink-muted leading-none tracking-tight">+{hidden}</span> : null}
+        {hidden > 0 ? <span className="pl-4 pr-6 font-mono tabular text-micro text-ink-muted">+{hidden}</span> : null}
       </span>
     );
   }

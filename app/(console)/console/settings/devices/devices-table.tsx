@@ -42,7 +42,7 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
             <StatusChip status={r.status === 'lost' ? 'lost' : r.status === 'suspended' ? 'suspended' : 'retired'} label={r.status === 'lost' ? 'Withdrawn' : undefined} />
           </span>
         ) : (
-          <span className="flex flex-col leading-tight">
+          <span className="flex flex-col ">
             <span className="flex items-center gap-8 text-body text-ink">
               <Dot tone={r.online ? 'poured' : 'info'} />
               {r.online ? 'Online' : 'Offline'}
@@ -68,7 +68,7 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
       sortValue: (r) => r.appVersion,
       csv: (r) => r.appVersion,
       cell: (r) => (
-        <span className="flex flex-col leading-tight">
+        <span className="flex flex-col ">
           <NumCell tone="muted">{r.appVersion}</NumCell>
           {r.status === 'active' && r.appVersion !== latestVersion ? <span className="text-body-sm text-low">Update waiting</span> : null}
         </span>

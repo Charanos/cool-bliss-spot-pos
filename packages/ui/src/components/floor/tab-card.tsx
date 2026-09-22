@@ -87,11 +87,11 @@ export function TabCard({
       emphasis={emphasis}
       aria-label={accessibleName}
       onClick={onOpen}
-      className="flex w-full min-h-card-tab flex-col gap-12 p-16"
+      className="flex w-full min-h-[124px] flex-col gap-8 p-12 pad:min-h-card-tab pad:gap-12 pad:p-16"
     >
       {/* Row 1: label + elapsed */}
       <span className="flex items-baseline gap-8">
-        <span className="min-w-0 flex-1 truncate text-title-lg tracking-tight font-medium text-ink" title={tableLabel}>
+        <span className="min-w-0 flex-1 truncate text-title-lg font-medium text-ink" title={tableLabel}>
           {tableLabel}
         </span>
         <span className="shrink-0 font-mono tabular text-num-sm text-ink-subtle" aria-hidden="true">
@@ -159,7 +159,7 @@ export function FreeTableCard({
     >
       {/* Label + capacity badge */}
       <span className="flex items-start justify-between gap-8">
-        <span className="min-w-0 truncate text-title tracking-tight font-medium text-ink transition-colors duration-300" title={tableLabel}>
+        <span className="min-w-0 truncate text-title font-medium text-ink transition-colors duration-300" title={tableLabel}>
           {tableLabel}
         </span>
         <span className="flex min-w-[24px] h-[24px] items-center justify-center rounded-full border border-rule-raised/50 bg-sunken/30 px-6 font-mono tabular text-num-sm text-ink-muted group-hover:border-attention-subtle/50 group-hover:text-attention transition-colors duration-300" aria-hidden="true">

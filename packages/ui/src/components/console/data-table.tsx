@@ -404,7 +404,7 @@ export function NumCell({ children, tone = 'default' }: { children: ReactNode; t
 /** Two lines in one cell: a name and a quiet detail. */
 export function StackCell({ primary, secondary }: { primary: ReactNode; secondary?: ReactNode }) {
   return (
-    <span className="flex min-w-0 flex-col leading-tight">
+    <span className="flex min-w-0 flex-col ">
       <span className="truncate text-body text-ink">{primary}</span>
       {secondary ? <span className="truncate text-body-sm text-ink-subtle">{secondary}</span> : null}
     </span>

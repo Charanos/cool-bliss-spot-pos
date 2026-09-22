@@ -55,7 +55,7 @@ export function RolesMatrix({ roles, permissions, canManage }: { roles: RoleColu
           <tbody>
             {permissions.map((p) => (
               <tr key={p.key} className="border-b border-rule">
-                <th scope="row" className="py-8 pr-16 text-left font-normal">
+                <th scope="row" className="py-8 pr-16 text-left font-regular">
                   <span className="block text-body text-ink">{p.label}</span>
                   <span className="block text-body-sm text-ink-subtle">{p.detail}</span>
                 </th>

@@ -16,7 +16,7 @@
     "./domain": "./src/domain/index.ts",
     "./sync": "./src/sync/payloads.ts",
     "./identity": "./src/identity/surfaces.ts",
-    "./trade": "./src/trade/places.ts",
+    "./trade": "./src/trade/index.ts",
     "./settlement": "./src/settlement/settle.ts"
   },
   "peerDependencies": {

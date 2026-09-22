@@ -81,9 +81,9 @@ const SeatColumn = memo(function SeatColumn({
       }
       {...press}
     >
-      <span className="font-mono tabular font-semibold text-[14px] leading-none">{shared ? '··' : seat}</span>
+      <span className="font-mono tabular font-medium text-[14px] leading-none">{shared ? '··' : seat}</span>
       {label || shared ? (
-        <span className="mt-1 max-w-full truncate px-1 text-[8.5px] font-medium leading-none tracking-tight opacity-90">
+        <span className="mt-4 max-w-full truncate px-4 text-[8.5px] font-medium leading-none opacity-90">
           {shared ? 'Shared' : displaySeatLabel(label!)}
         </span>
       ) : null}
@@ -142,7 +142,7 @@ export function SeatSelector({ seats, sharedTotal, selected, onSelect, onSeatMen
             type="button"
             onClick={onAddSeat}
             aria-label="Add seat"
-            className="inline-flex size-[40px] items-center justify-center rounded-full border border-hairline/40 shadow-sm text-ink-muted border-dashed press-feedback hover:bg-control-hover hover:text-ink active:bg-control-pressed bg-transparent"
+            className="inline-flex size-[40px] items-center justify-center rounded-full border border-hairline/40 shadow-raised text-ink-muted border-dashed press-feedback hover:bg-control-hover hover:text-ink active:bg-control-pressed bg-transparent"
           >
             <IconPlus size={16} stroke={ICON_STROKE} aria-hidden="true" />
           </button>

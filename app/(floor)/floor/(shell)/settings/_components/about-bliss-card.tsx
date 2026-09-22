@@ -46,7 +46,7 @@ export function AboutBlissCard({
         badge={
           <Badge
             tone="neutral"
-            className="!rounded-dot px-8 py-2 font-mono text-micro uppercase tracking-wider"
+            className="!rounded-dot px-8 py-2 font-mono text-micro uppercase "
           >
             v{APP_VERSION} / Stable
           </Badge>
@@ -71,7 +71,7 @@ export function AboutBlissCard({
 
             <div className="flex items-center gap-8 shrink-0 pl-56 tablet:pl-0">
               <span className="inline-flex size-[8px] rounded-full bg-poured" aria-hidden="true" />
-              <span className="font-mono text-micro uppercase tracking-wider text-ink font-medium">
+              <span className="font-mono text-micro uppercase text-ink font-medium">
                 Cluster Active
               </span>
             </div>
@@ -82,7 +82,7 @@ export function AboutBlissCard({
             {/* Tile 1: Build Version */}
             <div className="rounded-lg bg-sunken/60 border border-rule-raised/20 p-16 flex flex-col justify-between gap-12">
               <div className="flex items-center justify-between gap-8">
-                <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
+                <span className="font-mono text-micro uppercase text-ink-subtle">
                   System Version
                 </span>
                 <IconShieldCheck size={16} stroke={ICON_STROKE} className="text-ink-muted shrink-0" />
@@ -111,7 +111,7 @@ export function AboutBlissCard({
             {/* Tile 2: Local Persistence Engine */}
             <div className="rounded-lg bg-sunken/60 border border-rule-raised/20 p-16 flex flex-col justify-between gap-12">
               <div className="flex items-center justify-between gap-8">
-                <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
+                <span className="font-mono text-micro uppercase text-ink-subtle">
                   Local Database
                 </span>
                 <IconDatabase size={16} stroke={ICON_STROKE} className="text-ink-muted shrink-0" />
@@ -130,7 +130,7 @@ export function AboutBlissCard({
             {/* Tile 3: Cluster Sync Protocol */}
             <div className="rounded-lg bg-sunken/60 border border-rule-raised/20 p-16 flex flex-col justify-between gap-12">
               <div className="flex items-center justify-between gap-8">
-                <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
+                <span className="font-mono text-micro uppercase text-ink-subtle">
                   Sync Transport
                 </span>
                 <IconServer size={16} stroke={ICON_STROKE} className="text-accent-text shrink-0" />
@@ -149,7 +149,7 @@ export function AboutBlissCard({
             {/* Tile 4: Client Architecture */}
             <div className="rounded-lg bg-sunken/60 border border-rule-raised/20 p-16 flex flex-col justify-between gap-12">
               <div className="flex items-center justify-between gap-8">
-                <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
+                <span className="font-mono text-micro uppercase text-ink-subtle">
                   Runtime Profile
                 </span>
                 <IconCpu size={16} stroke={ICON_STROKE} className="text-ink-muted shrink-0" />

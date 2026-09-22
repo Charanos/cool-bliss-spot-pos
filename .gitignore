@@ -9,3 +9,8 @@ next-env.d.ts
 Thumbs.db
 .turbo/
 .vercel/
+
+# Service worker output, rebuilt by @serwist/next on every production build
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js

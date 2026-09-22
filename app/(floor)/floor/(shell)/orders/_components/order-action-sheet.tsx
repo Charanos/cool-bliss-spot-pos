@@ -20,12 +20,7 @@ import {
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import {
-  markOrderDelivered,
-  markOrderPoured,
-  markTableOrdersDelivered,
-  unmarkOrderDelivered,
-} from '@/lib/pos/mutations';
+import { deliver, deliverTable, undeliver } from '@/lib/pos/actions';
 import type { FiredOrderView } from '@/lib/pos/queries';
 
 export interface OrderActionSheetProps {
@@ -56,7 +51,9 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
 
   const totalQty = order.lines.reduce((acc, l) => acc + l.line.qty, 0);
 
-  const handleAction = async (action: () => Promise<void>) => {
+  // The actions report their own outcome as a notice, with an undo where there is one, so the sheet
+  // closes on success and stays open only while the change is being made.
+  const handleAction = async (action: () => Promise<unknown>) => {
     try {
       setSubmitting(true);
       setError(null);
@@ -78,12 +75,12 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
       title={
         <div className="flex flex-col gap-8 w-full pr-6">
           <div className="flex items-center justify-between gap-12 flex-wrap">
-            <div className="flex items-center gap-10 min-w-0">
-              <span className="text-title-lg font-medium text-ink tracking-tight truncate">
+            <div className="flex items-center gap-8 min-w-0">
+              <span className="text-title-lg font-medium text-ink truncate">
                 {order.label}
               </span>
               {order.zoneName ? (
-                <Badge tone="neutral" className="!rounded-full px-10 py-2.5 font-mono text-micro">
+                <Badge tone="neutral" className="!rounded-full px-12 py-8 font-mono text-micro">
                   {order.zoneName}
                 </Badge>
               ) : null}
@@ -91,23 +88,23 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
 
             {/* State Badge with distinct token colors and subtle glow */}
             {isNeedsYou ? (
-              <Badge tone="stop" className="!rounded-full px-12 py-3.5 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-stop)_25%,transparent)]">
+              <Badge tone="stop" className="!rounded-full px-12 py-12 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-stop)_25%,transparent)]">
                 <IconAlertCircle size={14} stroke={ICON_STROKE} className="shrink-0 animate-breathe text-stop" />
                 <span>Needs attention</span>
               </Badge>
             ) : isPoured ? (
-              <Badge tone="poured" className="!rounded-full px-12 py-3.5 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-poured)_25%,transparent)]">
+              <Badge tone="poured" className="!rounded-full px-12 py-12 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-poured)_25%,transparent)]">
                 <Dot tone="poured" />
                 <span>Poured · Ready</span>
               </Badge>
             ) : isServed ? (
-              <Badge tone="served" className="!rounded-full px-12 py-3.5 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-served)_25%,transparent)]">
+              <Badge tone="served" className="!rounded-full px-12 py-12 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-served)_25%,transparent)]">
                 <Dot tone="served" />
                 <span>Served to table</span>
               </Badge>
             ) : (
-              <Badge tone="accent" className="!rounded-full px-12 py-3.5 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-accent)_18%,transparent)]">
-                <span className="size-1.5 rounded-full bg-accent animate-breathe shadow-[0_0_8px_var(--color-accent)]" />
+              <Badge tone="accent" className="!rounded-full px-12 py-12 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-accent)_18%,transparent)]">
+                <span className="size-6 rounded-full bg-accent animate-breathe shadow-[0_0_8px_var(--color-accent)]" />
                 <span>At the bar · Prepping</span>
               </Badge>
             )}
@@ -137,12 +134,12 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
     >
       <div className="flex flex-col gap-16 pb-8">
         {/* ── 1. High-Fidelity Itemized Ticket Breakdown ─────────────── */}
-        <div className="rounded-[20px] bg-sunken/80 border border-rule-raised/30 overflow-hidden shadow-inner">
+        <div className="rounded-[20px] bg-sunken/80 border border-rule-raised/30 overflow-hidden ">
           {/* Ticket header row */}
-          <div className="flex items-center justify-between px-18 py-12 border-b border-rule-raised/25 font-mono text-micro uppercase tracking-wider text-ink-subtle bg-sunken/50">
+          <div className="flex items-center justify-between px-16 py-12 border-b border-rule-raised/25 font-mono text-micro uppercase text-ink-subtle bg-sunken/50">
             <span className="flex items-center gap-6">
               <span>Order items</span>
-              <span className="text-ink-disabled font-normal">({totalQty} total)</span>
+              <span className="text-ink-disabled font-regular">({totalQty} total)</span>
             </span>
             <span>{plural(order.lines.length, 'line')}</span>
           </div>
@@ -152,7 +149,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
             {order.lines.map(({ line, name, seatNo, state, modifiers }) => (
               <div
                 key={line.id}
-                className="flex items-center justify-between py-8 px-8 gap-14 group/line hover:bg-control-hover/30 rounded-lg transition-colors"
+                className="flex items-center justify-between py-8 px-8 gap-16 group/line hover:bg-control-hover/30 rounded-lg transition-colors"
               >
                 <div className="flex items-center gap-12 min-w-0 flex-1">
                   <div className="shrink-0">
@@ -162,18 +159,18 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                     {line.qty}×
                   </span>
                   <div className="flex flex-col min-w-0 pr-8">
-                    <span className="text-body-sm font-medium text-ink truncate leading-tight">
+                    <span className="text-body-sm font-medium text-ink truncate ">
                       {name}
                     </span>
                     {modifiers && modifiers.length > 0 ? (
-                      <span className="font-mono text-micro text-ink-subtle truncate mt-0.5">
+                      <span className="font-mono text-micro text-ink-subtle truncate mt-2">
                         {modifiers.join(' · ')}
                       </span>
                     ) : null}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-14 shrink-0">
+                <div className="flex items-center gap-16 shrink-0">
                   {line.lineTotalCents ? (
                     <div className="text-right flex flex-col items-end min-w-[76px]">
                       <Money value={line.lineTotalCents} size="num-sm" tone="subtle" decimals="whole" />
@@ -197,7 +194,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                     </Badge>
                   ) : (
                     <Badge tone="neutral" className="px-8 py-2 font-mono text-micro min-w-[80px] justify-center">
-                      <span className="size-1 rounded-full bg-accent/70 animate-breathe" />
+                      <span className="size-4 rounded-full bg-accent/70 animate-breathe" />
                       <span>Prep at bar</span>
                     </Badge>
                   )}
@@ -207,9 +204,9 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
           </div>
 
           {/* Summary footer */}
-          <div className="flex items-center justify-between px-18 py-14 border-t border-rule-raised/25 bg-sunken/50">
+          <div className="flex items-center justify-between px-16 py-16 border-t border-rule-raised/25 bg-sunken/50">
             <div className="flex flex-col">
-              <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
+              <span className="font-mono text-micro uppercase text-ink-subtle">
                 Order Total
               </span>
               <span className="font-mono text-micro text-ink-disabled">
@@ -225,15 +222,15 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
           <button
             type="button"
             disabled={submitting}
-            onClick={() => handleAction(() => markOrderDelivered(order.orderId))}
-            className="w-full flex items-center justify-between p-16 desktop:p-18 rounded-[18px] bg-served text-page font-medium shadow-[0_6px_28px_color-mix(in_oklab,var(--color-served)_35%,transparent)] hover:brightness-105 active:scale-[0.99] transition-all group cursor-pointer"
+            onClick={() => handleAction(() => deliver(order.orderId, order.label))}
+            className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-[18px] bg-served text-page font-medium shadow-[0_6px_28px_color-mix(in_oklab,var(--color-served)_35%,transparent)] hover:brightness-105 active:scale-[0.99] transition-all group cursor-pointer"
           >
-            <div className="flex items-center gap-14 min-w-0">
+            <div className="flex items-center gap-16 min-w-0">
               <div className="size-40 rounded-full bg-page/20 flex items-center justify-center shrink-0">
                 <IconCheck size={22} stroke={2.5} className="text-page" />
               </div>
               <div className="flex flex-col text-left min-w-0">
-                <span className="text-body-lg font-medium text-page leading-tight">
+                <span className="text-body-lg font-medium text-page ">
                   Mark served to table
                 </span>
                 <span className="text-micro desktop:text-body-sm text-page/80 font-mono truncate">
@@ -245,17 +242,17 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
               <span className="hidden tablet:inline-flex px-8 py-2 rounded-full bg-page/15 font-mono text-micro text-page">
                 Deliver order
               </span>
-              <IconChevronRight size={20} stroke={2.5} className="text-page/80 shrink-0 group-hover:translate-x-1.5 transition-transform" />
+              <IconChevronRight size={20} stroke={2.5} className="text-page/80 shrink-0 group-hover:translate-x-6 transition-transform" />
             </div>
           </button>
         ) : isServed ? (
-          <div className="w-full flex items-center justify-between p-14 desktop:p-16 rounded-[18px] bg-served-wash border border-served/35 text-served">
+          <div className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-[18px] bg-served-wash border border-served/35 text-served">
             <div className="flex items-center gap-12 min-w-0">
-              <div className="size-36 rounded-full bg-served/20 flex items-center justify-center shrink-0">
+              <div className="size-40 rounded-full bg-served/20 flex items-center justify-center shrink-0">
                 <IconChecks size={20} stroke={2.5} className="text-served" />
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-body font-medium text-served leading-tight">
+                <span className="text-body font-medium text-served ">
                   Delivered & served to table
                 </span>
                 <span className="text-micro font-mono text-served/80 truncate">
@@ -266,48 +263,35 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
             <button
               type="button"
               disabled={submitting}
-              onClick={() => handleAction(() => unmarkOrderDelivered(order.orderId))}
-              className="shrink-0 px-12 py-7 rounded-md text-micro font-mono uppercase tracking-wider text-ink-subtle hover:text-stop hover:bg-stop-wash border-t border-b border-rule-raised/20 transition-all font-medium flex items-center gap-6 cursor-pointer"
+              onClick={() => handleAction(() => undeliver(order.orderId, order.label))}
+              className="shrink-0 px-12 py-24 rounded-md text-micro font-mono uppercase text-ink-subtle hover:text-stop hover:bg-stop-wash border-t border-b border-rule-raised/20 transition-all font-medium flex items-center gap-6 cursor-pointer"
             >
               <IconRotateClockwise size={13} stroke={ICON_STROKE} />
               <span>Undo delivery</span>
             </button>
           </div>
         ) : isAtBar ? (
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={() => handleAction(() => markOrderPoured(order.orderId))}
-            className="w-full flex items-center justify-between p-16 desktop:p-18 rounded-[18px] bg-poured text-page font-medium shadow-[0_6px_28px_color-mix(in_oklab,var(--color-poured)_35%,transparent)] hover:brightness-105 active:scale-[0.99] transition-all group cursor-pointer"
-          >
-            <div className="flex items-center gap-14 min-w-0">
-              <div className="size-40 rounded-full bg-page/20 flex items-center justify-center shrink-0">
-                <IconCheck size={22} stroke={2.5} className="text-page" />
-              </div>
-              <div className="flex flex-col text-left min-w-0">
-                <span className="text-body-lg font-medium text-page leading-tight">
-                  Mark order poured
-                </span>
-                <span className="text-micro desktop:text-body-sm text-page/80 font-mono truncate">
-                  Drinks ready at counter bar for pickup & delivery
-                </span>
-              </div>
+          // Pouring is the counter's to record. The floor used to be able to mark it here, which
+          // the next sync quietly undid; now it says where the round is and leaves it at that.
+          <div className="flex w-full items-center gap-12 rounded-[18px] border border-accent/25 bg-accent-wash p-16">
+            <div className="flex size-40 shrink-0 items-center justify-center rounded-dot bg-accent/15">
+              <IconClockHour4 size={20} stroke={ICON_STROKE} className="text-accent-text" />
             </div>
-            <div className="flex items-center gap-8 shrink-0">
-              <span className="hidden tablet:inline-flex px-8 py-2 rounded-full bg-page/15 font-mono text-micro text-page">
-                Counter ready
+            <div className="flex min-w-0 flex-col">
+              <span className="text-body font-medium text-accent-text">At the counter</span>
+              <span className="truncate text-body-sm text-ink-muted">
+                Fired <Elapsed since={order.firedAt} /> ago. It turns poured the moment the counter pours it.
               </span>
-              <IconChevronRight size={20} stroke={2.5} className="text-page/80 shrink-0 group-hover:translate-x-1.5 transition-transform" />
             </div>
-          </button>
+          </div>
         ) : isNeedsYou ? (
-          <div className="w-full flex items-center justify-between p-14 desktop:p-16 rounded-[18px] bg-stop-wash border border-stop/35 text-stop">
+          <div className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-[18px] bg-stop-wash border border-stop/35 text-stop">
             <div className="flex items-center gap-12 min-w-0">
-              <div className="size-36 rounded-full bg-stop/20 flex items-center justify-center shrink-0">
+              <div className="size-40 rounded-full bg-stop/20 flex items-center justify-center shrink-0">
                 <IconAlertCircle size={20} stroke={2} className="text-stop" />
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-body font-medium text-stop leading-tight">
+                <span className="text-body font-medium text-stop ">
                   Attention: Stock ran out at bar
                 </span>
                 <span className="text-micro font-mono text-stop/80 truncate">
@@ -321,7 +305,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                 onClose();
                 router.push(`/floor/tabs/${order.tabId}`);
               }}
-              className="shrink-0 px-12 py-7 rounded-md text-micro font-mono uppercase tracking-wider text-stop hover:bg-stop/20 border-t border-b border-stop/30 transition-all font-medium flex items-center gap-6 cursor-pointer"
+              className="shrink-0 px-12 py-24 rounded-md text-micro font-mono uppercase text-stop hover:bg-stop/20 border-t border-b border-stop/30 transition-all font-medium flex items-center gap-6 cursor-pointer"
             >
               <span>Resolve tab</span>
               <IconChevronRight size={13} stroke={ICON_STROKE} />
@@ -336,11 +320,11 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
             <button
               type="button"
               disabled={submitting}
-              onClick={() => handleAction(() => markTableOrdersDelivered(order.tabId))}
-              className="w-full flex items-center justify-between p-12 desktop:p-14 rounded-[16px] hover:bg-control-hover border-t border-rule-raised/20 transition-all text-left group cursor-pointer"
+              onClick={() => handleAction(() => deliverTable(order.tabId, order.label))}
+              className="w-full flex items-center justify-between p-12 desktop:p-16 rounded-[16px] hover:bg-control-hover border-t border-rule-raised/20 transition-all text-left group cursor-pointer"
             >
               <div className="flex items-center gap-12 min-w-0">
-                <div className="size-36 rounded-md bg-served-wash flex items-center justify-center shrink-0">
+                <div className="size-40 rounded-md bg-served-wash flex items-center justify-center shrink-0">
                   <IconChecks size={20} stroke={ICON_STROKE} className="text-served" />
                 </div>
                 <div className="flex flex-col min-w-0">
@@ -352,21 +336,21 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                   </span>
                 </div>
               </div>
-              <IconChevronRight size={16} stroke={ICON_STROKE} className="text-ink-subtle shrink-0 group-hover:translate-x-1 transition-transform" />
+              <IconChevronRight size={16} stroke={ICON_STROKE} className="text-ink-subtle shrink-0 group-hover:translate-x-4 transition-transform" />
             </button>
           ) : null}
 
           {/* Rapid Tab Navigation Shortcuts */}
-          <div className="grid grid-cols-1 tablet:grid-cols-2 gap-10 pt-4 border-t border-rule-raised/20">
+          <div className="grid grid-cols-1 tablet:grid-cols-2 gap-8 pt-4 border-t border-rule-raised/20">
             <button
               type="button"
               onClick={() => {
                 onClose();
                 router.push(`/floor/tabs/${order.tabId}`);
               }}
-              className="flex items-center gap-12 p-12 desktop:p-14 rounded-[16px] hover:bg-control-hover transition-colors text-left group cursor-pointer border-t border-rule-raised/15"
+              className="flex items-center gap-12 p-12 desktop:p-16 rounded-[16px] hover:bg-control-hover transition-colors text-left group cursor-pointer border-t border-rule-raised/15"
             >
-              <div className="size-36 rounded-md bg-wash flex items-center justify-center shrink-0 text-ink-subtle group-hover:text-ink transition-colors">
+              <div className="size-40 rounded-md bg-control flex items-center justify-center shrink-0 text-ink-subtle group-hover:text-ink transition-colors">
                 <IconReceipt size={20} stroke={ICON_STROKE} />
               </div>
               <div className="flex flex-col min-w-0">
@@ -381,9 +365,9 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                 onClose();
                 router.push(`/floor/tabs/${order.tabId}`);
               }}
-              className="flex items-center gap-12 p-12 desktop:p-14 rounded-[16px] hover:bg-control-hover transition-colors text-left group cursor-pointer border-t border-rule-raised/15"
+              className="flex items-center gap-12 p-12 desktop:p-16 rounded-[16px] hover:bg-control-hover transition-colors text-left group cursor-pointer border-t border-rule-raised/15"
             >
-              <div className="size-36 rounded-md bg-wash flex items-center justify-center shrink-0 text-ink-subtle group-hover:text-ink transition-colors">
+              <div className="size-40 rounded-md bg-control flex items-center justify-center shrink-0 text-ink-subtle group-hover:text-ink transition-colors">
                 <IconArrowsExchange size={20} stroke={ICON_STROKE} />
               </div>
               <div className="flex flex-col min-w-0">
@@ -402,7 +386,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
               onClose();
               router.push(`/floor/tabs/${order.tabId}`);
             }}
-            className="w-full flex items-center justify-between p-12 desktop:p-14 rounded-[16px] bg-stop-wash hover:bg-stop/[0.18] transition-colors text-left group text-stop cursor-pointer"
+            className="w-full flex items-center justify-between p-12 desktop:p-16 rounded-[16px] bg-stop-wash hover:bg-stop/[0.18] transition-colors text-left group text-stop cursor-pointer"
           >
             <div className="flex items-center gap-12 min-w-0">
               <IconAlertCircle size={20} stroke={ICON_STROKE} className="shrink-0 text-stop" />
@@ -415,7 +399,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                 </span>
               </div>
             </div>
-            <IconChevronRight size={16} stroke={ICON_STROKE} className="text-stop shrink-0 group-hover:translate-x-1 transition-transform" />
+            <IconChevronRight size={16} stroke={ICON_STROKE} className="text-stop shrink-0 group-hover:translate-x-4 transition-transform" />
           </button>
         </div>
 

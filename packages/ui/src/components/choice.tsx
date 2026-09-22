@@ -47,7 +47,7 @@ export function FilterChips<T extends string>({
               'inline-flex shrink-0 items-center gap-8 whitespace-nowrap rounded-dot press-feedback transition-colors',
               height,
               size === 'lg' ? 'text-body font-medium' : 'text-body-sm font-medium',
-              selected ? 'bg-ink text-page shadow-sm' : 'text-ink-muted hover:bg-control/50 hover:text-ink',
+              selected ? 'bg-ink text-page shadow-raised' : 'text-ink-muted hover:bg-control/50 hover:text-ink',
               o.disabled && 'opacity-40',
             )}
           >
@@ -97,7 +97,7 @@ export function Segmented<T extends string>({
             className={cx(
               'inline-flex items-center gap-6 rounded-dot px-16 font-medium text-body-sm press-feedback transition-colors',
               height,
-              selected ? 'bg-raised text-ink shadow-sm' : 'text-ink-muted hover:text-ink hover:bg-control/30',
+              selected ? 'bg-raised text-ink shadow-raised' : 'text-ink-muted hover:text-ink hover:bg-control/30',
               o.disabled && 'opacity-40',
             )}
           >

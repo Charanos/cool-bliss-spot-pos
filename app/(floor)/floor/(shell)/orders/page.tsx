@@ -7,75 +7,13 @@ import { OrderCard } from '@bliss/ui/components/floor/order-card';
 import { MetaLine, type MetaItem } from '@bliss/ui/components/working';
 import { useListEnter } from '@bliss/ui/motion/floor-hooks';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { markOrderDelivered } from '@/lib/pos/mutations';
+import { useMemo, useRef, useState } from 'react';
+import { deliver } from '@/lib/pos/actions';
 import { type FiredOrderView, useFiredOrders, useOutlet } from '@/lib/pos/queries';
 import { useSession } from '@/lib/pos/session';
 import { OrderActionSheet } from './_components/order-action-sheet';
 
 type Filter = 'all' | FiredOrderView['state'];
-
-/**
- * Hook to track responsive column count for dynamic Bento stacking.
- * 1 col on mobile (<640px), 2 cols on tablet (640-1024px), 3 cols on desktop/wide (1024px+).
- */
-function useBentoColumnCount(): number {
-  const [cols, setCols] = useState(3);
-
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      if (width < 640) {
-        setCols(1);
-      } else if (width < 1024) {
-        setCols(2);
-      } else {
-        setCols(3);
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  return cols;
-}
-
-/**
- * Distribute orders into balanced column tracks using greedy shortest-column packing.
- * This dynamically adapts the stack to the actual content height of each card:
- * short cards pack immediately below other cards, while tall cards take their natural height
- * without creating empty vertical voids.
- */
-function useBentoColumns(orders: FiredOrderView[], cols: number) {
-  return useMemo(() => {
-    if (!orders || orders.length === 0) return [];
-    if (cols <= 1) return [orders];
-
-    const buckets: FiredOrderView[][] = Array.from({ length: cols }, () => []);
-    const heights = new Array(cols).fill(0);
-
-    for (const order of orders) {
-      let minCol = 0;
-      for (let i = 1; i < cols; i++) {
-        if ((heights[i] ?? 0) < (heights[minCol] ?? 0)) {
-          minCol = i;
-        }
-      }
-
-      const targetBucket = buckets[minCol];
-      if (targetBucket) {
-        targetBucket.push(order);
-      }
-
-      // Estimated height weight: base header/padding ~100px, lines ~42px each, action banner ~48px
-      const cardHeight = 100 + order.lines.length * 42 + 48;
-      heights[minCol] = (heights[minCol] ?? 0) + cardHeight;
-    }
-
-    return buckets;
-  }, [orders, cols]);
-}
 
 /**
  * Revamped Orders Page: What the bar has, and what it has done with it.
@@ -104,7 +42,6 @@ export default function OrdersPage() {
   const session = useSession();
   const outlet = useOutlet();
   const listRef = useRef<HTMLDivElement>(null);
-  const cols = useBentoColumnCount();
 
   const [scope, setScope] = useState<'mine' | 'everyone'>('mine');
   const [filter, setFilter] = useState<Filter>('all');
@@ -124,8 +61,6 @@ export default function OrdersPage() {
     () => (orders ?? []).filter((o) => filter === 'all' || o.state === filter),
     [orders, filter],
   );
-
-  const bentoColumns = useBentoColumns(shown, cols);
 
   const needsYouCount = count('needs_you');
   const atBarCount = count('at_bar');
@@ -173,24 +108,19 @@ export default function OrdersPage() {
             : null,
         ];
 
-  const handleMarkServed = async (orderId: string) => {
-    try {
-      await markOrderDelivered(orderId);
-    } catch (e) {
-      console.error('Failed to mark order as delivered:', e);
-    }
-  };
+  // Reports its own outcome, with an undo, instead of failing silently into the console.
+  const handleMarkServed = (orderId: string, label: string) => deliver(orderId, label);
 
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-transparent overflow-hidden">
       {/* ── Header: Frosted Glass Sticky Banner ─────────────────────── */}
-      <header className="shrink-0 z-10 border-b border-rule-raised/20 bg-page/85 px-16 tablet:px-24 pb-12 tablet:pb-16 pt-16 tablet:pt-24 backdrop-blur-md shadow-sm">
+      <header className="shrink-0 z-10 border-b border-rule-raised/20 bg-page/85 px-12 pb-12 pt-12 backdrop-blur-glass pad:px-24 pad:pb-16 pad:pt-20 short:py-6">
         {/* Tablet / Desktop Header Layout */}
-        <div className="hidden tablet:flex items-center justify-between gap-x-24">
+        <div className="hidden pad:flex items-center justify-between gap-x-24">
           <div className="flex items-center gap-16 min-w-0">
-            <h1 className="text-heading font-medium tracking-tight text-ink">Orders</h1>
+            <h1 className="text-heading font-medium text-ink">Orders</h1>
             <div className="h-24 w-px bg-rule-raised/60 shrink-0" aria-hidden="true" />
-            <div className="flex items-center rounded-full bg-sunken/80 px-16 py-6 border border-rule-raised/30 shadow-inner">
+            <div className="flex items-center rounded-full bg-sunken/80 px-16 py-6 border border-rule-raised/30 ">
               <MetaLine items={summaryItems} className="text-body-sm" />
             </div>
           </div>
@@ -209,9 +139,9 @@ export default function OrdersPage() {
         </div>
 
         {/* Mobile Header Layout (No overlap, generous clearance) */}
-        <div className="tablet:hidden flex flex-col gap-10">
+        <div className="flex flex-col gap-8 pad:hidden">
           <div className="flex items-center justify-between gap-8">
-            <h1 className="text-title-lg font-medium tracking-tight text-ink">Orders</h1>
+            <h1 className="text-title-lg font-medium text-ink">Orders</h1>
             <Segmented
               label="Whose orders"
               size="sm"
@@ -224,7 +154,7 @@ export default function OrdersPage() {
               className="w-fit"
             />
           </div>
-          <div className="w-fit max-w-full flex items-center rounded-full bg-sunken/80 px-12 py-4 border border-rule-raised/30 shadow-inner overflow-x-auto scrollbar-none">
+          <div className="flex w-fit max-w-full items-center overflow-x-auto rounded-dot border border-rule-raised/30 bg-sunken/80 px-12 py-4 no-scrollbar">
             <MetaLine items={summaryItems} className="whitespace-nowrap text-micro" />
           </div>
         </div>
@@ -243,22 +173,19 @@ export default function OrdersPage() {
             { value: 'served', label: 'Served', count: servedCount },
             { value: 'held', label: 'Held', count: heldCount },
           ]}
-          className="mt-12 tablet:mt-20 overflow-x-auto no-scrollbar"
+          className="mt-12 overflow-x-auto no-scrollbar pad:mt-20 short:mt-6"
         />
       </header>
 
       {/* ── Workspace / Content Area (Dynamic Bento Columns) ────────── */}
       <div
         ref={listRef}
-        className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-12 tablet:px-24 pt-12 tablet:pt-24 pb-[140px] tablet:pb-[160px]"
+        className="scroll-region no-scrollbar px-12 pb-24 pt-12 pad:px-24 pad:pt-24"
       >
         {loading ? (
-          <div className="flex flex-col tablet:flex-row gap-12 tablet:gap-16 items-start">
-            {Array.from({ length: cols }, (_, colIdx) => (
-              <div key={colIdx} className="flex flex-col gap-12 tablet:gap-16 flex-1 min-w-0 w-full">
-                <Skeleton className="min-h-[220px] rounded-[22px]" />
-                <Skeleton className="min-h-[160px] rounded-[22px]" />
-              </div>
+          <div className="columns-1 gap-12 pad:columns-2 pad:gap-16 desktop:columns-3">
+            {Array.from({ length: 6 }, (_, i) => (
+              <Skeleton key={i} className="mb-12 min-h-[200px] break-inside-avoid rounded-lg pad:mb-16" />
             ))}
           </div>
         ) : shown.length === 0 ? (
@@ -338,43 +265,39 @@ export default function OrdersPage() {
             )}
           </div>
         ) : (
-          <div className="flex flex-col tablet:flex-row gap-12 tablet:gap-16 items-start">
-            {bentoColumns.map((colOrders, colIdx) => (
-              <div key={colIdx} className="flex flex-col gap-12 tablet:gap-16 flex-1 min-w-0 w-full">
-                {colOrders.map((order) => (
-                  <div key={order.orderId} data-list-item="true" className="w-full min-w-0">
-                    <OrderCard
-                      orderId={order.orderId}
-                      tabId={order.tabId}
-                      label={order.label}
-                      firedAt={order.firedAt}
-                      state={order.state}
-                      deliveredAt={order.deliveredAt}
-                      unsent={order.unsent}
-                      lines={order.lines.map(({ line, name, seatNo, state, modifiers }) => ({
-                        id: line.id,
-                        name,
-                        qty: line.qty,
-                        seatNo,
-                        state,
-                        modifiers,
-                        servedAt: line.servedAt,
-                      }))}
-                      waiter={order.waiterName}
-                      mine={order.waiterId === session?.staffId}
-                      zoneName={order.zoneName}
-                      total={order.total}
-                      timezone={tz}
-                      onOpen={() => router.push(`/floor/tabs/${order.tabId}`)}
-                      onMarkServed={
-                        order.state === 'poured'
-                          ? () => void handleMarkServed(order.orderId)
-                          : undefined
-                      }
-                      onActionMenu={() => setActiveOrder(order)}
-                    />
-                  </div>
-                ))}
+          <div className="columns-1 gap-12 pad:columns-2 pad:gap-16 desktop:columns-3">
+            {shown.map((order) => (
+              <div key={order.orderId} data-list-item="true" className="mb-12 break-inside-avoid pad:mb-16">
+                <OrderCard
+                        orderId={order.orderId}
+                        tabId={order.tabId}
+                        label={order.label}
+                        firedAt={order.firedAt}
+                        state={order.state}
+                        deliveredAt={order.deliveredAt}
+                        unsent={order.unsent}
+                        lines={order.lines.map(({ line, name, seatNo, state, modifiers }) => ({
+                          id: line.id,
+                          name,
+                          qty: line.qty,
+                          seatNo,
+                          state,
+                          modifiers,
+                          servedAt: line.servedAt,
+                        }))}
+                        waiter={order.waiterName}
+                        mine={order.waiterId === session?.staffId}
+                        zoneName={order.zoneName}
+                        total={order.total}
+                        timezone={tz}
+                        onOpen={() => router.push(`/floor/tabs/${order.tabId}`)}
+                        onMarkServed={
+                          order.state === 'poured'
+                            ? () => void handleMarkServed(order.orderId, order.label)
+                            : undefined
+                        }
+                        onActionMenu={() => setActiveOrder(order)}
+                      />
               </div>
             ))}
           </div>

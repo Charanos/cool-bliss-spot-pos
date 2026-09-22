@@ -11,8 +11,12 @@ export interface OverlayMotion {
 export interface OverlayProps {
   open: boolean;
   onClose: () => void;
-  /** A sheet rises from the bottom and stops at the base layer. A dialog is centred. */
-  placement: 'sheet' | 'dialog' | 'side';
+  /**
+   * A sheet rises from the bottom, a dialog is centred, a side panel comes in from the right.
+   * `adaptive` is the one to reach for on a working surface: a sheet under the thumb on a phone,
+   * a centred dialog from a tablet up, where there is no thumb and no bottom edge to hug.
+   */
+  placement: 'sheet' | 'dialog' | 'side' | 'adaptive';
   motion: OverlayMotion;
   title: ReactNode;
   description?: ReactNode;
@@ -39,11 +43,25 @@ export interface OverlayProps {
 }
 
 const widthClass = {
-  sm: 'w-[min(440px,calc(100vw-48px))]',
-  md: 'w-[min(580px,calc(100vw-48px))]',
-  lg: 'w-[min(720px,calc(100vw-48px))]',
-  full: 'w-[calc(100vw-48px)]',
+  sm: 'w-[min(440px,calc(100vw-32px))]',
+  md: 'w-[min(580px,calc(100vw-32px))]',
+  lg: 'w-[min(720px,calc(100vw-32px))]',
+  full: 'w-[calc(100vw-32px)]',
 } as const;
+
+/**
+ * A sheet is the full width of a phone and takes its width back from a tablet up. Written out
+ * rather than composed, because Tailwind reads these class names from the source as plain text.
+ */
+const sheetWidthClass = {
+  sm: 'w-full pad:w-[min(440px,calc(100vw-32px))]',
+  md: 'w-full pad:w-[min(580px,calc(100vw-32px))]',
+  lg: 'w-full pad:w-[min(720px,calc(100vw-32px))]',
+  full: 'w-full pad:w-[calc(100vw-32px)]',
+} as const;
+
+/** Square at the bottom edge on a phone, a card once it is centred. */
+const ADAPTIVE_SHAPE = 'safe-b rounded-t-[28px] border-b-0 pad:rounded-[28px] pad:border-b pad:[padding-bottom:0]';
 
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
@@ -151,10 +169,12 @@ export function Overlay({
   // Positioned by a flex wrapper, never by CSS transforms: the panel's transform belongs to GSAP.
   const wrapperPosition =
     placement === 'sheet'
-      ? cx('items-end px-16', align === 'start' ? 'justify-start' : align === 'end' ? 'justify-end' : 'justify-center')
-      : placement === 'side'
-        ? 'items-stretch justify-end'
-        : 'items-center justify-center p-24';
+      ? cx('items-end px-0 pad:px-16', align === 'start' ? 'justify-start' : align === 'end' ? 'justify-end' : 'justify-center')
+      : placement === 'adaptive'
+        ? 'items-end justify-center px-0 pad:items-center pad:p-24'
+        : placement === 'side'
+          ? 'items-stretch justify-end'
+          : 'items-center justify-center p-16 pad:p-24';
 
   return (
     <dialog
@@ -179,23 +199,29 @@ export function Overlay({
             boxShadow: '0 32px 80px -16px black, 0 0 0 1px color-mix(in srgb, white 4%, transparent) inset, 0 1px 0 color-mix(in srgb, white 10%, transparent) inset',
           }}
           className={cx(
-            'pointer-events-auto flex max-h-[90vh] flex-col border outline-none',
-            placement === 'sheet' && 'rounded-t-[28px] border-b-0',
+            'pointer-events-auto flex max-h-[92dvh] flex-col border outline-none',
+            // A sheet on a phone is the width of the phone, and pays back the home indicator.
+            placement === 'sheet' && 'safe-b rounded-t-[28px] border-b-0',
+            placement === 'adaptive' && ADAPTIVE_SHAPE,
             placement === 'dialog' && 'rounded-[28px]',
-            placement === 'side' ? 'h-full w-[min(480px,100vw)] rounded-l-[28px] border-r-0' : widthClass[width],
+            placement === 'side'
+              ? 'h-full w-[min(480px,100vw)] rounded-l-[28px] border-r-0'
+              : placement === 'sheet' || placement === 'adaptive'
+                ? sheetWidthClass[width]
+                : widthClass[width],
             className,
           )}
         >
           {/* Header */}
           <div
             className={cx(
-              'shrink-0 px-32 pb-20 pt-32 transition-colors duration-[var(--bliss-duration-hover)]',
+              'shrink-0 px-16 pb-12 pt-20 transition-colors duration-[var(--bliss-duration-hover)] pad:px-32 pad:pb-20 pad:pt-32',
               edges.top ? 'border-b border-rule-raised/50' : 'border-b border-transparent',
               hideTitle && 'sr-only',
             )}
           >
             {eyebrow ? (
-              <p className="mb-10 font-mono text-caps tracking-widest text-attention text-[10px]">
+              <p className="mb-8 font-mono text-caps text-attention text-[10px]">
                 {eyebrow}
               </p>
             ) : null}
@@ -205,19 +231,19 @@ export function Overlay({
                   {leading}
                 </span>
               ) : null}
-              <h2 id={titleId} className="min-w-0 text-title font-medium tracking-tight text-ink">
+              <h2 id={titleId} className="min-w-0 text-title font-medium text-ink">
                 {title}
               </h2>
             </div>
             {description ? (
-              <p id={descriptionId} className="mt-8 text-body text-ink-muted leading-relaxed">
+              <p id={descriptionId} className="mt-8 text-body text-ink-muted ">
                 {description}
               </p>
             ) : null}
           </div>
 
           {/* Body */}
-          <div ref={bodyRef} onScroll={measure} className={cx('min-h-0 flex-1 overflow-y-auto overscroll-contain px-32', footer ? 'pb-24' : 'pb-32', hideTitle ? 'pt-32' : 'pt-4')}>
+          <div ref={bodyRef} onScroll={measure} className={cx('min-h-0 flex-1 overflow-y-auto overscroll-contain px-16 pad:px-32', footer ? 'pb-16 pad:pb-24' : 'pb-20 pad:pb-32', hideTitle ? 'pt-20 pad:pt-32' : 'pt-4')}>
             {children}
           </div>
 
@@ -225,7 +251,7 @@ export function Overlay({
           {footer ? (
             <div
               className={cx(
-                'flex shrink-0 flex-wrap items-center justify-end gap-16 px-32 pb-32 pt-24 transition-colors duration-[var(--bliss-duration-hover)]',
+                'flex shrink-0 flex-wrap items-center justify-end gap-8 px-16 pb-16 pt-16 transition-colors duration-[var(--bliss-duration-hover)] pad:gap-16 pad:px-32 pad:pb-32 pad:pt-24',
                 edges.bottom ? 'border-t border-rule-raised/50' : 'border-t border-transparent',
               )}
             >
@@ -248,7 +274,7 @@ export function OverlayActions({ children, className }: { children: ReactNode; c
   return (
     <div
       className={cx(
-        'sticky bottom-0 z-10 -mx-32 -mb-32 flex items-center justify-end gap-16 border-t border-rule/60 bg-raised/90 backdrop-blur-md px-32 pb-32 pt-20 transition-colors',
+        'sticky bottom-0 z-10 -mx-16 -mb-20 flex items-center justify-end gap-8 border-t border-rule/60 bg-raised/90 px-16 pb-20 pt-16 backdrop-blur-glass transition-colors pad:-mx-32 pad:-mb-32 pad:gap-16 pad:px-32 pad:pb-32 pad:pt-20',
         className,
       )}
     >

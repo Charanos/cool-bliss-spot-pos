@@ -64,7 +64,7 @@ export default function OutletPage() {
           const own = tables.filter((t) => t.zoneId === z.id);
           return (
             <Row key={z.id} label={z.name}>
-              <span className="font-mono tabular text-num">{own.map((t) => t.label).join('  ')}</span>
+              <span className="font-mono tabular text-num">{own.map((t) => t.label).join(' ')}</span>
               <span className="block text-body-sm text-ink-subtle">{own.reduce((a, t) => a + t.seats, 0)} seats</span>
             </Row>
           );

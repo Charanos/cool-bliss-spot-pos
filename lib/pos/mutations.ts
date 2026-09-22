@@ -8,6 +8,7 @@ import { checkReason } from '@bliss/shared/reason';
 import { canRemoveSeat, nextSeatNo, normaliseSeatLabel, seatColourIndex, seatNumbersForGuests } from '@bliss/shared/seats';
 import { type OutboxKind, type OutboxPayload, validatePayload } from '@bliss/shared/sync';
 import { businessDate } from '@bliss/shared/time';
+import { holdsTable, isOrdering, isSeated } from '@bliss/shared/trade';
 import { META, posDb, getMeta, setMeta } from './db';
 import { newId } from './ids';
 import { pricingIndex } from './pricing';
@@ -105,6 +106,10 @@ export async function openTab(input: { tableId: string | null; zoneId: string; g
     closedAt: null,
   };
   await db.transaction('rw', [db.tabs, db.seats, db.outbox, db.meta], async () => {
+    if (input.tableId) {
+      const stale = await db.tabs.where('serviceTableId').equals(input.tableId).filter((t) => isSeated(t)).toArray();
+      for (const old of stale) await db.tabs.update(old.id, { clearedAt: now, clearedBy: ctx.session.staffId });
+    }
     await db.tabs.add(tab);
     await db.seats.bulkAdd(seats);
     await setMeta(META.selectedSeat(tabId), seats[0]!.id);
@@ -467,62 +472,111 @@ export async function fireOrder(tabId: string): Promise<number> {
 /* ----------------------------------------------------------- order delivery */
 
 /**
- * Mark an order as delivered/served to the table by the floor waiter.
- * Flow distinction: Counter bartender pours (lines become poured/servedAt);
- * Floor waiter takes drinks to the table and records delivery.
+ * The round is at the table. docs/16 section 9. Poured is the counter's word; delivered is the
+ * waiter's, and it travels to the server like any other change, so the night's record has it and a
+ * second tablet sees it. It used to live only on the tablet that marked it.
  */
-export async function markOrderDelivered(orderId: string): Promise<void> {
+async function setDelivered(orderIds: string[], delivered: boolean): Promise<number> {
   const ctx = await context();
-  await setMeta(META.orderDelivered(orderId), {
-    deliveredAt: Date.now(),
-    deliveredBy: ctx.session.staffId,
+  const db = posDb();
+  const at = Date.now();
+  let changed = 0;
+  await db.transaction('rw', [db.orders, db.outbox, db.meta], async () => {
+    for (const id of orderIds) {
+      const order = await db.orders.get(id);
+      if (!order || order.status === 'draft' || Boolean(order.deliveredAt) === delivered) continue;
+      await db.orders.update(id, delivered ? { deliveredAt: at, deliveredBy: ctx.session.staffId } : { deliveredAt: null, deliveredBy: null });
+      await db.meta.delete(META.orderDelivered(id));
+      await enqueue(ctx, 'order.deliver', order.tabId, { v: 1, orderId: id, tabId: order.tabId, at, undo: !delivered });
+      changed += 1;
+    }
   });
   afterCommit();
+  return changed;
 }
 
-/**
- * Revert order delivery status back to poured.
- */
-export async function unmarkOrderDelivered(orderId: string): Promise<void> {
-  await posDb().meta.delete(META.orderDelivered(orderId));
-  afterCommit();
+export function markOrderDelivered(orderId: string): Promise<number> {
+  return setDelivered([orderId], true);
 }
 
-/**
- * Mark all active orders for a given tab as delivered/served to the table.
- */
-export async function markTableOrdersDelivered(tabId: string): Promise<void> {
-  const ctx = await context();
+export function unmarkOrderDelivered(orderId: string): Promise<number> {
+  return setDelivered([orderId], false);
+}
+
+/** Every poured round on the tab, set down at once. Returns how many were marked. */
+export async function markTableOrdersDelivered(tabId: string): Promise<number> {
   const db = posDb();
   const orders = await db.orders.where('tabId').equals(tabId).toArray();
-  const now = Date.now();
-  for (const o of orders) {
-    await setMeta(META.orderDelivered(o.id), {
-      deliveredAt: now,
-      deliveredBy: ctx.session.staffId,
-    });
-  }
+  const lines = await db.lines.where('tabId').equals(tabId).toArray();
+  const poured = orders.filter((o) => {
+    const own = lines.filter((l) => l.orderId === o.id && l.status !== 'voided' && l.status !== 'draft');
+    return own.length > 0 && own.every((l) => l.status === 'served') && !o.deliveredAt;
+  });
+  return setDelivered(poured.map((o) => o.id), true);
+}
+
+/* ------------------------------------------------------------- the table */
+
+/**
+ * The guests have left. docs/16 section 8. A paid tab lets go of its table and joins the night's
+ * record; the table comes back to the free list on every device. Undo puts it back, which the server
+ * refuses only if new guests have already sat down there.
+ */
+export async function clearTable(tabId: string): Promise<void> {
+  const ctx = await context();
+  const db = posDb();
+  const at = Date.now();
+  await db.transaction('rw', [db.tabs, db.outbox, db.meta], async () => {
+    const tab = await db.tabs.get(tabId);
+    if (!tab) throw new Error('That tab is no longer on this device.');
+    if (!isSeated(tab)) throw new Error('Only a paid tab can be cleared. Settle it at the counter first.');
+    await db.tabs.update(tabId, { clearedAt: at, clearedBy: ctx.session.staffId });
+    await enqueue(ctx, 'tab.clear', tabId, { v: 1, tabId, at, undo: false, reason: null });
+  });
+  afterCommit();
+}
+
+export async function undoClearTable(tabId: string): Promise<void> {
+  const ctx = await context();
+  const db = posDb();
+  const at = Date.now();
+  await db.transaction('rw', [db.tabs, db.outbox, db.meta], async () => {
+    const tab = await db.tabs.get(tabId);
+    if (!tab || tab.status !== 'settled' || !tab.clearedAt) return;
+    if (tab.serviceTableId) {
+      const taken = await db.tabs.where('serviceTableId').equals(tab.serviceTableId).filter((t) => t.id !== tabId && holdsTable(t)).count();
+      if (taken > 0) throw new Error('New guests are already at that table, so the old tab stays cleared.');
+    }
+    await db.tabs.update(tabId, { clearedAt: null, clearedBy: null });
+    await enqueue(ctx, 'tab.clear', tabId, { v: 1, tabId, at, undo: true, reason: null });
+  });
   afterCommit();
 }
 
 /**
- * Mark an order's pending lines as poured in local database.
+ * Guests sat down and left without ordering. The tab closes as voided, with the reason, and the
+ * table is free. Refused if anything was fired: that has to be paid or voided line by line.
  */
-export async function markOrderPoured(orderId: string): Promise<void> {
+export async function closeEmptyTab(tabId: string, reason: string): Promise<void> {
   const ctx = await context();
+  const check = checkReason(reason);
+  if (!check.ok) throw new Error(check.message);
   const db = posDb();
-  const now = Date.now();
-  await db.transaction('rw', [db.lines], async () => {
-    const lines = await db.lines.where('orderId').equals(orderId).toArray();
-    const pending = lines.filter((l) => l.status === 'pending');
-    if (pending.length === 0) return;
-    await db.lines.bulkUpdate(
-      pending.map((l) => ({
-        key: l.id,
-        changes: { status: 'served' as const, servedAt: now, servedBy: ctx.session.staffId },
-      })),
-    );
+  const at = Date.now();
+  await db.transaction('rw', [db.tabs, db.lines, db.orders, db.lineModifiers, db.outbox, db.meta], async () => {
+    const tab = await db.tabs.get(tabId);
+    if (!tab || !isOrdering(tab)) throw new Error('That tab is no longer open.');
+    const lines = await db.lines.where('tabId').equals(tabId).toArray();
+    if (lines.some((l) => l.status === 'pending' || l.status === 'served')) throw new Error('Something on this tab was fired. Settle it, or void the lines first.');
+    // Drafts never left this device: they go with the tab.
+    const drafts = lines.filter((l) => l.status === 'draft');
+    for (const d of drafts) await db.lineModifiers.where('orderLineId').equals(d.id).delete();
+    await db.lines.bulkDelete(drafts.map((d) => d.id));
+    await db.orders.where('tabId').equals(tabId).filter((o) => o.status === 'draft').delete();
+    await db.tabs.update(tabId, { status: 'voided', closedAt: at, clearedAt: at, clearedBy: ctx.session.staffId });
+    await enqueue(ctx, 'tab.clear', tabId, { v: 1, tabId, at, undo: false, reason: check.reason });
   });
   afterCommit();
 }
+
 

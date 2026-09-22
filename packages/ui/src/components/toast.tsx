@@ -121,15 +121,15 @@ function ToastRow({ item, onDismiss }: { item: ToastItem; onDismiss: (id: string
         type="button"
         onClick={handleDismiss}
         className={cx(
-          'flex w-full cursor-pointer items-center gap-10 rounded-lg px-14 py-10 text-left',
+          'flex w-full cursor-pointer items-center gap-8 rounded-lg px-16 py-8 text-left',
           'bg-raised/90 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.08)]',
-          'ring-1 backdrop-blur-md select-none',
+          'ring-1 backdrop-blur-glass select-none',
           TONE_RING[item.tone],
         )}
         style={{ willChange: 'transform, opacity' }}
       >
         {/* Tone dot */}
-        <span className={cx('h-7 w-7 shrink-0 rounded-full', TONE_DOT[item.tone])} aria-hidden="true" />
+        <span className={cx('h-24 w-24 shrink-0 rounded-full', TONE_DOT[item.tone])} aria-hidden="true" />
         {/* Message */}
         <span className="min-w-0 flex-1 text-body text-ink">{item.message}</span>
       </button>

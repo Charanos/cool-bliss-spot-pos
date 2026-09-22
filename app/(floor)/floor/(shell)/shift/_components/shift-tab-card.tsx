@@ -6,14 +6,9 @@ import { Button } from '@bliss/ui/components/button';
 import { Elapsed } from '@bliss/ui/components/elapsed';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Money } from '@bliss/ui/components/money';
-import { Dot } from '@bliss/ui/components/status';
 import { SeatChipStack } from '@bliss/ui/components/working';
 import { cx } from '@bliss/ui/lib/cx';
-import {
-  IconCheck,
-  IconChevronRight,
-  IconClockHour4,
-} from '@tabler/icons-react';
+import { IconCheck, IconChevronRight, IconClockHour4 } from '@tabler/icons-react';
 
 export interface ShiftTabSeat {
   id: string;
@@ -37,143 +32,84 @@ export interface ShiftTabCardProps {
 }
 
 /**
- * Production-grade assigned table card for the Floor Waiter Shift console.
- * Replaces the flat borderless list with a tactile, interactive raised surface.
- * Conforms strictly to docs/12-surface-language.md, bliss/one-pane and bliss/max-font-weight.
+ * A table in this waiter's name: what it is, who is seated, how long it has been open and what it
+ * has run up. The card itself opens the tab, so the whole surface is the target on a phone; the
+ * checkbox, where handover is selecting, keeps its own.
  */
-export function ShiftTabCard({
-  label,
-  zoneName,
-  seats,
-  showSeats,
-  openedAt,
-  total,
-  pouredCount = 0,
-  selected,
-  onSelect,
-  onOpen,
-  className,
-}: ShiftTabCardProps) {
+export function ShiftTabCard({ label, zoneName, seats, showSeats, openedAt, total, pouredCount = 0, selected, onSelect, onOpen, className }: ShiftTabCardProps) {
   const settledCount = seats.filter((s) => s.status === 'settled').length;
 
   return (
     <div
       className={cx(
-        'relative flex flex-col justify-between overflow-hidden rounded-lg p-18 m-8 tablet:p-20 gap-16 transition-all duration-200 select-none group',
-        // Sleek frosted glass tactile raised surface
-        'bg-raised/70 backdrop-blur-md border border-rule-raised/40 shadow-lift',
-        selected
-          ? 'border-accent ring-1 ring-accent/40 bg-accent/[0.06]'
-          : 'hover:border-accent/40 hover:-translate-y-0.5 hover:shadow-glow',
+        'relative flex flex-col gap-12 overflow-hidden rounded-md border bg-raised/70 p-12 backdrop-blur-glass pad:rounded-lg pad:p-16',
+        selected ? 'border-accent bg-accent/[0.06]' : 'border-rule-raised/40',
         className,
       )}
     >
-      {/* ── Top Row: Table Label, Zone, Elapsed & Status Badges ──────── */}
-      <div className="flex items-center justify-between gap-12 flex-wrap">
-        <div className="flex items-center gap-10 min-w-0">
+      <div className="flex items-start justify-between gap-8">
+        <div className="flex min-w-0 items-center gap-8">
           {onSelect ? (
             <button
               type="button"
-              aria-label={`Select ${label} for handover`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect();
-              }}
+              role="checkbox"
+              aria-checked={Boolean(selected)}
+              aria-label={`Hand over ${label}`}
+              onClick={onSelect}
               className={cx(
-                'size-[24px] rounded-md flex items-center justify-center shrink-0 border transition-all cursor-pointer',
-                selected
-                  ? 'bg-accent border-accent text-accent-ink shadow-sm'
-                  : 'border-rule-sunken/60 hover:border-accent text-transparent',
+                'flex size-24 shrink-0 items-center justify-center rounded-sm press-feedback',
+                selected ? 'bg-accent text-accent-ink' : 'bg-control text-transparent hover:text-ink-subtle',
               )}
             >
-              <IconCheck size={14} stroke={2.5} />
+              <IconCheck size={14} stroke={ICON_STROKE} aria-hidden="true" />
             </button>
           ) : null}
 
-          <button
-            type="button"
-            onClick={onOpen}
-            className="text-left font-medium text-title text-ink group-hover:text-accent transition-colors truncate cursor-pointer tracking-tight"
-          >
+          <button type="button" onClick={onOpen} className="min-w-0 truncate text-left text-title font-medium text-ink press-feedback hover:text-accent">
             {label}
           </button>
 
           {zoneName ? (
-            <Badge tone="neutral" className="!rounded-dot px-8 py-1 font-mono text-micro">
+            <Badge tone="neutral" className="hidden shrink-0 compact:inline-flex">
               {zoneName}
             </Badge>
           ) : null}
         </div>
 
-        <div className="flex items-center gap-8 shrink-0">
-          <div className="flex items-center gap-4 px-8 py-2 rounded-dot bg-sunken border border-rule-raised/30 font-mono text-micro text-ink-subtle">
-            <IconClockHour4 size={12} stroke={ICON_STROKE} className="text-ink-muted" />
-            <Elapsed since={openedAt} />
-          </div>
-
-          {pouredCount > 0 ? (
-            <Badge
-              tone="poured"
-              className="!rounded-dot px-8 py-1 font-mono text-micro shadow-[0_0_10px_color-mix(in_oklab,var(--color-poured)_20%,transparent)]"
-            >
-              <Dot tone="poured" />
-              <span>{pouredCount} poured</span>
-            </Badge>
-          ) : null}
-        </div>
+        <span className="flex shrink-0 items-center gap-4 rounded-sm bg-sunken px-8 py-2 font-mono text-micro text-ink-subtle">
+          <IconClockHour4 size={12} stroke={ICON_STROKE} aria-hidden="true" className="text-ink-muted" />
+          <Elapsed since={openedAt} />
+        </span>
       </div>
 
-      {/* ── Middle Row: Guest Covers & Overlapping Seat Chip Stack ──── */}
-      <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between font-mono text-micro text-ink-subtle">
+      <div className="flex flex-col gap-6">
+        <div className="flex items-baseline justify-between gap-8 font-mono text-micro text-ink-subtle">
           <span>Guest covers</span>
           {seats.length > 0 ? (
             <span>
-              {seats.length} seated{settledCount > 0 ? ` · ${settledCount} settled` : ''}
+              {seats.length} seated
+              {settledCount > 0 ? ` · ${settledCount} settled` : ''}
+              {pouredCount > 0 ? ` · ${pouredCount} poured` : ''}
             </span>
           ) : null}
         </div>
-
-        <div className="flex items-center gap-8 min-h-[32px]">
-          {showSeats && seats.length > 0 ? (
-            <SeatChipStack
-              seats={seats.map((s) => ({
-                seatNo: s.seatNo,
-                settled: s.status === 'settled',
-              }))}
-              max={8}
-              size="dense"
-              overlapping
-            />
-          ) : (
-            <span className="font-mono text-micro text-ink-subtle">
-              Single bill · No individual seats assigned
-            </span>
-          )}
-        </div>
+        {showSeats && seats.length > 0 ? (
+          <SeatChipStack seats={seats.map((s) => ({ seatNo: s.seatNo, settled: s.status === 'settled' }))} max={8} size="dense" overlapping />
+        ) : (
+          <span className="font-mono text-micro text-ink-subtle">One bill, no seats named</span>
+        )}
       </div>
 
-      {/* ── Bottom Row: Grand Total Spend & Tactile Open Action ──────── */}
-      <div className="flex items-center justify-between pt-12 border-t border-rule-raised/20 gap-12">
-        <div className="flex flex-col gap-2">
-          <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
-            Tab spend
-          </span>
-          <Money value={total} size="num-lg" tone="default" />
-        </div>
+      <div className="flex items-end justify-between gap-12 border-t border-rule-raised/20 pt-12">
+        <span className="flex min-w-0 flex-col gap-2">
+          <span className="caps text-ink-subtle">Tab spend</span>
+          <Money value={total} size="num-lg" />
+        </span>
 
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={IconChevronRight}
-          iconPosition="end"
-          onClick={onOpen}
-          className="!rounded-dot px-14 text-body-sm font-medium border border-rule-raised/40 hover:border-accent/40 group-hover:text-accent transition-all shadow-sm"
-        >
+        <Button variant="secondary" size="md" icon={IconChevronRight} iconPosition="end" onClick={onOpen} className="shrink-0">
           Open tab
         </Button>
       </div>
     </div>
   );
 }
-

@@ -51,7 +51,7 @@ export function ReceiptsTable({ rows, timezone, suppliers }: { rows: ReceiptRow[
       sortValue: (r) => r.units,
       csv: (r) => r.units,
       cell: (r) => (
-        <span className="flex flex-col items-end leading-tight">
+        <span className="flex flex-col items-end ">
           <NumCell>{r.units}</NumCell>
           {r.rejected > 0 ? <span className="text-body-sm text-stop">{r.rejected} sent back</span> : null}
         </span>

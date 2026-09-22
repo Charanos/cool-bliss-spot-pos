@@ -33,7 +33,7 @@ export function VoidsView({ rows, rangeKey, rangeOptions, timezone, exportDate }
       sortValue: (r) => r.voidValue,
       csv: (r) => formatDecimal(r.voidValue),
       cell: (r) => (
-        <span className="flex flex-col items-end leading-tight">
+        <span className="flex flex-col items-end ">
           <Money value={r.voidValue} currency={false} decimals="whole" tone={isPositive(r.voidValue) ? 'default' : 'subtle'} />
           <span className="text-body-sm text-ink-subtle">{r.voids} lines</span>
         </span>

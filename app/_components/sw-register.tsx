@@ -9,7 +9,8 @@ import { useEffect } from 'react';
  */
 export function SWRegister() {
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    // Only a production build has a worker to register; see lib/pos/updates.ts.
+    if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
       void navigator.serviceWorker
         .register('/sw.js', { scope: '/' })
         .catch(() => {

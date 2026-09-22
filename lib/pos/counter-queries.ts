@@ -1,6 +1,6 @@
 'use client';
 
-import type { AvailabilityState, Bill, CategoryColourToken, OrderLine, TabSeat, Tender } from '@bliss/shared/domain';
+import type { AvailabilityState, Bill, CategoryColourToken, OrderLine, Tab, TabSeat, Tender } from '@bliss/shared/domain';
 import { type Cents, sum } from '@bliss/shared/money';
 import { tryResolvePrice } from '@bliss/shared/pricing';
 import { showsSeatChips } from '@bliss/shared/seats';
@@ -9,6 +9,9 @@ import { tabLabel } from '@bliss/shared/trade';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type DrawerRow, META, getMeta, posDb } from './db';
 import { usePricingIndex } from './pricing';
+import { assetUrl, tileGlyph } from './queries';
+import type { TileGlyph } from '@bliss/ui/components/floor/product-tile';
+import type { AvailabilityReason } from '@bliss/shared/domain';
 
 /**
  * Counter reads. docs/14 section 5. Everything here reads the device's own store, which the sync
@@ -188,6 +191,7 @@ export interface BillGroupLine {
   line: OrderLine;
   name: string;
   modifiers: string[];
+  imageUrl: string | null;
 }
 
 export interface BillGroup {
@@ -203,7 +207,9 @@ export interface SettleView {
   tabNumber: number | null;
   waiter: string;
   openedAt: number;
-  status: string;
+  status: Tab['status'];
+  /** Null while a settled tab still holds its table. docs/16 section 8. */
+  clearedAt: number | null | undefined;
   showSeats: boolean;
   seats: TabSeat[];
   activeSeats: TabSeat[];
@@ -221,11 +227,12 @@ export function useSettleView(tabId: string): SettleView | null | undefined {
     const db = posDb();
     const tab = await db.tabs.get(tabId);
     if (!tab) return null;
-    const [seats, lines, modifiers, variants, table, names, billed, bills, tenders, split] = await Promise.all([
+    const [seats, lines, modifiers, variants, products, table, names, billed, bills, tenders, split] = await Promise.all([
       db.seats.where('tabId').equals(tabId).toArray(),
       db.lines.where('tabId').equals(tabId).toArray(),
       db.lineModifiers.toArray(),
       db.variants.toArray(),
+      db.products.toArray(),
       tab.serviceTableId ? db.serviceTables.get(tab.serviceTableId) : Promise.resolve(undefined),
       staffNames(),
       billedLineIds(),
@@ -236,7 +243,14 @@ export function useSettleView(tabId: string): SettleView | null | undefined {
     const nameOf = new Map(variants.map((v) => [v.id, v.name]));
     const visible = seats.filter((s) => s.status !== 'removed').sort((a, b) => a.seatNo - b.seatNo);
     const open = billableLines(lines, billed).sort((a, b) => a.clientCreatedAt - b.clientCreatedAt);
-    const decorate = (l: OrderLine): BillGroupLine => ({ line: l, name: nameOf.get(l.productVariantId) ?? 'Item', modifiers: modifiers.filter((m) => m.orderLineId === l.id).map((m) => m.name) });
+    const imageKeyOf = new Map(products.map((p) => [p.id, p.imageKey]));
+    const imageOf = new Map(variants.map((v) => [v.id, assetUrl(imageKeyOf.get(v.productId) ?? null, 96, 96)]));
+    const decorate = (l: OrderLine): BillGroupLine => ({
+      line: l,
+      name: nameOf.get(l.productVariantId) ?? 'Item',
+      modifiers: modifiers.filter((m) => m.orderLineId === l.id).map((m) => m.name),
+      imageUrl: imageOf.get(l.productVariantId) ?? null,
+    });
     const groups: BillGroup[] = visible
       .map((s) => {
         const own = open.filter((l) => l.tabSeatId === s.id);
@@ -267,6 +281,7 @@ export function useSettleView(tabId: string): SettleView | null | undefined {
       waiter: names.get(tab.assignedTo) ?? '',
       openedAt: tab.openedAt,
       status: tab.status,
+      clearedAt: tab.clearedAt,
       showSeats: showsSeatChips(visible),
       seats: visible,
       activeSeats: visible.filter((s) => s.status === 'active'),
@@ -305,37 +320,6 @@ export function useDrawerState(): DrawerState | undefined {
   }, []);
 }
 
-/* ----------------------------------------------------------------- bills */
-
-export interface DeviceBill extends Bill {
-  tenders: Tender[];
-  label: string;
-  lines: number;
-}
-
-/** Bills settled on this counter in the current business day, newest first. */
-export function useDeviceBills(): DeviceBill[] | undefined {
-  return useLiveQuery(async () => {
-    const db = posDb();
-    const [device, date] = await Promise.all([getMeta<{ id: string }>(META.deviceId), getMeta<string>(META.businessDate)]);
-    if (!device) return [];
-    const bills = (await db.bills.where('deviceId').equals(device.id).toArray()).filter((b) => !date || b.businessDate === date);
-    const [tenders, billLines, tabs, tables] = await Promise.all([db.tenders.toArray(), db.billLines.toArray(), db.tabs.toArray(), db.serviceTables.toArray()]);
-    return bills
-      .sort((a, b) => (b.settledAt ?? 0) - (a.settledAt ?? 0))
-      .map((b) => {
-        const tab = tabs.find((t) => t.id === b.tabId);
-        const table = tables.find((t) => t.id === tab?.serviceTableId);
-        return {
-          ...b,
-          tenders: tenders.filter((t) => t.billId === b.id),
-          label: b.scope === 'quick_sale' ? 'Quick sale' : tabLabel({ tableLabel: table?.label, name: tab?.name }),
-          lines: billLines.filter((l) => l.billId === b.id).length,
-        };
-      });
-  }, []);
-}
-
 /* ------------------------------------------------------------ quick sale */
 
 export interface SaleItem {
@@ -345,8 +329,13 @@ export interface SaleItem {
   categoryName: string;
   colour: CategoryColourToken;
   imageKey: string | null;
+  imageUrl: string | null;
+  glyph: TileGlyph;
   price: Cents | null;
+  ruleName: string | null;
   state: AvailabilityState;
+  reason: AvailabilityReason | null;
+  qtyAvailable: number;
   sort: number;
 }
 
@@ -366,6 +355,7 @@ export function useSaleItems(now: number, timeZone: string): { items: SaleItem[]
     const category = data.categories.find((c) => c.id === product?.categoryId);
     if (!product || !category || product.status !== 'active') continue;
     const price = tryResolvePrice(index, { variantId: v.id, qty: 1, at: now, timeZone });
+    const entry = data.availability.find((a) => a.productVariantId === v.id);
     items.push({
       variantId: v.id,
       name: v.name,
@@ -373,8 +363,13 @@ export function useSaleItems(now: number, timeZone: string): { items: SaleItem[]
       categoryName: category.name,
       colour: category.colourToken,
       imageKey: product.imageKey,
+      imageUrl: assetUrl(product.imageKey),
+      glyph: tileGlyph(v.kind, category.name),
       price: price?.unitPriceCents ?? null,
-      state: data.availability.find((a) => a.productVariantId === v.id)?.state ?? 'available',
+      ruleName: price?.appliedRuleName ?? null,
+      state: entry?.state ?? 'available',
+      reason: entry?.reason ?? null,
+      qtyAvailable: entry?.qtyAvailable ?? 0,
       sort: category.sortOrder * 1000 + v.sortOrder,
     });
   }

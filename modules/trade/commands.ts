@@ -4,6 +4,7 @@ import type { Order, OrderLine, OrderLineModifier, Tab, TabSeat } from '@bliss/s
 import { cents } from '@bliss/shared/money';
 import type { Actor } from '@bliss/shared/reason';
 import { seatColourIndex } from '@bliss/shared/seats';
+import { holdsTable, isSeated } from '@bliss/shared/trade';
 import type { OutboxPayload } from '@bliss/shared/sync';
 import { businessDate } from '@bliss/shared/time';
 import { CommandRejected, touch } from '../_data/changes';
@@ -53,6 +54,15 @@ export function openTab(p: OutboxPayload<'tab.open'>, actor: Actor): void {
   const outlet = identity.outlet();
   const date = businessDate(p.openedAt, outlet.timezone, outlet.businessDayCutover);
   const tabNumber = t.tabs.filter((x) => x.businessDate === date).reduce((max, x) => Math.max(max, x.tabNumber ?? 0), 0) + 1;
+  // New guests at a table whose last party paid and nobody cleared: the table is plainly free, so
+  // the old tab is cleared on their behalf rather than blocking the new one.
+  if (p.serviceTableId) {
+    for (const old of t.tabs.filter((x) => x.serviceTableId === p.serviceTableId && isSeated(x))) {
+      old.clearedAt = p.openedAt;
+      old.clearedBy = actor.staffId;
+      touch('tabs', old.id);
+    }
+  }
   const tab: Tab = {
     id: p.tabId,
     outletId: outlet.id,
@@ -295,6 +305,81 @@ export function serveLines(p: OutboxPayload<'line.serve'>, actor: Actor): void {
   for (const id of orders) rollUpOrder(id);
 }
 
+/**
+ * The guests have left. docs/16 section 8.
+ *
+ *   settled, seated         the tab lets go of its table and joins the night's record
+ *   open with nothing on it  the tab closes as voided, with the reason audited: guests who sat and
+ *                            left without ordering are still a thing a manager wants to see
+ *   anything else            refused: a table with something to pay is not empty
+ *
+ * Undo puts a cleared tab back on its table, unless new guests are already there.
+ */
+export function clearTab(p: OutboxPayload<'tab.clear'>, actor: Actor): void {
+  const t = tradeTables();
+  const tab = t.tabs.find((x) => x.id === p.tabId);
+  if (!tab) throw new CommandRejected('NOT_FOUND', 'That tab does not exist on the server.');
+
+  if (p.undo) {
+    if (tab.status !== 'settled' || tab.clearedAt === null || tab.clearedAt === undefined) return;
+    const taken = tab.serviceTableId ? t.tabs.some((x) => x.id !== tab.id && x.serviceTableId === tab.serviceTableId && holdsTable(x)) : false;
+    if (taken) throw new CommandRejected('TABLE_TAKEN', 'New guests are already at that table, so the old tab stays cleared.');
+    tab.clearedAt = null;
+    tab.clearedBy = null;
+    touch('tabs', tab.id);
+    return;
+  }
+
+  if (isSeated(tab)) {
+    tab.clearedAt = p.at;
+    tab.clearedBy = actor.staffId;
+    touch('tabs', tab.id);
+    return;
+  }
+  // Already cleared, or closed by another device first: the outcome is the one asked for.
+  if (tab.status === 'settled' || tab.status === 'voided') return;
+
+  const live = t.lines.filter((l) => l.tabId === tab.id && l.status !== 'voided' && l.status !== 'draft');
+  const billed = settlement.billsForTab(tab.id).length > 0;
+  if (live.length > 0 || billed) throw new CommandRejected('TAB_NOT_SETTLED', 'That table still has something to pay, so it cannot be cleared yet.');
+  if (!p.reason) throw new CommandRejected('VALIDATION_FAILED', 'Closing an empty tab needs a reason.');
+
+  const before = tab.status;
+  tab.status = 'voided';
+  tab.closedAt = p.at;
+  tab.clearedAt = p.at;
+  tab.clearedBy = actor.staffId;
+  touch('tabs', tab.id);
+  audit.record({
+    outletId: tab.outletId,
+    actorStaffId: actor.staffId,
+    actorDeviceId: actor.deviceId,
+    action: 'tab.closed_empty',
+    entityType: 'tab',
+    entityId: tab.id,
+    before: { status: before },
+    after: { status: 'voided' },
+    reason: p.reason,
+    severity: 'notable',
+  });
+}
+
+/** The round is at the table. Recorded on the order, so the night's record has it, not just the tablet. */
+export function deliverOrder(p: OutboxPayload<'order.deliver'>, actor: Actor): void {
+  const order = tradeTables().orders.find((o) => o.id === p.orderId && o.tabId === p.tabId);
+  if (!order) throw new CommandRejected('NOT_FOUND', 'That order does not exist on the server.');
+  if (p.undo) {
+    if (!order.deliveredAt) return;
+    order.deliveredAt = null;
+    order.deliveredBy = null;
+  } else {
+    if (order.deliveredAt) return;
+    order.deliveredAt = p.at;
+    order.deliveredBy = actor.staffId;
+  }
+  touch('orders', order.id);
+}
+
 export function moveTab(p: OutboxPayload<'tab.move'>, actor: Actor): void {
   const tab = openTabOrThrow(p.tabId);
   const table = tradeTables().tables.find((x) => x.id === p.toTableId);
@@ -339,6 +424,9 @@ export function updateTabAfterBill(tabId: string, remainingBillable: number, ope
   if (remainingBillable === 0 && !openSplit) {
     tab.status = 'settled';
     tab.closedAt = at;
+    // Paid is not gone. The table stays theirs until a waiter clears it. docs/16 section 8.
+    tab.clearedAt = null;
+    tab.clearedBy = null;
     for (const seat of t.seats.filter((s) => s.tabId === tabId && s.status === 'active')) settleSeat(seat.id, billId, at);
   } else {
     tab.status = 'part_settled';

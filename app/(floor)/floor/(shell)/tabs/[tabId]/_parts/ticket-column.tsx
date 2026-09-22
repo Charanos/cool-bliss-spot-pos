@@ -72,12 +72,12 @@ export const TicketColumn = forwardRef<
   return (
     <section aria-label="Ticket" className={cx(
       "flex flex-col z-40 bg-page shadow-[inset_1px_0_8px_rgba(0,0,0,0.15)]",
-      mobileOpen ? "fixed inset-0 min-h-dvh safe-bottom" : "hidden tablet:flex min-h-0 w-rail-ticket shrink-0 relative"
+      mobileOpen ? "fixed inset-0 h-dvh" : "hidden tablet:flex min-h-0 w-rail-ticket shrink-0 relative"
     )}>
       {/* ── Title section moved from center panel ──────────────────────── */}
-      <div className="flex shrink-0 items-center justify-between px-24 border-b border-rule h-[88px]">
+      <div className={cx('flex shrink-0 items-center justify-between border-b border-rule px-12 py-12 pad:h-[88px] pad:px-24 pad:py-0', mobileOpen && 'safe-t safe-x')}>
         <div className="flex flex-col justify-center min-w-0">
-          <h1 className="text-title font-medium tracking-tight text-ink leading-tight truncate">
+          <h1 className="text-title font-medium text-ink  truncate">
             {detail?.label ?? '\u00a0'}
           </h1>
           {metaItems.length > 0 && (
@@ -115,7 +115,7 @@ export const TicketColumn = forwardRef<
                   'rounded-[16px] transition-all duration-200',
                   isSelected
                     ? 'p-16 my-8 border backdrop-blur-[24px]'
-                    : cx('px-16 py-10', gi > 0 && !prevSelected && 'border-t border-rule/50 mt-6')
+                    : cx('px-16 py-8', gi > 0 && !prevSelected && 'border-t border-rule/50 mt-6')
                 )}
                 style={isSelected ? {
                   backgroundColor: `color-mix(in srgb, ${seatColor} 14%, color-mix(in oklab, var(--color-raised) 70%, transparent))`,
@@ -154,7 +154,7 @@ export const TicketColumn = forwardRef<
         )}
       </div>
 
-      <div className="shrink-0 shadow-[0_-1px_0_rgba(255,255,255,0.02)] px-16 py-12">
+      <div className={cx('shrink-0 border-t border-rule px-16 py-12', mobileOpen && 'safe-b safe-x [--bliss-gutter-b:12px]')}>
         {detail.showControls && selectedName && selectedTotal !== null ? (
           <div className="flex items-baseline justify-between gap-8">
             <span className="truncate text-body text-ink-muted">{selectedName}</span>

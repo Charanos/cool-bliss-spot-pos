@@ -7,7 +7,7 @@ import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import * as pricing from '@/modules/pricing/service';
-import { bootstrap, changesSince } from '@/modules/sync/apply';
+import { bootstrap, changesSince, deviceDrawers } from '@/modules/sync/apply';
 import * as trade from '@/modules/trade/service';
 
 export const dynamic = 'force-dynamic';
@@ -64,6 +64,11 @@ export async function GET(request: Request) {
   const feed = reset || since < 0 ? bootstrap(deviceId) : changesSince(since, deviceId);
   body.cursor = feed.cursor;
   body.trade = feed.rows;
+  // The device's own drawer rides on every pull, deduped against whatever the feed already carries.
+  if (deviceId) {
+    const known = new Set((feed.rows.drawers as { id: string }[]).map((r) => r.id));
+    for (const row of deviceDrawers(deviceId) as { id: string }[]) if (!known.has(row.id)) (feed.rows.drawers as unknown[]).push(row);
+  }
   body.full = reset || since < 0;
 
   return wireResponse(body);

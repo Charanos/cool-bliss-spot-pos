@@ -1,7 +1,7 @@
 'use client';
 
 import { plural } from '@bliss/shared/format';
-import { type Cents, formatKes, sum } from '@bliss/shared/money';
+import { formatKes, sum } from '@bliss/shared/money';
 import { Badge } from '@bliss/ui/components/badge';
 import { Button } from '@bliss/ui/components/button';
 import { Sheet } from '@bliss/ui/components/floor/sheet';
@@ -13,7 +13,6 @@ import {
   IconArrowRight,
   IconCheck,
   IconInfoCircle,
-  IconUsers,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 import type { StaffDirectoryEntry } from '@/lib/pos/db';
@@ -93,11 +92,11 @@ export function ShiftHandoverSheet({
       title={
         <div className="flex flex-col gap-6 w-full pr-8">
           <div className="flex items-center justify-between gap-12 flex-wrap">
-            <div className="flex items-center gap-10 min-w-0">
-              <span className="text-title-lg font-medium text-ink tracking-tight">
+            <div className="flex items-center gap-8 min-w-0">
+              <span className="text-title-lg font-medium text-ink ">
                 Shift Handover
               </span>
-              <Badge tone="accent" className="!rounded-dot px-10 py-1.5 font-mono text-micro">
+              <Badge tone="accent" className="!rounded-dot px-12 py-6 font-mono text-micro">
                 {activeSelectedIds.length} of {myTabs.length} tabs selected
               </Badge>
             </div>
@@ -113,18 +112,18 @@ export function ShiftHandoverSheet({
     >
       <div className="flex flex-col gap-20 pb-12">
         {/* ── 1. Reassurance Explanatory Banner ───────────────────────── */}
-        <div className="flex items-start gap-12 p-14 rounded-[16px] bg-wash border-t border-b border-rule-raised/20 text-ink-subtle">
-          <IconInfoCircle size={18} className="shrink-0 text-accent mt-0.5" />
-          <p className="font-mono text-micro text-ink-subtle leading-relaxed">
+        <div className="flex items-start gap-12 p-16 rounded-[16px] bg-control border-t border-b border-rule-raised/20 text-ink-subtle">
+          <IconInfoCircle size={18} className="shrink-0 text-accent mt-2" />
+          <p className="font-mono text-micro text-ink-subtle ">
             Handing over moves tab responsibility to the colleague waiter. Table numbers, guest seat assignments,
             and unsettled orders transfer automatically.
           </p>
         </div>
 
         {/* ── 2. Tab Selection Checklist (Granular vs Batch) ─────────── */}
-        <div className="flex flex-col gap-10">
+        <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
+            <span className="font-mono text-micro uppercase text-ink-subtle">
               Tables to transfer ({activeSelectedIds.length})
             </span>
             <div className="flex items-center gap-8 font-mono text-micro">
@@ -161,7 +160,7 @@ export function ShiftHandoverSheet({
                       : 'hover:bg-control-hover text-ink-subtle',
                   )}
                 >
-                  <div className="flex items-center gap-10 min-w-0">
+                  <div className="flex items-center gap-8 min-w-0">
                     <div
                       className={cx(
                         'size-20 rounded flex items-center justify-center shrink-0 border transition-all',
@@ -186,9 +185,9 @@ export function ShiftHandoverSheet({
         </div>
 
         {/* ── 3. Colleague Workload Directory Grid ────────────────────── */}
-        <div className="flex flex-col gap-10">
+        <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-micro uppercase tracking-wider text-ink-subtle">
+            <span className="font-mono text-micro uppercase text-ink-subtle">
               Receiving colleague (select one)
             </span>
             <span className="font-mono text-micro text-ink-disabled">
@@ -197,7 +196,7 @@ export function ShiftHandoverSheet({
           </div>
 
           <div
-            className="grid grid-cols-1 tablet:grid-cols-2 gap-10"
+            className="grid grid-cols-1 tablet:grid-cols-2 gap-8"
             role="radiogroup"
             aria-label="Colleague selection"
           >
@@ -216,9 +215,9 @@ export function ShiftHandoverSheet({
                   aria-checked={isSelected}
                   onClick={() => setTargetId(c.id)}
                   className={cx(
-                    'flex items-center justify-between p-14 rounded-[16px] transition-all text-left cursor-pointer border-t border-b border-rule-raised/25',
+                    'flex items-center justify-between p-16 rounded-[16px] transition-all text-left cursor-pointer border-t border-b border-rule-raised/25',
                     isSelected
-                      ? 'bg-accent-wash ring-1 ring-accent/40 shadow-sm'
+                      ? 'bg-accent-wash ring-1 ring-accent/40 shadow-raised'
                       : 'hover:bg-control-hover',
                   )}
                 >
@@ -226,7 +225,7 @@ export function ShiftHandoverSheet({
                     {/* Colleague Avatar Photo */}
                     <div
                       aria-hidden="true"
-                      className="flex size-[36px] items-center justify-center overflow-hidden rounded-dot border border-hairline/60 bg-accent-wash text-label font-medium text-accent-text select-none shadow-sm shrink-0"
+                      className="flex size-[36px] items-center justify-center overflow-hidden rounded-dot border border-hairline/60 bg-accent-wash text-label font-medium text-accent-text select-none shadow-raised shrink-0"
                     >
                       {staffPhoto(c.displayName) ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -242,7 +241,7 @@ export function ShiftHandoverSheet({
 
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-6">
-                        <span className="text-body font-medium text-ink truncate leading-tight">
+                        <span className="text-body font-medium text-ink truncate ">
                           {c.displayName}
                         </span>
                         <span className="font-mono text-micro text-ink-subtle">
@@ -252,12 +251,12 @@ export function ShiftHandoverSheet({
 
                       {/* Live Workload Telemetry */}
                       {colleagueTabs.length === 0 ? (
-                        <span className="font-mono text-micro text-poured flex items-center gap-4 mt-0.5">
+                        <span className="font-mono text-micro text-poured flex items-center gap-4 mt-2">
                           <Dot tone="poured" />
                           <span>0 active tabs · Available</span>
                         </span>
                       ) : (
-                        <span className="font-mono text-micro text-ink-subtle truncate mt-0.5">
+                        <span className="font-mono text-micro text-ink-subtle truncate mt-2">
                           {colleagueTabs.length}{' '}
                           {plural(colleagueTabs.length, 'tab')} (
                           {formatKes(colleagueTotal, { decimals: 'whole' })})

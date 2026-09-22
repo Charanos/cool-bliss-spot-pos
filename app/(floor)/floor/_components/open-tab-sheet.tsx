@@ -1,5 +1,6 @@
 'use client';
 
+import { notify } from '@bliss/ui/components/notices';
 import type { ServiceTable } from '@bliss/shared/domain';
 import { placeLabel } from '@bliss/shared/trade';
 import { Button } from '@bliss/ui/components/button';
@@ -69,19 +70,19 @@ function GuestSeatSelector({
         : `${guests} guests · seating assigned at the table`;
 
   return (
-    <div className="flex items-center gap-16">
+    <div className="flex flex-col items-start gap-12 compact:flex-row compact:items-center compact:gap-16">
       <div className="flex min-w-0 flex-1 flex-col gap-8">
-        <div className="inline-flex w-max items-center gap-12 rounded-full border border-rule-raised/40 bg-sunken/40 p-8 shadow-inner">
+        <div className="inline-flex w-max items-center gap-12 rounded-full border border-rule-raised/40 bg-sunken/40 p-8 ">
           <button
             type="button"
             onClick={() => onChange(Math.max(MIN_GUESTS, guests - 1))}
             disabled={guests <= MIN_GUESTS}
             aria-label="One fewer guest"
-            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full ring-1 ring-rule-raised/30 bg-white/[0.03] text-[32px] font-light text-ink transition-colors hover:bg-white/[0.08] hover:ring-white/20 disabled:opacity-30 disabled:hover:bg-white/[0.03] disabled:hover:ring-rule-raised/30 press-feedback"
+            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full ring-1 ring-rule-raised/30 bg-glass text-[32px] font-regular text-ink transition-colors hover:bg-glass-strong hover:ring-glass-edge disabled:opacity-30 disabled:hover:bg-glass disabled:hover:ring-rule-raised/30 press-feedback"
           >
             −
           </button>
-          <span className="min-w-[48px] text-center text-[40px] font-medium leading-none tracking-tight text-ink tabular-nums">
+          <span className="min-w-[48px] text-center text-[40px] font-medium leading-none text-ink tabular-nums">
             {guests}
           </span>
           <button
@@ -89,7 +90,7 @@ function GuestSeatSelector({
             onClick={() => onChange(Math.min(MAX_GUESTS, guests + 1))}
             disabled={guests >= MAX_GUESTS}
             aria-label="One more guest"
-            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full ring-1 ring-rule-raised/30 bg-white/[0.03] text-[32px] font-light text-ink transition-colors hover:bg-white/[0.08] hover:ring-white/20 disabled:opacity-30 disabled:hover:bg-white/[0.03] disabled:hover:ring-rule-raised/30 press-feedback"
+            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full ring-1 ring-rule-raised/30 bg-glass text-[32px] font-regular text-ink transition-colors hover:bg-glass-strong hover:ring-glass-edge disabled:opacity-30 disabled:hover:bg-glass disabled:hover:ring-rule-raised/30 press-feedback"
           >
             +
           </button>
@@ -99,17 +100,17 @@ function GuestSeatSelector({
         </p>
       </div>
 
-      <div className="relative h-[160px] w-[160px] shrink-0" aria-hidden="true">
-        <div className="absolute inset-[16px] rounded-full border border-rule-raised/50 bg-gradient-to-br from-white/[0.05] to-white/[0.01] shadow-[inset_0_1px_8px_rgba(0,0,0,0.4)]" />
+      <div className="relative mx-auto h-[160px] w-[160px] shrink-0" aria-hidden="true">
+        <div className="absolute inset-[16px] rounded-full border border-rule-raised/50 bg-gradient-to-br from-glass to-transparent shadow-[inset_0_1px_8px_rgba(0,0,0,0.4)]" />
         {guests === 1 ? (
-          <div className={cx("absolute left-1/2 top-1/2 flex h-[28px] w-[28px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-[13px] font-medium text-seat-ink shadow-[0_0_0_3px_theme(colors.sunken)]", seatBgClass(1))}>
+          <div className={cx("absolute left-1/2 top-1/2 flex h-[28px] w-[28px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-[13px] font-medium text-seat-ink shadow-[0_0_0_3px_var(--color-sunken)]", seatBgClass(1))}>
             1
           </div>
         ) : (
           seats.map((pos, i) => (
             <div
               key={i}
-              className={cx("absolute flex h-[28px] w-[28px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-[13px] font-medium text-seat-ink shadow-[0_0_0_3px_theme(colors.sunken)]", seatBgClass(i + 1))}
+              className={cx("absolute flex h-[28px] w-[28px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-[13px] font-medium text-seat-ink shadow-[0_0_0_3px_var(--color-sunken)]", seatBgClass(i + 1))}
               style={{ left: `calc(50% + ${pos.x}px)`, top: `calc(50% + ${pos.y}px)` }}
             >
               {i + 1}
@@ -165,6 +166,11 @@ export function OpenTabSheet({
     try {
       const tabId = await openTab({ tableId: table?.id ?? null, zoneId, guestCount: guests, name: name || null });
       onClose();
+      notify({
+        key: `open:${tabId}`,
+        title: `${table ? tableLabel(table) : name || 'Walk-up tab'} is open`,
+        body: guests === 1 ? 'One guest. Add from the grid, then fire.' : `${guests} seats. Pick a seat, add from the grid, then fire.`,
+      });
       router.push(`/floor/tabs/${tabId}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The tab did not open. Nothing was saved.');
@@ -215,7 +221,7 @@ export function OpenTabSheet({
           <label htmlFor="tab-name-input" className="px-4 text-body font-medium text-ink">
             Tab name (optional)
           </label>
-          <div className="flex h-[56px] items-center border-b border-rule-raised/50 px-4 transition-colors focus-within:border-white/30">
+          <div className="flex h-[56px] items-center border-b border-rule-raised/50 px-4 transition-colors focus-within:border-glass-edge-hover">
             <input
               id="tab-name-input"
               type="text"
@@ -223,14 +229,14 @@ export function OpenTabSheet({
               value={name}
               maxLength={40}
               onChange={(e) => setName(e.target.value)}
-              className="h-full w-full bg-transparent text-body font-medium text-ink outline-none placeholder:font-normal placeholder:text-ink-disabled"
+              className="h-full w-full bg-transparent text-body font-medium text-ink outline-none placeholder:font-regular placeholder:text-ink-disabled"
             />
           </div>
         </div>
 
         {/* Error */}
         {error ? (
-          <div className="rounded-2xl border border-stop/20 bg-stop/10 px-20 py-14">
+          <div className="rounded-lg border border-stop/20 bg-stop/10 px-20 py-16">
             <p role="alert" className="text-center text-body font-medium text-stop">
               {error}
             </p>

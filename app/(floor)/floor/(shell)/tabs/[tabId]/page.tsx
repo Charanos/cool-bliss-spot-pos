@@ -1,24 +1,28 @@
 'use client';
 
-import { formatElapsed } from '@bliss/shared/format';
+import { formatElapsed, formatTime } from '@bliss/shared/format';
 import { Button } from '@bliss/ui/components/button';
 import { EmptyState, InlineNotice } from '@bliss/ui/components/feedback';
 import { OverflowMenu } from '@bliss/ui/components/menu';
+import { Money } from '@bliss/ui/components/money';
 import { MetaLine } from '@bliss/ui/components/working';
 import { SeatSelector } from '@bliss/ui/components/floor/seat-selector';
 import { useNow } from '@bliss/ui/hooks';
 import { orderFire } from '@bliss/ui/motion/floor';
-import { IconArrowsRightLeft, IconFlame, IconUserPlus, IconReceipt2 } from '@tabler/icons-react';
+import { IconArrowLeft, IconArrowsRightLeft, IconCheck, IconDoorExit, IconFlame, IconReceipt2, IconUserPlus } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams, useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { posDb } from '@/lib/pos/db';
+import { notify } from '@bliss/ui/components/notices';
+import { addItem, clear, closeEmpty, fire } from '@/lib/pos/actions';
+import { FloorDialog } from '@bliss/ui/components/floor/sheet';
+import { ReasonForm } from '@bliss/ui/components/reason-form';
+import { holdsTable, isOrdering, isSeated, placeLabel } from '@bliss/shared/trade';
 import {
-  type SeatSelection,
   addLine,
   addSeat,
-  fireOrder,
   labelSeat,
   moveLine,
   moveTab,
@@ -28,7 +32,7 @@ import {
   setLineNote,
   voidLine,
 } from '@/lib/pos/mutations';
-import { useGrid, useOpenTabs, useOutlet, useTab } from '@/lib/pos/queries';
+import { type TabDetail, useGrid, useOpenTabs, useOutlet, useTab } from '@/lib/pos/queries';
 import { useSession } from '@/lib/pos/session';
 import { ItemGrid } from './_parts/item-grid';
 import { FinishedSheet, LabelSeatSheet, LineSheet, ModifierSheet, MoveLineSheet, MoveTabSheet, NoteSheet, SeatMenuSheet, VoidDialog } from './_parts/sheets';
@@ -46,7 +50,8 @@ type Overlay =
   | { kind: 'move'; lineId: string }
   | { kind: 'note'; lineId: string }
   | { kind: 'void'; lineId: string }
-  | { kind: 'move-tab' };
+  | { kind: 'move-tab' }
+  | { kind: 'close-empty' };
 
 /**
  * The tab: tables rail 180, item grid fluid, ticket rail 340, base layer with Fire order.
@@ -68,6 +73,8 @@ export default function TabScreen() {
   const [error, setError] = useState<string | null>(null);
   const [mobileTicketOpen, setMobileTicketOpen] = useState(false);
   const tables = useLiveQuery(() => posDb().serviceTables.toArray(), []);
+  // Every tab that still holds a table, including paid ones whose guests have not left.
+  const holding = useLiveQuery(async () => (await posDb().tabs.toArray()).filter((t) => holdsTable(t)), []);
 
   const close = () => setOverlay({ kind: 'none' });
   const timezone = outlet?.timezone ?? 'Africa/Nairobi';
@@ -89,6 +96,11 @@ export default function TabScreen() {
     );
   }
 
+  // Paid, cleared or closed: nothing more can be ordered here, so the grid gives way to what is true.
+  if (detail && !isOrdering(detail.tab)) {
+    return <SettledTab detail={detail} timezone={timezone} />;
+  }
+
   const allLines = detail?.groups.flatMap((g) => g.lines) ?? [];
   const lineOf = (id: string | undefined) => allLines.find((l) => l.line.id === id);
   const overlayLineId = 'lineId' in overlay ? overlay.lineId : undefined;
@@ -103,9 +115,25 @@ export default function TabScreen() {
     }
   };
 
+  // The seat the next tap lands on, named the way the ticket names it.
+  const seatName = (() => {
+    if (!detail) return 'the tab';
+    if (detail.selected === 'shared') return 'Shared';
+    const seat = detail.seats.find((x) => x.id === detail.selected);
+    return seat ? `Seat ${seat.seatNo}` : 'the tab';
+  })();
+
+  // How many of each item are on the selected seat's draft, for the count on its tile.
+  const inCart = new Map<string, number>();
+  for (const group of detail?.groups ?? []) {
+    if ((group.seat?.id ?? 'shared') !== detail?.selected) continue;
+    for (const { line, state } of group.lines) if (state === 'draft') inCart.set(line.productVariantId, (inCart.get(line.productVariantId) ?? 0) + line.qty);
+  }
+
   const onAdd = (variantId: string) => {
     if (!detail) return;
-    void run(() => addLine({ tabId, seat: detail.selected, variantId }));
+    const name = grid?.tiles.find((t) => t.variantId === variantId)?.name ?? 'Item';
+    void run(() => addItem({ tabId, seat: detail.selected, seatName, variantId, name }));
   };
 
   const onTileLongPress = (variantId: string) => {
@@ -126,7 +154,7 @@ export default function TabScreen() {
     setFiring(true);
     const markers = Array.from(document.querySelectorAll('[data-draft-marker]'));
     await new Promise<void>((resolve) => orderFire(markers, resolve));
-    await run(() => fireOrder(tabId));
+    await fire(tabId, detail.label);
     setFiring(false);
   };
 
@@ -137,7 +165,7 @@ export default function TabScreen() {
       setTimeout(() => setNotice(null), 2000);
     });
 
-  const freeTables = (tables ?? []).filter((t) => !(tabs ?? []).some((x) => x.tab.serviceTableId === t.id) && t.status !== 'out_of_service');
+  const freeTables = (tables ?? []).filter((t) => !(holding ?? []).some((x) => x.serviceTableId === t.id) && t.status !== 'out_of_service');
   // waiterName comes from the TabListItem (which has the staff map join), not TabDetail.
   const tabListItem = (tabs ?? []).find((t) => t.tab.id === tabId);
   const waiterName = tabListItem?.waiterName ?? null;
@@ -160,9 +188,18 @@ export default function TabScreen() {
       {session && tabs ? <TablesRail tabs={tabs} currentTabId={tabId} currentZoneId={detail?.tab.zoneId ?? null} staffId={session.staffId} selectedSeatId={detail?.selected} /> : <div className="hidden tablet:block w-rail-tables shrink-0" />}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col shadow-[inset_1px_0_8px_rgba(0,0,0,0.2)] bg-page/50">
-        <header className="flex shrink-0 items-center justify-end gap-16 px-24 border-b border-rule z-10 h-[88px]">
+        <header className="z-10 flex shrink-0 flex-col gap-8 border-b border-rule px-12 py-8 pad:flex-row pad:items-center pad:justify-between pad:gap-16 pad:px-24 pad:py-12">
+          {/* Which table this is, and what it has run up. The ticket is a drawer on a phone, so
+              without this the waiter cannot see either without opening it. */}
+          <div className="flex min-w-0 items-baseline justify-between gap-12 pad:justify-start">
+            <div className="min-w-0">
+              <h1 className="truncate text-title font-medium text-ink">{detail?.label ?? 'Tab'}</h1>
+              <MetaLine items={metaItems} className="pad:hidden" />
+            </div>
+            {detail ? <Money value={detail.total} size="num-lg" decimals="whole" className="shrink-0 pad:hidden" /> : null}
+          </div>
 
-          <div className="flex shrink-0 items-center gap-12 h-full">
+          <div className="flex h-full min-w-0 items-center gap-12 pad:shrink-0">
             {detail?.showControls ? (
               <SeatSelector
                 seats={detail.seats.filter((s) => s.status !== 'removed').map((s) => ({ id: s.id, seatNo: s.seatNo, label: s.label, status: s.status === 'settled' ? 'settled' : 'active', total: s.total }))}
@@ -182,22 +219,26 @@ export default function TabScreen() {
                 items={[
                   { key: 'seat', label: 'Add seat', icon: IconUserPlus, onSelect: onAddSeat },
                   { key: 'move', label: 'Move to another table', icon: IconArrowsRightLeft, onSelect: () => setOverlay({ kind: 'move-tab' }) },
+                  // Only while nothing has been fired: a tab with something on it is paid, not closed.
+                  ...(allLines.every(({ state }) => state === 'draft')
+                    ? [{ key: 'close', label: 'Guests left without ordering', icon: IconDoorExit, destructive: true, onSelect: () => setOverlay({ kind: 'close-empty' }) }]
+                    : []),
                 ]}
               />
             ) : null}
           </div>
         </header>
         {detail?.blocked ? (
-          <InlineNotice tone="stop" className="px-16 shadow-sm z-10 relative">
+          <InlineNotice tone="stop" className="px-16 shadow-raised z-10 relative">
             A change to this tab could not be sent. A manager can see why in Console, Settings, Sync.
           </InlineNotice>
         ) : null}
         {error ? (
-          <InlineNotice tone="low" className="px-16 shadow-sm z-10 relative" action={<Button variant="ghost" size="md" onClick={() => setError(null)}>Dismiss</Button>}>
+          <InlineNotice tone="low" className="px-16 shadow-raised z-10 relative" action={<Button variant="ghost" size="md" onClick={() => setError(null)}>Dismiss</Button>}>
             {error}
           </InlineNotice>
         ) : null}
-        <ItemGrid grid={grid} onAdd={onAdd} onLongPress={onTileLongPress} />
+        <ItemGrid grid={grid} onAdd={onAdd} onLongPress={onTileLongPress} inCart={inCart} />
       </div>
 
       {detail ? (
@@ -219,11 +260,11 @@ export default function TabScreen() {
           variant="secondary"
           size="xl"
           icon={IconReceipt2}
-          iconOnly={true}
           onClick={() => setMobileTicketOpen(!mobileTicketOpen)}
-          className="tablet:hidden !rounded-[18px] size-[60px] shadow-md bg-sunken border border-rule-raised/50 hover:bg-control shrink-0"
-          aria-label={mobileTicketOpen ? 'Hide ticket' : 'View ticket'}
-        />
+          className="tablet:hidden"
+        >
+          {detail && detail.groups.length > 0 ? `Ticket · ${detail.groups.reduce((n, g) => n + g.lines.length, 0)}` : 'Ticket'}
+        </Button>
         <Button
           variant="primary"
           size="xl"
@@ -231,7 +272,6 @@ export default function TabScreen() {
           loading={firing}
           disabled={!detail || detail.draftCount === 0}
           onClick={() => void onFire()}
-          className="!rounded-[18px] tablet:!rounded-full px-12 tablet:px-28 h-[60px] tablet:h-[68px] min-w-[120px] tablet:min-w-[180px] desktop:min-w-[280px] desktop:max-w-[340px] whitespace-nowrap text-[14px] tablet:text-[15px] font-semibold shadow-[0_8px_32px_-8px_var(--color-accent)] disabled:!bg-white/5 disabled:!text-ink-disabled disabled:shadow-none [&:not(:disabled)]:!bg-accent [&:not(:disabled)]:!text-accent-ink hover:[&:not(:disabled)]:scale-[1.02] hover:[&:not(:disabled)]:shadow-[0_12px_48px_-8px_var(--color-accent)] transition-all shrink-0"
         >
           {detail && detail.draftCount > 0 ? `Fire · ${detail.draftCount}` : 'Fire'}
         </Button>
@@ -245,7 +285,11 @@ export default function TabScreen() {
             timezone={timezone}
             onClose={close}
             onAdd={async (input) => {
-              await run(() => addLine({ tabId, seat: detail.selected, ...input }));
+              await run(async () => {
+                const lineId = await addLine({ tabId, seat: detail.selected, ...input });
+                const name = grid?.tiles.find((t) => t.variantId === input.variantId)?.name ?? 'Item';
+                if (lineId) notify({ key: `add:${tabId}:${String(detail.selected)}:${input.variantId}:with`, count: true, title: `${name} added`, body: `With its choices, on ${seatName}. Not fired yet.` });
+              });
               close();
             }}
           />
@@ -256,11 +300,26 @@ export default function TabScreen() {
             onClose={close}
             onLabel={(seatId) => setOverlay({ kind: 'label', seatId })}
             onRemove={async (seatId) => {
+              const seatNo = detail.seats.find((x) => x.id === seatId)?.seatNo;
               await removeSeat(seatId);
+              notify({ key: `seat:${seatId}`, title: `Seat ${seatNo ?? ''} removed`, body: `${detail.label} has ${detail.activeSeats.length - 1} seats now.` });
               close();
             }}
           />
-          <LabelSeatSheet seatId={overlay.kind === 'label' ? overlay.seatId : null} detail={detail} onClose={close} onSave={(seatId, label) => labelSeat(seatId, label)} />
+          <LabelSeatSheet
+            seatId={overlay.kind === 'label' ? overlay.seatId : null}
+            detail={detail}
+            onClose={close}
+            onSave={async (seatId, label) => {
+              const before = detail.seats.find((x) => x.id === seatId);
+              await labelSeat(seatId, label);
+              notify({
+                key: `seat:${seatId}`,
+                title: label.trim() ? `Seat ${before?.seatNo ?? ''} is ${label.trim()}` : `Seat ${before?.seatNo ?? ''} label removed`,
+                undo: () => labelSeat(seatId, before?.label ?? ''),
+              });
+            }}
+          />
           <LineSheet
             line={overlay.kind === 'line' ? (active?.line ?? null) : null}
             name={active?.name ?? ''}
@@ -285,10 +344,28 @@ export default function TabScreen() {
               if (!overlayLineId) return;
               close();
               ticketRef.current?.captureForMove();
-              void run(() => moveLine(overlayLineId, to));
+              const lineId = overlayLineId;
+              const from = active?.line.tabSeatId ?? 'shared';
+              const name = active?.name ?? 'The line';
+              const toName = to === 'shared' ? 'Shared' : `Seat ${detail.seats.find((x) => x.id === to)?.seatNo ?? ''}`;
+              void run(async () => {
+                await moveLine(lineId, to);
+                notify({ key: `move:${lineId}`, title: `${name} moved to ${toName}`, undo: () => moveLine(lineId, from) });
+              });
             }}
           />
-          <NoteSheet line={overlay.kind === 'note' ? (active?.line ?? null) : null} name={active?.name ?? ''} onClose={close} onSave={(note) => (overlayLineId ? setLineNote(overlayLineId, note) : Promise.resolve())} />
+          <NoteSheet
+            line={overlay.kind === 'note' ? (active?.line ?? null) : null}
+            name={active?.name ?? ''}
+            onClose={close}
+            onSave={async (note) => {
+              if (!overlayLineId) return;
+              const lineId = overlayLineId;
+              const before = active?.line.note ?? null;
+              await setLineNote(lineId, note);
+              notify({ key: `note:${lineId}`, title: note ? 'Note saved' : 'Note removed', body: note ? `"${note}" on ${active?.name ?? 'the line'}.` : undefined, undo: () => setLineNote(lineId, before) });
+            }}
+          />
           <VoidDialog
             line={overlay.kind === 'void' ? (active?.line ?? null) : null}
             name={active?.name ?? ''}
@@ -296,10 +373,104 @@ export default function TabScreen() {
             poured={active?.state === 'poured'}
             ranOut={active?.state === 'ran_out'}
             onClose={close}
-            onVoid={(reason, token) => voidLine({ lineId: overlayLineId!, reason, approvalToken: token })}
+            onVoid={async (reason, token) => {
+              const name = active?.name ?? 'The line';
+              const qty = active?.line.qty ?? 1;
+              await voidLine({ lineId: overlayLineId!, reason, approvalToken: token });
+              // A void is audited and cannot be taken back, so there is no undo: the notice only confirms.
+              notify({ tone: 'info', key: `void:${overlayLineId}`, title: `Voided · ${qty} × ${name}`, body: `Off ${detail.label}, with the reason kept.` });
+            }}
           />
-          <MoveTabSheet open={overlay.kind === 'move-tab'} detail={detail} freeTables={freeTables} onClose={close} onMove={(tableId) => moveTab(tabId, tableId)} />
+          <FloorDialog
+            open={overlay.kind === 'close-empty'}
+            onClose={close}
+            title={`Close ${detail.label}?`}
+            description="The guests left before anything was fired. The tab closes, the table is free, and the reason stays with the tab for the manager."
+            width="md"
+          >
+            <ReasonForm
+              focus="chip"
+              quickReasons={['Guests left without ordering', 'Opened on the wrong table', 'Guests moved to another table']}
+              confirmLabel="Close the tab"
+              onCancel={close}
+              onConfirm={async ({ reason }) => {
+                await closeEmpty(tabId, detail.label, reason);
+                close();
+                router.push('/floor/tabs');
+              }}
+            />
+          </FloorDialog>
+          <MoveTabSheet
+            open={overlay.kind === 'move-tab'}
+            detail={detail}
+            freeTables={freeTables}
+            onClose={close}
+            onMove={async (tableId) => {
+              await moveTab(tabId, tableId);
+              const to = freeTables.find((t) => t.id === tableId);
+              notify({ key: `move-tab:${tabId}`, title: `Moved to ${to ? placeLabel(to.label) : 'the new table'}`, body: `${detail.label} was freed for the next party.` });
+            }}
+          />
         </>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A tab that can no longer take orders. docs/16 section 8.
+ *
+ * Paid with the guests still seated is the common case: the counter has settled it, and the table
+ * stays theirs until the waiter sees them leave and clears it. Cleared, and closed empty, only say
+ * so and point back to the list.
+ */
+function SettledTab({ detail, timezone }: { detail: TabDetail; timezone: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const seated = isSeated(detail.tab);
+  const voided = detail.tab.status === 'voided';
+
+  return (
+    <div className="flex h-full min-h-0 items-center justify-center p-16 pad:p-40">
+      <section aria-labelledby="settled-title" className="flex w-full max-w-[480px] flex-col items-center gap-16 rounded-[22px] border border-rule-raised/40 bg-raised/70 p-24 text-center backdrop-blur-glass">
+        <span className={seated ? 'flex size-avatar items-center justify-center rounded-dot bg-poured/15 text-poured' : 'flex size-avatar items-center justify-center rounded-dot bg-control text-ink-subtle'}>
+          {seated ? <IconCheck size={28} stroke={1.5} aria-hidden="true" /> : <IconDoorExit size={28} stroke={1.5} aria-hidden="true" />}
+        </span>
+        <div>
+          <h1 id="settled-title" className="text-title-lg text-ink">
+            {seated ? `${detail.label} is paid` : voided ? `${detail.label} was closed` : `${detail.label} is clear`}
+          </h1>
+          <p className="mt-8 text-body text-ink-muted">
+            {seated
+              ? `Settled at ${detail.tab.closedAt ? formatTime(detail.tab.closedAt, timezone) : 'the counter'}. The guests are still at the table. Clear it when they leave, and it is free on every device.`
+              : voided
+                ? 'Nothing was ordered on it. The reason is kept with the tab.'
+                : `Cleared${detail.tab.clearedAt ? ` at ${formatTime(detail.tab.clearedAt, timezone)}` : ''}. It is in tonight's history.`}
+          </p>
+        </div>
+        {seated ? <Money value={detail.total} size="num-xl" tone="money" /> : null}
+        <Button variant="ghost" size="lg" icon={IconArrowLeft} onClick={() => router.push('/floor/tabs')}>
+          Back to tabs
+        </Button>
+      </section>
+
+      {seated ? (
+        <BaseAction>
+          <Button
+            variant="primary"
+            size="xl"
+            icon={IconDoorExit}
+            loading={busy}
+            onClick={async () => {
+              setBusy(true);
+              const ok = await clear(detail.tab.id, detail.label);
+              setBusy(false);
+              if (ok) router.push('/floor/tabs');
+            }}
+          >
+            Guests left · clear table
+          </Button>
+        </BaseAction>
       ) : null}
     </div>
   );

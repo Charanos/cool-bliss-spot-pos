@@ -3,7 +3,7 @@
 import type { AvailabilityReason, AvailabilityState, CategoryColourToken, OrderLine, OrderLineModifier, ServiceTable, Tab, TabSeat, Zone } from '@bliss/shared/domain';
 import { type Cents, ZERO, add, sum } from '@bliss/shared/money';
 import { tryResolvePrice } from '@bliss/shared/pricing';
-import { tabLabel } from '@bliss/shared/trade';
+import { isSeated, tabLabel } from '@bliss/shared/trade';
 import { showsSeatChips, showsSeatControls } from '@bliss/shared/seats';
 import type { OutboxEntry } from '@bliss/shared/sync';
 import type { TicketLineState } from '@bliss/ui/components/floor/ticket';
@@ -32,6 +32,11 @@ export function assetUrl(key: string | null, width = 320, height = 176): string 
 }
 
 const GLYPH_BY_CATEGORY: Record<string, TileGlyph> = { Beer: 'beer', Spirits: 'spirit', Wine: 'wine', 'Soft drinks': 'soft', Food: 'food' };
+
+/** The glyph a tile falls back on when it has no photograph. Shared by the Floor grid and the Counter's quick sale. */
+export function tileGlyph(kind: string, categoryName: string): TileGlyph {
+  return kind === 'sealed' && categoryName !== 'Beer' && categoryName !== 'Soft drinks' && categoryName !== 'Food' ? 'bottle' : (GLYPH_BY_CATEGORY[categoryName] ?? 'soft');
+}
 
 export interface TileModel {
   variantId: string;
@@ -86,7 +91,7 @@ export function useGrid(now: number, timezone: string | undefined) {
         categoryId: category.id,
         categoryName: category.name,
         colour: category.colourToken,
-        glyph: variant.kind === 'sealed' && category.name !== 'Beer' && category.name !== 'Soft drinks' && category.name !== 'Food' ? 'bottle' : (GLYPH_BY_CATEGORY[category.name] ?? 'soft'),
+        glyph: tileGlyph(variant.kind, category.name),
         imageUrl: assetUrl(product.imageKey),
         price: resolved?.unitPriceCents ?? null,
         ruleName: resolved?.appliedRuleName ?? null,
@@ -128,6 +133,42 @@ export interface TabListItem {
   ranOutCount: number;
   showSeats: boolean;
   waiterName: string;
+}
+
+export interface SeatedTab {
+  tab: Tab;
+  table: ServiceTable | null;
+  label: string;
+  paid: Cents;
+  waiterName: string;
+  settledFor: number;
+}
+
+/**
+ * Tonight's paid tabs whose guests have not left. docs/16 section 8. They hold their table until a
+ * waiter clears it, so the free table list leaves them out and the tab list offers the clear.
+ */
+export function useSeatedTabs(): SeatedTab[] | undefined {
+  return useLiveQuery(async () => {
+    const db = posDb();
+    const [tabs, bills, tables, staff] = await Promise.all([db.tabs.where('status').equals('settled').toArray(), db.bills.toArray(), db.serviceTables.toArray(), db.staff.toArray()]);
+    const tableById = new Map(tables.map((t) => [t.id, t]));
+    const staffById = new Map(staff.map((x) => [x.id, x]));
+    return tabs
+      .filter((t) => isSeated(t))
+      .sort((a, b) => (a.closedAt ?? 0) - (b.closedAt ?? 0))
+      .map((tab) => {
+        const table = tab.serviceTableId ? (tableById.get(tab.serviceTableId) ?? null) : null;
+        return {
+          tab,
+          table,
+          label: tabLabel({ tableLabel: table?.label, name: tab.name }),
+          paid: sum(bills.filter((b) => b.tabId === tab.id).map((b) => b.totalCents)),
+          waiterName: staffById.get(tab.assignedTo)?.displayName ?? '',
+          settledFor: tab.closedAt ?? tab.openedAt,
+        };
+      });
+  }, []);
 }
 
 export function useOpenTabs(): TabListItem[] | undefined {
@@ -349,7 +390,8 @@ export function useFiredOrders(staffId?: string | null): FiredOrderView[] | unde
               modifiers: lineMods,
             };
           });
-        const delivery = deliveredOrders.get(o.id);
+        // Delivery is on the order now, synced; the old device-only mark is read until it is gone.
+        const delivery = o.deliveredAt ? { deliveredAt: o.deliveredAt, deliveredBy: o.deliveredBy ?? '' } : deliveredOrders.get(o.id);
         const isAllPoured = own.length > 0 && own.every((l) => l.state === 'poured');
         const state: FiredOrderView['state'] = unsent.has(o.id)
           ? 'held'

@@ -12,7 +12,9 @@ export const metadata: Metadata = {
   applicationName: 'Bliss Counter',
   appleWebApp: { capable: true, title: 'Bliss Counter', statusBarStyle: 'black-translucent' },
   icons: {
-    apple: '/counter/icon.svg',
+    // iOS reads this one and has never supported SVG here.
+    apple: '/icon/192',
+    icon: [{ url: '/icon/192', type: 'image/png' }],
   },
 };
 

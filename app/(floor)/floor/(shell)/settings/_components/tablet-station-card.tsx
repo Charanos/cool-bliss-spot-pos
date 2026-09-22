@@ -27,6 +27,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { META, getMeta, posDb, setMeta } from '@/lib/pos/db';
+import { haptic, refreshHaptics } from '@/lib/pos/haptics';
 import { useOutlet, useZonesAndTables } from '@/lib/pos/queries';
 import { bindDevice, unbindDevice, useDevice, useSession, signOut } from '@/lib/pos/session';
 import { SettingsCard } from './settings-card';
@@ -101,7 +102,7 @@ function StationDropdown({
           onClick={() => setOpen((prev) => !prev)}
           className={cx(
             'flex w-full items-center justify-between gap-12 rounded-md px-16 py-12 text-left transition-all cursor-pointer select-none',
-            'bg-raised/80 hover:bg-raised border border-rule-raised/40 hover:border-accent/50 shadow-sm',
+            'bg-raised/80 hover:bg-raised border border-rule-raised/40 hover:border-accent/50 shadow-raised',
             open && 'border-accent ring-1 ring-accent/30',
           )}
           aria-haspopup="listbox"
@@ -123,7 +124,7 @@ function StationDropdown({
         {open ? (
           <div
             role="listbox"
-            className="absolute left-0 right-0 top-full mt-8 z-50 rounded-lg bg-raised/95 backdrop-blur-xl border border-rule-raised/50 shadow-lift py-6 px-4 flex flex-col gap-2 max-h-[260px] overflow-y-auto animate-in fade-in zoom-in-95 duration-150"
+            className="absolute left-0 right-0 top-full mt-8 z-50 rounded-lg bg-raised/95 backdrop-blur-veil border border-rule-raised/50 shadow-lift py-6 px-4 flex flex-col gap-2 max-h-[260px] overflow-y-auto fade-in zoom-in-95 duration-150"
           >
             {options.map((o) => {
               const isSelected = o.value === value;
@@ -160,7 +161,7 @@ function StationDropdown({
       </div>
 
       {helper ? (
-        <span className="text-body-sm text-ink-subtle leading-relaxed mt-2">{helper}</span>
+        <span className="text-body-sm text-ink-subtle mt-2">{helper}</span>
       ) : null}
     </div>
   );
@@ -338,9 +339,8 @@ export function TabletStationCard() {
   // Haptic feedback toggle
   const handleToggleHaptics = async (enabled: boolean) => {
     await setMeta(META.hapticsEnabled, enabled);
-    if (enabled && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      navigator.vibrate(15);
-    }
+    await refreshHaptics();
+    haptic('success');
   };
 
   // Sign out handler
@@ -360,11 +360,11 @@ export function TabletStationCard() {
       tone={device ? 'accent' : 'attention'}
       badge={
         device ? (
-          <Badge tone="served" className="!rounded-dot px-8 py-2 font-mono text-micro shadow-sm">
+          <Badge tone="served" className="!rounded-dot px-8 py-2 font-mono text-micro shadow-raised">
             Active terminal
           </Badge>
         ) : (
-          <Badge tone="attention" className="!rounded-dot px-8 py-2 font-mono text-micro shadow-sm">
+          <Badge tone="attention" className="!rounded-dot px-8 py-2 font-mono text-micro shadow-raised">
             Unbound tablet
           </Badge>
         )
@@ -510,7 +510,7 @@ export function TabletStationCard() {
           <div className="flex items-center gap-12 min-w-0">
             <div
               aria-hidden="true"
-              className="flex size-[40px] items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-body-sm font-medium text-accent-text select-none shrink-0 shadow-sm"
+              className="flex size-[40px] items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-body-sm font-medium text-accent-text select-none shrink-0 shadow-raised"
             >
               {photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -533,7 +533,7 @@ export function TabletStationCard() {
                   {session?.roleKey === 'supervisor' ? 'Supervisor' : 'Floor Waiter'}
                 </Badge>
               </div>
-              <span className="font-mono text-micro text-ink-subtle mt-2 truncate">
+              <span className="mt-2 font-mono text-micro text-ink-subtle pad:truncate">
                 {session?.signedInAt
                   ? `Active on shift since ${formatTime(session.signedInAt, tz)} (${formatAgo(now - session.signedInAt)})`
                   : 'Requires PIN sign-in'}
@@ -574,7 +574,7 @@ export function TabletStationCard() {
                   Tactile haptic tap feedback
                 </span>
               </div>
-              <span className="text-body-sm text-ink-subtle pl-28 leading-relaxed">
+              <span className="text-body-sm text-ink-subtle pl-24 ">
                 Vibrates subtly on order button presses, seat assignments and bill items.
               </span>
             </div>
@@ -588,7 +588,7 @@ export function TabletStationCard() {
           </div>
 
           {/* Device Power & Resolution Telemetry */}
-          <div className="flex items-center justify-between gap-12 flex-wrap font-mono text-micro text-ink-subtle pt-6 pl-28">
+          <div className="flex items-center justify-between gap-12 flex-wrap font-mono text-micro text-ink-subtle pt-6 pl-24">
             <div className="flex items-center gap-6">
               {isCharging ? (
                 <IconBatteryCharging size={14} stroke={ICON_STROKE} className="text-served" />
@@ -622,12 +622,12 @@ export function TabletStationCard() {
         {showUnbindModal ? (
           <div className="rounded-lg border border-stop/40 bg-stop/10 p-16 tablet:p-20 flex flex-col gap-12 text-stop">
             <div className="flex items-start gap-12">
-              <IconAlertCircle size={20} stroke={ICON_STROKE} className="shrink-0 mt-0.5 text-stop" />
+              <IconAlertCircle size={20} stroke={ICON_STROKE} className="shrink-0 mt-2 text-stop" />
               <div className="flex flex-col gap-4 min-w-0">
                 <span className="text-body font-medium text-stop">
                   Unbind {device?.label ?? 'this tablet'} from Floor?
                 </span>
-                <p className="font-mono text-micro text-stop/90 leading-relaxed">
+                <p className="font-mono text-micro text-stop/90 ">
                   This disconnects the tablet identity from the floor station. You will need to re-bind or enroll the device again in Console.
                 </p>
               </div>

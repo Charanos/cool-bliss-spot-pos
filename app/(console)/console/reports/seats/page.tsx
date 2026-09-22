@@ -25,7 +25,7 @@ export default async function SeatsPage({ searchParams }: { searchParams: Promis
         <p className="max-w-[60ch] text-body-sm text-ink-subtle">Seat 1 is whoever the waiter took first. Positions describe the order people ordered in, not where they sat.</p>
       </div>
 
-      <RevealSection className="mb-16 flex flex-wrap gap-x-48 gap-y-16 border-b border-hairline pb-20">
+      <RevealSection className="mb-16 flex flex-wrap gap-x-40 gap-y-16 border-b border-hairline pb-20">
         <div>
           <span className="text-label text-ink-subtle">Lines on a seat, tables of two or more</span>
           <p className="font-mono tabular text-num-lg text-ink">{formatBps(data.attributionBps)}</p>

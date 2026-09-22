@@ -275,7 +275,7 @@ export function Stepper({
         aria-disabled={value <= min || undefined}
         onClick={() => step(-1)}
         className={cx(
-          'flex h-full shrink-0 items-center justify-center text-ink font-light transition-colors hover:bg-white/[0.06] active:bg-white/[0.08] press-feedback',
+          'flex h-full shrink-0 items-center justify-center text-ink font-regular transition-colors hover:bg-glass-hover active:bg-glass-strong press-feedback',
           buttonSize,
           value <= min ? 'opacity-30 cursor-not-allowed hover:bg-transparent' : 'cursor-pointer',
         )}
@@ -297,7 +297,7 @@ export function Stepper({
             if (e.key === 'Enter') commitDraft();
             if (e.key === 'Escape') setEditing(false);
           }}
-          className={cx('bg-transparent text-center font-mono tabular tracking-tight text-ink outline-none font-medium', figure, figureWidth)}
+          className={cx('bg-transparent text-center font-mono tabular text-ink outline-none font-medium', figure, figureWidth)}
         />
       ) : (
         <button
@@ -317,7 +317,7 @@ export function Stepper({
             if (e.key === 'End') { e.preventDefault(); onChange(max); }
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditor(); }
           }}
-          className={cx('h-full cursor-text select-none text-center font-mono tabular tracking-tight text-ink outline-none focus-visible:text-accent font-medium', figure, figureWidth)}
+          className={cx('h-full cursor-text select-none text-center font-mono tabular text-ink outline-none focus-visible:text-accent font-medium', figure, figureWidth)}
         >
           {value}
         </button>
@@ -329,7 +329,7 @@ export function Stepper({
         aria-disabled={value >= max || undefined}
         onClick={() => step(1)}
         className={cx(
-          'flex h-full shrink-0 items-center justify-center text-ink font-light transition-colors hover:bg-white/[0.06] active:bg-white/[0.08] press-feedback',
+          'flex h-full shrink-0 items-center justify-center text-ink font-regular transition-colors hover:bg-glass-hover active:bg-glass-strong press-feedback',
           buttonSize,
           value >= max ? 'opacity-30 cursor-not-allowed hover:bg-transparent' : 'cursor-pointer',
         )}

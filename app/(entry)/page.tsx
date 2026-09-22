@@ -6,6 +6,7 @@ import { Badge } from '@bliss/ui/components/badge';
 import { BlissMark } from '@bliss/ui/components/brand';
 import { SeatChipStack } from '@bliss/ui/components/working';
 import { Dot } from '@bliss/ui/components/status';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
@@ -28,9 +29,9 @@ export const dynamic = 'force-dynamic';
  */
 function greeting(at: number, timeZone: string) {
   const { hour } = zonedParts(at, timeZone);
-  if (hour >= 5 && hour < 12) return { hello: 'Hi', ask: 'Where are you working today?' };
-  if (hour >= 12 && hour < 16) return { hello: 'Hello', ask: 'Where are you working today?' };
-  return { hello: 'Hello', ask: 'Where are you working tonight?' };
+  if (hour >= 5 && hour < 12) return { hello: 'Habari ya asubuhi', ask: 'where are you working today?' };
+  if (hour >= 12 && hour < 16) return { hello: 'Habari ya mchana', ask: 'where are you working today?' };
+  return { hello: 'Habari ya jioni', ask: 'where are you working tonight?' };
 }
 
 export default function EntryPage() {
@@ -51,7 +52,7 @@ export default function EntryPage() {
           <BlissMark size={64} label="Bliss" />
         </header>
 
-        <section aria-labelledby="entry-title" className="my-auto py-32 tablet:py-48">
+        <section aria-labelledby="entry-title" className="my-auto py-32 tablet:py-40">
           <div className="mb-40">
             <Eyebrow as="p" className="mb-20">
               {outlet.name} · {formatDate(now, outlet.timezone)}
@@ -115,7 +116,16 @@ export default function EntryPage() {
           </ul>
         </section>
 
-        <footer className="flex flex-wrap items-center justify-between gap-12 border-t border-hairline/40 pt-20 text-micro uppercase text-ink-subtle">
+        {/* The Console is not a station anyone stands at, so it is a line, not a third card. */}
+        <p className="mt-24 text-body text-ink-muted">
+          Managing Cool Bliss Spot?{' '}
+          <Link href="/console" className="text-ink underline decoration-rule-raised underline-offset-4 press-feedback hover:decoration-accent">
+            Open the Console
+          </Link>
+          , on a desktop.
+        </p>
+
+        <footer className="mt-24 flex flex-wrap items-center justify-between gap-12 border-t border-hairline/40 pt-20 text-micro uppercase text-ink-subtle">
           <span>Cool Bliss Spot · Nairobi</span>
           <span>Floor and Counter</span>
         </footer>

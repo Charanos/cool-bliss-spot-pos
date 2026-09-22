@@ -133,6 +133,12 @@ function run(kind: OutboxKind, payload: unknown, actor: Actor): string[] {
     case 'drawer.drop':
       settlementCommands.dropCash(as<'drawer.drop'>(), actor);
       return [];
+    case 'tab.clear':
+      tradeCommands.clearTab(as<'tab.clear'>(), actor);
+      return [];
+    case 'order.deliver':
+      tradeCommands.deliverOrder(as<'order.deliver'>(), actor);
+      return [];
   }
 }
 
@@ -187,8 +193,10 @@ export function bootstrap(deviceId: string | null): { cursor: number; rows: Trad
   const rows = empty();
   const data = dataset();
   const open = trade.openTabs();
-  const tabIds = new Set(open.map((s) => s.tab.id));
-  rows.tabs = open.map((s) => s.tab);
+  // Paid tabs whose guests are still seated hold their table, so a fresh device must see them too.
+  const seated = trade.seatedTabs();
+  const tabIds = new Set([...open.map((s) => s.tab.id), ...seated.map((t) => t.id)]);
+  rows.tabs = [...open.map((s) => s.tab), ...seated];
   rows.seats = data.seats.filter((s) => tabIds.has(s.tabId));
   rows.orders = data.orders.filter((o) => tabIds.has(o.tabId));
   rows.lines = data.lines.filter((l) => tabIds.has(l.tabId));
@@ -201,8 +209,19 @@ export function bootstrap(deviceId: string | null): { cursor: number; rows: Trad
   rows.bills = bills;
   rows.billLines = data.billLines.filter((l) => billIds.has(l.billId));
   rows.tenders = data.tenders.filter((t) => billIds.has(t.billId));
-  rows.drawers = deviceId
-    ? data.drawerSessions.filter((s) => s.deviceId === deviceId && (s.status !== 'closed' || s.businessDate === current)).map((s) => settlement.drawerProjection(s))
-    : [];
+  rows.drawers = deviceDrawers(deviceId);
   return { cursor: currentSeq(), rows };
+}
+
+/**
+ * This device's drawer: the one it has open, and any it closed today. Small, and sent with every
+ * pull rather than only at bootstrap, because a device's first pull happens before it is bound to a
+ * device id: sent only then, the drawer reached nobody, and a counter set up on a fresh browser
+ * showed "not open" over a drawer the server had open, and let a second one be opened on top.
+ */
+export function deviceDrawers(deviceId: string | null): unknown[] {
+  if (!deviceId) return [];
+  const data = dataset();
+  const current = data.currentBusinessDate;
+  return data.drawerSessions.filter((s) => s.deviceId === deviceId && (s.status !== 'closed' || s.businessDate === current)).map((s) => settlement.drawerProjection(s));
 }
