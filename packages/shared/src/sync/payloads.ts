@@ -79,6 +79,9 @@ export const tabClearPayload = z.object({
   reason: reason.nullable().default(null),
 });
 
+/** The guests want to pay: the Counter sees the tab first. `undo` takes the ask back. */
+export const tabBillPayload = z.object({ v: z.literal(1), tabId: id, at: z.number().int(), undo: z.boolean().default(false) });
+
 /** The waiter set the round down at the table. `undo` takes the mark back. */
 export const orderDeliverPayload = z.object({ v: z.literal(1), orderId: id, tabId: id, at: z.number().int(), undo: z.boolean().default(false) });
 
@@ -140,6 +143,7 @@ export const outboxPayloads = {
   'tab.handover': tabHandoverPayload,
   'tab.clear': tabClearPayload,
   'order.deliver': orderDeliverPayload,
+  'tab.bill': tabBillPayload,
 } as const;
 
 export type OutboxKind = keyof typeof outboxPayloads;

@@ -9,14 +9,16 @@ import { MetaLine } from '@bliss/ui/components/working';
 import { SeatSelector } from '@bliss/ui/components/floor/seat-selector';
 import { useNow } from '@bliss/ui/hooks';
 import { orderFire } from '@bliss/ui/motion/floor';
-import { IconArrowLeft, IconArrowsRightLeft, IconCheck, IconDoorExit, IconFlame, IconReceipt2, IconUserPlus } from '@tabler/icons-react';
+import { IconArrowBackUp, IconArrowLeft, IconArrowsRightLeft, IconCheck, IconDoorExit, IconFlame, IconReceipt, IconReceipt2, IconUserPlus } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams, useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { posDb } from '@/lib/pos/db';
 import { notify } from '@bliss/ui/components/notices';
-import { addItem, clear, closeEmpty, fire } from '@/lib/pos/actions';
+import { addItem, askBill, clear, closeEmpty, deliverTable, fire, takeBackBill } from '@/lib/pos/actions';
+import { STAGE } from '@/app/_pos/table-stage';
+import { StatePill } from '@bliss/ui/components/status';
 import { FloorDialog } from '@bliss/ui/components/floor/sheet';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { holdsTable, isOrdering, isSeated, placeLabel } from '@bliss/shared/trade';
@@ -169,6 +171,10 @@ export default function TabScreen() {
   // waiterName comes from the TabListItem (which has the staff map join), not TabDetail.
   const tabListItem = (tabs ?? []).find((t) => t.tab.id === tabId);
   const waiterName = tabListItem?.waiterName ?? null;
+  // Where the table stands. With nothing waiting to fire, the dock offers the table's next step.
+  const stage = tabListItem?.stage ?? null;
+  const label = detail?.label ?? 'this table';
+  const idle = detail ? detail.draftCount === 0 : false;
   const metaItems = detail
     ? [
         detail.activeSeats.length > 0 ? { key: 'guests', text: `${detail.activeSeats.length} ${detail.activeSeats.length === 1 ? 'guest' : 'guests'}` } : null,
@@ -193,7 +199,14 @@ export default function TabScreen() {
               without this the waiter cannot see either without opening it. */}
           <div className="flex min-w-0 items-baseline justify-between gap-12 pad:justify-start">
             <div className="min-w-0">
-              <h1 className="truncate text-title font-medium text-ink">{detail?.label ?? 'Tab'}</h1>
+              <div className="flex min-w-0 items-center gap-8">
+                <h1 className="truncate text-title font-medium text-ink">{detail?.label ?? 'Tab'}</h1>
+                {stage && stage !== 'empty' ? (
+                  <StatePill tone={STAGE[stage].tone} more={STAGE[stage].more} live={STAGE[stage].live}>
+                    {STAGE[stage].word}
+                  </StatePill>
+                ) : null}
+              </div>
               <MetaLine items={metaItems} className="pad:hidden" />
             </div>
             {detail ? <Money value={detail.total} size="num-lg" decimals="whole" className="shrink-0 pad:hidden" /> : null}
@@ -219,6 +232,12 @@ export default function TabScreen() {
                 items={[
                   { key: 'seat', label: 'Add seat', icon: IconUserPlus, onSelect: onAddSeat },
                   { key: 'move', label: 'Move to another table', icon: IconArrowsRightLeft, onSelect: () => setOverlay({ kind: 'move-tab' }) },
+                  ...(stage === 'to_serve' ? [{ key: 'served', label: 'Mark everything served', icon: IconCheck, onSelect: () => void deliverTable(tabId, label) }] : []),
+                  ...(stage === 'bill'
+                    ? [{ key: 'bill', label: 'Take back the bill request', icon: IconArrowBackUp, onSelect: () => void takeBackBill(tabId, label) }]
+                    : stage && stage !== 'empty'
+                      ? [{ key: 'bill', label: 'Ask for the bill', icon: IconReceipt, onSelect: () => void askBill(tabId, label) }]
+                      : []),
                   // Only while nothing has been fired: a tab with something on it is paid, not closed.
                   ...(allLines.every(({ state }) => state === 'draft')
                     ? [{ key: 'close', label: 'Guests left without ordering', icon: IconDoorExit, destructive: true, onSelect: () => setOverlay({ kind: 'close-empty' }) }]
@@ -265,16 +284,23 @@ export default function TabScreen() {
         >
           {detail && detail.groups.length > 0 ? `Ticket · ${detail.groups.reduce((n, g) => n + g.lines.length, 0)}` : 'Ticket'}
         </Button>
-        <Button
-          variant="primary"
-          size="xl"
-          icon={IconFlame}
-          loading={firing}
-          disabled={!detail || detail.draftCount === 0}
-          onClick={() => void onFire()}
-        >
-          {detail && detail.draftCount > 0 ? `Fire · ${detail.draftCount}` : 'Fire'}
-        </Button>
+        {idle && stage === 'to_serve' ? (
+          <Button variant="primary" size="xl" icon={IconCheck} onClick={() => void deliverTable(tabId, label)}>
+            Mark served
+          </Button>
+        ) : idle && stage === 'served' ? (
+          <Button variant="primary" size="xl" icon={IconReceipt} onClick={() => void askBill(tabId, label)}>
+            Ask for the bill
+          </Button>
+        ) : idle && stage === 'bill' ? (
+          <Button variant="secondary" size="xl" icon={IconArrowBackUp} onClick={() => void takeBackBill(tabId, label)}>
+            Bill asked · take back
+          </Button>
+        ) : (
+          <Button variant="primary" size="xl" icon={IconFlame} loading={firing} disabled={!detail || detail.draftCount === 0} onClick={() => void onFire()}>
+            {detail && detail.draftCount > 0 ? `Fire · ${detail.draftCount}` : 'Fire'}
+          </Button>
+        )}
       </BaseAction>
 
       {detail ? (

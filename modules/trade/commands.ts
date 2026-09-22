@@ -380,6 +380,24 @@ export function deliverOrder(p: OutboxPayload<'order.deliver'>, actor: Actor): v
   touch('orders', order.id);
 }
 
+/**
+ * The guests asked for the bill. docs/16 section 8. A mark on an open tab, set or taken back; it
+ * changes nothing that is owed, only where the tab sits in the Counter's list.
+ */
+export function askForBill(p: OutboxPayload<'tab.bill'>, actor: Actor): void {
+  const tab = openTabOrThrow(p.tabId);
+  if (p.undo) {
+    if (!tab.billAskedAt) return;
+    tab.billAskedAt = null;
+    tab.billAskedBy = null;
+  } else {
+    if (tab.billAskedAt) return;
+    tab.billAskedAt = p.at;
+    tab.billAskedBy = actor.staffId;
+  }
+  touch('tabs', tab.id);
+}
+
 export function moveTab(p: OutboxPayload<'tab.move'>, actor: Actor): void {
   const tab = openTabOrThrow(p.tabId);
   const table = tradeTables().tables.find((x) => x.id === p.toTableId);

@@ -87,6 +87,19 @@ describe('the table lifecycle', () => {
     expect(trade.ordersFor(tabId).find((o) => o.id === orderId)?.deliveredAt ?? null).toBeNull();
   });
 
+  it('asks for the bill, ignores the same ask twice, and takes it back', () => {
+    const ask = () => applyEntry(entry('tab.bill', floor, amina, tabId, { v: 1, tabId, at: Date.now(), undo: false }));
+    expect(ask().status).toBe('acked');
+    const first = trade.tabById(tabId)?.billAskedAt;
+    expect(first).toBeTypeOf('number');
+    expect(ask().status).toBe('acked');
+    expect(trade.tabById(tabId)?.billAskedAt).toBe(first);
+    expect(trade.tabById(tabId)?.billAskedBy).toBe(amina);
+
+    expect(applyEntry(entry('tab.bill', floor, amina, tabId, { v: 1, tabId, at: Date.now(), undo: true })).status).toBe('acked');
+    expect(trade.tabById(tabId)?.billAskedAt ?? null).toBeNull();
+  });
+
   it('refuses to clear a table that still has something to pay', () => {
     const early = applyEntry(entry('tab.clear', floor, amina, tabId, { v: 1, tabId, at: Date.now(), undo: false, reason: null }));
     expect(early).toMatchObject({ status: 'rejected', code: 'TAB_NOT_SETTLED' });
@@ -121,6 +134,11 @@ describe('the table lifecycle', () => {
     expect(isSeated(tab)).toBe(true);
     expect(trade.seatedTabs().some((t) => t.id === tabId)).toBe(true);
     expect(tonight().days.flatMap((d) => d.tabs).find((t) => t.id === tabId)?.state).toBe('seated');
+  });
+
+  it('refuses a bill request on a tab that is already paid', () => {
+    const late = applyEntry(entry('tab.bill', floor, amina, tabId, { v: 1, tabId, at: Date.now(), undo: false }));
+    expect(late).toMatchObject({ status: 'rejected', code: 'TAB_ALREADY_SETTLED' });
   });
 
   it('clears the table, and takes the clear back', () => {

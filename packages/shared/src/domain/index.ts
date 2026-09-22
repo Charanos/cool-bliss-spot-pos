@@ -357,6 +357,12 @@ export interface Tab {
    */
   clearedAt?: EpochMs | null;
   clearedBy?: Id | null;
+  /**
+   * When the waiter asked the counter for the bill, and who did. docs/16 section 8. Null or absent
+   * when nobody has asked, or the ask was taken back. It puts the tab first in the Counter's list.
+   */
+  billAskedAt?: EpochMs | null;
+  billAskedBy?: Id | null;
 }
 
 export type SeatStatus = 'active' | 'settled' | 'removed';

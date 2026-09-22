@@ -196,13 +196,13 @@
 }
 
 /*
- * Feedback motion. docs/16 section 7. Short and quiet: a notice rises from the dock's edge, an
+ * Feedback motion. docs/16 section 7. Short and quiet: a notice drops from the top bar, an
  * added item bumps once, a count pops. None of it repeats, and none of it waits for the network.
  */
 @keyframes bliss-notice-in {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.97);
+    transform: translateY(-10px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -213,7 +213,7 @@
 @keyframes bliss-notice-out {
   to {
     opacity: 0;
-    transform: translateY(6px) scale(0.97);
+    transform: translateY(-6px) scale(0.97);
   }
 }
 
@@ -485,6 +485,19 @@
     radial-gradient(color-mix(in oklab, var(--color-stop) 8%, transparent) 1.5px, transparent 1.5px);
   background-size: 100% 100%, 24px 24px;
   background-position: 0 0, 12px 12px;
+}
+
+/*
+ * A notice's surface: raised glass washed with its tone, a glow from the leading corner and a fine
+ * dot grid in the same tone. The tone arrives as --notice-tone, set per notice.
+ */
+@utility notice-surface {
+  background-color: color-mix(in oklab, var(--notice-tone, var(--color-accent)) 9%, var(--color-raised));
+  background-image:
+    radial-gradient(ellipse at 0% 0%, color-mix(in oklab, var(--notice-tone, var(--color-accent)) 20%, transparent) 0%, transparent 70%),
+    radial-gradient(color-mix(in oklab, var(--notice-tone, var(--color-accent)) 18%, transparent) 1px, transparent 1.3px);
+  background-size: 100% 100%, 10px 10px;
+  background-position: 0 0, 5px 5px;
 }
 
 /* An invitation rather than an object: a free table. Sleek solid glass, filled with a warm glow on hover. */

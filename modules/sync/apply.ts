@@ -139,6 +139,9 @@ function run(kind: OutboxKind, payload: unknown, actor: Actor): string[] {
     case 'order.deliver':
       tradeCommands.deliverOrder(as<'order.deliver'>(), actor);
       return [];
+    case 'tab.bill':
+      tradeCommands.askForBill(as<'tab.bill'>(), actor);
+      return [];
   }
 }
 

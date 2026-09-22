@@ -9,13 +9,17 @@ import { FreeTableCard, TabCard } from '@bliss/ui/components/floor/tab-card';
 import { MetaLine } from '@bliss/ui/components/working';
 import { SectionHeader } from '@bliss/ui/components/working';
 import { useNow } from '@bliss/ui/hooks';
-import { IconPlus } from '@tabler/icons-react';
+import { CardAction } from '@bliss/ui/components/card-action';
+import { IconCheck, IconPlus, IconReceipt } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { OpenTabSheet, tableLabel } from '../../_components/open-tab-sheet';
-import { useOpenTabs, useOutlet, useSeatedTabs, useZonesAndTables } from '@/lib/pos/queries';
+import { useOpenTabs, useSeatedTabs, useZonesAndTables } from '@/lib/pos/queries';
 import { SeatedTabs } from '@/app/_pos/seated-tabs';
+import { STAGE } from '@/app/_pos/table-stage';
+import { askBill, deliverTable } from '@/lib/pos/actions';
+import type { TabListItem } from '@/lib/pos/queries';
 import { useSession } from '@/lib/pos/session';
 import { formatElapsed } from '@bliss/shared/format';
 
@@ -26,6 +30,17 @@ import { formatElapsed } from '@bliss/shared/format';
  * Content: SectionHeader per group, gap-16 grid, Skeleton loading, EmptyState per scenario.
  * The base layer's walk-up button is the only "Open tab" action on an empty page.
  */
+/**
+ * What a table needs from its waiter next, on the card itself: a poured round to carry, or a
+ * table that has everything and wants to pay. Nothing when it is the counter's turn.
+ */
+function nextStep(t: TabListItem) {
+  if (t.stage === 'to_serve')
+    return <CardAction label={t.toServe > 1 ? `Mark ${t.toServe} rounds served` : 'Mark served'} icon={IconCheck} tone="poured" onClick={() => deliverTable(t.tab.id, t.label)} />;
+  if (t.stage === 'served') return <CardAction label="Ask for the bill" icon={IconReceipt} tone="soft" onClick={() => askBill(t.tab.id, t.label)} />;
+  return null;
+}
+
 export default function TabsPage() {
   const router = useRouter();
   const session = useSession();
@@ -37,7 +52,6 @@ export default function TabsPage() {
   const [sheet, setSheet] = useState<{ open: boolean; table: ServiceTable | null }>({ open: false, table: null });
 
   const seated = useSeatedTabs();
-  const outlet = useOutlet();
   // A table is taken while it has a tab being ordered on, or a paid one whose guests have not left.
   const occupied = useMemo(
     () => new Set([...(tabs ?? []).map((t) => t.tab.serviceTableId), ...(seated ?? []).map((t) => t.tab.serviceTableId)].filter(Boolean)),
@@ -138,7 +152,6 @@ export default function TabsPage() {
             </div>
           ) : (
             <>
-            <SeatedTabs tabs={seated ?? []} timezone={outlet?.timezone ?? 'Africa/Nairobi'} onOpen={(id) => router.push(`/floor/tabs/${id}`)} />
             <section aria-labelledby="free-tables-heading">
               <SectionHeader
                 id="free-tables-heading"
@@ -221,6 +234,8 @@ export default function TabsPage() {
                       unsentCount={t.unsentCount}
                       ranOutCount={t.ranOutCount}
                       onOpen={() => router.push(`/floor/tabs/${t.tab.id}`)}
+                      stage={STAGE[t.stage]}
+                      action={nextStep(t)}
                     />
                   ))}
                 </div>
@@ -235,6 +250,15 @@ export default function TabsPage() {
               )}
             </section>
           )}
+          {!loading ? (
+            <SeatedTabs
+              tabs={(seated ?? []).filter((t) => scope === 'everyone' || t.tab.assignedTo === session?.staffId)}
+              staffId={session?.staffId}
+              onOpen={(id) => router.push(`/floor/tabs/${id}`)}
+              className="mt-24"
+              layout="rail"
+            />
+          ) : null}
         </aside>
       </div>
 

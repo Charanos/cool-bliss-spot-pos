@@ -160,9 +160,10 @@ and `thresholdCents`. As plain strings they crashed the refusal screen.
 
 A tap that changes something says so. The notices in `packages/ui/src/components/notices.tsx` are
 a small store outside React (`notify`, `dismissNotice`, `useNotices`) with one viewport,
-`NoticeViewport`, mounted once in `app/_pos/pos-root.tsx`, bottom centre on every screen, just above
-the dock. The dock publishes its height, action row included, as `--bliss-dock-h`, so a notice
-rises from the rack the action was taken on and never lands on the clock or the account menu.
+`NoticeViewport`, mounted once in `app/_pos/pos-root.tsx`, top centre on every screen, just under
+the top bar, between the brand and the clock, newest nearest the bar. Each notice is washed in its
+tone with a fine dot grid (`notice-surface`, coloured through `--notice-tone`), so success, info,
+warning and error read at a glance before a word is read.
 
 - **Tone.** Success, info, warning and error. An error stays until it is dismissed; the rest hold
   for their `holdMs` and pause while a finger or pointer is on them, or focus is inside.
@@ -209,6 +210,30 @@ server and the devices.
   characters, becomes `voided`, and leaves an audit record (`tab.closed_empty`, notable).
 - **At the table.** `order.deliver` records a poured round as taken to the table, and takes it
   back. It used to live only on the device that marked it; now every device and the history see it.
+- **The bill.** `tab.bill` marks an open tab as asking for its bill (`Tab.billAskedAt`, `billAskedBy`),
+  or takes the ask back. Nothing owed changes; the Counter lists that tab first, oldest ask on top.
+  Refused with `TAB_ALREADY_SETTLED` on a paid tab.
+
+### Stages, and the next step on every card
+
+`tableStage()` in `@bliss/shared/trade` reads a tab the same way on both surfaces, and
+`app/_pos/table-stage.ts` says how each stage looks. Every tab card carries its stage as a pill
+and, when there is one, its next step as a bar across its foot (`CardAction`, a sibling of the
+card's own button, never inside it):
+
+| Stage | Pill | Floor | Counter |
+| --- | --- | --- | --- |
+| `empty` | Nothing sent | the card opens to the grid; "Guests left without ordering" in the menu | |
+| `at_bar` | At the bar | | |
+| `to_serve` | Poured · to serve | **Mark served** (every poured round) | |
+| `served` | Served · not paid | **Ask for the bill** | **Settle** |
+| `bill` | Bill asked | take it back from the notice or the menu | **Settle**, listed first |
+| `seated` | Paid · still seated | **Clear table**, with undo | **Clear table**, with undo |
+
+On the Floor's tab screen, when nothing is waiting to fire, the dock's main button follows the
+stage too: Mark served, Ask for the bill, or "Bill asked · take back". The tables rail shows each
+table's stage as a dot. Paid tables sit under the open ones in the Floor's rail, so a table keeps
+its place in the list from sitting down to clearing.
 
 ## 9. History
 

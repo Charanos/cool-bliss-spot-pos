@@ -8,7 +8,7 @@ import { useHydrated, useNow } from '@bliss/ui/hooks';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconBuildingStore, IconLayoutGrid } from '@tabler/icons-react';
 import Link from 'next/link';
-import { type ReactNode, type Ref, useEffect, useRef } from 'react';
+import type { ReactNode, Ref } from 'react';
 
 /**
  * The chrome both staff surfaces wear. docs/16-responsive-and-offline.md.
@@ -161,26 +161,8 @@ const DOCK_ACTION =
 
 export function Dock({ nav, actionRef, inlineFrom = 'pad', label }: { nav: ReactNode; actionRef: Ref<HTMLDivElement>; inlineFrom?: 'pad' | 'tablet'; label: string }) {
   const pad = inlineFrom === 'pad';
-  const frame = useRef<HTMLElement>(null);
-
-  // The dock's height, action row and home indicator included, as --bliss-dock-h on the root, so
-  // anything that floats above it (the notices) clears it exactly, whatever the page put in it.
-  useEffect(() => {
-    const el = frame.current;
-    if (!el) return;
-    const root = document.documentElement;
-    const set = () => root.style.setProperty('--bliss-dock-h', `${el.offsetHeight}px`);
-    set();
-    const observer = new ResizeObserver(set);
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      root.style.removeProperty('--bliss-dock-h');
-    };
-  }, []);
-
   return (
-    <footer ref={frame} className="safe-b safe-x shrink-0 [--bliss-gutter-b:8px] [--bliss-gutter-x:8px] pad:[--bliss-gutter-b:12px] pad:[--bliss-gutter-x:16px] short:[--bliss-gutter-b:6px]">
+    <footer className="safe-b safe-x shrink-0 [--bliss-gutter-b:8px] [--bliss-gutter-x:8px] pad:[--bliss-gutter-b:12px] pad:[--bliss-gutter-x:16px] short:[--bliss-gutter-b:6px]">
       <div
         className={cx(
           'mx-auto flex w-full max-w-[560px] flex-col gap-6 rounded-[24px] border border-glass-edge bg-glass p-6 shadow-lift backdrop-blur-glass',

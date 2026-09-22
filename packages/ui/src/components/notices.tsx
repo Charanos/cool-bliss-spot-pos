@@ -10,7 +10,7 @@ import { ICON_STROKE, type TablerIcon } from './icon';
  *
  * A store outside React, so a notice can come from anywhere: a tap on a tile, the sync cycle noticing
  * the network came back, a mutation that failed after the screen moved on. One viewport per surface
- * renders them, just above the dock, clear of the top bar and of the thing the waiter is doing.
+ * renders them, top centre under the top bar, clear of the dock and of the thing the waiter is doing.
  *
  * Rules the store enforces rather than trusting every caller to remember:
  *
@@ -143,11 +143,12 @@ export function useNotices(): readonly Notice[] {
 
 /* ------------------------------------------------------------------- view */
 
-const TONE: Record<NoticeTone, { icon: TablerIcon; tile: string; bar: string; edge: string }> = {
-  success: { icon: IconCheck, tile: 'bg-poured/15 text-poured', bar: 'bg-poured/50', edge: 'border-glass-edge' },
-  info: { icon: IconInfoCircle, tile: 'bg-info/15 text-info', bar: 'bg-info/50', edge: 'border-glass-edge' },
-  warning: { icon: IconAlertTriangle, tile: 'bg-low/15 text-low', bar: 'bg-low/50', edge: 'border-low/30' },
-  error: { icon: IconAlertCircle, tile: 'bg-stop/15 text-stop', bar: 'bg-stop/50', edge: 'border-stop/35' },
+/** Each tone colours the whole notice: its wash and dot grid (via --notice-tone), its edge, its mark. */
+const TONE: Record<NoticeTone, { icon: TablerIcon; tile: string; bar: string; edge: string; surface: string }> = {
+  success: { icon: IconCheck, tile: 'bg-poured/20 text-poured', bar: 'bg-poured/60', edge: 'border-poured/30', surface: '[--notice-tone:var(--color-poured)]' },
+  info: { icon: IconInfoCircle, tile: 'bg-info/20 text-info', bar: 'bg-info/60', edge: 'border-info/30', surface: '[--notice-tone:var(--color-info)]' },
+  warning: { icon: IconAlertTriangle, tile: 'bg-low/20 text-low', bar: 'bg-low/60', edge: 'border-low/35', surface: '[--notice-tone:var(--color-low)]' },
+  error: { icon: IconAlertCircle, tile: 'bg-stop/20 text-stop', bar: 'bg-stop/60', edge: 'border-stop/40', surface: '[--notice-tone:var(--color-stop)]' },
 };
 
 const TEXT_BUTTON = 'h-32 shrink-0 rounded-[10px] px-12 text-label font-medium press-feedback disabled:opacity-50';
@@ -196,8 +197,9 @@ function NoticeCard({ notice }: { notice: Notice }) {
       onFocus={() => setHeld(true)}
       onBlur={() => setHeld(false)}
       className={cx(
-        'group pointer-events-auto relative flex w-full items-center gap-12 overflow-hidden rounded-[18px] border bg-raised/90 py-8 pl-8 pr-6 shadow-lift backdrop-blur-veil',
+        'notice-surface group pointer-events-auto relative flex w-full items-center gap-12 overflow-hidden rounded-[18px] border py-8 pl-8 pr-6 shadow-lift backdrop-blur-veil',
         t.edge,
+        t.surface,
         notice.leaving ? 'notice-out' : 'notice-in',
       )}
     >
@@ -254,19 +256,19 @@ function NoticeCard({ notice }: { notice: Notice }) {
 }
 
 /**
- * The viewport. Bottom centre on every screen, just above the dock (which publishes its height as
- * --bliss-dock-h), so a notice rises from the rack the action was taken on and never lands on the
- * clock, the switcher or the account menu at the top. The newest sits nearest the dock.
+ * The viewport. Top centre on every screen, just under the top bar, between the brand on the left
+ * and the clock and account on the right, where it covers neither and never the dock. The newest
+ * sits nearest the bar and they drop down from it.
  */
 export function NoticeViewport({ label = 'Notifications' }: { label?: string }) {
   const list = useNotices();
   return (
     <section
       aria-label={label}
-      className="safe-x pointer-events-none fixed inset-x-0 bottom-[calc(var(--bliss-dock-h,88px)+8px)] z-[60] flex justify-center [--bliss-gutter-x:12px] pad:bottom-[calc(var(--bliss-dock-h,96px)+12px)]"
+      className="safe-t safe-x pointer-events-none fixed inset-x-0 top-0 z-[60] flex justify-center [--bliss-gutter-t:calc(var(--spacing-strip-compact)+8px)] [--bliss-gutter-x:12px] pad:[--bliss-gutter-t:calc(var(--spacing-strip)+10px)] short:[--bliss-gutter-t:calc(var(--spacing-control-md)+6px)]"
     >
-      <ol className="flex w-[min(420px,100%)] flex-col justify-end gap-6">
-        {list.map((n) => (
+      <ol className="flex w-[min(420px,100%)] flex-col gap-6">
+        {[...list].reverse().map((n) => (
           <NoticeCard key={n.id} notice={n} />
         ))}
       </ol>

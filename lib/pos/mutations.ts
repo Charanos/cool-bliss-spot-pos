@@ -554,6 +554,25 @@ export async function undoClearTable(tabId: string): Promise<void> {
 }
 
 /**
+ * The guests asked for the bill, or changed their minds. docs/16 section 8. A mark on an open tab
+ * that the Counter sees at once; nothing owed changes.
+ */
+export async function setBillAsked(tabId: string, asked: boolean): Promise<void> {
+  const ctx = await context();
+  const db = posDb();
+  const at = Date.now();
+  await db.transaction('rw', [db.tabs, db.outbox, db.meta], async () => {
+    const tab = await db.tabs.get(tabId);
+    if (!tab) throw new Error('That tab is no longer on this device.');
+    if (!isOrdering(tab)) throw new Error('That tab is already paid.');
+    if (Boolean(tab.billAskedAt) === asked) return;
+    await db.tabs.update(tabId, asked ? { billAskedAt: at, billAskedBy: ctx.session.staffId } : { billAskedAt: null, billAskedBy: null });
+    await enqueue(ctx, 'tab.bill', tabId, { v: 1, tabId, at, undo: !asked });
+  });
+  afterCommit();
+}
+
+/**
  * Guests sat down and left without ordering. The tab closes as voided, with the reason, and the
  * table is free. Refused if anything was fired: that has to be paid or voided line by line.
  */

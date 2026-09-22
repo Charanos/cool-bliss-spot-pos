@@ -3,8 +3,9 @@
 import type { Cents } from '@bliss/shared/money';
 import { cx } from '../../lib/cx';
 import { Money } from '../money';
-import { Signal } from '../status';
-import { Eyebrow } from '../atmosphere';
+import type { ReactNode } from 'react';
+import { CARD_ACTION_ROOM } from '../card-action';
+import { Signal, StatePill, type Tone } from '../status';
 import { InviteButton, PaneButton, SeatChipStack } from '../working';
 import { IconPlus } from '@tabler/icons-react';
 import { ICON_STROKE } from '../icon';
@@ -27,6 +28,12 @@ export interface TabCardProps {
   unsentCount: number;
   ranOutCount: number;
   onOpen: () => void;
+  /** Where the table stands: a pill under the label, when nothing needs fixing first. */
+  stage?: { word: string; tone: Tone; more?: string; live?: boolean };
+  /** The table's next step, a CardAction laid over the card's foot. */
+  action?: ReactNode;
+  /** Replaces "open 1h04" in the spoken name, for a paid tab: "paid 20 minutes ago". */
+  elapsedLabel?: string;
 }
 
 /**
@@ -50,6 +57,9 @@ export function TabCard({
   unsentCount,
   ranOutCount,
   onOpen,
+  stage,
+  action,
+  elapsedLabel,
 }: TabCardProps) {
   const settledCount = seats.filter((s) => s.settled).length;
 
@@ -80,14 +90,15 @@ export function TabCard({
         ? `, ${name}`
         : '';
 
-  const accessibleName = `${tableLabel}${mine ? ', your tab' : ''}${seatsPhrase}, open ${elapsed}${statePhrase}`;
+  const accessibleName = `${tableLabel}${mine ? ', your tab' : ''}${seatsPhrase}, ${elapsedLabel ?? `open ${elapsed}`}${stage && !state ? `, ${stage.word}` : ''}${statePhrase}`;
 
   return (
+    <div className="relative min-w-0">
     <PaneButton
       emphasis={emphasis}
       aria-label={accessibleName}
       onClick={onOpen}
-      className="flex w-full min-h-[124px] flex-col gap-8 p-12 pad:min-h-card-tab pad:gap-12 pad:p-16"
+      className={cx('flex w-full min-h-[124px] flex-col gap-8 p-12 pad:min-h-card-tab pad:gap-12 pad:p-16', action ? CARD_ACTION_ROOM : null)}
     >
       {/* Row 1: label + elapsed */}
       <span className="flex items-baseline gap-8">
@@ -100,12 +111,15 @@ export function TabCard({
       </span>
 
       {/* Row 2: state signal or waiter */}
-      <span className="flex min-h-[22px] items-center" aria-hidden="true">
+      <span className="flex min-h-[24px] min-w-0 items-center gap-8" aria-hidden="true">
         {state ? (
           <Signal tone={state.tone}>{state.text}</Signal>
-        ) : mine ? null : waiter ? (
-          <span className="text-body text-ink-subtle">{waiter}</span>
+        ) : stage ? (
+          <StatePill tone={stage.tone} more={stage.more} live={stage.live}>
+            {stage.word}
+          </StatePill>
         ) : null}
+        {!state && !mine && waiter ? <span className="min-w-0 truncate text-body-sm text-ink-subtle">{waiter}</span> : null}
       </span>
 
       {/* Spacer to replace divider */}
@@ -134,6 +148,8 @@ export function TabCard({
         />
       </span>
     </PaneButton>
+    {action}
+    </div>
   );
 }
 
@@ -175,7 +191,7 @@ export function FreeTableCard({
         <span className="text-body-sm font-medium text-ink-subtle group-hover:text-attention transition-colors duration-300">
           Available
         </span>
-        <span className="flex h-32 w-32 items-center justify-center rounded-full bg-attention text-[#0B1015] transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(224,163,90,0.4)]">
+        <span className="flex h-32 w-32 items-center justify-center rounded-full bg-attention text-page transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_12px_color-mix(in_oklab,var(--color-attention)_40%,transparent)]">
           <IconPlus size={18} stroke={ICON_STROKE} aria-hidden="true" />
         </span>
       </span>

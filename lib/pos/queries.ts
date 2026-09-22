@@ -3,7 +3,7 @@
 import type { AvailabilityReason, AvailabilityState, CategoryColourToken, OrderLine, OrderLineModifier, ServiceTable, Tab, TabSeat, Zone } from '@bliss/shared/domain';
 import { type Cents, ZERO, add, sum } from '@bliss/shared/money';
 import { tryResolvePrice } from '@bliss/shared/pricing';
-import { isSeated, tabLabel } from '@bliss/shared/trade';
+import { type TableStage, isSeated, tabLabel, tableStage } from '@bliss/shared/trade';
 import { showsSeatChips, showsSeatControls } from '@bliss/shared/seats';
 import type { OutboxEntry } from '@bliss/shared/sync';
 import type { TicketLineState } from '@bliss/ui/components/floor/ticket';
@@ -133,6 +133,10 @@ export interface TabListItem {
   ranOutCount: number;
   showSeats: boolean;
   waiterName: string;
+  /** Where the table stands, and so what its card offers next. */
+  stage: TableStage;
+  /** Rounds poured and not yet at the table. */
+  toServe: number;
 }
 
 export interface SeatedTab {
@@ -174,16 +178,18 @@ export function useSeatedTabs(): SeatedTab[] | undefined {
 export function useOpenTabs(): TabListItem[] | undefined {
   return useLiveQuery(async () => {
     const db = posDb();
-    const [tabs, seats, lines, tables, staff, unsent] = await Promise.all([
+    const [tabs, seats, lines, tables, staff, unsent, orders] = await Promise.all([
       db.tabs.where('status').anyOf('open', 'part_settled', 'settling').toArray(),
       db.seats.toArray(),
       db.lines.toArray(),
       db.serviceTables.toArray(),
       db.staff.toArray(),
       unsentOrderIds(),
+      db.orders.toArray(),
     ]);
     const tableById = new Map(tables.map((t) => [t.id, t]));
     const staffById = new Map(staff.map((s) => [s.id, s]));
+    const delivered = new Set(orders.filter((o) => o.deliveredAt).map((o) => o.id));
     return tabs
       .sort((a, b) => a.openedAt - b.openedAt)
       .map((tab) => {
@@ -201,6 +207,8 @@ export function useOpenTabs(): TabListItem[] | undefined {
           ranOutCount: own.filter((l) => l.stockConflict && l.status !== 'served').length,
           showSeats: showsSeatChips(tabSeats),
           waiterName: staffById.get(tab.assignedTo)?.displayName ?? '',
+          stage: tableStage(tab, own, (id) => delivered.has(id)),
+          toServe: new Set(own.filter((l) => l.status === 'served' && !delivered.has(l.orderId)).map((l) => l.orderId)).size,
         };
       });
   }, []);

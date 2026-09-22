@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PageHeader } from '@/app/_pos/chrome';
 import { useCounterTabs } from '@/lib/pos/counter-queries';
-import { useOutlet, useSeatedTabs, useZonesAndTables } from '@/lib/pos/queries';
+import { useSeatedTabs, useZonesAndTables } from '@/lib/pos/queries';
 import { SeatedTabs } from '@/app/_pos/seated-tabs';
 import { Quiet } from '../../_components/parts';
 import { CounterTabCard } from '../../_components/tab-card';
@@ -28,7 +28,6 @@ export default function CounterTabsPage() {
   const tabs = useCounterTabs();
   const places = useZonesAndTables();
   const seated = useSeatedTabs();
-  const outlet = useOutlet();
   const router = useRouter();
   const now = useNow(30_000);
   const [query, setQuery] = useState('');
@@ -97,7 +96,7 @@ export default function CounterTabsPage() {
       </PageHeader>
 
       <div className="scroll-region px-12 pb-24 pt-16 pad:px-24 pad:pt-24">
-        {!query ? <SeatedTabs tabs={seated ?? []} timezone={outlet?.timezone ?? 'Africa/Nairobi'} /> : null}
+        {!query ? <SeatedTabs tabs={seated ?? []} onOpen={(id) => router.push(`/counter/tabs/${id}`)} /> : null}
         {tabs === undefined ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-12 tablet:gap-16">
             {Array.from({ length: 6 }, (_, i) => (

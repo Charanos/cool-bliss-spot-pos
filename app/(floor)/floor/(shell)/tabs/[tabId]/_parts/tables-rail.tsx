@@ -2,6 +2,8 @@
 
 import { SeatChipStack, CountBadge } from '@bliss/ui/components/working';
 import { Money } from '@bliss/ui/components/money';
+import { Dot } from '@bliss/ui/components/status';
+import { STAGE } from '@/app/_pos/table-stage';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconMap2, IconPlus, IconClipboardList } from '@tabler/icons-react';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
@@ -129,11 +131,13 @@ export function TablesRail({
                 <span className="flex items-baseline justify-between gap-6">
                   <span
                     className={cx(
-                      'truncate text-body-sm ',
+                      'flex min-w-0 items-center gap-6 text-body-sm',
                       current ? 'font-medium text-ink' : 'font-medium text-ink-muted group-hover:text-ink',
                     )}
                   >
-                    {t.label}
+                    <Dot tone={STAGE[t.stage].tone} className={STAGE[t.stage].live ? 'animate-breathe' : undefined} />
+                    <span className="truncate">{t.label}</span>
+                    <span className="sr-only">, {STAGE[t.stage].word}</span>
                   </span>
                   <Money
                     value={t.total}

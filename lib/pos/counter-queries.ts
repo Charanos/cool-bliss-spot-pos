@@ -5,7 +5,7 @@ import { type Cents, sum } from '@bliss/shared/money';
 import { tryResolvePrice } from '@bliss/shared/pricing';
 import { showsSeatChips } from '@bliss/shared/seats';
 import { billableLines, linesTotal } from '@bliss/shared/settlement';
-import { tabLabel } from '@bliss/shared/trade';
+import { type TableStage, tabLabel, tableStage } from '@bliss/shared/trade';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type DrawerRow, META, getMeta, posDb } from './db';
 import { usePricingIndex } from './pricing';
@@ -145,6 +145,9 @@ export interface CounterTab {
   waiting: number;
   partSettled: boolean;
   zoneId: string;
+  stage: TableStage;
+  /** When the waiter asked for the bill, if they have. */
+  billAskedAt: number | null;
 }
 
 async function billedLineIds(): Promise<Set<string>> {
@@ -154,14 +157,16 @@ async function billedLineIds(): Promise<Set<string>> {
 export function useCounterTabs(): CounterTab[] | undefined {
   return useLiveQuery(async () => {
     const db = posDb();
-    const [tabs, seats, lines, tables, names, billed] = await Promise.all([
+    const [tabs, seats, lines, tables, names, billed, orders] = await Promise.all([
       db.tabs.where('status').anyOf(...OPEN_TABS).toArray(),
       db.seats.toArray(),
       db.lines.toArray(),
       db.serviceTables.toArray(),
       staffNames(),
       billedLineIds(),
+      db.orders.toArray(),
     ]);
+    const delivered = new Set(orders.filter((o) => o.deliveredAt).map((o) => o.id));
     return tabs
       .map((tab) => {
         const own = lines.filter((l) => l.tabId === tab.id);
@@ -181,9 +186,12 @@ export function useCounterTabs(): CounterTab[] | undefined {
           waiting: own.filter((l) => l.status === 'pending').length,
           partSettled: tab.status === 'part_settled',
           zoneId: tab.zoneId,
+          stage: tableStage(tab, own.filter((l) => l.status !== 'voided'), (id) => delivered.has(id)),
+          billAskedAt: tab.billAskedAt ?? null,
         };
       })
-      .sort((a, b) => a.openedAt - b.openedAt);
+      // A table asking for its bill comes first, longest waiting at the top; then oldest first.
+      .sort((a, b) => (a.billAskedAt && b.billAskedAt ? a.billAskedAt - b.billAskedAt : a.billAskedAt ? -1 : b.billAskedAt ? 1 : a.openedAt - b.openedAt));
   }, []);
 }
 

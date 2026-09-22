@@ -12,6 +12,7 @@ import {
   markOrderDelivered,
   markTableOrdersDelivered,
   type SeatSelection,
+  setBillAsked,
   setDraftQty,
   undoClearTable,
   unmarkOrderDelivered,
@@ -119,6 +120,27 @@ export async function deliverTable(tabId: string, label: string) {
   if (n === 0) return notify({ tone: 'info', key: `deliver-table:${tabId}`, title: 'Nothing poured to serve', body: `Every poured round for ${label} is already at the table.` });
   haptic('success');
   notify({ key: `deliver-table:${tabId}`, title: `Served · ${label}`, body: `${plural(n, 'round')} recorded as at the table.` });
+}
+
+/**
+ * The guests want to pay. The Counter sees the tab first in its list the moment this lands; undo
+ * takes the ask back if they order another round instead.
+ */
+export async function askBill(tabId: string, label: string) {
+  const ok = await attempt(() => setBillAsked(tabId, true), 'The bill was not asked for');
+  if (!ok) return;
+  haptic('success');
+  notify({
+    key: `bill:${tabId}`,
+    title: `Bill asked · ${label}`,
+    body: offline() ? 'It reaches the counter the moment the network is back.' : 'The counter has it at the top of their list.',
+    undo: () => setBillAsked(tabId, false),
+  });
+}
+
+export async function takeBackBill(tabId: string, label: string) {
+  const ok = await attempt(() => setBillAsked(tabId, false), 'The bill request was not taken back');
+  if (ok) notify({ tone: 'info', key: `bill:${tabId}`, title: `Bill request taken back · ${label}`, body: 'The tab stays open for another round.' });
 }
 
 /**
