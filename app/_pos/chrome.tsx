@@ -8,7 +8,7 @@ import { useHydrated, useNow } from '@bliss/ui/hooks';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconBuildingStore, IconLayoutGrid } from '@tabler/icons-react';
 import Link from 'next/link';
-import type { ReactNode, Ref } from 'react';
+import { type ReactNode, type Ref, useEffect, useRef } from 'react';
 
 /**
  * The chrome both staff surfaces wear. docs/16-responsive-and-offline.md.
@@ -94,11 +94,14 @@ export interface DockItem {
 }
 
 const ITEM =
-  'relative flex h-dock-item min-w-dock-item flex-1 flex-col items-center justify-center gap-2 rounded-md press-feedback pad:h-dock-item-lg pad:min-w-dock-item-lg pad:flex-none pad:px-12 short:h-control-lg short:flex-row short:gap-8';
+  'relative flex h-dock-item min-w-dock-item flex-1 flex-col items-center justify-center gap-2 rounded-[18px] press-feedback transition-colors duration-[160ms] pad:h-dock-item-lg pad:min-w-dock-item-lg pad:flex-none pad:px-16 short:h-control-md short:flex-row short:gap-6 short:px-12';
+
+const IDLE = 'text-ink-subtle hover:bg-control/40 hover:text-ink';
+const ON = 'bg-accent/[0.12] text-accent';
 
 /**
- * A dock item. The whole box is the target: 56px on a phone, 64 from a tablet up, which clears the
- * 48px floor minimum with a thumb's worth of margin. docs/06 section 6.1.
+ * A dock item. The whole box is the target: 52px on a phone, 56 from a tablet up, which clears the
+ * 48px floor minimum. The one you are on sits in a soft accent pill. docs/06 section 6.1.
  */
 export function DockLink({ item, active }: { item: DockItem; active: boolean }) {
   const Glyph = item.icon;
@@ -107,23 +110,22 @@ export function DockLink({ item, active }: { item: DockItem; active: boolean }) 
       href={item.href}
       aria-current={active ? 'page' : undefined}
       title={item.shortcut ? `${item.label} (${item.shortcut})` : undefined}
-      className={cx(ITEM, active ? 'text-accent' : 'text-ink-subtle hover:text-ink')}
+      className={cx(ITEM, active ? ON : IDLE)}
     >
       <span className="relative">
-        <Glyph size={24} stroke={ICON_STROKE} aria-hidden="true" />
-        {item.badge ? <CountBadge count={item.badge} tone={item.badgeTone ?? 'accent'} className="absolute -right-12 -top-6" /> : null}
+        <Glyph size={22} stroke={ICON_STROKE} aria-hidden="true" />
+        {item.badge ? <CountBadge count={item.badge} tone={item.badgeTone ?? 'accent'} className="absolute -right-12 -top-6 ring-2 ring-page" /> : null}
         {item.dot ? (
           <span aria-hidden="true" className="absolute -right-4 -top-2">
             <Dot tone={item.dot} />
           </span>
         ) : null}
       </span>
-      <span className="text-label short:hidden">
+      <span className="text-micro font-medium short:hidden">
         {item.label}
         {item.badge ? <span className="sr-only">, {item.badge}</span> : null}
         {item.dot && item.dotLabel ? <span className="sr-only">, {item.dotLabel}</span> : null}
       </span>
-      {active ? <span aria-hidden="true" className="absolute inset-x-12 bottom-2 h-px rounded-dot bg-accent" /> : null}
     </Link>
   );
 }
@@ -131,9 +133,9 @@ export function DockLink({ item, active }: { item: DockItem; active: boolean }) 
 /** A dock item that acts rather than navigates, such as search. */
 export function DockButton({ label, icon: Glyph, onClick, shortcut }: { label: string; icon: TablerIcon; onClick: () => void; shortcut?: string }) {
   return (
-    <button type="button" onClick={onClick} aria-label={label} title={shortcut ? `${label} (${shortcut})` : undefined} className={cx(ITEM, 'text-ink-subtle hover:text-ink')}>
-      <Glyph size={24} stroke={ICON_STROKE} aria-hidden="true" />
-      <span className="text-label short:hidden">{label.split(' ')[0]}</span>
+    <button type="button" onClick={onClick} aria-label={label} title={shortcut ? `${label} (${shortcut})` : undefined} className={cx(ITEM, IDLE)}>
+      <Glyph size={22} stroke={ICON_STROKE} aria-hidden="true" />
+      <span className="text-micro font-medium short:hidden">{label.split(' ')[0]}</span>
     </button>
   );
 }
@@ -149,17 +151,43 @@ export function DockButton({ label, icon: Glyph, onClick, shortcut }: { label: s
  *   floor    inline from `pad`: a waiter's actions are one button
  *   counter  inline from `tablet`: settling carries an amount, and a 768 tablet needs the room
  */
+/**
+ * The page's action, sized to the dock rather than to the page: 48px tall (40 on a short screen),
+ * the dock's own rounding, body type. Pages pass their usual buttons; the dock sets the size, so a
+ * primary action reads as part of the rack instead of a slab laid on top of it.
+ */
+const DOCK_ACTION =
+  'flex items-center gap-6 empty:hidden [&>*]:flex-1 [&_button]:h-control-lg [&_button]:rounded-[18px] [&_button]:px-20 [&_button]:text-body short:[&_button]:h-control-md';
+
 export function Dock({ nav, actionRef, inlineFrom = 'pad', label }: { nav: ReactNode; actionRef: Ref<HTMLDivElement>; inlineFrom?: 'pad' | 'tablet'; label: string }) {
   const pad = inlineFrom === 'pad';
+  const frame = useRef<HTMLElement>(null);
+
+  // The dock's height, action row and home indicator included, as --bliss-dock-h on the root, so
+  // anything that floats above it (the notices) clears it exactly, whatever the page put in it.
+  useEffect(() => {
+    const el = frame.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const set = () => root.style.setProperty('--bliss-dock-h', `${el.offsetHeight}px`);
+    set();
+    const observer = new ResizeObserver(set);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--bliss-dock-h');
+    };
+  }, []);
+
   return (
-    <footer className="safe-b safe-x shrink-0 [--bliss-gutter-b:8px] [--bliss-gutter-x:8px] pad:[--bliss-gutter-b:12px] pad:[--bliss-gutter-x:16px] short:[--bliss-gutter-b:6px]">
+    <footer ref={frame} className="safe-b safe-x shrink-0 [--bliss-gutter-b:8px] [--bliss-gutter-x:8px] pad:[--bliss-gutter-b:12px] pad:[--bliss-gutter-x:16px] short:[--bliss-gutter-b:6px]">
       <div
         className={cx(
-          'mx-auto flex w-full flex-col gap-8 rounded-lg border border-glass-edge bg-glass px-8 py-6 shadow-lift backdrop-blur-glass',
-          pad ? 'pad:w-fit pad:flex-row pad:items-center pad:gap-16 pad:px-12 pad:py-8' : 'pad:px-12 pad:py-8 tablet:w-fit tablet:flex-row tablet:items-center tablet:gap-16',
+          'mx-auto flex w-full max-w-[560px] flex-col gap-6 rounded-[24px] border border-glass-edge bg-glass p-6 shadow-lift backdrop-blur-glass',
+          pad ? 'pad:w-fit pad:max-w-none pad:flex-row pad:items-center pad:gap-12' : 'pad:max-w-[640px] tablet:w-fit tablet:max-w-none tablet:flex-row tablet:items-center tablet:gap-12',
         )}
       >
-        <div ref={actionRef} className={cx('flex items-center gap-8 empty:hidden [&>*]:flex-1', pad ? 'pad:order-last pad:[&>*]:flex-none' : 'tablet:order-last tablet:[&>*]:flex-none')} />
+        <div ref={actionRef} className={cx(DOCK_ACTION, pad ? 'pad:order-last pad:[&>*]:flex-none' : 'tablet:order-last tablet:[&>*]:flex-none')} />
         <nav aria-label={label} className={cx('flex items-center justify-between gap-2', pad ? 'pad:gap-8' : 'pad:gap-8 tablet:justify-start')}>
           {nav}
         </nav>

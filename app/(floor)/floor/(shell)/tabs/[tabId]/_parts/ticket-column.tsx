@@ -75,7 +75,7 @@ export const TicketColumn = forwardRef<
       mobileOpen ? "fixed inset-0 h-dvh" : "hidden tablet:flex min-h-0 w-rail-ticket shrink-0 relative"
     )}>
       {/* ── Title section moved from center panel ──────────────────────── */}
-      <div className={cx('flex shrink-0 items-center justify-between border-b border-rule px-12 py-12 pad:h-[88px] pad:px-24 pad:py-0', mobileOpen && 'safe-t safe-x')}>
+      <div className={cx('flex shrink-0 items-center justify-between border-b border-rule px-12 py-12 pad:h-[88px] pad:px-24 pad:py-0', mobileOpen && 'safe-t safe-x [--bliss-gutter-t:12px] [--bliss-gutter-x:12px] pad:[--bliss-gutter-x:24px]')}>
         <div className="flex flex-col justify-center min-w-0">
           <h1 className="text-title font-medium text-ink  truncate">
             {detail?.label ?? '\u00a0'}
@@ -154,7 +154,7 @@ export const TicketColumn = forwardRef<
         )}
       </div>
 
-      <div className={cx('shrink-0 border-t border-rule px-16 py-12', mobileOpen && 'safe-b safe-x [--bliss-gutter-b:12px]')}>
+      <div className={cx('shrink-0 border-t border-rule px-16 py-12', mobileOpen && 'safe-b safe-x [--bliss-gutter-b:12px] [--bliss-gutter-x:16px]')}>
         {detail.showControls && selectedName && selectedTotal !== null ? (
           <div className="flex items-baseline justify-between gap-8">
             <span className="truncate text-body text-ink-muted">{selectedName}</span>

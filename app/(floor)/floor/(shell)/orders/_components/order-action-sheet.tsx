@@ -1,13 +1,12 @@
 'use client';
 
 import { formatTime, plural } from '@bliss/shared/format';
-import { Badge } from '@bliss/ui/components/badge';
 import { Elapsed } from '@bliss/ui/components/elapsed';
 import { Sheet } from '@bliss/ui/components/floor/sheet';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Money } from '@bliss/ui/components/money';
 import { SeatChip } from '@bliss/ui/components/seat-chip';
-import { Dot } from '@bliss/ui/components/status';
+import { StateMark, StatePill } from '@bliss/ui/components/status';
 import {
   IconAlertCircle,
   IconArrowsExchange,
@@ -80,33 +79,25 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                 {order.label}
               </span>
               {order.zoneName ? (
-                <Badge tone="neutral" className="!rounded-full px-12 py-8 font-mono text-micro">
-                  {order.zoneName}
-                </Badge>
+                <span className="shrink-0 rounded-dot bg-sunken/60 px-8 py-2 text-micro text-ink-subtle">{order.zoneName}</span>
               ) : null}
             </div>
 
-            {/* State Badge with distinct token colors and subtle glow */}
+            {/* The order's state */}
             {isNeedsYou ? (
-              <Badge tone="stop" className="!rounded-full px-12 py-12 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-stop)_25%,transparent)]">
-                <IconAlertCircle size={14} stroke={ICON_STROKE} className="shrink-0 animate-breathe text-stop" />
-                <span>Needs attention</span>
-              </Badge>
+              <StatePill tone="stop" live>
+                Needs you
+              </StatePill>
             ) : isPoured ? (
-              <Badge tone="poured" className="!rounded-full px-12 py-12 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-poured)_25%,transparent)]">
-                <Dot tone="poured" />
-                <span>Poured · Ready</span>
-              </Badge>
+              <StatePill tone="poured" more="· ready">
+                Poured
+              </StatePill>
             ) : isServed ? (
-              <Badge tone="served" className="!rounded-full px-12 py-12 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-served)_25%,transparent)]">
-                <Dot tone="served" />
-                <span>Served to table</span>
-              </Badge>
+              <StatePill tone="served">Served</StatePill>
             ) : (
-              <Badge tone="accent" className="!rounded-full px-12 py-12 font-mono text-micro shrink-0 shadow-[0_0_16px_color-mix(in_oklab,var(--color-accent)_18%,transparent)]">
-                <span className="size-6 rounded-full bg-accent animate-breathe shadow-[0_0_8px_var(--color-accent)]" />
-                <span>At the bar · Prepping</span>
-              </Badge>
+              <StatePill tone="accent" live>
+                At the bar
+              </StatePill>
             )}
           </div>
 
@@ -178,25 +169,13 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                   ) : null}
 
                   {isServed ? (
-                    <Badge tone="served" className="px-8 py-2 font-mono text-micro min-w-[80px] justify-center">
-                      <Dot tone="served" />
-                      <span>Served</span>
-                    </Badge>
+                    <StateMark tone="served">Served</StateMark>
                   ) : state === 'poured' ? (
-                    <Badge tone="poured" className="px-8 py-2 font-mono text-micro min-w-[80px] justify-center">
-                      <Dot tone="poured" />
-                      <span>Poured</span>
-                    </Badge>
+                    <StateMark tone="poured">Poured</StateMark>
                   ) : state === 'ran_out' ? (
-                    <Badge tone="stop" className="px-8 py-2 font-mono text-micro min-w-[80px] justify-center">
-                      <Dot tone="stop" />
-                      <span>Ran out</span>
-                    </Badge>
+                    <StateMark tone="stop">Ran out</StateMark>
                   ) : (
-                    <Badge tone="neutral" className="px-8 py-2 font-mono text-micro min-w-[80px] justify-center">
-                      <span className="size-4 rounded-full bg-accent/70 animate-breathe" />
-                      <span>Prep at bar</span>
-                    </Badge>
+                    <StateMark tone="neutral">At the bar</StateMark>
                   )}
                 </div>
               </div>

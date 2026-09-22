@@ -1,11 +1,10 @@
 'use client';
 
 import { formatTime, plural } from '@bliss/shared/format';
-import { Badge } from '@bliss/ui/components/badge';
 import { Elapsed } from '@bliss/ui/components/elapsed';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { SeatChip } from '@bliss/ui/components/seat-chip';
-import { Dot } from '@bliss/ui/components/status';
+import { StateMark, StatePill } from '@bliss/ui/components/status';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconAlertCircle, IconCheck, IconChecks, IconClockHour4 } from '@tabler/icons-react';
 import type { Ticket, TicketLine } from '@/lib/pos/counter-queries';
@@ -85,20 +84,15 @@ export function TicketCard({
         </div>
 
         {ranOut ? (
-          <Badge tone="stop" className="shrink-0 !rounded-full">
-            <IconAlertCircle size={12} stroke={ICON_STROKE} aria-hidden="true" />
-            <span>Ran out</span>
-          </Badge>
+          <StatePill tone="stop" live>
+            Ran out
+          </StatePill>
         ) : late ? (
-          <Badge tone="attention" className="shrink-0 !rounded-full">
-            <Dot tone="low" />
-            <span>Waiting</span>
-          </Badge>
+          <StatePill tone="low">Waiting</StatePill>
         ) : (
-          <Badge tone="accent" className="shrink-0 !rounded-full">
-            <span aria-hidden="true" className="size-6 rounded-dot bg-accent animate-breathe" />
-            <span>New</span>
-          </Badge>
+          <StatePill tone="accent" live>
+            New
+          </StatePill>
         )}
       </header>
 
@@ -127,10 +121,7 @@ export function TicketCard({
                   ) : null}
                 </span>
                 {poured ? (
-                  <Badge tone="poured" className="shrink-0">
-                    <IconCheck size={12} stroke={ICON_STROKE} aria-hidden="true" />
-                    <span>{line.servedAt ? formatTime(line.servedAt, timezone) : 'Poured'}</span>
-                  </Badge>
+                  <StateMark tone="poured">{line.servedAt ? formatTime(line.servedAt, timezone) : 'Poured'}</StateMark>
                 ) : out ? null : (
                   <span aria-hidden="true" className="flex size-control-md shrink-0 items-center justify-center rounded-dot bg-control text-ink-subtle">
                     <IconCheck size={18} stroke={ICON_STROKE} />

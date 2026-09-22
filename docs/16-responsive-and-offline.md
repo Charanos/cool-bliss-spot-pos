@@ -41,8 +41,9 @@ Two more variants exist for the cases where the input, not the size, is the ques
    inside a flex column parent. A parent that is not a flex column gives its child no height, and
    the child silently stops scrolling; the shell's `<main>` is therefore a flex column.
 3. **Every edge that meets the device frame pays back its inset.** `safe-t`, `safe-b`, `safe-x`
-   add `env(safe-area-inset-*)` to a gutter set with `--bliss-gutter-*`, rather than replacing the
-   padding, so they compose with the `px-*` beside them instead of quietly beating it.
+   add `env(safe-area-inset-*)` to a gutter set with `--bliss-gutter-*`. They own that side's
+   padding, so the gutter goes through the variable, never a `px-*` beside them: the two set the
+   same property and one silently loses (section 10).
 4. **A sheet is a sheet on a phone and a dialog on a tablet.** `placement="adaptive"` on the
    overlay: full width at the bottom edge under the thumb, centred card from `pad` up.
 5. **Density changes with the screen, the information does not.** A phone gets two columns of
@@ -120,7 +121,7 @@ counter mid-shift already knows where everything is.
 
 | | Floor | Counter |
 | --- | --- | --- |
-| Artwork | Frost and Liquid Architecture, glacier | Pour and Ledger, ember (`counter-workspace.tsx`) |
+| Artwork | Frost and Liquid Architecture, glacier | Pour and Ledger, ember, dendritic crystal high right (`counter-workspace.tsx`) |
 | Top bar | search, switcher, clock, the waiter (opens their shift) | tab finder, switcher, drawer pill, link, clock, account menu |
 | Dock | Tabs, Orders, Shift, History, Settings, Search | Orders, Tabs, Sale, Drawer, History |
 | Action inline from | `pad` | `tablet`: settling carries an amount, and a 768 tablet needs the room |
@@ -159,8 +160,9 @@ and `thresholdCents`. As plain strings they crashed the refusal screen.
 
 A tap that changes something says so. The notices in `packages/ui/src/components/notices.tsx` are
 a small store outside React (`notify`, `dismissNotice`, `useNotices`) with one viewport,
-`NoticeViewport`, mounted once in `app/_pos/pos-root.tsx`, top centre on a phone and top right
-from `pad` up, clear of the dock and the page's action.
+`NoticeViewport`, mounted once in `app/_pos/pos-root.tsx`, bottom centre on every screen, just above
+the dock. The dock publishes its height, action row included, as `--bliss-dock-h`, so a notice
+rises from the rack the action was taken on and never lands on the clock or the account menu.
 
 - **Tone.** Success, info, warning and error. An error stays until it is dismissed; the rest hold
   for their `holdMs` and pause while a finger or pointer is on them, or focus is inside.
@@ -233,3 +235,33 @@ definition.
 
 `/counter/bills` redirects to `/counter/history`, which opens on the same day Bills showed, and
 Alt 5 goes there.
+
+## 10. Refinements
+
+- **Orientation.** Neither manifest locks orientation. The Floor's used to say `landscape`; an
+  installed copy picks the change up on its next manifest check, or on a reinstall.
+- **Dock.** Items are 52px (56 from `pad`), the current one sits in a soft accent pill, and the
+  page's action is sized by the dock itself (`DOCK_ACTION` in `app/_pos/chrome.tsx`: 48px, the
+  dock's rounding, body type), so pages keep passing their usual buttons.
+- **States.** `StatePill` (a card's state: tinted, one line, 24px, 28 from `pad`, with a `more`
+  that only shows from `pad`) and `StateMark` (a line's state: a dot and a time, no box) in
+  `packages/ui/src/components/status.tsx`. The Floor's order cards and order sheet and the
+  Counter's tickets use them; the old badges wrapped beside the table name on a phone.
+- **Quick sale.** From `pad` up, the cart and the tender sit on their own panes beside the shelf.
+  On a phone the shelf keeps the screen and the dock's action, "Pay KES X · n items", opens the
+  cart and tender in a sheet with the settle button pinned in its footer.
+- **Settle.** On a phone the bill and the payment are one scroll, the payment on its own pane.
+- **Gutters.** `safe-x` owns left and right padding, so a `px-*` beside it lost and pages sat flush
+  against the screen edge. Every `safe-x` now takes its gutter through `--bliss-gutter-x`.
+- **Widths.** Counter pages run full width with the Floor's gutters (12, 24 from `pad`); the
+  drawer and history no longer stop at 1080px.
+- **Artwork.** The Counter's crystal is dendritic now (tapered ribs, five graded branch pairs,
+  twigs, a double hex core and a halo), in the upper third, with a smaller one and a few glints.
+
+## 11. When the dev server cannot see a new export
+
+Webpack's persistent cache in `.next/dev/cache/webpack` remembers how a workspace package's
+`exports` resolved. When a subpath moves (`@bliss/shared/trade` went from `places.ts` to an
+index), a dev server started from that cache keeps the old file and every sync pull fails with
+"is not a function", which the devices report as offline. A production build is unaffected.
+Stop the dev server, delete `.next/dev/cache/webpack`, and start it again.

@@ -167,9 +167,11 @@ export default function SettleTabPage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col pad:flex-row">
+    // On a phone the bill and the payment are one scroll, the payment under the bill; from a tablet
+    // held upright they sit side by side, each scrolling on its own.
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto pad:flex-row pad:overflow-hidden">
       {/* ── The bill ───────────────────────────────────────────────────── */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 shrink-0 flex-col pad:min-h-0 pad:flex-1 pad:shrink">
         <PageHeader
           title={view?.label ?? 'Tab'}
           facts={
@@ -316,11 +318,11 @@ export default function SettleTabPage() {
       {/* ── The money ──────────────────────────────────────────────────── */}
       <aside
         aria-label="Take payment"
-        className="flex shrink-0 flex-col gap-16 overflow-y-auto border-t border-rule-raised/30 bg-sunken/30 px-16 py-16 backdrop-blur-glass pad:w-[360px] pad:border-l pad:border-t-0 pad:px-20 pad:py-20 tablet:w-panel-tender tablet:px-24 tablet:py-24"
+        className="flex shrink-0 flex-col gap-16 border-t border-rule-raised/30 bg-sunken/30 p-12 backdrop-blur-glass pad:w-[380px] pad:overflow-y-auto pad:border-l pad:border-t-0 pad:p-16 tablet:w-panel-tender tablet:gap-20 tablet:p-24"
       >
         {result ? (
           <div className="flex flex-col gap-16">
-            <div className="flex flex-col gap-12 rounded-lg bg-poured-wash px-16 py-16">
+            <div className="flex flex-col gap-12 rounded-[20px] bg-poured-wash p-16 tablet:p-20">
               <p className="flex items-center gap-8 text-body-lg text-poured">
                 <IconCheck size={20} stroke={ICON_STROKE} aria-hidden="true" />
                 Bill settled · {formatKes(result.paid, { decimals: 'whole' })}
@@ -371,7 +373,9 @@ export default function SettleTabPage() {
                 {plural(view.waiting, 'line')} on this tab {view.waiting === 1 ? 'is' : 'are'} still to pour.
               </p>
             ) : null}
-            <TenderPanel key={`${scope}:${seatId ?? ''}:${view?.split?.settled ?? 0}`} due={due} caption={plan?.caption} tenders={tenders} onChange={setTenders} drawerOpen={drawerOpen} disabled={!isPositive(due)} />
+            <div className={`${PANE} p-16 tablet:p-20`}>
+              <TenderPanel key={`${scope}:${seatId ?? ''}:${view?.split?.settled ?? 0}`} due={due} caption={plan?.caption} tenders={tenders} onChange={setTenders} drawerOpen={drawerOpen} disabled={!isPositive(due)} />
+            </div>
           </>
         )}
       </aside>

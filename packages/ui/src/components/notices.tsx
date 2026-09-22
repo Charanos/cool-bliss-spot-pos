@@ -10,7 +10,7 @@ import { ICON_STROKE, type TablerIcon } from './icon';
  *
  * A store outside React, so a notice can come from anywhere: a tap on a tile, the sync cycle noticing
  * the network came back, a mutation that failed after the screen moved on. One viewport per surface
- * renders them, under the top bar, where they never cover the dock or the thing the waiter is doing.
+ * renders them, just above the dock, clear of the top bar and of the thing the waiter is doing.
  *
  * Rules the store enforces rather than trusting every caller to remember:
  *
@@ -144,11 +144,13 @@ export function useNotices(): readonly Notice[] {
 /* ------------------------------------------------------------------- view */
 
 const TONE: Record<NoticeTone, { icon: TablerIcon; tile: string; bar: string; edge: string }> = {
-  success: { icon: IconCheck, tile: 'bg-poured/15 text-poured', bar: 'bg-poured/60', edge: 'border-poured/25' },
-  info: { icon: IconInfoCircle, tile: 'bg-info/15 text-info', bar: 'bg-info/60', edge: 'border-info/25' },
-  warning: { icon: IconAlertTriangle, tile: 'bg-low/15 text-low', bar: 'bg-low/60', edge: 'border-low/30' },
-  error: { icon: IconAlertCircle, tile: 'bg-stop/15 text-stop', bar: 'bg-stop/60', edge: 'border-stop/35' },
+  success: { icon: IconCheck, tile: 'bg-poured/15 text-poured', bar: 'bg-poured/50', edge: 'border-glass-edge' },
+  info: { icon: IconInfoCircle, tile: 'bg-info/15 text-info', bar: 'bg-info/50', edge: 'border-glass-edge' },
+  warning: { icon: IconAlertTriangle, tile: 'bg-low/15 text-low', bar: 'bg-low/50', edge: 'border-low/30' },
+  error: { icon: IconAlertCircle, tile: 'bg-stop/15 text-stop', bar: 'bg-stop/50', edge: 'border-stop/35' },
 };
+
+const TEXT_BUTTON = 'h-32 shrink-0 rounded-[10px] px-12 text-label font-medium press-feedback disabled:opacity-50';
 
 function NoticeCard({ notice }: { notice: Notice }) {
   const [held, setHeld] = useState(false);
@@ -194,62 +196,56 @@ function NoticeCard({ notice }: { notice: Notice }) {
       onFocus={() => setHeld(true)}
       onBlur={() => setHeld(false)}
       className={cx(
-        'pointer-events-auto relative flex w-full items-start gap-12 overflow-hidden rounded-lg border bg-raised/95 px-12 py-12 shadow-lift backdrop-blur-veil',
+        'group pointer-events-auto relative flex w-full items-center gap-12 overflow-hidden rounded-[18px] border bg-raised/90 py-8 pl-8 pr-6 shadow-lift backdrop-blur-veil',
         t.edge,
         notice.leaving ? 'notice-out' : 'notice-in',
       )}
     >
-      <span key={notice.revision} className={cx('flex size-32 shrink-0 items-center justify-center rounded-md', t.tile, notice.revision > 0 && 'bump')}>
-        <Glyph size={18} stroke={ICON_STROKE} aria-hidden="true" />
+      <span key={notice.revision} className={cx('flex size-32 shrink-0 items-center justify-center self-start rounded-[12px]', t.tile, notice.revision > 0 && 'bump')}>
+        <Glyph size={16} stroke={ICON_STROKE} aria-hidden="true" />
       </span>
 
-      <div className="min-w-0 flex-1 pt-4">
-        <p className="flex items-baseline gap-8 text-body font-medium text-ink">
-          <span className="min-w-0">{notice.title}</span>
-          {notice.count && notice.times > 1 ? <span className="shrink-0 font-mono tabular text-num-sm text-ink-subtle">×{notice.times}</span> : null}
+      <div className="min-w-0 flex-1 py-2">
+        <p className="flex min-w-0 items-center gap-8 text-body-sm font-medium text-ink">
+          <span className="min-w-0 truncate">{notice.title}</span>
+          {notice.count && notice.times > 1 ? (
+            <span key={`n-${notice.times}`} className="bump shrink-0 rounded-dot bg-sunken/80 px-6 font-mono tabular text-num-sm text-ink-muted">
+              ×{notice.times}
+            </span>
+          ) : null}
         </p>
-        {notice.body ? <p className="mt-2 text-body-sm text-ink-muted">{notice.body}</p> : null}
-
-        {notice.undo || notice.action ? (
-          <div className="mt-8 flex flex-wrap gap-8">
-            {notice.undo ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void act(notice.undo!)}
-                className="h-control-sm rounded-sm bg-control px-12 text-body-sm font-medium text-ink press-feedback hover:bg-control-hover disabled:opacity-50"
-              >
-                Undo
-              </button>
-            ) : null}
-            {notice.action ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void act(notice.action!.run)}
-                className="h-control-sm rounded-sm bg-accent/15 px-12 text-body-sm font-medium text-accent-text press-feedback hover:bg-accent/25 disabled:opacity-50"
-              >
-                {notice.action.label}
-              </button>
-            ) : null}
-          </div>
-        ) : null}
+        {notice.body ? <p className="mt-2 text-label text-ink-muted">{notice.body}</p> : null}
       </div>
+
+      {notice.undo ? (
+        <button type="button" disabled={busy} onClick={() => void act(notice.undo!)} className={cx(TEXT_BUTTON, 'text-accent-text hover:bg-accent/10')}>
+          Undo
+        </button>
+      ) : null}
+      {notice.action ? (
+        <button type="button" disabled={busy} onClick={() => void act(notice.action!.run)} className={cx(TEXT_BUTTON, 'bg-accent/10 text-accent-text hover:bg-accent/20')}>
+          {notice.action.label}
+        </button>
+      ) : null}
 
       <button
         type="button"
         aria-label="Dismiss"
         onClick={() => dismissNotice(notice.id)}
-        className="-mr-4 -mt-4 flex size-control-sm shrink-0 items-center justify-center rounded-sm text-ink-subtle press-feedback hover:bg-control hover:text-ink"
+        className={cx(
+          'flex size-[28px] shrink-0 items-center justify-center self-start rounded-dot text-ink-subtle press-feedback hover:bg-control hover:text-ink',
+          // With a mouse the cross waits for the pointer; an error keeps it, and a finger always has it.
+          notice.tone !== 'error' && 'mouse:opacity-0 mouse:group-hover:opacity-100 mouse:focus-visible:opacity-100',
+        )}
       >
-        <IconX size={16} stroke={ICON_STROKE} aria-hidden="true" />
+        <IconX size={14} stroke={ICON_STROKE} aria-hidden="true" />
       </button>
 
       {typeof notice.holdMs === 'number' && !notice.leaving ? (
         <span
           key={`bar-${notice.revision}`}
           aria-hidden="true"
-          className={cx('notice-timer absolute inset-x-0 bottom-0 h-px origin-left', t.bar, held && '[animation-play-state:paused]')}
+          className={cx('notice-timer absolute inset-x-16 bottom-0 h-px origin-left rounded-dot', t.bar, held && '[animation-play-state:paused]')}
           style={{ animationDuration: `${notice.holdMs}ms` }}
         />
       ) : null}
@@ -258,17 +254,18 @@ function NoticeCard({ notice }: { notice: Notice }) {
 }
 
 /**
- * The viewport. Under the top bar, centred on a phone and to the right from a tablet up, clear of
- * the dock and the page's action on every screen.
+ * The viewport. Bottom centre on every screen, just above the dock (which publishes its height as
+ * --bliss-dock-h), so a notice rises from the rack the action was taken on and never lands on the
+ * clock, the switcher or the account menu at the top. The newest sits nearest the dock.
  */
 export function NoticeViewport({ label = 'Notifications' }: { label?: string }) {
   const list = useNotices();
   return (
     <section
       aria-label={label}
-      className="safe-t safe-x pointer-events-none fixed inset-x-0 top-0 z-[60] flex justify-center pt-56 pad:justify-end pad:pr-16 pad:pt-[68px] short:pt-[44px]"
+      className="safe-x pointer-events-none fixed inset-x-0 bottom-[calc(var(--bliss-dock-h,88px)+8px)] z-[60] flex justify-center [--bliss-gutter-x:12px] pad:bottom-[calc(var(--bliss-dock-h,96px)+12px)]"
     >
-      <ol className="flex w-[min(420px,calc(100vw-24px))] flex-col gap-8">
+      <ol className="flex w-[min(420px,100%)] flex-col justify-end gap-6">
         {list.map((n) => (
           <NoticeCard key={n.id} notice={n} />
         ))}

@@ -27,7 +27,7 @@ export default function OfflinePage() {
   }, []);
 
   return (
-    <main className="safe-x flex min-h-dvh flex-col items-center justify-center gap-24 px-24 text-center">
+    <main className="safe-x flex min-h-dvh flex-col items-center justify-center gap-24 text-center [--bliss-gutter-x:24px]">
       <span className="animate-breathe flex size-avatar items-center justify-center rounded-dot border border-rule-raised bg-raised">
         <Dot tone={online ? 'poured' : 'low'} />
       </span>

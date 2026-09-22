@@ -8,7 +8,8 @@ import { memo } from 'react';
  * tone, because this is the station where drinks are poured and bills are paid.
  *
  *   left flank    a tap's pour stream falling into a highball, with rising bubbles
- *   right flank   a till receipt curling away, its ruled lines fading, and a sectored crystal
+ *   right flank   a till receipt curling away, its ruled lines fading, and a dendritic crystal
+ *                 high in the upper third, with a smaller one below it and a few glints
  *
  * Static and memoised: it draws once and never re-renders with the view above it.
  * ========================================================================== */
@@ -21,25 +22,49 @@ const hexPath = (r: number, phase = 0) =>
     return `${i ? 'L' : 'M'}${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)}`;
   }).join(' ') + ' Z';
 
-/** One arm of a sectored crystal: a rib, two plates and three pairs of short branches. */
+/**
+ * One arm of a dendritic crystal: a rib, five pairs of branches that shorten towards the tip, and a
+ * pair of twigs on the longer ones, all at sixty degrees, the way ice actually grows.
+ */
 function crystalArm() {
-  const parts: string[] = ['M0 0 L100 0'];
+  const rib = 'M0 0 L112 0';
+  const branches: string[] = [];
+  const twigs: string[] = [];
   for (const [at, len] of [
-    [0.3, 34],
-    [0.55, 26],
-    [0.8, 16],
+    [0.24, 22],
+    [0.4, 34],
+    [0.56, 30],
+    [0.72, 21],
+    [0.86, 11],
   ] as const) {
-    const x = 100 * at;
+    const x = 112 * at;
     for (const side of [1, -1]) {
       const x2 = x + Math.cos(60 * RAD) * len;
       const y2 = side * Math.sin(60 * RAD) * len;
-      parts.push(`M${x.toFixed(2)} 0 L${x2.toFixed(2)} ${y2.toFixed(2)}`);
+      branches.push(`M${x.toFixed(2)} 0 L${x2.toFixed(2)} ${y2.toFixed(2)}`);
+      if (len >= 30) {
+        // A twig halfway out, pointing back along the rib's direction.
+        const mx = x + Math.cos(60 * RAD) * len * 0.55;
+        const my = side * Math.sin(60 * RAD) * len * 0.55;
+        twigs.push(`M${mx.toFixed(2)} ${my.toFixed(2)} L${(mx + 9).toFixed(2)} ${my.toFixed(2)}`);
+      }
     }
   }
-  return parts.join(' ');
+  return { rib, branches: branches.join(' '), twigs: twigs.join(' ') };
 }
 
 const ARM = crystalArm();
+
+/** A four point glint, the sparkle that sits off a crystal's edge. */
+const glint = (r: number) => `M0 ${-r} L${r * 0.18} ${-r * 0.18} L${r} 0 L${r * 0.18} ${r * 0.18} L0 ${r} L${-r * 0.18} ${r * 0.18} L${-r} 0 L${-r * 0.18} ${-r * 0.18} Z`;
+
+/** Glints around the crystal: position and size, fixed so the drawing never shifts. */
+const GLINTS: readonly [number, number, number][] = [
+  [1010, 250, 7],
+  [1300, 470, 5],
+  [1090, 520, 4],
+  [1370, 230, 4],
+];
 
 /** Bubbles rising in the glass: position, radius, opacity. Fixed, so the drawing never shifts. */
 const BUBBLES: readonly [number, number, number, number][] = [
@@ -101,13 +126,29 @@ export const AmbientCounterArtwork = memo(function AmbientCounterArtwork() {
           <filter id="counter-blur-medium">
             <feGaussianBlur stdDeviation="4" />
           </filter>
+          <radialGradient id="counter-crystal-halo" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="var(--color-glint)" stopOpacity="0.1" />
+            <stop offset="45%" stopColor="var(--color-money)" stopOpacity="0.05" />
+            <stop offset="100%" stopColor="var(--color-money)" stopOpacity="0" />
+          </radialGradient>
           <g id="counter-arm">
-            <path d={ARM} stroke="var(--color-money)" strokeOpacity="0.25" strokeWidth="7" strokeLinecap="round" />
-            <path d={ARM} stroke="var(--color-glint)" strokeOpacity="0.85" strokeWidth="2.2" strokeLinecap="round" />
-            <g transform="translate(46 0)">
-              <path d={hexPath(16)} fill="url(#counter-facet)" stroke="var(--color-money)" strokeOpacity="0.6" strokeWidth="1.4" />
+            {/* A soft ember bed under the ice, then the ice itself in two weights. */}
+            <path d={ARM.rib} stroke="var(--color-money)" strokeOpacity="0.2" strokeWidth="6" strokeLinecap="round" />
+            <path d={ARM.rib} stroke="var(--color-glint)" strokeOpacity="0.9" strokeWidth="1.6" strokeLinecap="round" />
+            <path d={ARM.branches} stroke="var(--color-glint)" strokeOpacity="0.7" strokeWidth="1.1" strokeLinecap="round" />
+            <path d={ARM.twigs} stroke="var(--color-glint)" strokeOpacity="0.45" strokeWidth="0.8" strokeLinecap="round" />
+            <g transform="translate(34 0)">
+              <path d={hexPath(7, 30)} fill="url(#counter-facet)" stroke="var(--color-glint)" strokeOpacity="0.55" strokeWidth="0.8" />
             </g>
-            <circle cx="100" cy="0" r="2.6" fill="var(--color-glint)" />
+            <path d="M112 -3 L117 0 L112 3 L107 0 Z" fill="var(--color-glint)" fillOpacity="0.9" />
+          </g>
+          <g id="counter-crystal">
+            {[0, 60, 120, 180, 240, 300].map((a) => (
+              <use key={a} href="#counter-arm" transform={`rotate(${a})`} />
+            ))}
+            <path d={hexPath(26, 30)} stroke="var(--color-glint)" strokeOpacity="0.35" strokeWidth="0.8" />
+            <path d={hexPath(15)} fill="url(#counter-facet)" stroke="var(--color-money)" strokeOpacity="0.75" strokeWidth="1.2" />
+            <circle r="3" fill="var(--color-glint)" />
           </g>
         </defs>
 
@@ -157,13 +198,17 @@ export const AmbientCounterArtwork = memo(function AmbientCounterArtwork() {
           <path d="M0 0 L15 12 L30 0 L45 12 L60 0 L75 12 L90 0 L105 12 L120 0 L135 12 L150 0 L165 12 L180 0" stroke="var(--color-glint)" strokeOpacity="0.4" strokeWidth="1" />
         </g>
 
-        <g transform="translate(1180 720) rotate(18) scale(1.15)" opacity="0.7">
-          {[0, 60, 120, 180, 240, 300].map((a) => (
-            <use key={a} href="#counter-arm" transform={`rotate(${a})`} />
-          ))}
-          <path d={hexPath(22)} fill="url(#counter-facet)" stroke="var(--color-money)" strokeOpacity="0.7" strokeWidth="1.6" />
-          <circle r="2" fill="var(--color-glint)" />
+        {/* The crystal, in the upper third where the eye rests, with a smaller one below it for depth. */}
+        <circle cx="1160" cy="360" r="230" fill="url(#counter-crystal-halo)" />
+        <g transform="translate(1160 360) rotate(12) scale(1.2)" opacity="0.85">
+          <use href="#counter-crystal" />
         </g>
+        <g transform="translate(1390 640) rotate(-8) scale(0.42)" opacity="0.5">
+          <use href="#counter-crystal" />
+        </g>
+        {GLINTS.map(([x, y, r]) => (
+          <path key={`${x}-${y}`} d={glint(r)} transform={`translate(${x} ${y})`} fill="var(--color-glint)" fillOpacity="0.55" />
+        ))}
       </svg>
     </div>
   );

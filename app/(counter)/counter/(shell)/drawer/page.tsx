@@ -116,7 +116,7 @@ export default function DrawerPage() {
       />
 
       <div className="scroll-region px-12 pb-24 pt-16 pad:px-24 pad:pt-24">
-        <div className="mx-auto flex max-w-[1080px] flex-col gap-16 tablet:gap-24">
+        <div className="flex flex-col gap-16 tablet:gap-24">
           {error ? (
             <InlineNotice tone="stop" action={<Button variant="ghost" size="sm" onClick={() => setError(null)}>Dismiss</Button>}>
               {error}

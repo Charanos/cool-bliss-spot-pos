@@ -106,6 +106,43 @@ export function StatusChip({ status, label, className }: { status: StatusKey; la
   );
 }
 
+const pillTone: Record<Tone, string> = {
+  poured: 'bg-poured/[0.12] text-poured ring-poured/25',
+  served: 'bg-served/[0.12] text-served ring-served/25',
+  low: 'bg-low/[0.12] text-low ring-low/25',
+  stop: 'bg-stop/[0.14] text-stop ring-stop/30',
+  info: 'bg-info/[0.12] text-info ring-info/25',
+  neutral: 'bg-sunken/70 text-ink-muted ring-rule-raised/50',
+  accent: 'bg-accent/[0.12] text-accent-text ring-accent/25',
+};
+
+/**
+ * A state on a card: a tinted pill with a dot and a word or two. One line always, the same height
+ * on every screen (24, 28 from `pad`), so it never pushes the title it sits beside onto a second
+ * line. Put the long form in `more`: it shows from `pad` up and drops away on a phone.
+ */
+export function StatePill({ tone, children, more, live, className }: { tone: Tone; children: React.ReactNode; more?: React.ReactNode; live?: boolean; className?: string }) {
+  return (
+    <span className={cx('inline-flex h-24 shrink-0 items-center gap-6 whitespace-nowrap rounded-dot px-8 text-label font-medium ring-1 ring-inset pad:h-[28px] pad:px-12', pillTone[tone], className)}>
+      <Dot tone={tone} className={live ? 'animate-breathe' : undefined} />
+      <span>
+        {children}
+        {more ? <span className="hidden pad:inline"> {more}</span> : null}
+      </span>
+    </span>
+  );
+}
+
+/** A line's state as a quiet mark: a dot and a time or a word, no box, so a row never nests one. */
+export function StateMark({ tone, children, className }: { tone: Tone; children: React.ReactNode; className?: string }) {
+  return (
+    <span className={cx('inline-flex shrink-0 items-center gap-6 whitespace-nowrap font-mono tabular text-micro', textTone[tone], className)}>
+      <Dot tone={tone} />
+      {children}
+    </span>
+  );
+}
+
 /** A dot and a sentence, for rows such as "Needs attention" and ticket line notes. */
 export function Signal({ tone, children, className }: { tone: Tone; children: React.ReactNode; className?: string }) {
   return (

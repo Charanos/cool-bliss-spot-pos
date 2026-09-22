@@ -226,7 +226,7 @@ export function HistoryView({ surface, staffId, onOpenTab }: HistoryViewProps) {
       </PageHeader>
 
       <div className="scroll-region px-12 pb-24 pt-16 pad:px-24 pad:pt-24">
-        <div className="mx-auto flex max-w-[1080px] flex-col gap-16 tablet:gap-24">
+        <div className="flex flex-col gap-16 tablet:gap-24">
           {state.status === 'saved' && !state.refreshing ? (
             <div className="flex items-start gap-12 rounded-[18px] border border-low/30 bg-low/[0.08] px-16 py-12">
               <IconCloudOff size={18} stroke={ICON_STROKE} aria-hidden="true" className="mt-2 shrink-0 text-low" />

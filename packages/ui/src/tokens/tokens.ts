@@ -272,8 +272,8 @@ export const size = {
   'base-compact': 60,
   'base-console': 40,
   /** A dock item: the whole tap target, icon over label. */
-  'dock-item': 56,
-  'dock-item-lg': 64,
+  'dock-item': 52,
+  'dock-item-lg': 56,
   dot: 6,
   avatar: 64,
   'avatar-lg': 96,

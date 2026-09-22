@@ -196,13 +196,13 @@
 }
 
 /*
- * Feedback motion. docs/16 section 7. Short and quiet: a notice slides in from the top bar, an
+ * Feedback motion. docs/16 section 7. Short and quiet: a notice rises from the dock's edge, an
  * added item bumps once, a count pops. None of it repeats, and none of it waits for the network.
  */
 @keyframes bliss-notice-in {
   from {
     opacity: 0;
-    transform: translateY(-8px) scale(0.98);
+    transform: translateY(10px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -213,7 +213,7 @@
 @keyframes bliss-notice-out {
   to {
     opacity: 0;
-    transform: translateY(-6px) scale(0.98);
+    transform: translateY(6px) scale(0.97);
   }
 }
 

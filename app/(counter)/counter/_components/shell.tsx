@@ -166,7 +166,7 @@ export function CounterShell({ children }: { children: ReactNode }) {
         <UpdateBar />
 
         {sync.rejected > 0 ? (
-          <p role="status" className="safe-x flex shrink-0 items-center gap-8 border-b border-stop/30 bg-stop-wash px-12 py-8 text-body-sm text-stop pad:px-24">
+          <p role="status" className="safe-x flex shrink-0 items-center gap-8 border-b border-stop/30 bg-stop-wash py-8 text-body-sm text-stop [--bliss-gutter-x:12px] pad:[--bliss-gutter-x:24px]">
             <Dot tone="stop" />
             {sync.rejected} {sync.rejected === 1 ? 'change' : 'changes'} could not be sent. A manager can see why in Console, Settings, Sync.
           </p>

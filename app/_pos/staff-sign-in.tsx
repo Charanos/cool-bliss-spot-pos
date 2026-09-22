@@ -119,7 +119,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
         <FadeRule orientation="y" className="absolute bottom-[10%] right-0 top-[10%] z-20" />
       </section>
 
-      <section className="safe-x safe-b relative flex min-h-0 flex-1 flex-col justify-between overflow-y-auto p-16 pad:p-24 tablet:p-40">
+      <section className="safe-x safe-b relative flex min-h-0 flex-1 flex-col justify-between overflow-y-auto pt-16 [--bliss-gutter-b:16px] [--bliss-gutter-x:16px] pad:pt-24 pad:[--bliss-gutter-b:24px] pad:[--bliss-gutter-x:24px] tablet:pt-40 tablet:[--bliss-gutter-b:40px] tablet:[--bliss-gutter-x:40px]">
         <AmbientTerminalArtwork />
         {!person ? (
           <>

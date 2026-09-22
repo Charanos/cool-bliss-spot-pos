@@ -11,12 +11,11 @@ import {
 } from '@tabler/icons-react';
 import { useLongPress } from '../../hooks';
 import { cx } from '../../lib/cx';
-import { Badge } from '../badge';
 import { Elapsed } from '../elapsed';
 import { ICON_STROKE } from '../icon';
 import { Money } from '../money';
 import { SeatChip } from '../seat-chip';
-import { Dot } from '../status';
+import { StateMark, StatePill } from '../status';
 import { paneClass } from '../working';
 import type { TicketLineState } from './ticket';
 
@@ -56,7 +55,7 @@ export interface OrderCardProps {
  * - Mobile ergonomics: 1-tap "Mark served" button on poured cards + 450ms haptic long-press sheet
  * - Desktop parity: 3-dot menu trigger + right-click context menu
  * - Composes paneClass with tactile glass surface and distinct ambient accents
- * - Utilizes the Badge component primitive for line-level and card-level status pills
+ * - StatePill for the card's state, StateMark for each line's: one line each, on every screen
  * - Accessible name synthesized for screen readers
  */
 export function OrderCard({
@@ -144,12 +143,10 @@ export function OrderCard({
                 {label}
               </span>
               {zoneName ? (
-                <Badge tone="neutral" className="!rounded-full px-6 py-6 tablet:px-8 tablet:py-2 font-mono text-micro ">
-                  {zoneName}
-                </Badge>
+                <span className="shrink-0 rounded-dot bg-sunken/60 px-8 py-2 text-micro text-ink-subtle">{zoneName}</span>
               ) : null}
               {!mine && waiter ? (
-                <span className="shrink-0 truncate rounded-full bg-sunken/60 px-6 py-4 tablet:px-8 tablet:py-6 font-mono text-micro text-ink-subtle max-w-[100px]">
+                <span className="max-w-[112px] shrink-0 truncate rounded-dot bg-sunken/60 px-8 py-2 text-micro text-ink-subtle">
                   {waiter}
                 </span>
               ) : null}
@@ -177,30 +174,21 @@ export function OrderCard({
           {/* Card Top-Right Status Badge & 3-Dot Action Trigger */}
           <div className="shrink-0 flex items-center gap-6">
             {isNeedsYou ? (
-              <Badge tone="stop" className="!rounded-full px-8 py-12 tablet:px-12 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-stop)_20%,transparent)]">
-                <IconAlertCircle size={13} stroke={ICON_STROKE} className="shrink-0 animate-breathe" />
-                <span>Needs you</span>
-              </Badge>
+              <StatePill tone="stop" live>
+                Needs you
+              </StatePill>
             ) : isPoured ? (
-              <Badge tone="poured" className="!rounded-full px-8 py-12 tablet:px-12 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-poured)_15%,transparent)]">
-                <Dot tone="poured" />
-                <span>Poured · Ready</span>
-              </Badge>
+              <StatePill tone="poured" more="· ready">
+                Poured
+              </StatePill>
             ) : isServed ? (
-              <Badge tone="served" className="!rounded-full px-8 py-12 tablet:px-12 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-served)_15%,transparent)]">
-                <Dot tone="served" />
-                <span>Served</span>
-              </Badge>
+              <StatePill tone="served">Served</StatePill>
             ) : isHeld ? (
-              <Badge tone="attention" className="!rounded-full px-8 py-12 tablet:px-12 tablet:py-4">
-                <Dot tone="low" />
-                <span>Held</span>
-              </Badge>
+              <StatePill tone="low">Held</StatePill>
             ) : (
-              <Badge tone="accent" className="!rounded-full px-8 py-12 tablet:px-12 tablet:py-4 shadow-[0_0_12px_color-mix(in_oklab,var(--color-accent)_15%,transparent)]">
-                <span className="size-6 rounded-full bg-accent shadow-[0_0_8px_var(--color-accent)] animate-breathe" />
-                <span>At the bar</span>
-              </Badge>
+              <StatePill tone="accent" live>
+                At the bar
+              </StatePill>
             )}
 
             {onActionMenu ? (
@@ -222,7 +210,7 @@ export function OrderCard({
         {/* Divider */}
         <div className="my-8 tablet:my-12 border-t border-rule-raised/30" />
 
-        {/* ── Order Line Items List (utilizing Badge primitive for status) ── */}
+        {/* ── Order lines ── */}
         <div className="flex flex-col gap-4">
           {lines.map((l) => (
             <div
@@ -267,37 +255,18 @@ export function OrderCard({
                 </div>
               </div>
 
-              {/* Right: Badge Component Primitive for Line Status */}
+              {/* The line's state */}
               <div className="shrink-0 ml-4 tablet:ml-8">
                 {isServed ? (
-                  <Badge tone="served" className="px-6 py-2 tablet:px-8 tablet:py-2 font-mono text-micro tablet:text-badge shrink-0">
-                    <Dot tone="served" />
-                    <span>
-                      <span>{deliveredAt ? formatTime(deliveredAt, timezone) : (l.servedAt ? formatTime(l.servedAt, timezone) : 'Served')}</span>
-                    </span>
-                  </Badge>
+                  <StateMark tone="served">{deliveredAt ? formatTime(deliveredAt, timezone) : l.servedAt ? formatTime(l.servedAt, timezone) : 'Served'}</StateMark>
                 ) : l.state === 'poured' ? (
-                  <Badge tone="poured" className="px-6 py-2 tablet:px-8 tablet:py-2 font-mono text-micro tablet:text-badge shrink-0">
-                    <Dot tone="poured" />
-                    <span>
-                      <span>{l.servedAt ? formatTime(l.servedAt, timezone) : 'Poured'}</span>
-                    </span>
-                  </Badge>
+                  <StateMark tone="poured">{l.servedAt ? formatTime(l.servedAt, timezone) : 'Poured'}</StateMark>
                 ) : l.state === 'ran_out' ? (
-                  <Badge tone="stop" className="px-6 py-2 tablet:px-8 tablet:py-2 font-mono text-micro tablet:text-badge shrink-0">
-                    <Dot tone="stop" />
-                    <span>Ran out</span>
-                  </Badge>
+                  <StateMark tone="stop">Ran out</StateMark>
                 ) : l.state === 'unsent' ? (
-                  <Badge tone="attention" className="px-6 py-2 tablet:px-8 tablet:py-2 font-mono text-micro tablet:text-badge shrink-0">
-                    <Dot tone="low" />
-                    <span>Held</span>
-                  </Badge>
+                  <StateMark tone="low">Held</StateMark>
                 ) : (
-                  <Badge tone="neutral" className="px-6 py-2 tablet:px-8 tablet:py-2 font-mono text-micro tablet:text-badge shrink-0">
-                    <span className="size-4 rounded-full bg-accent/70 animate-breathe" />
-                    <span>Waiting</span>
-                  </Badge>
+                  <StateMark tone="neutral">Waiting</StateMark>
                 )}
               </div>
             </div>
@@ -315,7 +284,7 @@ export function OrderCard({
                 Item ran out. Tap to swap or void.
               </span>
             </div>
-            <div className="flex items-center gap-4 font-mono text-micro uppercase text-stop shrink-0 font-medium">
+            <div className="flex items-center gap-4 text-label text-stop shrink-0 font-medium">
               <span>Resolve</span>
               <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-4" />
             </div>
@@ -335,13 +304,13 @@ export function OrderCard({
                   e.stopPropagation();
                   onMarkServed();
                 }}
-                className="shrink-0 rounded-lg bg-poured px-12 py-6 font-mono text-micro font-medium uppercase text-page hover:brightness-110 active:scale-95 transition-all shadow-raised flex items-center gap-6"
+                className="flex h-32 shrink-0 items-center gap-6 rounded-dot bg-poured px-12 text-label font-medium text-page shadow-raised transition-[filter,transform] hover:brightness-110 active:scale-95"
               >
-                <IconCheck size={14} stroke={2.5} className="text-page" />
+                <IconCheck size={14} stroke={ICON_STROKE} className="text-page" />
                 <span>Mark served</span>
               </button>
             ) : (
-              <div className="flex items-center gap-4 font-mono text-micro uppercase text-poured shrink-0 font-medium">
+              <div className="flex items-center gap-4 text-label text-poured shrink-0 font-medium">
                 <span>Open tab</span>
                 <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-4" />
               </div>
@@ -351,7 +320,7 @@ export function OrderCard({
           <div className="flex items-center justify-between pt-6 border-t border-rule-raised/20 text-body-sm text-ink-subtle">
             {total !== undefined ? (
               <div className="flex flex-col items-baseline gap-6 font-mono text-micro tablet:text-body-sm text-ink-subtle">
-                <span className="text-micro uppercase ">Total</span>
+                <span className="text-micro text-ink-subtle">Total</span>
                 <Money value={total} size="num-sm" decimals="whole" tone="default" />
               </div>
             ) : (
@@ -365,7 +334,7 @@ export function OrderCard({
               ) : (
                 <span className="font-mono text-micro text-served font-medium">Served to table</span>
               )}
-              <div className="flex items-center gap-4 font-mono text-micro tablet:text-body-sm text-ink-subtle group-hover:text-accent transition-colors font-medium">
+              <div className="flex items-center gap-4 text-label text-ink-subtle group-hover:text-accent transition-colors font-medium">
                 <span>View tab</span>
                 <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-4" />
               </div>
@@ -375,13 +344,13 @@ export function OrderCard({
           <div className="flex items-center justify-between pt-6 border-t border-rule-raised/20 text-body-sm text-ink-subtle">
             {total !== undefined ? (
               <div className="flex flex-col items-baseline gap-6 font-mono text-micro tablet:text-body-sm text-ink-subtle">
-                <span className="text-micro uppercase ">Total</span>
+                <span className="text-micro text-ink-subtle">Total</span>
                 <Money value={total} size="num-sm" decimals="whole" tone="default" />
               </div>
             ) : (
               <div />
             )}
-            <div className="flex items-center gap-4 font-mono text-micro tablet:text-body-sm text-ink-subtle group-hover:text-accent transition-colors font-medium">
+            <div className="flex items-center gap-4 text-label text-ink-subtle group-hover:text-accent transition-colors font-medium">
               <span>View tab</span>
               <IconChevronRight size={13} stroke={ICON_STROKE} className="transition-transform group-hover:translate-x-4" />
             </div>

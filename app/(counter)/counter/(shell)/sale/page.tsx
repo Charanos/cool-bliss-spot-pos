@@ -8,11 +8,12 @@ import { FilterChips } from '@bliss/ui/components/choice';
 import { InlineNotice, Skeleton } from '@bliss/ui/components/feedback';
 import { SearchField, Stepper } from '@bliss/ui/components/fields';
 import { ProductTile } from '@bliss/ui/components/floor/product-tile';
+import { Sheet } from '@bliss/ui/components/floor/sheet';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Money } from '@bliss/ui/components/money';
 import { useNow } from '@bliss/ui/hooks';
 import { IconArrowRight, IconCheck, IconShoppingBag, IconTrash } from '@tabler/icons-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { PageHeader } from '@/app/_pos/chrome';
 import { type TenderDraft, settle } from '@/lib/pos/counter';
@@ -22,6 +23,19 @@ import { haptic } from '@/lib/pos/haptics';
 import { notify } from '@bliss/ui/components/notices';
 import { PANE, Quiet } from '../../_components/parts';
 import { TenderPanel } from '../../_components/tender-panel';
+
+/** Whether the screen is at least this wide, following it as it turns. False until mounted. */
+function useMinWidth(px: number): boolean {
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia(`(min-width: ${px}px)`);
+    const update = () => setWide(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, [px]);
+  return wide;
+}
 
 interface CartLine {
   variantId: string;
@@ -54,6 +68,8 @@ export default function QuickSalePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ change: Cents; paid: Cents } | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const wide = useMinWidth(768);
 
   const items = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -112,6 +128,7 @@ export default function QuickSalePage() {
       setDone({ change, paid: due });
       setCart([]);
       setTenders([]);
+      setSheetOpen(false);
       haptic('success');
       notify({
         key: 'sale:done',
@@ -125,6 +142,81 @@ export default function QuickSalePage() {
       setBusy(false);
     }
   };
+
+  const clearCart = () => {
+    const kept = cart;
+    setCart([]);
+    setTenders([]);
+    setSheetOpen(false);
+    notify({ tone: 'info', key: 'sale:cleared', title: 'Sale cleared', body: `${plural(count, 'item')} taken off. Nothing was recorded.`, undo: () => setCart(kept) });
+  };
+
+  const doneCard = done ? (
+    <div className="flex flex-col gap-12 rounded-[20px] bg-poured-wash p-16 tablet:p-20">
+      <p className="flex items-center gap-8 text-body-lg text-poured">
+        <IconCheck size={20} stroke={ICON_STROKE} aria-hidden="true" />
+        Sale recorded · {formatKes(done.paid, { decimals: 'whole' })}
+      </p>
+      {isPositive(done.change) ? (
+        <div>
+          <span className="caps text-ink-subtle">Change to give</span>
+          <Money value={done.change} size="display" tone="money" decimals="whole" />
+        </div>
+      ) : (
+        <p className="text-body text-ink-muted">No change to give.</p>
+      )}
+    </div>
+  ) : null;
+
+  const cartBody = (
+    <>
+      <header className="flex min-h-control-lg items-center justify-between gap-12 border-b border-rule-raised/30 px-16 py-8">
+        <h2 className="caps text-ink-subtle">{cart.length === 0 ? 'This sale' : `This sale · ${plural(count, 'item')}`}</h2>
+        {cart.length > 0 ? (
+          <Button variant="ghost" size="sm" icon={IconTrash} onClick={clearCart}>
+            Clear
+          </Button>
+        ) : null}
+      </header>
+      {cart.length === 0 ? (
+        <p className="flex items-center gap-12 px-16 py-20 text-body text-ink-muted">
+          <IconShoppingBag size={20} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0 text-ink-subtle" />
+          Tap a bottle to start a sale.
+        </p>
+      ) : (
+        <ul className="py-4">
+          {cart.map((line) => (
+            <li key={line.variantId} className="flex min-h-row-floor items-center gap-12 border-b border-rule-raised/20 px-16 py-6 last:border-b-0">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-body text-ink">{line.name}</span>
+                <span className="block font-mono text-micro text-ink-subtle">{formatKes(line.unitPrice, { decimals: 'whole' })} each</span>
+              </span>
+              <Stepper
+                value={line.qty}
+                min={0}
+                max={99}
+                size="md"
+                label={`How many ${line.name}`}
+                onChange={(qty) => {
+                  setTenders([]);
+                  setCart((c) => (qty === 0 ? c.filter((l) => l.variantId !== line.variantId) : c.map((l) => (l.variantId === line.variantId ? { ...l, qty } : l))));
+                }}
+              />
+              <Money value={multiplyByQty(line.unitPrice, line.qty)} size="num-sm" decimals="whole" className="w-[72px] justify-end" />
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+
+  const errorNotice = error ? (
+    <InlineNotice tone="stop" action={<Button variant="ghost" size="sm" onClick={() => setError(null)}>Dismiss</Button>}>
+      {error}
+    </InlineNotice>
+  ) : null;
+
+  const tenderPanel = <TenderPanel due={due} caption={plural(count, 'item')} tenders={tenders} onChange={setTenders} drawerOpen={Boolean(drawer?.open && drawer.open.status === 'open')} />;
 
   return (
     <div className="flex h-full min-h-0 flex-col pad:flex-row">
@@ -182,91 +274,48 @@ export default function QuickSalePage() {
         </div>
       </div>
 
+      {/* From a tablet held upright: the sale beside the shelf, cart and tender each on their own pane. */}
       <aside
         aria-label="This sale"
-        className="flex shrink-0 flex-col gap-16 overflow-y-auto border-t border-rule-raised/30 bg-sunken/30 px-16 py-16 backdrop-blur-glass pad:w-[360px] pad:border-l pad:border-t-0 pad:px-20 pad:py-20 tablet:w-panel-tender tablet:px-24 tablet:py-24"
+        className="hidden shrink-0 flex-col gap-16 overflow-y-auto border-l border-rule-raised/30 bg-sunken/30 p-16 backdrop-blur-glass pad:flex pad:w-[380px] tablet:w-panel-tender tablet:gap-20 tablet:p-24"
       >
-        {done ? (
-          <div className="flex flex-col gap-12 rounded-lg bg-poured-wash px-16 py-16">
-            <p className="flex items-center gap-8 text-body-lg text-poured">
-              <IconCheck size={20} stroke={ICON_STROKE} aria-hidden="true" />
-              Sale recorded · {formatKes(done.paid, { decimals: 'whole' })}
-            </p>
-            {isPositive(done.change) ? (
-              <div>
-                <span className="caps text-ink-subtle">Change to give</span>
-                <Money value={done.change} size="display" tone="money" decimals="whole" />
-              </div>
-            ) : (
-              <p className="text-body text-ink-muted">No change to give.</p>
-            )}
-          </div>
-        ) : null}
-
-        <section className={`${PANE} overflow-hidden`}>
-          <header className="flex min-h-control-lg items-center justify-between gap-12 border-b border-rule-raised/30 px-16 py-8">
-            <h2 className="caps text-ink-subtle">{cart.length === 0 ? 'This sale' : `This sale · ${plural(count, 'item')}`}</h2>
-            {cart.length > 0 ? (
-              <Button variant="ghost" size="sm" icon={IconTrash} onClick={() => {
-                  const kept = cart;
-                  setCart([]);
-                  setTenders([]);
-                  notify({ tone: 'info', key: 'sale:cleared', title: 'Sale cleared', body: `${plural(count, 'item')} taken off. Nothing was recorded.`, undo: () => setCart(kept) });
-                }}>
-                Clear
-              </Button>
-            ) : null}
-          </header>
-          {cart.length === 0 ? (
-            <p className="flex items-center gap-12 px-16 py-16 text-body text-ink-muted">
-              <IconShoppingBag size={20} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0 text-ink-subtle" />
-              Tap a bottle to start a sale.
-            </p>
-          ) : (
-            <ul>
-              {cart.map((line) => (
-                <li key={line.variantId} className="flex min-h-row-floor items-center gap-8 border-b border-rule-raised/20 px-12 last:border-b-0">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-body text-ink">{line.name}</span>
-                    <span className="block font-mono text-micro text-ink-subtle">{formatKes(line.unitPrice, { decimals: 'whole' })} each</span>
-                  </span>
-                  <Stepper
-                    value={line.qty}
-                    min={0}
-                    max={99}
-                    size="md"
-                    label={`How many ${line.name}`}
-                    onChange={(qty) => {
-                      setTenders([]);
-                      setCart((c) => (qty === 0 ? c.filter((l) => l.variantId !== line.variantId) : c.map((l) => (l.variantId === line.variantId ? { ...l, qty } : l))));
-                    }}
-                  />
-                  <Money value={multiplyByQty(line.unitPrice, line.qty)} size="num-sm" decimals="whole" className="w-[84px] justify-end" />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {error ? (
-          <InlineNotice tone="stop" action={<Button variant="ghost" size="sm" onClick={() => setError(null)}>Dismiss</Button>}>
-            {error}
-          </InlineNotice>
-        ) : null}
-
-        {cart.length > 0 ? (
-          <TenderPanel due={due} caption={plural(count, 'item')} tenders={tenders} onChange={setTenders} drawerOpen={Boolean(drawer?.open && drawer.open.status === 'open')} />
-        ) : null}
+        {doneCard}
+        <section className={`${PANE} overflow-hidden`}>{cartBody}</section>
+        {errorNotice}
+        {cart.length > 0 ? <div className={`${PANE} p-16 tablet:p-20`}>{tenderPanel}</div> : null}
       </aside>
+
+      {/* On a phone the shelf keeps the screen; the sale opens over it. */}
+      <Sheet
+        open={sheetOpen && !wide}
+        onClose={() => setSheetOpen(false)}
+        eyebrow="Quick sale"
+        title={cart.length === 0 ? 'This sale' : `${plural(count, 'item')} · ${formatKes(due, { decimals: 'whole' })}`}
+        footer={
+          <Button variant="primary" size="lg" fullWidth loading={busy} disabled={!covered} onClick={() => void onSettle()}>
+            {covered ? `Take ${formatKes(due, { decimals: 'whole' })}` : 'Record how it was paid'}
+          </Button>
+        }
+      >
+        <div className="flex flex-col gap-16">
+          <section className="overflow-hidden rounded-md border border-rule-raised/30">{cartBody}</section>
+          {errorNotice}
+          {cart.length > 0 ? tenderPanel : null}
+        </div>
+      </Sheet>
 
       <BaseAction>
         {done && cart.length === 0 ? (
           <Button variant="secondary" size="xl" icon={IconArrowRight} iconPosition="end" onClick={() => setDone(null)}>
             Next sale
           </Button>
-        ) : (
+        ) : wide ? (
           <Button variant="primary" size="xl" loading={busy} disabled={!covered} onClick={() => void onSettle()}>
             {cart.length === 0 ? 'Take payment' : `Take ${formatKes(due, { decimals: 'whole' })}`}
+          </Button>
+        ) : (
+          <Button variant="primary" size="xl" icon={IconShoppingBag} disabled={cart.length === 0} onClick={() => setSheetOpen(true)}>
+            {cart.length === 0 ? 'Tap a bottle to start' : `Pay ${formatKes(due, { decimals: 'whole' })} · ${plural(count, 'item')}`}
           </Button>
         )}
       </BaseAction>
