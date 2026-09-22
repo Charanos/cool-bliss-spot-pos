@@ -764,6 +764,19 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
         }
       }
 
+      // A round reaches the table two minutes after its last pour. Tonight's newest stay in the
+      // waiter's hands, so the Floor opens on tables at every stage. No rand() here: drawing from
+      // it would shift the rest of the night.
+      for (let i = orders.length - 1; i >= 0 && orders[i]!.tabId === tabId; i -= 1) {
+        const order = orders[i]!;
+        const own = tabLines.filter((l) => l.orderId === order.id && l.status !== 'voided');
+        if (own.length === 0 || own.some((l) => l.servedAt === null)) continue;
+        const at = Math.max(...own.map((l) => l.servedAt ?? 0)) + 2 * MIN;
+        if (clock.inProgress && isToday && at > now - 4 * MIN) continue;
+        order.deliveredAt = at;
+        order.deliveredBy = waiter.id;
+      }
+
       // Settlement: the tab closes 20 to 50 minutes after its last round, unless it is still open.
       const liveLines = tabLines.filter((l) => l.status !== 'voided');
       const closeAt = lastFire + (20 + Math.floor(rand() * 30)) * MIN;
