@@ -27,8 +27,8 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 }
 
 const variantClass: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-accent-ink font-medium hover:bg-accent-hover active:bg-accent-pressed',
-  secondary: 'bg-control text-ink hover:bg-control-hover active:bg-control-pressed',
+  primary: 'bg-accent text-accent-ink font-medium shadow-[inset_0_1px_0_color-mix(in_oklab,var(--color-ink)_22%,transparent),0_6px_18px_-8px_color-mix(in_oklab,var(--color-accent)_55%,transparent)] hover:bg-accent-hover active:bg-accent-pressed',
+  secondary: 'bg-control text-ink shadow-[inset_0_1px_0_color-mix(in_oklab,var(--color-ink)_8%,transparent)] hover:bg-control-hover active:bg-control-pressed',
   ghost: 'bg-transparent text-ink-muted hover:bg-control hover:text-ink active:bg-control-hover',
   destructive: 'bg-stop text-stop-ink font-medium hover:opacity-90 active:opacity-80',
   'quiet-destructive': 'bg-transparent text-stop hover:bg-control active:bg-control-hover',
@@ -36,10 +36,10 @@ const variantClass: Record<ButtonVariant, string> = {
 };
 
 const sizeClass: Record<ButtonSize, string> = {
-  sm: 'h-control-sm px-12 text-body-sm gap-6',
-  md: 'h-control-md px-16 text-body gap-8',
-  lg: 'h-control-lg px-16 text-body gap-8',
-  xl: 'h-control-xl px-24 text-subtitle gap-12',
+  sm: 'h-control-sm rounded-[10px] px-12 text-body-sm gap-6',
+  md: 'h-control-md rounded-[12px] px-16 text-body gap-8',
+  lg: 'h-control-lg rounded-[14px] px-20 text-body gap-8',
+  xl: 'h-control-xl rounded-[16px] px-24 text-subtitle gap-12',
 };
 
 const iconOnlySize: Record<ButtonSize, string> = {
@@ -115,7 +115,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       }}
       style={{ ...style, ...(lockedWidth !== null ? { width: lockedWidth } : null) }}
       className={cx(
-        'relative inline-flex select-none items-center justify-center whitespace-nowrap rounded-sm press-feedback active:scale-[0.985]',
+        'relative inline-flex select-none items-center justify-center whitespace-nowrap press-feedback active:scale-[0.985]',
         variantClass[variant],
         sizeClass[size],
         iconOnly && cx(iconOnlySize[size], 'px-0'),

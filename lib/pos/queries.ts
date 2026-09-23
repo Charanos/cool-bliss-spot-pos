@@ -114,9 +114,14 @@ async function unsentOrderIds(): Promise<Set<string>> {
   return new Set(entries.filter((e): e is OutboxEntry<'order.fire'> => e.kind === 'order.fire').map((e) => e.payload.orderId));
 }
 
-export function lineState(line: OrderLine, unsent: Set<string>): TicketLineState {
+/**
+ * A line's state for the screens. The line's own status says whether the counter poured it (the
+ * status is still called `served` from before delivery was its own step); the order says whether
+ * the waiter has set it down at the table.
+ */
+export function lineState(line: OrderLine, unsent: Set<string>, delivered?: ReadonlySet<string>): TicketLineState {
   if (line.status === 'draft') return 'draft';
-  if (line.status === 'served') return 'poured';
+  if (line.status === 'served') return delivered?.has(line.orderId) ? 'served' : 'poured';
   if (unsent.has(line.orderId)) return 'unsent';
   if (line.stockConflict) return 'ran_out';
   return 'waiting';
@@ -218,7 +223,7 @@ export interface TicketGroup {
   key: string;
   seat: TabSeat | null;
   subtotal: Cents;
-  lines: { line: OrderLine; state: TicketLineState; modifiers: OrderLineModifier[]; name: string; imageUrl: string | null }[];
+  lines: { line: OrderLine; state: TicketLineState; deliveredAt: number | null; modifiers: OrderLineModifier[]; name: string; imageUrl: string | null }[];
 }
 
 export interface TabDetail {
@@ -245,7 +250,7 @@ export function useTab(tabId: string): TabDetail | null | undefined {
     const db = posDb();
     const tab = await db.tabs.get(tabId);
     if (!tab) return null;
-    const [seats, lines, modifiers, variants, products, table, zones, unsent, selected, rejected] = await Promise.all([
+    const [seats, lines, modifiers, variants, products, table, zones, unsent, selected, rejected, orders] = await Promise.all([
       db.seats.where('tabId').equals(tabId).toArray(),
       db.lines.where('tabId').equals(tabId).toArray(),
       db.lineModifiers.toArray(),
@@ -256,7 +261,10 @@ export function useTab(tabId: string): TabDetail | null | undefined {
       unsentOrderIds(),
       getMeta<SeatSelection>(META.selectedSeat(tabId)),
       db.outbox.where('aggregateId').equals(tabId).filter((e) => e.status === 'rejected').count(),
+      db.orders.where('tabId').equals(tabId).toArray(),
     ]);
+    const delivered = new Set(orders.filter((o) => o.deliveredAt).map((o) => o.id));
+    const deliveredAt = new Map(orders.map((o) => [o.id, o.deliveredAt ?? null]));
     const nameOf = new Map(variants.map((v) => [v.id, v.name]));
     const productById = new Map(products.map((p) => [p.id, p]));
     const imageOf = new Map(variants.map((v) => {
@@ -269,7 +277,8 @@ export function useTab(tabId: string): TabDetail | null | undefined {
     const seatTotals = visibleSeats.map((s) => ({ ...s, total: sum(live.filter((l) => l.tabSeatId === s.id).map((l) => l.lineTotalCents)) }));
     const decorate = (l: OrderLine) => ({
       line: l,
-      state: lineState(l, unsent),
+      state: lineState(l, unsent, delivered),
+      deliveredAt: deliveredAt.get(l.orderId) ?? null,
       modifiers: modifiers.filter((m) => m.orderLineId === l.id),
       name: nameOf.get(l.productVariantId) ?? 'Unknown item',
       imageUrl: imageOf.get(l.productVariantId) ?? null,
@@ -376,6 +385,7 @@ export function useFiredOrders(staffId?: string | null): FiredOrderView[] | unde
     const staffNameOf = new Map(staff.map((s) => [s.id, s.displayName]));
     const zoneNameOf = new Map(zones.map((z) => [z.id, z.name]));
     const tableById = new Map(tables.map((t) => [t.id, t]));
+    const delivered = new Set(orders.filter((o) => o.deliveredAt || deliveredOrders.has(o.id)).map((o) => o.id));
 
     return orders
       .filter((o) => relevantTabs.has(o.tabId) && o.status !== 'draft' && o.firedAt)
@@ -394,13 +404,13 @@ export function useFiredOrders(staffId?: string | null): FiredOrderView[] | unde
               line: l,
               name: nameOf.get(l.productVariantId) ?? '',
               seatNo: seats.find((s) => s.id === l.tabSeatId)?.seatNo ?? null,
-              state: lineState(l, unsent),
+              state: lineState(l, unsent, delivered),
               modifiers: lineMods,
             };
           });
         // Delivery is on the order now, synced; the old device-only mark is read until it is gone.
         const delivery = o.deliveredAt ? { deliveredAt: o.deliveredAt, deliveredBy: o.deliveredBy ?? '' } : deliveredOrders.get(o.id);
-        const isAllPoured = own.length > 0 && own.every((l) => l.state === 'poured');
+        const isAllPoured = own.length > 0 && own.every((l) => l.state === 'poured' || l.state === 'served');
         const state: FiredOrderView['state'] = unsent.has(o.id)
           ? 'held'
           : own.some((l) => l.state === 'ran_out')

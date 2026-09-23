@@ -24,6 +24,7 @@ export function TicketRow({
   name,
   imageUrl,
   state,
+  deliveredAt = null,
   timezone,
   open,
   onOpenChange,
@@ -34,6 +35,8 @@ export function TicketRow({
   name: string;
   imageUrl?: string | null;
   state: TicketLineState;
+  /** When its round reached the table, if it has. */
+  deliveredAt?: number | null;
   timezone: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -46,7 +49,7 @@ export function TicketRow({
           { key: 'note', label: 'Note', icon: IconNote, tone: 'default' },
           { key: 'clear', label: 'Clear', icon: IconX, tone: 'stop' },
         ]
-      : state === 'poured'
+      : state === 'poured' || state === 'served'
         ? [
             { key: 'move', label: 'Move', icon: IconArrowsExchange, tone: 'default' },
             { key: 'void', label: 'Void', icon: IconBan, tone: 'stop' },
@@ -148,6 +151,7 @@ export function TicketRow({
             state={state}
             detail={detail}
             pouredAt={line.servedAt ? formatTime(line.servedAt, timezone) : null}
+            servedAt={deliveredAt ? formatTime(deliveredAt, timezone) : null}
             imageUrl={imageUrl}
           />
         </div>

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { devDataEnabled, notFound } from '@/lib/dev';
 import { wireResponse } from '@/lib/wire';
 import { CommandRejected } from '@/modules/_data/changes';
+import { fresh, withWrite } from '@/modules/_data/store';
 import * as identity from '@/modules/identity/service';
 import * as settlementCommands from '@/modules/settlement/commands';
 
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
   const parsed = body.safeParse(JSON.parse(await request.text()));
   if (!parsed.success) return wireResponse({ ok: false, message: 'This request was not in a shape the server accepts.' }, { status: 400 });
   const input = parsed.data;
+  await fresh();
 
   const device = identity.devices().find((d) => d.id === input.deviceId);
   if (!device || device.status !== 'active' || device.kind !== 'counter') {
@@ -36,10 +38,10 @@ export async function POST(request: Request) {
   try {
     if (input.action === 'preflight') return wireResponse({ ok: true, openTabs: settlementCommands.closePreflight() });
     if (input.action === 'count') {
-      const result = settlementCommands.countDrawer({ sessionId: input.sessionId, countedCents: cents(input.countedCents), actor });
+      const result = await withWrite(() => settlementCommands.countDrawer({ sessionId: input.sessionId, countedCents: cents(input.countedCents), actor }));
       return wireResponse({ ok: true, ...result });
     }
-    return wireResponse({ ok: true, view: settlementCommands.closeDrawer({ sessionId: input.sessionId, reason: input.reason, actor }) });
+    return wireResponse({ ok: true, view: await withWrite(() => settlementCommands.closeDrawer({ sessionId: input.sessionId, reason: input.reason, actor })) });
   } catch (error) {
     if (error instanceof CommandRejected) return wireResponse({ ok: false, code: error.code, message: error.message }, { status: 409 });
     if (error instanceof Error) return wireResponse({ ok: false, message: error.message }, { status: 403 });

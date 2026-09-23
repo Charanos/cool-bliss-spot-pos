@@ -4,6 +4,7 @@ import { devDataEnabled, notFound } from '@/lib/dev';
 import { wireResponse } from '@/lib/wire';
 import { currentSeq } from '@/modules/_data/changes';
 import * as availability from '@/modules/availability/service';
+import { withWrite } from '@/modules/_data/store';
 import { applyEntry } from '@/modules/sync/apply';
 
 export const dynamic = 'force-dynamic';
@@ -29,10 +30,12 @@ export async function POST(request: Request) {
   // Parsed without the money reviver: outbox payloads carry cents as strings, and the payload schemas
   // validate exactly that wire shape.
   const body = JSON.parse(await request.text()) as { entries?: unknown[] };
-  const results = (body.entries ?? []).map((raw) => {
-    const parsed = entrySchema.safeParse(raw);
-    if (!parsed.success) return { id: (raw as { id?: string })?.id ?? 'unknown', status: 'rejected' as const, code: 'VALIDATION_FAILED' as const, detail: 'This change was not in a shape the server accepts.' };
-    return applyEntry(parsed.data);
-  });
+  const results = await withWrite(() =>
+    (body.entries ?? []).map((raw) => {
+      const parsed = entrySchema.safeParse(raw);
+      if (!parsed.success) return { id: (raw as { id?: string })?.id ?? 'unknown', status: 'rejected' as const, code: 'VALIDATION_FAILED' as const, detail: 'This change was not in a shape the server accepts.' };
+      return applyEntry(parsed.data);
+    }),
+  );
   return wireResponse({ results, availabilityVersion: availability.map().version, cursor: currentSeq() });
 }

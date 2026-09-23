@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { BaseLayerContext } from '@/app/_pos/base-layer';
-import { Dock, type DockItem, DockLink, LiveClock, SurfaceSwitcher, TopBar } from '@/app/_pos/chrome';
+import { Dock, type DockItem, DockLink, LiveClock, SurfaceSwitcher, TopBar, useQuietChrome } from '@/app/_pos/chrome';
 import { UpdateBar } from '@/app/_pos/update-bar';
 import { useCounterWatch } from '@/app/_pos/watchers';
 import { useCounterTabs, useDrawerState, useTickets } from '@/lib/pos/counter-queries';
@@ -40,6 +40,7 @@ export function CounterShell({ children }: { children: ReactNode }) {
   const session = useSession();
   const device = useDevice();
   const router = useRouter();
+  useQuietChrome();
   const pathname = usePathname();
   const sync = useSync();
   const outlet = useOutlet();

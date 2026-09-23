@@ -9,6 +9,7 @@ import {
   clearTable,
   closeEmptyTab,
   fireOrder,
+  handOver,
   markOrderDelivered,
   markTableOrdersDelivered,
   type SeatSelection,
@@ -120,6 +121,29 @@ export async function deliverTable(tabId: string, label: string) {
   if (n === 0) return notify({ tone: 'info', key: `deliver-table:${tabId}`, title: 'Nothing poured to serve', body: `Every poured round for ${label} is already at the table.` });
   haptic('success');
   notify({ key: `deliver-table:${tabId}`, title: `Served · ${label}`, body: `${plural(n, 'round')} recorded as at the table.` });
+}
+
+/**
+ * Tables to a colleague, at the end of a shift or mid-rush. Undo hands each table back to whoever
+ * had it, through the outbox like any change.
+ */
+export async function handOverTabs(tabIds: string[], to: { id: string; name: string }) {
+  let previous = new Map<string, string[]>();
+  const ok = await attempt(async () => {
+    previous = await handOver(tabIds, to.id);
+  }, 'The tables were not handed over');
+  if (!ok) return false;
+  const moved = [...previous.values()].reduce((n, ids) => n + ids.length, 0);
+  haptic('success');
+  notify({
+    key: `handover:${to.id}`,
+    title: `${plural(moved, 'table')} handed to ${to.name}`,
+    body: offline() ? 'It reaches their device the moment the network is back.' : 'Seats, lines and bills go with them, unchanged.',
+    undo: async () => {
+      for (const [owner, ids] of previous) await handOver(ids, owner);
+    },
+  });
+  return true;
 }
 
 /**

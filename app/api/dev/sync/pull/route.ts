@@ -2,6 +2,7 @@ import { businessDate } from '@bliss/shared/time';
 import { devDataEnabled, notFound } from '@/lib/dev';
 import { wireResponse } from '@/lib/wire';
 import { dataset } from '@/modules/_data/source';
+import { fresh } from '@/modules/_data/store';
 import * as availability from '@/modules/availability/service';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
   const epoch = url.searchParams.get('epoch');
   const deviceId = url.searchParams.get('device');
 
+  await fresh();
   const data = dataset();
   const outlet = identity.outlet();
   const map = availability.map();

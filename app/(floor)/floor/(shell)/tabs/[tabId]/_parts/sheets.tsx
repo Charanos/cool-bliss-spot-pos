@@ -109,7 +109,7 @@ export function ModifierSheet({
       <div className="flex-1" />
       <Button
         variant="primary"
-        size="xl"
+        size="lg"
         loading={pending}
         onClick={async () => {
           if (!variantId) return;
@@ -244,7 +244,7 @@ export function FinishedSheet({ variantId, onClose }: { variantId: string | null
   const footerActions = (
     <Button
       variant="secondary"
-      size="xl"
+      size="lg"
       onClick={onClose}
       className="w-full !rounded-full font-medium"
     >
@@ -392,7 +392,7 @@ export function LabelSeatSheet({
         type="submit"
         form="label-seat-form"
         variant="primary"
-        size="xl"
+        size="lg"
         className="!rounded-full px-32 font-medium"
       >
         {value.trim() ? 'Save label' : 'Clear label'}
@@ -644,7 +644,7 @@ export function NoteSheet({
         type="submit"
         form="line-note-form"
         variant="primary"
-        size="xl"
+        size="lg"
         className="!rounded-full px-32 font-medium"
       >
         {value.trim() ? 'Save note' : 'Clear note'}

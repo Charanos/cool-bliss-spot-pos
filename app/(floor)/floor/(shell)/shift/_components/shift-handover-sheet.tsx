@@ -1,86 +1,76 @@
 'use client';
 
 import { plural } from '@bliss/shared/format';
-import { formatKes, sum } from '@bliss/shared/money';
-import { Badge } from '@bliss/ui/components/badge';
+import { type Cents, formatKes, sum } from '@bliss/shared/money';
 import { Button } from '@bliss/ui/components/button';
 import { Sheet } from '@bliss/ui/components/floor/sheet';
-import { OverlayActions } from '@bliss/ui/components/overlay';
+import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Dot } from '@bliss/ui/components/status';
 import { cx } from '@bliss/ui/lib/cx';
-import { staffPhoto } from '@/lib/pos/staff-photos';
-import {
-  IconArrowRight,
-  IconCheck,
-  IconInfoCircle,
-} from '@tabler/icons-react';
-import { useState } from 'react';
+import { IconArrowRight, IconCheck } from '@tabler/icons-react';
+import { useEffect, useState } from 'react';
+import { handOverTabs } from '@/lib/pos/actions';
 import type { StaffDirectoryEntry } from '@/lib/pos/db';
-import { handOver } from '@/lib/pos/mutations';
-import type { TabListItem } from '@/lib/pos/queries';
+import type { SeatedTab, TabListItem } from '@/lib/pos/queries';
+import { staffPhoto } from '@/lib/pos/staff-photos';
 
 export interface ShiftHandoverSheetProps {
   open: boolean;
   onClose: () => void;
   myTabs: TabListItem[];
+  /** Paid tables of mine whose guests are still sitting; clearing them moves with the handover. */
+  mySeated: SeatedTab[];
   colleagues: StaffDirectoryEntry[];
   allTabs: TabListItem[];
-  onSuccess: (message: string) => void;
+}
+
+interface Row {
+  id: string;
+  label: string;
+  total: Cents;
+  seated: boolean;
 }
 
 /**
- * Production-grade Shift Handover Console for Floor Waiters.
- * Shows live colleague workload telemetry to prevent overloaded section handovers.
- * Conforms strictly to bliss/one-pane and bliss/max-font-weight.
+ * Hand tables to a colleague. docs/16 section 8.
+ *
+ * Every table the waiter looks after is listed, chosen by default: the ones being ordered on and
+ * the paid ones whose guests are still sitting. The colleagues show what they already carry, so a
+ * section goes to someone who can take it. Undo, on the notice that follows, hands every table back.
  */
-export function ShiftHandoverSheet({
-  open,
-  onClose,
-  myTabs,
-  colleagues,
-  allTabs,
-  onSuccess,
-}: ShiftHandoverSheetProps) {
+export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues, allTabs }: ShiftHandoverSheetProps) {
+  const rows: Row[] = [
+    ...myTabs.map((t) => ({ id: t.tab.id, label: t.label, total: t.total, seated: false })),
+    ...mySeated.map((t) => ({ id: t.tab.id, label: t.label, total: t.paid, seated: true })),
+  ];
   const [targetId, setTargetId] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<string[]>(() =>
-    myTabs.map((t) => t.tab.id),
-  );
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
 
-  // Synchronize selection if tab list changes
-  const activeSelectedIds = selectedIds.filter((id) =>
-    myTabs.some((t) => t.tab.id === id),
-  );
-  const selectedTabs = myTabs.filter((t) => activeSelectedIds.includes(t.tab.id));
-  const selectedTotal = sum(selectedTabs.map((t) => t.total));
+  // Each time it opens: every table chosen, nobody picked yet.
+  useEffect(() => {
+    if (!open) return;
+    setChosen(rows.map((r) => r.id));
+    setTargetId(null);
+    // Only on opening; the rows themselves update live underneath.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  const target = colleagues.find((c) => c.id === targetId);
+  const selected = rows.filter((r) => chosen.includes(r.id));
+  const target = colleagues.find((c) => c.id === targetId) ?? null;
+  const allChosen = selected.length === rows.length && rows.length > 0;
 
-  const toggleTab = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+  const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+
+  const commit = async () => {
+    if (!target || selected.length === 0 || busy) return;
+    setBusy(true);
+    const ok = await handOverTabs(
+      selected.map((r) => r.id),
+      { id: target.id, name: target.displayName },
     );
-  };
-
-  const selectAll = () => setSelectedIds(myTabs.map((t) => t.tab.id));
-  const deselectAll = () => setSelectedIds([]);
-
-  const handleCommit = async () => {
-    if (!target || activeSelectedIds.length === 0) return;
-    try {
-      setSubmitting(true);
-      setError(null);
-      await handOver(activeSelectedIds, target.id);
-      onClose();
-      onSuccess(
-        `${plural(activeSelectedIds.length, 'tab')} (${formatKes(selectedTotal, { decimals: 'whole' })}) handed over to ${target.displayName}. Seats, labels and lines are unchanged.`,
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Handover could not be completed.');
-    } finally {
-      setSubmitting(false);
-    }
+    setBusy(false);
+    if (ok) onClose();
   };
 
   return (
@@ -88,225 +78,129 @@ export function ShiftHandoverSheet({
       open={open}
       onClose={onClose}
       width="lg"
-      className="desktop:!w-[760px] desktop:max-w-[760px]"
-      title={
-        <div className="flex flex-col gap-6 w-full pr-8">
-          <div className="flex items-center justify-between gap-12 flex-wrap">
-            <div className="flex items-center gap-8 min-w-0">
-              <span className="text-title-lg font-medium text-ink ">
-                Shift Handover
-              </span>
-              <Badge tone="accent" className="!rounded-dot px-12 py-6 font-mono text-micro">
-                {activeSelectedIds.length} of {myTabs.length} tabs selected
-              </Badge>
-            </div>
-            <span className="font-mono text-body-sm text-ink-subtle">
-              Total: {formatKes(selectedTotal, { decimals: 'whole' })}
-            </span>
+      eyebrow="End of shift"
+      title="Hand over tables"
+      description="Choose the tables and who takes them. Seats, rounds and bills go with them, unchanged."
+      footer={
+        <div className="flex w-full items-center justify-between gap-12">
+          <span className="hidden min-w-0 truncate text-body-sm text-ink-muted pad:block">
+            {selected.length === 0 ? 'No tables chosen' : `${plural(selected.length, 'table')} · ${formatKes(sum(selected.map((r) => r.total)), { decimals: 'whole' })}`}
+          </span>
+          <div className="flex flex-1 items-center justify-end gap-8">
+            <Button variant="ghost" size="lg" onClick={onClose} disabled={busy}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="lg" icon={IconArrowRight} iconPosition="end" loading={busy} disabled={!target || selected.length === 0} onClick={() => void commit()}>
+              {!target ? 'Choose who takes them' : selected.length === 0 ? 'Choose a table' : `Hand ${plural(selected.length, 'table')} to ${target.displayName.split(' ')[0]}`}
+            </Button>
           </div>
-          <p className="font-mono text-micro text-ink-subtle">
-            Select colleague taking over your section. All seats, fired orders, and lines remain intact.
-          </p>
         </div>
       }
     >
-      <div className="flex flex-col gap-20 pb-12">
-        {/* ── 1. Reassurance Explanatory Banner ───────────────────────── */}
-        <div className="flex items-start gap-12 p-16 rounded-[16px] bg-control border-t border-b border-rule-raised/20 text-ink-subtle">
-          <IconInfoCircle size={18} className="shrink-0 text-accent mt-2" />
-          <p className="font-mono text-micro text-ink-subtle ">
-            Handing over moves tab responsibility to the colleague waiter. Table numbers, guest seat assignments,
-            and unsettled orders transfer automatically.
-          </p>
-        </div>
-
-        {/* ── 2. Tab Selection Checklist (Granular vs Batch) ─────────── */}
-        <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-24">
+        <section aria-labelledby="handover-tables" className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-micro uppercase text-ink-subtle">
-              Tables to transfer ({activeSelectedIds.length})
-            </span>
-            <div className="flex items-center gap-8 font-mono text-micro">
-              <button
-                type="button"
-                onClick={selectAll}
-                className="text-accent hover:underline cursor-pointer"
-              >
-                Select all
+            <h3 id="handover-tables" className="caps text-ink-subtle">
+              Tables · {selected.length} of {rows.length}
+            </h3>
+            {rows.length > 1 ? (
+              <button type="button" onClick={() => setChosen(allChosen ? [] : rows.map((r) => r.id))} className="h-control-sm rounded-[10px] px-12 text-label font-medium text-accent-text press-feedback hover:bg-accent/10">
+                {allChosen ? 'Choose none' : 'Choose all'}
               </button>
-              <span className="text-ink-disabled">·</span>
-              <button
-                type="button"
-                onClick={deselectAll}
-                className="text-ink-subtle hover:text-ink cursor-pointer"
-              >
-                Deselect
-              </button>
-            </div>
+            ) : null}
           </div>
-
-          <div className="grid grid-cols-1 tablet:grid-cols-2 gap-8 max-h-[160px] overflow-y-auto no-scrollbar">
-            {myTabs.map((t) => {
-              const isChecked = activeSelectedIds.includes(t.tab.id);
-              return (
-                <button
-                  key={t.tab.id}
-                  type="button"
-                  onClick={() => toggleTab(t.tab.id)}
-                  className={cx(
-                    'flex items-center justify-between p-12 rounded-[14px] text-left transition-all cursor-pointer border-t border-b border-rule-raised/20',
-                    isChecked
-                      ? 'bg-accent-wash text-ink'
-                      : 'hover:bg-control-hover text-ink-subtle',
-                  )}
-                >
-                  <div className="flex items-center gap-8 min-w-0">
-                    <div
+          {rows.length === 0 ? (
+            <p className="rounded-[16px] bg-sunken/60 px-16 py-16 text-body text-ink-muted">You have no tables to hand over.</p>
+          ) : (
+            <ul className="grid grid-cols-1 gap-6 pad:grid-cols-2">
+              {rows.map((r) => {
+                const on = chosen.includes(r.id);
+                return (
+                  <li key={r.id}>
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={on}
+                      onClick={() => toggle(r.id)}
                       className={cx(
-                        'size-20 rounded flex items-center justify-center shrink-0 border transition-all',
-                        isChecked
-                          ? 'bg-accent border-accent text-accent-ink'
-                          : 'border-rule-raised/60 text-transparent',
+                        'flex min-h-row-floor w-full items-center gap-12 rounded-[16px] px-12 text-left press-feedback',
+                        on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-sunken/50 hover:bg-control/60',
                       )}
                     >
-                      <IconCheck size={13} stroke={2.5} />
-                    </div>
-                    <span className="text-body-sm font-medium text-ink truncate">
-                      {t.label}
-                    </span>
-                  </div>
-                  <span className="font-mono text-micro font-medium text-ink-muted">
-                    {formatKes(t.total, { decimals: 'whole' })}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                      <span aria-hidden="true" className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-[7px]', on ? 'bg-accent text-accent-ink' : 'ring-1 ring-inset ring-rule-raised text-transparent')}>
+                        <IconCheck size={14} stroke={ICON_STROKE} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-body text-ink">{r.label}</span>
+                        {r.seated ? <span className="block text-label text-poured">Paid · still seated</span> : null}
+                      </span>
+                      <span className="shrink-0 font-mono tabular text-num-sm text-ink-muted">{formatKes(r.total, { decimals: 'whole' })}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
 
-        {/* ── 3. Colleague Workload Directory Grid ────────────────────── */}
-        <div className="flex flex-col gap-8">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-micro uppercase text-ink-subtle">
-              Receiving colleague (select one)
-            </span>
-            <span className="font-mono text-micro text-ink-disabled">
-              {colleagues.length} available on floor
-            </span>
-          </div>
-
-          <div
-            className="grid grid-cols-1 tablet:grid-cols-2 gap-8"
-            role="radiogroup"
-            aria-label="Colleague selection"
-          >
-            {colleagues.map((c) => {
-              const colleagueTabs = allTabs.filter(
-                (t) => t.tab.assignedTo === c.id,
-              );
-              const colleagueTotal = sum(colleagueTabs.map((t) => t.total));
-              const isSelected = targetId === c.id;
-
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={isSelected}
-                  onClick={() => setTargetId(c.id)}
-                  className={cx(
-                    'flex items-center justify-between p-16 rounded-[16px] transition-all text-left cursor-pointer border-t border-b border-rule-raised/25',
-                    isSelected
-                      ? 'bg-accent-wash ring-1 ring-accent/40 shadow-raised'
-                      : 'hover:bg-control-hover',
-                  )}
-                >
-                  <div className="flex items-center gap-12 min-w-0">
-                    {/* Colleague Avatar Photo */}
-                    <div
-                      aria-hidden="true"
-                      className="flex size-[36px] items-center justify-center overflow-hidden rounded-dot border border-hairline/60 bg-accent-wash text-label font-medium text-accent-text select-none shadow-raised shrink-0"
-                    >
-                      {staffPhoto(c.displayName) ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={staffPhoto(c.displayName)!}
-                          alt={c.displayName}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        c.displayName.slice(0, 2).toUpperCase()
+        <section aria-labelledby="handover-to" className="flex flex-col gap-8">
+          <h3 id="handover-to" className="caps text-ink-subtle">
+            To
+          </h3>
+          {colleagues.length === 0 ? (
+            <p className="rounded-[16px] bg-sunken/60 px-16 py-16 text-body text-ink-muted">Nobody else works the floor right now.</p>
+          ) : (
+            <ul role="radiogroup" aria-labelledby="handover-to" className="grid grid-cols-1 gap-6 pad:grid-cols-2">
+              {colleagues.map((c) => {
+                const theirs = allTabs.filter((t) => t.tab.assignedTo === c.id);
+                const on = targetId === c.id;
+                const photo = staffPhoto(c.displayName);
+                return (
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => setTargetId(c.id)}
+                      className={cx(
+                        'flex min-h-[64px] w-full items-center gap-12 rounded-[16px] px-12 text-left press-feedback',
+                        on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-sunken/50 hover:bg-control/60',
                       )}
-                    </div>
-
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-6">
-                        <span className="text-body font-medium text-ink truncate ">
+                    >
+                      <span aria-hidden="true" className="flex size-[40px] shrink-0 items-center justify-center overflow-hidden rounded-dot bg-accent-wash text-label font-medium text-accent-text">
+                        {photo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={photo} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          c.displayName.slice(0, 1)
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-body text-ink">
                           {c.displayName}
+                          <span className="text-body-sm text-ink-subtle"> · {c.roleKey === 'supervisor' ? 'Supervisor' : 'Waiter'}</span>
                         </span>
-                        <span className="font-mono text-micro text-ink-subtle">
-                          ({c.roleKey === 'supervisor' ? 'Sup' : 'Wait'})
+                        <span className="flex items-center gap-6 text-label text-ink-muted">
+                          {theirs.length === 0 ? (
+                            <>
+                              <Dot tone="poured" />
+                              No tables yet
+                            </>
+                          ) : (
+                            `${plural(theirs.length, 'table')} · ${formatKes(sum(theirs.map((t) => t.total)), { decimals: 'whole' })}`
+                          )}
                         </span>
-                      </div>
-
-                      {/* Live Workload Telemetry */}
-                      {colleagueTabs.length === 0 ? (
-                        <span className="font-mono text-micro text-poured flex items-center gap-4 mt-2">
-                          <Dot tone="poured" />
-                          <span>0 active tabs · Available</span>
-                        </span>
-                      ) : (
-                        <span className="font-mono text-micro text-ink-subtle truncate mt-2">
-                          {colleagueTabs.length}{' '}
-                          {plural(colleagueTabs.length, 'tab')} (
-                          {formatKes(colleagueTotal, { decimals: 'whole' })})
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Radio indicator */}
-                  <div
-                    className={cx(
-                      'size-[22px] rounded-dot flex items-center justify-center shrink-0 border transition-all ml-4',
-                      isSelected
-                        ? 'border-accent bg-accent text-accent-ink'
-                        : 'border-rule-raised/60 text-transparent',
-                    )}
-                  >
-                    <IconCheck size={13} stroke={2.5} />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Error notification if commit fails */}
-        {error ? (
-          <div className="rounded-lg border border-stop/30 bg-stop-wash px-16 py-12 text-stop text-body-sm font-medium">
-            {error}
-          </div>
-        ) : null}
-
-        {/* ── 4. Dialog Action Footer ────────────────────────────────── */}
-        <OverlayActions>
-          <Button variant="ghost" size="lg" onClick={onClose} disabled={submitting}>
-            Keep tabs
-          </Button>
-          <Button
-            variant="primary"
-            size="xl"
-            disabled={!target || activeSelectedIds.length === 0 || submitting}
-            loading={submitting}
-            onClick={handleCommit}
-            icon={IconArrowRight}
-          >
-            {target
-              ? `Hand over ${activeSelectedIds.length} ${plural(activeSelectedIds.length, 'tab')} to ${target.displayName}`
-              : `Select a colleague`}
-          </Button>
-        </OverlayActions>
+                      </span>
+                      <span aria-hidden="true" className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-dot', on ? 'bg-accent text-accent-ink' : 'ring-1 ring-inset ring-rule-raised text-transparent')}>
+                        <IconCheck size={14} stroke={ICON_STROKE} />
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       </div>
     </Sheet>
   );

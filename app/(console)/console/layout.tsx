@@ -19,6 +19,7 @@ import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import * as procurement from '@/modules/procurement/service';
 import * as reporting from '@/modules/reporting/service';
+import { fresh } from '@/modules/_data/store';
 import * as sync from '@/modules/sync/service';
 import * as trade from '@/modules/trade/service';
 import { ThemeToggle } from './_components/theme-toggle';
@@ -32,6 +33,8 @@ const icon = (Glyph: typeof IconChartBar) => <Glyph size={20} stroke={1.5} />;
  * a base layer with the outlet, the business date and the devices online. Every tab is a route.
  */
 export default async function ConsoleLayout({ children }: { children: ReactNode }) {
+  // The Console reads the outlet as last committed, whichever server instance wrote it.
+  await fresh();
   const theme = (await cookies()).get('bliss-console-theme')?.value === 'dark' ? 'dark' : 'light';
   const outlet = identity.outlet();
   const actor = identity.currentConsoleActor();

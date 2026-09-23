@@ -30,8 +30,9 @@ declare const self: WorkerGlobalScope & {
  *     would tell it an order was accepted that the server never saw. Both are worse than being
  *     offline, which the device already handles. /api is NetworkOnly, deliberately, forever.
  *  2. The shell is cached so a tablet that opens in a dead spot still starts. Pages are network
- *     first, so a waiter never works against a stale build while the network is fine, and the last
- *     good copy answers when it is not.
+ *     first with no timeout: a slow connection waits for this build rather than booting an older
+ *     cached page whose code the server no longer has, and the last good copy answers only when
+ *     the network is actually gone.
  *
  * The worker also never takes over on its own. `skipWaiting` is false: a new build waits until the
  * page asks for it, because swapping the JavaScript under a waiter mid-order is how a POS loses an
@@ -85,7 +86,6 @@ const serwist = new Serwist({
       matcher: ({ request, url, sameOrigin }) => sameOrigin && (request.mode === 'navigate' || url.searchParams.has('_rsc')),
       handler: new NetworkFirst({
         cacheName: 'bliss-pages',
-        networkTimeoutSeconds: 4,
         plugins: [new CacheableResponsePlugin({ statuses: [200] })],
       }),
     },

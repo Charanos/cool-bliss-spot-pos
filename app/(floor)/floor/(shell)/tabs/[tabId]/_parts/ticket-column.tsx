@@ -133,7 +133,7 @@ export const TicketColumn = forwardRef<
                   settled={group.seat?.status === 'settled'}
                 />
                 <div>
-                  {group.lines.map(({ line, state, modifiers, name, imageUrl }) => (
+                  {group.lines.map(({ line, state, deliveredAt, modifiers, name, imageUrl }) => (
                     <TicketRow
                       key={line.id}
                       line={line}
@@ -141,6 +141,7 @@ export const TicketColumn = forwardRef<
                       name={name}
                       imageUrl={imageUrl}
                       state={state}
+                      deliveredAt={deliveredAt}
                       timezone={timezone}
                       open={openRow === line.id}
                       onOpenChange={(open) => setOpenRow(open ? line.id : null)}

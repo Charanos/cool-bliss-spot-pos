@@ -8,8 +8,8 @@ import { SeatChipStack } from '@bliss/ui/components/working';
 import { Dot } from '@bliss/ui/components/status';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { fresh } from '@/modules/_data/store';
 import * as identity from '@/modules/identity/service';
-import * as reporting from '@/modules/reporting/service';
 import * as trade from '@/modules/trade/service';
 import { cx } from '@/packages/ui/src/lib/cx';
 
@@ -34,14 +34,13 @@ function greeting(at: number, timeZone: string) {
   return { hello: 'Habari ya jioni', ask: 'where are you working tonight?' };
 }
 
-export default function EntryPage() {
+export default async function EntryPage() {
+  await fresh();
   const outlet = identity.outlet();
   const now = Date.now();
   const { hello, ask } = greeting(now, outlet.timezone);
   const open = trade.openTabs();
   const seatsOnFloor = open.reduce((max, t) => Math.max(max, t.seats.filter((s) => s.status === 'active').length), 0);
-  const attention = reporting.needsAttention();
-  const urgent = attention.some((a) => a.tone === 'stop');
 
   return (
     <>

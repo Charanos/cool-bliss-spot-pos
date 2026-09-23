@@ -8,9 +8,9 @@ import '../globals.css';
 export const metadata: Metadata = {
   title: 'Bliss Counter',
   description: 'Pour, settle and close the drawer at Cool Bliss Spot.',
-  manifest: '/counter/manifest.webmanifest',
-  applicationName: 'Bliss Counter',
-  appleWebApp: { capable: true, title: 'Bliss Counter', statusBarStyle: 'black-translucent' },
+  manifest: '/manifest.webmanifest',
+  applicationName: 'Bliss',
+  appleWebApp: { capable: true, title: 'Bliss', statusBarStyle: 'black-translucent' },
   icons: {
     // iOS reads this one and has never supported SVG here.
     apple: '/icon/192',

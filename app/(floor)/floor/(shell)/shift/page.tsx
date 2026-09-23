@@ -5,7 +5,7 @@ import { formatKes, sum } from '@bliss/shared/money';
 import { Badge } from '@bliss/ui/components/badge';
 import { Button } from '@bliss/ui/components/button';
 import { Elapsed } from '@bliss/ui/components/elapsed';
-import { EmptyState, InlineNotice } from '@bliss/ui/components/feedback';
+import { EmptyState } from '@bliss/ui/components/feedback';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Money } from '@bliss/ui/components/money';
 import { Dot } from '@bliss/ui/components/status';
@@ -27,7 +27,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { posDb } from '@/lib/pos/db';
-import { useOpenTabs, useOutlet, useStaffDirectory } from '@/lib/pos/queries';
+import { useOpenTabs, useOutlet, useSeatedTabs, useStaffDirectory } from '@/lib/pos/queries';
 import { signOut, useSession } from '@/lib/pos/session';
 import { useSync } from '@/lib/pos/sync';
 import { ShiftHandoverSheet } from './_components/shift-handover-sheet';
@@ -49,10 +49,10 @@ export default function ShiftPage() {
   const outlet = useOutlet();
   const allTabs = useOpenTabs();
   const staff = useStaffDirectory();
+  const seated = useSeatedTabs();
   const sync = useSync();
 
   const [handoverOpen, setHandoverOpen] = useState(false);
-  const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [onBreak, setOnBreak] = useState(false);
 
   const tz = outlet?.timezone ?? 'Africa/Nairobi';
@@ -66,6 +66,8 @@ export default function ShiftPage() {
   if (!session) return null;
 
   const myTabs = (allTabs ?? []).filter((t) => t.tab.assignedTo === session.staffId);
+  const mySeated = (seated ?? []).filter((t) => t.tab.assignedTo === session.staffId);
+  const handable = myTabs.length + mySeated.length;
   const floorLiabilityTotal = sum(myTabs.map((t) => t.total));
   const totalGuests = myTabs.reduce((acc, t) => acc + (t.tab.guestCount ?? t.seats.length), 0);
   const colleagues = (staff ?? []).filter((s) => s.id !== session.staffId && (s.roleKey === 'waiter' || s.roleKey === 'supervisor'));
@@ -127,12 +129,6 @@ export default function ShiftPage() {
       </header>
 
       <div className="flex flex-col gap-24 px-12 py-16 pad:gap-32 pad:px-24 pad:py-24">
-        {successNotice ? (
-          <InlineNotice tone="poured" action={<Button variant="ghost" size="sm" onClick={() => setSuccessNotice(null)}>Dismiss</Button>}>
-            {successNotice}
-          </InlineNotice>
-        ) : null}
-
         <section aria-labelledby="shift-metrics">
           <h2 id="shift-metrics" className="sr-only">
             This shift
@@ -252,8 +248,8 @@ export default function ShiftPage() {
       </div>
 
       <BaseAction>
-        <Button variant="primary" size="xl" icon={IconUsers} disabled={myTabs.length === 0} onClick={() => setHandoverOpen(true)}>
-          {myTabs.length > 0 ? `Hand over ${plural(myTabs.length, 'tab')}` : 'Hand over section'}
+        <Button variant="primary" size="xl" icon={IconUsers} disabled={handable === 0} onClick={() => setHandoverOpen(true)}>
+          {handable > 0 ? `Hand over ${plural(handable, 'table')}` : 'Hand over tables'}
         </Button>
       </BaseAction>
 
@@ -262,11 +258,8 @@ export default function ShiftPage() {
         onClose={() => setHandoverOpen(false)}
         myTabs={myTabs}
         allTabs={allTabs ?? []}
+        mySeated={mySeated}
         colleagues={colleagues}
-        onSuccess={(message) => {
-          setHandoverOpen(false);
-          setSuccessNotice(message);
-        }}
       />
     </div>
   );

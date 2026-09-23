@@ -151,9 +151,6 @@ export const AmbientFloorArtwork = memo(function AmbientFloorArtwork() {
             <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
           </radialGradient>
 
-          <filter id="floor-blur-soft">
-            <feGaussianBlur stdDeviation="60" />
-          </filter>
           <filter id="floor-blur-medium">
             <feGaussianBlur stdDeviation="4" />
           </filter>
@@ -205,8 +202,8 @@ export const AmbientFloorArtwork = memo(function AmbientFloorArtwork() {
           ))}
         </defs>
 
-        <rect width="100%" height="100%" fill="url(#floor-flare-left)" filter="url(#floor-blur-soft)" />
-        <rect width="100%" height="100%" fill="url(#floor-flare-right)" filter="url(#floor-blur-soft)" />
+        <rect width="100%" height="100%" fill="url(#floor-flare-left)" />
+        <rect width="100%" height="100%" fill="url(#floor-flare-right)" />
 
         {/* ── Left Flank (Generative Frost rendering on right side of screen) ── */}
         <g>

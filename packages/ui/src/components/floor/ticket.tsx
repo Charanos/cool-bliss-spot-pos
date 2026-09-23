@@ -55,7 +55,11 @@ export function SeatGroupHeader({
   );
 }
 
-export type TicketLineState = 'draft' | 'unsent' | 'waiting' | 'poured' | 'ran_out';
+/**
+ * Where a line stands. `poured` is ready at the counter; `served` is at the table, which only the
+ * waiter says. docs/16 section 8.
+ */
+export type TicketLineState = 'draft' | 'unsent' | 'waiting' | 'poured' | 'served' | 'ran_out';
 
 export interface TicketLineViewProps {
   qty: number;
@@ -66,6 +70,8 @@ export interface TicketLineViewProps {
   detail?: string | null;
   /** Time poured, already formatted. */
   pouredAt?: string | null;
+  /** Time it reached the table, already formatted. */
+  servedAt?: string | null;
   trailing?: ReactNode;
   imageUrl?: string | null;
 }
@@ -78,8 +84,8 @@ export interface TicketLineViewProps {
  * - status dot or modifier note below
  * - 'KES 700.00' with subtle currency prefix and tabular price
  */
-export function TicketLineView({ qty, name, lineTotal, state, detail, pouredAt, trailing, imageUrl }: TicketLineViewProps) {
-  const poured = state === 'poured';
+export function TicketLineView({ qty, name, lineTotal, state, detail, pouredAt, servedAt, trailing, imageUrl }: TicketLineViewProps) {
+  const poured = state === 'poured' || state === 'served';
 
   return (
     <div className="relative flex items-center gap-12 py-8">
@@ -97,7 +103,7 @@ export function TicketLineView({ qty, name, lineTotal, state, detail, pouredAt, 
           <span className={cx('block truncate text-body-sm font-medium ', poured ? 'text-ink-muted' : 'text-ink')}>{name}</span>
         </div>
 
-        {detail || state === 'unsent' || state === 'poured' || state === 'ran_out' ? (
+        {detail || state === 'unsent' || state === 'poured' || state === 'served' || state === 'ran_out' ? (
           <div className="flex items-center gap-8 pt-4 min-w-0 text-label text-ink-subtle">
             {detail ? <span className="truncate">{detail}</span> : null}
             {state === 'unsent' ? (
@@ -106,9 +112,14 @@ export function TicketLineView({ qty, name, lineTotal, state, detail, pouredAt, 
                 Not yet sent
               </span>
             ) : state === 'poured' ? (
-              <span className="inline-flex items-center gap-20 text-poured">
+              <span className="inline-flex shrink-0 items-center gap-6 text-poured">
                 <Dot tone="poured" />
-                {pouredAt ? `Poured ${pouredAt}` : 'Poured'}
+                {pouredAt ? `Poured ${pouredAt} · to serve` : 'Poured · to serve'}
+              </span>
+            ) : state === 'served' ? (
+              <span className="inline-flex shrink-0 items-center gap-6 text-served">
+                <Dot tone="served" />
+                {servedAt ? `Served ${servedAt}` : 'Served'}
               </span>
             ) : state === 'ran_out' ? (
               <StatusChip status="ran_out" />
@@ -120,7 +131,7 @@ export function TicketLineView({ qty, name, lineTotal, state, detail, pouredAt, 
       <Money value={lineTotal} size="num" tone={poured ? 'subtle' : 'default'} currency={true} className="shrink-0" />
       {trailing}
       <span className="sr-only">
-        {state === 'draft' ? 'Not fired yet' : state === 'unsent' ? 'Fired, not yet sent' : state === 'waiting' ? 'At the bar' : state === 'poured' ? 'Poured' : 'Ran out'}
+        {state === 'draft' ? 'Not fired yet' : state === 'unsent' ? 'Fired, not yet sent' : state === 'waiting' ? 'At the bar' : state === 'poured' ? 'Poured, to serve' : state === 'served' ? 'Served at the table' : 'Ran out'}
       </span>
     </div>
   );

@@ -193,7 +193,7 @@ export function OpenTabSheet({
       <div className="flex-1" />
       <Button
         variant="primary"
-        size="xl"
+        size="lg"
         loading={pending}
         onClick={() => void submit()}
         className="!rounded-full !bg-ink !text-page px-32 transition-all hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(255,255,255,0.15)]"

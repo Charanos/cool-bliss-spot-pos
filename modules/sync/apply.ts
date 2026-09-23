@@ -6,6 +6,7 @@ import type { Actor } from '@bliss/shared/reason';
 import { type OutboxKind, type OutboxPayload, REJECTION_COPY, type RejectionCode, outboxPayloads } from '@bliss/shared/sync';
 import { CommandRejected, changedSince, currentSeq } from '../_data/changes';
 import { dataset } from '../_data/source';
+import { checkpoint, release, rollbackTo } from '../_data/store';
 import * as identity from '../identity/service';
 import * as settlementCommands from '../settlement/commands';
 import * as settlement from '../settlement/service';
@@ -65,7 +66,7 @@ function reject(entry: IncomingEntry, code: RejectionCode, detail: string): Appl
 export function applyEntry(entry: IncomingEntry): ApplyResult {
   const data = dataset();
   if (data.applied.has(entry.id)) return { id: entry.id, status: 'acked', idempotent: true };
-  const earlier = rejectedEarlier.get(entry.id);
+  const earlier = rejectedEarlier.get(entry.id) ?? refusedBefore(entry.id);
   if (earlier) return earlier;
 
   const device = identity.devices().find((d) => d.id === entry.deviceId);
@@ -78,14 +79,25 @@ export function applyEntry(entry: IncomingEntry): ApplyResult {
   if (!parsed.success) return reject(entry, 'VALIDATION_FAILED', parsed.error.issues[0]?.message ?? REJECTION_COPY.VALIDATION_FAILED);
 
   const actor: Actor = { staffId: entry.staffId, deviceId: entry.deviceId };
+  // A refused entry leaves nothing behind: whatever it changed before the refusal is taken back,
+  // and only its dead letter is kept.
+  const cp = checkpoint();
   try {
     const conflicts = run(entry.kind, parsed.data, actor);
     data.applied.add(entry.id);
+    release(cp);
     return { id: entry.id, status: 'acked', idempotent: false, stockConflictLineIds: conflicts };
   } catch (error) {
+    rollbackTo(cp);
     if (error instanceof CommandRejected) return reject(entry, error.code, error.message);
     throw error;
   }
+}
+
+/** A refusal recorded before this server instance started, read back from its dead letter. */
+function refusedBefore(id: string): ApplyResult | null {
+  const letter = syncTables().deadLetters.find((d) => d.outboxEntryId === id);
+  return letter ? { id, status: 'rejected', code: letter.rejectionCode as RejectionCode, detail: letter.rejectionDetail ?? '' } : null;
 }
 
 function run(kind: OutboxKind, payload: unknown, actor: Actor): string[] {

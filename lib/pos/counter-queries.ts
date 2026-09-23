@@ -197,6 +197,8 @@ export function useCounterTabs(): CounterTab[] | undefined {
 
 export interface BillGroupLine {
   line: OrderLine;
+  /** When the waiter set its round down at the table, if they have. */
+  deliveredAt: number | null;
   name: string;
   modifiers: string[];
   imageUrl: string | null;
@@ -235,7 +237,7 @@ export function useSettleView(tabId: string): SettleView | null | undefined {
     const db = posDb();
     const tab = await db.tabs.get(tabId);
     if (!tab) return null;
-    const [seats, lines, modifiers, variants, products, table, names, billed, bills, tenders, split] = await Promise.all([
+    const [seats, lines, modifiers, variants, products, table, names, billed, bills, tenders, split, orders] = await Promise.all([
       db.seats.where('tabId').equals(tabId).toArray(),
       db.lines.where('tabId').equals(tabId).toArray(),
       db.lineModifiers.toArray(),
@@ -247,7 +249,9 @@ export function useSettleView(tabId: string): SettleView | null | undefined {
       db.bills.where('tabId').equals(tabId).toArray(),
       db.tenders.toArray(),
       getMeta<{ groupId: string; count: number }>(`split:${tabId}`),
+      db.orders.where('tabId').equals(tabId).toArray(),
     ]);
+    const deliveredAt = new Map(orders.map((o) => [o.id, o.deliveredAt ?? null]));
     const nameOf = new Map(variants.map((v) => [v.id, v.name]));
     const visible = seats.filter((s) => s.status !== 'removed').sort((a, b) => a.seatNo - b.seatNo);
     const open = billableLines(lines, billed).sort((a, b) => a.clientCreatedAt - b.clientCreatedAt);
@@ -255,6 +259,7 @@ export function useSettleView(tabId: string): SettleView | null | undefined {
     const imageOf = new Map(variants.map((v) => [v.id, assetUrl(imageKeyOf.get(v.productId) ?? null, 96, 96)]));
     const decorate = (l: OrderLine): BillGroupLine => ({
       line: l,
+      deliveredAt: deliveredAt.get(l.orderId) ?? null,
       name: nameOf.get(l.productVariantId) ?? 'Item',
       modifiers: modifiers.filter((m) => m.orderLineId === l.id).map((m) => m.name),
       imageUrl: imageOf.get(l.productVariantId) ?? null,

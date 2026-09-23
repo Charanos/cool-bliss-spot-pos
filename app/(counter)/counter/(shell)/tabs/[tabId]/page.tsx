@@ -261,15 +261,16 @@ export default function SettleTabPage() {
                       <Money value={group.subtotal} size="num" tone="muted" />
                     </header>
                     <ul className="px-12">
-                      {group.lines.map(({ line, name, modifiers, imageUrl }) => (
+                      {group.lines.map(({ line, name, modifiers, imageUrl, deliveredAt }) => (
                         <li key={line.id} className="border-b border-rule-raised/20 last:border-b-0">
                           <TicketLineView
                             qty={line.qty}
                             name={name}
                             lineTotal={line.lineTotalCents}
-                            state={line.status === 'served' ? 'poured' : 'waiting'}
+                            state={line.status === 'served' ? (deliveredAt ? 'served' : 'poured') : 'waiting'}
                             detail={[...modifiers, line.note].filter(Boolean).join(' · ') || null}
                             pouredAt={line.servedAt ? formatTime(line.servedAt, tz) : null}
+                            servedAt={deliveredAt ? formatTime(deliveredAt, tz) : null}
                             imageUrl={imageUrl}
                           />
                         </li>

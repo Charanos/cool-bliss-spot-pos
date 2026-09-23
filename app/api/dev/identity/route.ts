@@ -4,6 +4,7 @@ import { canSignInOn, isStaffSurface, wrongSurfaceMessage } from '@bliss/shared/
 import { z } from 'zod';
 import { devDataEnabled, notFound } from '@/lib/dev';
 import { wireResponse } from '@/lib/wire';
+import { fresh } from '@/modules/_data/store';
 import * as identity from '@/modules/identity/service';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,7 @@ const LOCK_MS = 15 * 60_000;
 export async function POST(request: Request) {
   if (!devDataEnabled()) return notFound();
   const json: unknown = await request.json();
+  await fresh();
   const outlet = identity.outlet();
 
   const device = identity.devices().find((d) => d.id === (json as { deviceId?: string })?.deviceId);

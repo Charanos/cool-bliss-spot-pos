@@ -141,14 +141,27 @@ export async function moveTab(tabId: string, toTableId: string) {
   afterCommit();
 }
 
-export async function handOver(tabIds: string[], toStaffId: string) {
+/**
+ * Hand tables to a colleague. docs/16 section 8. Only tables that still hold their place move
+ * (being ordered on, or paid with the guests still sitting); the server applies the same rule.
+ * Returns who looked after each moved tab before, so the move can be taken back exactly.
+ */
+export async function handOver(tabIds: string[], toStaffId: string): Promise<Map<string, string[]>> {
   const ctx = await context();
   const db = posDb();
+  const previous = new Map<string, string[]>();
   await db.transaction('rw', [db.tabs, db.outbox, db.meta], async () => {
-    for (const id of tabIds) await db.tabs.update(id, { assignedTo: toStaffId });
-    await enqueue(ctx, 'tab.handover', tabIds[0]!, { v: 1, tabIds, toStaffId });
+    const tabs = (await db.tabs.bulkGet([...new Set(tabIds)])).filter((t): t is Tab => Boolean(t) && holdsTable(t!) && t!.assignedTo !== toStaffId);
+    if (tabs.length === 0) throw new Error('Those tables are already theirs, or were settled and cleared.');
+    for (const tab of tabs) {
+      previous.set(tab.assignedTo, [...(previous.get(tab.assignedTo) ?? []), tab.id]);
+      await db.tabs.update(tab.id, { assignedTo: toStaffId });
+    }
+    const ids = tabs.map((t) => t.id);
+    await enqueue(ctx, 'tab.handover', ids[0]!, { v: 1, tabIds: ids, toStaffId });
   });
   afterCommit();
+  return previous;
 }
 
 /* ---------------------------------------------------------------- seats */

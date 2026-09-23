@@ -4,6 +4,7 @@ import type { CountKind, EmploymentStatus, PermissionKey } from '@bliss/shared/d
 import { type Cents, parseKes } from '@bliss/shared/money';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { withWrite } from '@/modules/_data/store';
 import { redirect } from 'next/navigation';
 import * as identity from '@/modules/identity/service';
 import * as catalogue from '@/modules/catalogue/service';
@@ -20,7 +21,7 @@ export type ActionResult = { ok: true } | { ok: false; message: string };
  */
 async function attempt(paths: string[], work: () => void): Promise<ActionResult> {
   try {
-    work();
+    await withWrite(work);
     for (const p of paths) revalidatePath(p, 'layout');
     return { ok: true };
   } catch (error) {
@@ -55,7 +56,7 @@ export async function openCount(formData: FormData): Promise<void> {
   const kind = String(formData.get('kind') ?? 'full') as CountKind;
   const categoryId = String(formData.get('categoryId') ?? '');
   const notes = String(formData.get('notes') ?? '').trim();
-  const count = inventory.openCount({ locationId, kind, categoryIds: categoryId ? [categoryId] : [], notes: notes || null, actor });
+  const count = await withWrite(() => inventory.openCount({ locationId, kind, categoryIds: categoryId ? [categoryId] : [], notes: notes || null, actor }));
   revalidatePath('/console/inventory/counts');
   redirect(`/console/inventory/counts/${count.id}`);
 }

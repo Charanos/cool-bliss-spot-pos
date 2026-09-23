@@ -4,6 +4,7 @@ import type { Order, OrderLine, OrderLineModifier, Tab, TabSeat } from '@bliss/s
 import { cents } from '@bliss/shared/money';
 import type { Actor } from '@bliss/shared/reason';
 import { seatColourIndex } from '@bliss/shared/seats';
+import { canSignInOn } from '@bliss/shared/identity';
 import { holdsTable, isSeated } from '@bliss/shared/trade';
 import type { OutboxPayload } from '@bliss/shared/sync';
 import { businessDate } from '@bliss/shared/time';
@@ -410,10 +411,21 @@ export function moveTab(p: OutboxPayload<'tab.move'>, actor: Actor): void {
   audit.record({ outletId: tab.outletId, actorStaffId: actor.staffId, actorDeviceId: actor.deviceId, action: 'tab.moved', entityType: 'tab', entityId: tab.id, before, after: { serviceTableId: table.id }, reason: null, severity: 'info' });
 }
 
+/**
+ * A waiter hands tables to a colleague. docs/16 section 8. Every table that still holds its place
+ * moves: the ones being ordered on, and the paid ones whose guests are still sitting, whose clearing
+ * becomes the colleague's. A tab settled and cleared, voided or merged since the waiter chose it is
+ * passed over rather than failing the rest; if nothing is left to move, that is the refusal.
+ */
 export function handOver(p: OutboxPayload<'tab.handover'>, actor: Actor): void {
-  if (!identity.staffById(p.toStaffId)) throw new CommandRejected('NOT_FOUND', 'That person is not on the team.');
-  for (const id of p.tabIds) {
-    const tab = openTabOrThrow(id);
+  const to = identity.staffById(p.toStaffId);
+  if (!to) throw new CommandRejected('NOT_FOUND', 'That person is not on the team.');
+  if (to.employmentStatus !== 'active' || !canSignInOn('floor', identity.roleFor(to.id)?.key)) {
+    throw new CommandRejected('VALIDATION_FAILED', `${to.displayName} does not work the floor, so they cannot take tables.`);
+  }
+  const tabs = [...new Set(p.tabIds)].map((id) => tradeTables().tabs.find((t) => t.id === id)).filter((t): t is Tab => Boolean(t) && holdsTable(t!));
+  if (tabs.length === 0) throw new CommandRejected('TAB_ALREADY_SETTLED', 'Those tables were settled and cleared already. Nothing was handed over.');
+  for (const tab of tabs) {
     if (tab.assignedTo === p.toStaffId) continue;
     const before = { assignedTo: tab.assignedTo };
     tab.assignedTo = p.toStaffId;

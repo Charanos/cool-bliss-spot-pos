@@ -2,6 +2,7 @@ import { LAST_FEW_SERVES } from '@bliss/shared/availability';
 import { z } from 'zod';
 import { devDataEnabled, notFound } from '@/lib/dev';
 import { wireResponse } from '@/lib/wire';
+import { withWrite } from '@/modules/_data/store';
 import * as availability from '@/modules/availability/service';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
@@ -24,6 +25,12 @@ export async function POST(request: Request) {
   const parsed = body.safeParse(await request.json());
   if (!parsed.success) return wireResponse({ ok: false }, { status: 400 });
   const { variantId, target } = parsed.data;
+  await withWrite(() => simulate(variantId, target));
+  return wireResponse({ ok: true, availabilityVersion: availability.map().version, entry: availability.evaluate(variantId) });
+}
+
+/** Move stock the way a night would, so availability can be shown changing. */
+function simulate(variantId: string, target: z.infer<typeof body>['target']) {
 
   const actor = { staffId: identity.staffList().find((s) => s.displayName === 'Kevin')!.id, deviceId: null };
   const bar = inventory.locations().find((l) => l.kind === 'service')!;
@@ -53,5 +60,4 @@ export async function POST(request: Request) {
     }
   }
 
-  return wireResponse({ ok: true, availabilityVersion: availability.map().version, entry: availability.evaluate(variantId) });
 }

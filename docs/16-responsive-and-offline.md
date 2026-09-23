@@ -80,11 +80,18 @@ Two habits it protects against, both easy to fall into:
    navigation with neither.
 
 Build output is cache first and immutable. Fonts and the menu's photographs are cache first with
-expiry. The manifests set no `orientation`: a waiter holds a phone upright and a tablet on its
-side, and locking to landscape letterboxes half the devices. Their scope is the whole origin, so
-the surface switcher opens the Counter inside the installed app rather than in a browser tab, and
-each keeps its own `id`. Icons are PNG at 192, 512 and maskable, rendered from the same two rounded
-squares as `icon.svg` — iOS reads `apple-touch-icon` and has never supported SVG there.
+expiry. There is one manifest, `/manifest.webmanifest`: Bliss installs as one app that opens on the
+landing page, where the person picks Floor or Counter as on a desktop. It sets no `orientation`: a
+waiter holds a phone upright and a tablet on its side, and locking to landscape letterboxes half the
+devices. Its scope is the whole origin, so the surface switcher stays inside the installed app.
+Icons are PNG at 192, 512 and maskable — iOS reads `apple-touch-icon` and has never supported SVG.
+
+**A stale build heals itself.** Pages are network first with no timeout, so a slow connection waits
+for the current build rather than booting an older cached page whose code the server has replaced.
+If a chunk from an older build still fails to load, `app/_components/sw-register.tsx` drops the
+cached pages, lets the waiting worker take over and reloads once; `app/global-error.tsx` catches
+anything else with a calm screen. The artwork's full-screen blur filters are gone: the flares are
+soft gradients already, and the blur cost a tablet's GPU for nothing.
 
 **A new build never takes over on its own.** `skipWaiting` is false. The running page holds
 references to chunks the new build has renamed, so activating mid-order turns the next tap into a

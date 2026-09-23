@@ -13,6 +13,8 @@ export default defineConfig({
     include: ['packages/**/*.test.ts', 'modules/**/*.test.ts', 'app/**/*.test.ts', 'lib/**/*.test.ts', 'scripts/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/.next/**'],
     environment: 'node',
+    // Tests run on a generated dataset in memory, never against the outlet's database.
+    env: { BLISS_STORE: 'memory' },
     testTimeout: 30_000,
   },
 });

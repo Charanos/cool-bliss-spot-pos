@@ -451,7 +451,7 @@
   background-color: color-mix(in oklab, var(--color-raised) 70%, transparent);
   border: none;
   border-radius: 16px;
-  box-shadow: 0 4px 20px -4px color-mix(in oklab, var(--color-base) 10%, transparent), inset 0 1px 1px color-mix(in oklab, var(--color-ink) 8%, transparent), inset 0 0 0 1px color-mix(in oklab, var(--color-ink) 3%, transparent);
+  box-shadow: 0 4px 20px -4px color-mix(in oklab, var(--color-page) 10%, transparent), inset 0 1px 1px color-mix(in oklab, var(--color-ink) 8%, transparent), inset 0 0 0 1px color-mix(in oklab, var(--color-ink) 3%, transparent);
   -webkit-backdrop-filter: blur(24px);
   backdrop-filter: blur(24px);
   transition:
@@ -485,6 +485,22 @@
     radial-gradient(color-mix(in oklab, var(--color-stop) 8%, transparent) 1.5px, transparent 1.5px);
   background-size: 100% 100%, 24px 24px;
   background-position: 0 0, 12px 12px;
+}
+
+/*
+ * The dock's surface: denser than the glass it floats over, tinted a touch toward the accent, with
+ * an accent edge, a lit top rim and a deep shadow, so it reads as the one rack on the screen.
+ */
+@utility dock-surface {
+  background-color: color-mix(in oklab, var(--color-raised) 88%, var(--color-accent) 12%);
+  background-image: linear-gradient(to bottom, color-mix(in oklab, var(--color-ink) 6%, transparent), transparent 60%);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 28%, var(--color-rule-raised));
+  box-shadow:
+    0 20px 44px -14px color-mix(in oklab, var(--color-page) 85%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--color-page) 40%, transparent),
+    inset 0 1px 0 color-mix(in oklab, var(--color-ink) 14%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  backdrop-filter: blur(20px) saturate(1.2);
 }
 
 /*

@@ -4,12 +4,14 @@ import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildDataset } from '@bliss/db/seed/history';
 import type { Dataset } from '@bliss/db/seed/types';
+import { storeDataset, storeEnabled } from './store';
 
 /**
- * The development data source. One generated dataset per server process, mutated in memory by the
- * module services so Console actions such as placing a hold behave end to end during development.
+ * The outlet's data. With DATABASE_URL set, Postgres holds it and store.ts keeps each server
+ * instance's working set in step with it (docs/17-persistence.md). Without one, as in the tests, it
+ * is a dataset generated in memory per process.
  *
- * This is the seam Phase 1 replaces with Drizzle against Neon. Nothing outside modules/*\/schema.ts
+ * Nothing outside modules/*\/schema.ts
  * touches it, and no module reaches another module's schema: cross-module reads go through services.
  */
 
@@ -38,6 +40,9 @@ let checkedAt = 0;
 let current = '';
 
 export function dataset(): Dataset {
+  // With a database, the working set is loaded from Postgres and every write is made permanent
+  // there (store.ts). Without one (tests, BLISS_STORE=memory) it is generated here, in memory.
+  if (storeEnabled()) return storeDataset();
   // Reading the directory costs a few syscalls, so look at most once a second.
   const now = Date.now();
   if (now - checkedAt > 1000) {

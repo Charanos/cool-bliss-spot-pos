@@ -74,8 +74,8 @@ import type {
  * movement ledger with the full depletion cascade, and count variance from a physical shelf that
  * drifts from the ledger the way an over-pouring bar does.
  *
- * Development data source only. Phase 1 replaces this with Drizzle against Neon; the module services
- * that read it keep their signatures.
+ * `pnpm db:seed` writes it to Postgres, which is the outlet's store from then on (docs/17); the tests
+ * build it in memory.
  */
 
 const TZ = OUTLET.timezone;
@@ -764,7 +764,7 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
         }
       }
 
-      // A round reaches the table two minutes after its last pour. Tonight's newest stay in the
+      // A round reaches the table two minutes after its last pour. Tonight's last half hour stays in the
       // waiter's hands, so the Floor opens on tables at every stage. No rand() here: drawing from
       // it would shift the rest of the night.
       for (let i = orders.length - 1; i >= 0 && orders[i]!.tabId === tabId; i -= 1) {
@@ -772,7 +772,7 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
         const own = tabLines.filter((l) => l.orderId === order.id && l.status !== 'voided');
         if (own.length === 0 || own.some((l) => l.servedAt === null)) continue;
         const at = Math.max(...own.map((l) => l.servedAt ?? 0)) + 2 * MIN;
-        if (clock.inProgress && isToday && at > now - 4 * MIN) continue;
+        if (clock.inProgress && isToday && at > now - 25 * MIN) continue;
         order.deliveredAt = at;
         order.deliveredBy = waiter.id;
       }

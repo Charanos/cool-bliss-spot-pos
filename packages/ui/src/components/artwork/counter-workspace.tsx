@@ -120,9 +120,6 @@ export const AmbientCounterArtwork = memo(function AmbientCounterArtwork() {
             <stop offset="0%" stopColor="var(--color-glint)" stopOpacity="0.22" />
             <stop offset="100%" stopColor="var(--color-money)" stopOpacity="0.06" />
           </linearGradient>
-          <filter id="counter-blur-soft">
-            <feGaussianBlur stdDeviation="60" />
-          </filter>
           <filter id="counter-blur-medium">
             <feGaussianBlur stdDeviation="4" />
           </filter>
@@ -152,8 +149,8 @@ export const AmbientCounterArtwork = memo(function AmbientCounterArtwork() {
           </g>
         </defs>
 
-        <rect width="100%" height="100%" fill="url(#counter-flare-left)" filter="url(#counter-blur-soft)" />
-        <rect width="100%" height="100%" fill="url(#counter-flare-right)" filter="url(#counter-blur-soft)" />
+        <rect width="100%" height="100%" fill="url(#counter-flare-left)" />
+        <rect width="100%" height="100%" fill="url(#counter-flare-right)" />
 
         {/* ── Left flank: the pour ─────────────────────────────────────────── */}
         <g transform="translate(250 900)">

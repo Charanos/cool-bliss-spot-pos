@@ -105,12 +105,17 @@ function LineRow({ line, tz, ordering }: { line: HistoryLine; tz: string; orderi
           {line.seatNo || line.detail ? ' · ' : ''}
           {voided ? (
             <span className="text-stop">Voided{line.voidReason ? `: ${line.voidReason}` : ''}</span>
+          ) : poured && line.deliveredAt ? (
+            <span>
+              <span className="text-served">Served {formatTime(line.deliveredAt, tz)}</span>
+              {line.servedAt ? ` · poured ${formatTime(line.servedAt, tz)}` : ''}
+              {line.servedBy ? ` by ${line.servedBy}` : ''}
+            </span>
           ) : poured ? (
             <span>
-              <span className="text-poured">Poured</span>
+              <span className="text-poured">{ordering ? 'Poured · to serve' : 'Poured'}</span>
               {line.servedAt ? ` ${formatTime(line.servedAt, tz)}` : ''}
               {line.servedBy ? ` by ${line.servedBy}` : ''}
-              {line.deliveredAt ? ` · at the table ${formatTime(line.deliveredAt, tz)}` : ''}
             </span>
           ) : (
             <span className="text-low">{ordering ? 'Waiting at the counter' : 'Never poured'}</span>

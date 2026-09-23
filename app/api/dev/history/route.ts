@@ -1,5 +1,6 @@
 import { devDataEnabled, notFound } from '@/lib/dev';
 import { wireResponse } from '@/lib/wire';
+import { fresh } from '@/modules/_data/store';
 import { history } from '@/modules/history/service';
 import * as identity from '@/modules/identity/service';
 
@@ -17,6 +18,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: Request) {
   if (!devDataEnabled()) return notFound();
+  await fresh();
   const url = new URL(request.url);
   const param = (key: string) => url.searchParams.get(key)?.trim() || null;
 
