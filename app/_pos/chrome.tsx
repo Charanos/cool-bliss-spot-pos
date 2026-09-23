@@ -58,7 +58,8 @@ export function useQuietChrome(): void {
       if (!(el instanceof HTMLElement) || !narrow.matches) return;
       if (el.closest('[role="dialog"], dialog')) return;
       const top = el.scrollTop;
-      const before = last.get(el) ?? top;
+      // A scroller not seen before started at the top.
+      const before = last.get(el) ?? 0;
       last.set(el, top);
       if (top < 24) setCollapsed(false);
       else if (top - before > 6) setCollapsed(true);
