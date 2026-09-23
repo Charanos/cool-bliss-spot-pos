@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { BaseLayerContext } from '@/app/_pos/base-layer';
-import { Dock, DockButton, type DockItem, DockLink, LiveClock, SurfaceSwitcher, TopBar, useQuietChrome } from '@/app/_pos/chrome';
+import { Dock, DockButton, type DockItem, DockLink, LiveClock, SurfaceSwitcher, TopBar } from '@/app/_pos/chrome';
 import { UpdateBar } from '@/app/_pos/update-bar';
 import { useFloorWatch } from '@/app/_pos/watchers';
 import { useFiredOrders, useOpenTabs, useOutlet } from '@/lib/pos/queries';
@@ -30,7 +30,6 @@ import { SearchDialog } from './search-dialog';
 export function FloorShell({ children }: { children: ReactNode }) {
   const session = useSession();
   const router = useRouter();
-  useQuietChrome();
   const pathname = usePathname();
   const sync = useSync();
   const outlet = useOutlet();
@@ -118,8 +117,9 @@ export function FloorShell({ children }: { children: ReactNode }) {
 
         <UpdateBar />
 
-        {/* A flex column, so a page's own scroll region has a height to scroll inside. */}
-        <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden">{children}</main>
+        {/* A flex column, so a page's own scroll region has a height to scroll inside; on a phone the
+            whole page scrolls here instead, under a fixed top bar (page-flow, base.css). */}
+        <main className="page-flow relative flex min-h-0 flex-1 flex-col overflow-hidden">{children}</main>
 
         <Dock
           label="Floor"

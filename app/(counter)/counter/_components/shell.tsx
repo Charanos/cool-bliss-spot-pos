@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { BaseLayerContext } from '@/app/_pos/base-layer';
-import { Dock, type DockItem, DockLink, LiveClock, SurfaceSwitcher, TopBar, useQuietChrome } from '@/app/_pos/chrome';
+import { Dock, type DockItem, DockLink, LiveClock, SurfaceSwitcher, TopBar } from '@/app/_pos/chrome';
 import { UpdateBar } from '@/app/_pos/update-bar';
 import { useCounterWatch } from '@/app/_pos/watchers';
 import { useCounterTabs, useDrawerState, useTickets } from '@/lib/pos/counter-queries';
@@ -40,7 +40,6 @@ export function CounterShell({ children }: { children: ReactNode }) {
   const session = useSession();
   const device = useDevice();
   const router = useRouter();
-  useQuietChrome();
   const pathname = usePathname();
   const sync = useSync();
   const outlet = useOutlet();
@@ -173,7 +172,7 @@ export function CounterShell({ children }: { children: ReactNode }) {
           </p>
         ) : null}
 
-        <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden">{children}</main>
+        <main className="page-flow relative flex min-h-0 flex-1 flex-col overflow-hidden">{children}</main>
 
         <Dock label="Counter" inlineFrom="tablet" actionRef={setActionTarget} nav={nav.map((item) => <DockLink key={item.href} item={item} active={pathname.startsWith(item.href)} />)} />
       </div>

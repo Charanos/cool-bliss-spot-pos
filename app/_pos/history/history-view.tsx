@@ -315,7 +315,7 @@ export function HistoryView({ surface, staffId, onOpenTab }: HistoryViewProps) {
                     const poured = day.tabs.reduce((n, t) => n + t.lines.filter((l) => l.status === 'served').reduce((q, l) => q + l.qty, 0), 0);
                     return (
                       <section key={day.businessDate} aria-label={`${dayName(day.businessDate, state.data.currentBusinessDate)}, ${formatIsoDate(day.businessDate)}`}>
-                        <header className="sticky top-[-16px] z-[1] -mx-12 mb-8 flex items-baseline justify-between gap-12 bg-page/85 px-12 py-8 backdrop-blur-glass pad:top-[-24px] pad:-mx-24 pad:px-24">
+                        <header className="sticky top-0 z-[1] -mx-12 mb-8 flex items-baseline justify-between gap-12 bg-page/85 px-12 py-8 backdrop-blur-glass pad:top-[-24px] pad:-mx-24 pad:px-24">
                           <h2 className="flex min-w-0 items-baseline gap-8">
                             <span className="text-title text-ink">{dayName(day.businessDate, state.data.currentBusinessDate)}</span>
                             <span className="truncate font-mono text-micro text-ink-subtle">{formatIsoDate(day.businessDate)}</span>

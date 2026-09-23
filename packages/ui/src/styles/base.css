@@ -161,6 +161,35 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/*
+ * Page flow. On a phone only the top bar (and the dock, which carries the page's action) stay put;
+ * everything between them scrolls as one page: the page header, its filters and the content. The
+ * shell's <main> becomes the one scroller, each page grows to its content, and the scroll regions
+ * inside a page stop scrolling on their own. From `pad` up, pages keep their columns and their own
+ * scroll regions, where the room makes a fixed header worth it.
+ *
+ * Plain rules rather than utilities on purpose: unlayered, they win over the page's own `h-full`,
+ * `min-h-0`, `overflow-*` and `scroll-region` without touching each page.
+ */
+@media (max-width: 47.99rem) {
+  .page-flow {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .page-flow > * {
+    flex: none;
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+  .page-flow .scroll-region {
+    flex: none;
+    min-height: auto;
+    overflow: visible;
+  }
+}
+
 /* Numbers are always tabular, so totals never reflow as they change. */
 @utility tabular {
   font-variant-numeric: tabular-nums;
