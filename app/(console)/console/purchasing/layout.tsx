@@ -7,6 +7,7 @@ export default function PurchasingLayout({ children }: { children: ReactNode }) 
   const awaiting = orders.filter((o) => o.status === 'draft' || o.status === 'sent' || o.status === 'partially_received').length;
   return (
     <Workspace
+      eyebrow="OPERATIONS · PROCUREMENT & REORDERS"
       title="Purchasing"
       description="Suggestions come from 28 days of real sales. Receiving posts stock to the store at the order's cost."
       tabs={[

@@ -7,6 +7,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
   const devices = identity.devices().filter((d) => d.status === 'active');
   return (
     <Workspace
+      eyebrow="SYSTEM · OUTLET & HARDWARE"
       title="Settings"
       description="The outlet, the devices allowed to trade, what could not be sent, and the record of every change."
       tabs={[

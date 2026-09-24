@@ -1,14 +1,15 @@
 'use client';
 
 import type { EmploymentStatus } from '@bliss/shared/domain';
-import { formatDate } from '@bliss/shared/format';
+import { formatDate, plural } from '@bliss/shared/format';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
+import { Metric } from '@bliss/ui/components/console/metric';
 import { SelectField } from '@bliss/ui/components/fields';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { StatusChip } from '@bliss/ui/components/status';
 import { seatBgClass } from '@bliss/ui/lib/seat';
-import { IconDoorExit, IconPlayerPause, IconPlayerPlay, IconUserCog } from '@tabler/icons-react';
+import { IconDeviceTablet, IconDoorExit, IconLock, IconPlayerPause, IconPlayerPlay, IconUserCheck, IconUserCog, IconUsers } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { setEmploymentStatus, setStaffRole } from '../../_actions';
@@ -32,6 +33,10 @@ type Pending = { kind: 'role'; row: StaffRow } | { kind: 'status'; row: StaffRow
 
 export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRow[]; roles: { value: string; label: string }[]; canManage: boolean; timezone: string }) {
   const [pending, setPending] = useState<Pending | null>(null);
+  const totalStaff = rows.length;
+  const activeStaff = rows.filter((r) => r.status === 'active' && !r.pinLocked).length;
+  const signedInCount = rows.filter((r) => r.signedInOn.length > 0).length;
+  const lockedOrSuspended = rows.filter((r) => r.pinLocked || r.status === 'suspended').length;
 
   const columns: Column<StaffRow>[] = [
     {
@@ -88,7 +93,39 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
   ];
 
   return (
-    <>
+    <div className="flex flex-col gap-24">
+      {/* Executive Staff Roster Metrics */}
+      <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
+        <Metric
+          label="Team Members"
+          value={totalStaff}
+          detail={`${activeStaff} active · ${plural(roles.length, 'role')}`}
+          icon={IconUsers}
+          tone="default"
+        />
+        <Metric
+          label="Shift Ready"
+          value={activeStaff}
+          detail="Credentials clear for service"
+          icon={IconUserCheck}
+          tone="poured"
+        />
+        <Metric
+          label="Signed In Now"
+          value={signedInCount}
+          detail="Active terminal sessions"
+          icon={IconDeviceTablet}
+          tone={signedInCount > 0 ? 'poured' : 'default'}
+        />
+        <Metric
+          label="PIN Locks & Holds"
+          value={lockedOrSuspended}
+          detail="Requires manager clearance"
+          icon={IconLock}
+          tone={lockedOrSuspended > 0 ? 'attention' : 'default'}
+        />
+      </div>
+
       <DataTable
         id="people-staff"
         caption="Staff"
@@ -131,7 +168,7 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
       />
       <RoleDialog target={pending?.kind === 'role' ? pending.row : null} roles={roles} onClose={() => setPending(null)} />
       <StatusDialog target={pending?.kind === 'status' ? pending : null} onClose={() => setPending(null)} />
-    </>
+    </div>
   );
 }
 

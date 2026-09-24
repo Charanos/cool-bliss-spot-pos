@@ -34,7 +34,7 @@ export function LenisProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isReduced()) return;
     const lenis = new Lenis({
-      lerp: 0.09,
+      lerp: 0.1,
       smoothWheel: true,
       syncTouch: false,
       wheelMultiplier: 1,
@@ -43,14 +43,15 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     });
     lenisRef.current = lenis;
 
-    const tick = (time: number) => lenis.raf(time * 1000);
+    // GSAP ticker time is in seconds; Lenis.raf() expects a DOMHighResTimeStamp (ms).
+    // Do NOT set lagSmoothing(0): that disables all frame-skip protection and causes
+    // the mid-scroll hang the user sees. Keep the engine's (500, 33) intact.
+    const tick = () => lenis.raf(performance.now());
     gsap.ticker.add(tick);
-    gsap.ticker.lagSmoothing(0);
     lenis.on('scroll', ScrollTrigger.update);
 
     return () => {
       gsap.ticker.remove(tick);
-      gsap.ticker.lagSmoothing(500, 33);
       lenis.destroy();
       lenisRef.current = null;
     };

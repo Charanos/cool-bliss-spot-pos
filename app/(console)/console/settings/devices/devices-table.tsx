@@ -3,9 +3,10 @@
 import type { DeviceStatus } from '@bliss/shared/domain';
 import { formatAgo, formatDate } from '@bliss/shared/format';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
+import { CountUp, Metric } from '@bliss/ui/components/console/metric';
 import { Dot, StatusChip } from '@bliss/ui/components/status';
 import { useHydrated, useNow } from '@bliss/ui/hooks';
-import { IconDeviceTabletOff } from '@tabler/icons-react';
+import { IconCheck, IconCloudOff, IconDeviceTablet, IconDeviceTabletOff } from '@tabler/icons-react';
 import { useState } from 'react';
 import { WithdrawDeviceDialog } from '../../_components/dialogs';
 
@@ -59,7 +60,7 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
       align: 'right',
       sortValue: (r) => r.unsynced,
       csv: (r) => r.unsynced,
-      cell: (r) => (r.unsynced > 0 ? <span className="text-body text-info">{r.unsynced} held on the tablet</span> : <NumCell tone="muted">··</NumCell>),
+      cell: (r) => (r.unsynced > 0 ? <span className="text-body text-info font-medium">{r.unsynced} held on tablet</span> : <NumCell tone="muted">··</NumCell>),
     },
     {
       key: 'version',
@@ -76,8 +77,44 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
     },
   ];
 
+  const onlineCount = rows.filter((r) => r.online).length;
+  const activeCount = rows.filter((r) => r.status === 'active').length;
+  const heldOrdersCount = rows.reduce((n, r) => n + r.unsynced, 0);
+  const tabletsCount = rows.filter((r) => r.kind.toLowerCase().includes('tablet')).length;
+
   return (
-    <>
+    <div className="flex flex-col gap-20">
+      <div className="grid grid-cols-1 gap-16 tablet:grid-cols-2 desktop:grid-cols-4">
+        <Metric
+          label="Active fleet"
+          icon={IconDeviceTablet}
+          tone="default"
+          value={<span className="font-mono tabular">{onlineCount} / {activeCount}</span>}
+          detail="Devices currently connected"
+        />
+        <Metric
+          label="Unsynced orders"
+          icon={IconCloudOff}
+          tone={heldOrdersCount > 0 ? 'attention' : 'poured'}
+          value={<CountUp value={heldOrdersCount} delayMs={60} />}
+          detail={heldOrdersCount > 0 ? 'Queued locally on offline devices' : 'All devices synchronized'}
+        />
+        <Metric
+          label="Floor tablets"
+          icon={IconDeviceTablet}
+          tone="default"
+          value={<CountUp value={tabletsCount} delayMs={120} />}
+          detail="Assigned to table service"
+        />
+        <Metric
+          label="App version"
+          icon={IconCheck}
+          tone="default"
+          value={<span className="font-mono tabular">v{latestVersion}</span>}
+          detail="Production build status"
+        />
+      </div>
+
       <DataTable
         id="settings-devices"
         caption="Registered devices"
@@ -91,6 +128,6 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
         empty={{ title: 'No devices registered', body: 'Register a tablet by signing in on it with an owner or manager PIN.' }}
       />
       <WithdrawDeviceDialog target={withdraw} onClose={() => setWithdraw(null)} />
-    </>
+    </div>
   );
 }

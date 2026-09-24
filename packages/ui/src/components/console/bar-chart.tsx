@@ -55,7 +55,7 @@ export function BarChart({ data, height = 200, highlightKey, caption }: { data: 
       <figcaption id={titleId} className="sr-only">
         {caption}
       </figcaption>
-      <div ref={ref} className="relative grid grid-cols-[56px_1fr] gap-8">
+      <div ref={ref} className="relative grid pt-6 grid-cols-[36px_1fr] gap-8">
         <div aria-hidden="true" className="relative" style={{ height }}>
           {ticks.map((t, i) => (
             <span key={i} className="absolute right-0 -translate-y-1/2 font-mono tabular text-num-sm text-ink-subtle" style={{ top: `${(i / 3) * 100}%` }}>
@@ -84,8 +84,7 @@ export function BarChart({ data, height = 200, highlightKey, caption }: { data: 
                   <span
                     data-bar=""
                     className={cx(
-                      'block w-full max-w-[40px] rounded-t-sm transition-opacity duration-[160ms]',
-                      d.key === highlightKey ? 'bg-chart' : 'bg-chart',
+                      'block w-full max-w-[20px] rounded-t-[4px] transition-opacity duration-[160ms] bg-chart',
                       hover && !active ? 'opacity-40' : 'opacity-100',
                     )}
                     style={{ height: `${bps / 100}%`, minHeight: d.value > 0n ? 2 : 0 }}
@@ -95,16 +94,16 @@ export function BarChart({ data, height = 200, highlightKey, caption }: { data: 
             })}
           </div>
           {hovered ? (
-            <div role="status" className="pointer-events-none absolute -top-8 right-0 rounded-sm border border-hairline bg-overlay px-12 py-8 shadow-raised">
-              <p className="text-body-sm text-ink-subtle">{hovered.label}</p>
-              <p className="font-mono tabular text-num text-ink">{formatKes(hovered.value, { decimals: 'whole' })}</p>
+            <div role="status" className="pointer-events-none absolute -top-12 right-0 rounded-[12px] border border-hairline/60 bg-control/80 px-16 py-12 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.1),0_4px_8px_-2px_rgba(0,0,0,0.04)] backdrop-blur-md">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle mb-4">{hovered.label}:00 Hour</p>
+              <p className="font-mono tabular text-body-lg font-medium text-ink">{formatKes(hovered.value, { decimals: 'whole' })}</p>
             </div>
           ) : null}
         </div>
         <span aria-hidden="true" />
         <div aria-hidden="true" className="flex gap-[2px]">
           {data.map((d) => (
-            <span key={d.key} className="min-w-0 flex-1 truncate text-center font-mono tabular text-num-sm text-ink-subtle">
+            <span key={d.key} className="min-w-0 flex-1 truncate text-center font-mono tabular text-micro text-ink-subtle">
               {d.label}
             </span>
           ))}

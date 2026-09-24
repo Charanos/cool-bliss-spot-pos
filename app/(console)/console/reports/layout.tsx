@@ -4,6 +4,7 @@ import { Workspace } from '../_components/workspace';
 export default function ReportsLayout({ children }: { children: ReactNode }) {
   return (
     <Workspace
+      eyebrow="INTELLIGENCE · BUSINESS AUDIT"
       title="Reports"
       description="Every figure is keyed on the business day, cutover to cutover, never the calendar date."
       tabs={[

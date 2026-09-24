@@ -6,6 +6,7 @@ export default function InventoryLayout({ children }: { children: ReactNode }) {
   const inProgress = inventory.counts().filter((c) => c.status === 'counting' || c.status === 'review').length;
   return (
     <Workspace
+      eyebrow="OPERATIONS · STOCK CONTROL"
       title="Inventory"
       description="Stock on hand is the sum of the movement ledger. Nothing writes it directly."
       tabs={[

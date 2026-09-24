@@ -1,11 +1,12 @@
 'use client';
 
 import { formatQty } from '@bliss/shared/format';
-import { formatDecimal } from '@bliss/shared/money';
+import { formatDecimal, sum } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
-import { Money } from '@bliss/ui/components/money';
+import { CountUp, Metric } from '@bliss/ui/components/console/metric';
+import { AnimatedMoney, Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
-import { IconBan, IconHistory, IconLock, IconLockOpen, IconShoppingCart } from '@tabler/icons-react';
+import { IconAlertTriangle, IconBan, IconHistory, IconLock, IconLockOpen, IconScale, IconShoppingCart } from '@tabler/icons-react';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -111,8 +112,44 @@ export function StockTable({
     },
   ];
 
+  const totalValuation = sum(rows.map((r) => r.value));
+  const activeHoldsCount = rows.filter((r) => r.reason === 'hold').length;
+  const lowStockCount = rows.filter((r) => r.state === 'low' || r.state === 'last_few' || r.state === 'finished').length;
+  const varianceCount = rows.filter((r) => r.variancePct !== null && Math.abs(r.variancePct) > 2).length;
+
   return (
-    <>
+    <div className="flex flex-col gap-20">
+      <div className="grid grid-cols-1 gap-16 tablet:grid-cols-2 desktop:grid-cols-4">
+        <Metric
+          label="Stock valuation"
+          icon={IconScale}
+          tone="default"
+          value={<AnimatedMoney value={totalValuation} animation="metric.count" size="title-lg" fromZeroOnMount decimals="whole" />}
+          detail={`${rows.length} tracked items at cost`}
+        />
+        <Metric
+          label="Active holds"
+          icon={IconLock}
+          tone={activeHoldsCount > 0 ? 'attention' : 'poured'}
+          value={<CountUp value={activeHoldsCount} delayMs={60} />}
+          detail={activeHoldsCount > 0 ? 'Quarantined from the floor' : 'No active stock holds'}
+        />
+        <Metric
+          label="Low or depleted"
+          icon={IconAlertTriangle}
+          tone={lowStockCount > 0 ? 'attention' : 'poured'}
+          value={<CountUp value={lowStockCount} delayMs={120} />}
+          detail={lowStockCount > 0 ? 'Lines at or below threshold' : 'All lines above reorder point'}
+        />
+        <Metric
+          label="Audit variance"
+          icon={IconHistory}
+          tone={varianceCount > 0 ? 'stop' : 'default'}
+          value={<CountUp value={varianceCount} delayMs={180} />}
+          detail={varianceCount > 0 ? 'Lines outside 2% tolerance' : 'Within count tolerance'}
+        />
+      </div>
+
       <DataTable
         leading={<UrlSelect param="location" label="Location" options={locations} allLabel="All locations" />}
         id="inventory-stock"
@@ -149,6 +186,6 @@ export function StockTable({
         locations={locations}
         onClose={() => setWriteOff(null)}
       />
-    </>
+    </div>
   );
 }

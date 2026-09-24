@@ -5,6 +5,7 @@ import { Workspace } from '../_components/workspace';
 export default function TradeLayout({ children }: { children: ReactNode }) {
   return (
     <Workspace
+      eyebrow="OPERATIONS · SERVICE REGISTER"
       title="Trade"
       description="Tabs, bills, drawers and shifts. Tenders are what the cashier recorded; Bliss never confirms a payment."
       tabs={[

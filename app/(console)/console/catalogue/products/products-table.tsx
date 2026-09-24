@@ -3,9 +3,11 @@
 import type { CategoryColourToken } from '@bliss/shared/domain';
 import { type Cents, formatDecimal } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
+import { Metric } from '@bliss/ui/components/console/metric';
 import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
 import { categoryEdgeClass } from '@bliss/ui/lib/seat';
+import { IconBottle, IconBuildingWarehouse, IconCategory, IconCheck } from '@tabler/icons-react';
 
 export interface ProductRow {
   id: string;
@@ -28,6 +30,10 @@ export interface ProductRow {
 }
 
 export function ProductsTable({ rows, categories }: { rows: ProductRow[]; categories: { value: string; label: string }[] }) {
+  const activeCount = rows.filter((r) => r.status === 'active').length;
+  const archivedCount = rows.filter((r) => r.status === 'archived').length;
+  const trackedCount = rows.filter((r) => r.tracked).length;
+  const categoryCount = new Set(rows.map((r) => r.categoryId)).size;
   const columns: Column<ProductRow>[] = [
     {
       key: 'name',
@@ -73,21 +79,55 @@ export function ProductsTable({ rows, categories }: { rows: ProductRow[]; catego
   ];
 
   return (
-    <DataTable
-      id="catalogue-products"
-      caption="Products"
-      rows={rows}
-      columns={columns}
-      rowKey={(r) => r.id}
-      rowHref={(r) => `/console/catalogue/products/${r.id}`}
-      defaultSort={{ key: 'name', dir: 'asc' }}
-      search={{ placeholder: 'Name, brand or SKU', test: (r, q) => r.name.toLowerCase().includes(q) || (r.brand ?? '').toLowerCase().includes(q) || r.sku.toLowerCase().includes(q) }}
-      filters={[
-        { kind: 'select', key: 'category', label: 'Category', options: categories, test: (r, v) => r.categoryId === v },
-        { kind: 'toggle', key: 'own-threshold', label: 'Own low threshold', test: (r) => !r.thresholdIsDefault },
-      ]}
-      exportName="products"
-      empty={{ title: 'Your catalogue is empty', body: 'Import a CSV, or add your first product by hand.' }}
-    />
+    <div className="flex flex-col gap-24">
+      {/* Executive Catalogue Metrics */}
+      <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
+        <Metric
+          label="Catalogued Products"
+          value={rows.length}
+          detail={`${activeCount} on sale · ${archivedCount} archived`}
+          icon={IconBottle}
+          tone="default"
+        />
+        <Metric
+          label="Active on Sale"
+          value={activeCount}
+          detail="Enabled across POS fleet"
+          icon={IconCheck}
+          tone="poured"
+        />
+        <Metric
+          label="Stock Tracked"
+          value={trackedCount}
+          detail="Automatic inventory deduct"
+          icon={IconBuildingWarehouse}
+          tone="default"
+        />
+        <Metric
+          label="Active Categories"
+          value={categoryCount}
+          detail="Assigned drink families"
+          icon={IconCategory}
+          tone="default"
+        />
+      </div>
+
+      <DataTable
+        id="catalogue-products"
+        caption="Products"
+        rows={rows}
+        columns={columns}
+        rowKey={(r) => r.id}
+        rowHref={(r) => `/console/catalogue/products/${r.id}`}
+        defaultSort={{ key: 'name', dir: 'asc' }}
+        search={{ placeholder: 'Name, brand or SKU', test: (r, q) => r.name.toLowerCase().includes(q) || (r.brand ?? '').toLowerCase().includes(q) || r.sku.toLowerCase().includes(q) }}
+        filters={[
+          { kind: 'select', key: 'category', label: 'Category', options: categories, test: (r, v) => r.categoryId === v },
+          { kind: 'toggle', key: 'own-threshold', label: 'Own low threshold', test: (r) => !r.thresholdIsDefault },
+        ]}
+        exportName="products"
+        empty={{ title: 'Your catalogue is empty', body: 'Import a CSV, or add your first product by hand.' }}
+      />
+    </div>
   );
 }

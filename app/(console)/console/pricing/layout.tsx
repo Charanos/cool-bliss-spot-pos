@@ -5,6 +5,7 @@ import { Workspace } from '../_components/workspace';
 export default function PricingLayout({ children }: { children: ReactNode }) {
   return (
     <Workspace
+      eyebrow="CATALOGUE & PRICING · TARIFFS & RULES"
       title="Pricing"
       description="Prices include VAT. A change never rewrites a line already fired: each line keeps the derivation it was sold at."
       tabs={[

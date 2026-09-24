@@ -3,11 +3,12 @@
 import { formatElapsed, formatTime } from '@bliss/shared/format';
 import { type Cents, formatDecimal, sum } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
-import { Money } from '@bliss/ui/components/money';
+import { CountUp, Metric } from '@bliss/ui/components/console/metric';
+import { AnimatedMoney, Money } from '@bliss/ui/components/money';
 import { SeatChip } from '@bliss/ui/components/seat-chip';
 import { StatusChip } from '@bliss/ui/components/status';
 import { useHydrated, useNow } from '@bliss/ui/hooks';
-import { IconReceipt } from '@tabler/icons-react';
+import { IconBeer, IconClock, IconReceipt, IconUsers } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 
 export interface OpenTabRow {
@@ -89,7 +90,7 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
       cell: (r) => (
         <span className="flex flex-col items-end ">
           <NumCell>{r.lines}</NumCell>
-          {r.pending > 0 ? <span className="text-body-sm text-info">{r.pending} at the bar</span> : null}
+          {r.pending > 0 ? <span className="text-body-sm text-info font-medium">{r.pending} at bar</span> : null}
         </span>
       ),
     },
@@ -107,32 +108,68 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
   ];
 
   const total = sum(rows.map((r) => r.total));
+  const guestsCount = rows.reduce((n, r) => n + r.guests, 0);
+  const pendingCount = rows.reduce((n, r) => n + r.pending, 0);
+  const longOpenCount = rows.filter((r) => now - r.openedAt > LONG_OPEN_MS).length;
 
   return (
-    <DataTable
-      id="trade-open"
-      caption="Open tabs"
-      rows={rows}
-      columns={columns}
-      rowKey={(r) => r.id}
-      defaultSort={{ key: 'opened', dir: 'asc' }}
-      search={{ placeholder: 'Search tables', test: (r, q) => r.table.toLowerCase().includes(q) }}
-      filters={[
-        { kind: 'select', key: 'zone', label: 'Zone', options: zones, test: (r, v) => r.zoneId === v },
-        { kind: 'select', key: 'waiter', label: 'Waiter', options: waiters, test: (r, v) => r.waiterId === v },
-      ]}
-      rowHref={(r) => `/console/trade/tabs/${r.id}`}
-      rowActions={(r) => [{ key: 'open', label: 'Open the tab', icon: IconReceipt, onSelect: () => router.push(`/console/trade/tabs/${r.id}`) }]}
-      exportName="open-tabs"
-      empty={{ title: 'No tabs are open', body: 'Tabs appear here the moment a waiter opens one on the floor.' }}
-      footer={
-        rows.length > 0 ? (
-          <div className="flex items-baseline justify-between gap-16">
-            <span className="text-body text-ink-muted">On the floor, not yet settled</span>
-            <Money value={total} size="num-lg" />
-          </div>
-        ) : undefined
-      }
-    />
+    <div className="flex flex-col gap-20">
+      <div className="grid grid-cols-1 gap-16 tablet:grid-cols-2 desktop:grid-cols-4">
+        <Metric
+          label="Floor exposure"
+          icon={IconReceipt}
+          tone="default"
+          value={<AnimatedMoney value={total} animation="metric.count" size="title-lg" fromZeroOnMount decimals="whole" />}
+          detail={`${rows.length} open ${rows.length === 1 ? 'tab' : 'tabs'} on floor`}
+        />
+        <Metric
+          label="Seated guests"
+          icon={IconUsers}
+          tone="default"
+          value={<CountUp value={guestsCount} delayMs={60} />}
+          detail={`Across ${rows.length} active tables`}
+        />
+        <Metric
+          label="In preparation"
+          icon={IconBeer}
+          tone={pendingCount > 0 ? 'info' : 'default'}
+          value={<CountUp value={pendingCount} delayMs={120} />}
+          detail={pendingCount > 0 ? 'Drink lines fired to the bar' : 'All fired orders poured'}
+        />
+        <Metric
+          label="Open past 4h"
+          icon={IconClock}
+          tone={longOpenCount > 0 ? 'attention' : 'poured'}
+          value={<CountUp value={longOpenCount} delayMs={180} />}
+          detail={longOpenCount > 0 ? 'Check in with assigned waiter' : 'All tabs within service rhythm'}
+        />
+      </div>
+
+      <DataTable
+        id="trade-open"
+        caption="Open tabs"
+        rows={rows}
+        columns={columns}
+        rowKey={(r) => r.id}
+        defaultSort={{ key: 'opened', dir: 'asc' }}
+        search={{ placeholder: 'Search tables', test: (r, q) => r.table.toLowerCase().includes(q) }}
+        filters={[
+          { kind: 'select', key: 'zone', label: 'Zone', options: zones, test: (r, v) => r.zoneId === v },
+          { kind: 'select', key: 'waiter', label: 'Waiter', options: waiters, test: (r, v) => r.waiterId === v },
+        ]}
+        rowHref={(r) => `/console/trade/tabs/${r.id}`}
+        rowActions={(r) => [{ key: 'open', label: 'Open the tab', icon: IconReceipt, onSelect: () => router.push(`/console/trade/tabs/${r.id}`) }]}
+        exportName="open-tabs"
+        empty={{ title: 'No tabs are open', body: 'Tabs appear here the moment a waiter opens one on the floor.' }}
+        footer={
+          rows.length > 0 ? (
+            <div className="flex items-baseline justify-between gap-16">
+              <span className="text-body text-ink-muted">On the floor, not yet settled</span>
+              <Money value={total} size="num-lg" />
+            </div>
+          ) : undefined
+        }
+      />
+    </div>
   );
 }

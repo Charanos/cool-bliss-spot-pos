@@ -5,6 +5,7 @@ import { Workspace } from '../_components/workspace';
 export default function PeopleLayout({ children }: { children: ReactNode }) {
   return (
     <Workspace
+      eyebrow="MANAGEMENT · ROLES & ACCESS"
       title="People"
       description="Who can do what. Every change to a role or a permission is recorded with the reason."
       tabs={[

@@ -5,6 +5,7 @@ import { Workspace } from '../_components/workspace';
 export default function CatalogueLayout({ children }: { children: ReactNode }) {
   return (
     <Workspace
+      eyebrow="CATALOGUE & PRICING · PRODUCT MASTER"
       title="Catalogue"
       description="One product, several serves off the same bottle. Changes reach the floor with the next snapshot."
       tabs={[

@@ -67,6 +67,8 @@ export interface DataTableProps<Row> {
   /** Server backed controls, such as a location or date range, shown ahead of the filters. */
   leading?: ReactNode;
   rowTone?: (row: Row) => 'default' | 'muted' | 'attention';
+  /** Render as a full card with border and shadow, or flush without structural background. */
+  variant?: 'card' | 'naked';
 }
 
 const VIRTUAL_THRESHOLD = 50;
@@ -101,6 +103,7 @@ export function DataTable<Row>({
   footer,
   leading,
   rowTone,
+  variant = 'card',
 }: DataTableProps<Row>) {
   const url = useUrlState();
   const router = useRouter();
@@ -205,8 +208,19 @@ export function DataTable<Row>({
         key={rowKey(row)}
         data-row=""
         role="row"
+        tabIndex={href ? 0 : undefined}
         aria-rowindex={index + 2}
         style={{ gridTemplateColumns: template, ...(virtual ? { height: rowHeight } : { minHeight: rowHeight }), ...style }}
+        onKeyDown={
+          href
+            ? (event) => {
+                if (event.key === 'Enter') {
+                  if (event.metaKey || event.ctrlKey) window.open(href, '_blank');
+                  else router.push(href);
+                }
+              }
+            : undefined
+        }
         onClick={
           href
             ? (event) => {
@@ -218,8 +232,9 @@ export function DataTable<Row>({
             : undefined
         }
         className={cx(
-          'group grid items-center gap-16 border-b border-rule px-16',
-          href && 'cursor-pointer hover:bg-sunken',
+          'group grid items-center gap-16 border-b border-rule transition-colors duration-150',
+          variant === 'card' && 'px-16',
+          href && 'cursor-pointer hover:bg-control/50 focus-visible:bg-control/50',
           tone === 'muted' && 'opacity-60',
           // A mark, not a fill: a 3px edge on the rows that need a second look.
           tone === 'attention' && 'relative before:absolute before:inset-y-[8px] before:left-0 before:w-[3px] before:rounded-r-sm before:bg-attention',
@@ -237,7 +252,7 @@ export function DataTable<Row>({
           </div>
         ))}
         {rowActions ? (
-          <div role="cell" className="flex justify-end opacity-100 focus-within:opacity-100 desktop:opacity-0 desktop:group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+          <div role="cell" className="flex justify-end opacity-100 focus-within:opacity-100 desktop:opacity-0 desktop:group-hover:opacity-100" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
             <OverflowMenu label="Row actions" size="sm" items={rowActions(row)} />
           </div>
         ) : null}
@@ -317,10 +332,10 @@ export function DataTable<Row>({
       ) : null}
 
       {/* One horizontal scroller for header and body together: the inner block is as wide as its tracks. */}
-      <div className="min-w-0 overflow-x-auto">
+      <div className={cx("min-w-0 overflow-x-auto", variant === 'card' && "rounded-lg border border-hairline bg-raised/40 shadow-raised backdrop-blur-glass")}>
       <div role="table" aria-label={caption} aria-rowcount={filtered.length + 1} className="w-max min-w-full">
         <div role="rowgroup">
-          <div role="row" style={{ gridTemplateColumns: template }} className="grid min-h-[36px] items-center gap-16 border-b border-hairline px-16">
+          <div role="row" style={{ gridTemplateColumns: template }} className={cx("grid min-h-[38px] items-center gap-16 border-b border-hairline", variant === 'card' ? 'bg-control/40 px-16' : '')}>
             {visibleColumns.map((c) => {
               const sorted = sortKey === c.key;
               return (

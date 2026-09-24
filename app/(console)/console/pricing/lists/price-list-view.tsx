@@ -1,14 +1,14 @@
 'use client';
 
-import { formatBps, formatDateTime } from '@bliss/shared/format';
+import { formatBps, formatDateTime, plural } from '@bliss/shared/format';
 import { type Cents, cents, formatDecimal, formatFigure, formatKes, isPositive, parseKes, scale, shareBps, subtract } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
-import { RevealSection } from '@bliss/ui/components/console/shell';
+import { ConsoleBentoCard, Metric } from '@bliss/ui/components/console/metric';
 import { TextField } from '@bliss/ui/components/fields';
 import { Money } from '@bliss/ui/components/money';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
-import { IconPencil, IconTagOff } from '@tabler/icons-react';
+import { IconHistory, IconLock, IconPencil, IconPercentage, IconReceipt, IconTag, IconTagOff } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { setPrice } from '../../_actions';
@@ -70,6 +70,9 @@ export function PriceListView({
   const marginBps = (price: Cents, cost: Cents) => marginOf(price, cost, taxRateBps);
   const [editing, setEditing] = useState<{ row: PriceRow; remove: boolean } | null>(null);
   const overlay = list.kind === 'overlay';
+  const pricedItems = rows.filter((r) => r.price !== null).length;
+  const itemsWithMargin = rows.filter((r): r is PriceRow & { price: Cents; cost: Cents } => r.price !== null && r.cost !== null);
+  const avgMarginBps = itemsWithMargin.length > 0 ? Math.round(itemsWithMargin.reduce((acc, r) => acc + marginBps(r.price, r.cost), 0) / itemsWithMargin.length) : null;
 
   const columns: Column<PriceRow>[] = [
     { key: 'name', header: 'Item', width: 'minmax(220px,2fr)', fixed: true, sortValue: (r) => r.name, csv: (r) => r.name, cell: (r) => <StackCell primary={r.name} secondary={r.category} /> },
@@ -137,11 +140,43 @@ export function PriceListView({
   ];
 
   return (
-    <>
+    <div className="flex flex-col gap-24">
+      {/* Executive Tariff Performance Metrics */}
+      <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
+        <Metric
+          label={`Active on ${list.name}`}
+          value={pricedItems}
+          detail={`${rows.length} catalogue variants`}
+          icon={IconTag}
+          tone="default"
+        />
+        <Metric
+          label="Tariff Class"
+          value={list.kind === 'base' ? 'Master Base' : 'Overlay Tariff'}
+          detail={list.kind === 'base' ? 'Default floor pricing' : `${plural(rules.length, 'schedule rule')} active`}
+          icon={IconReceipt}
+          tone={list.kind === 'base' ? 'default' : 'poured'}
+        />
+        <Metric
+          label="Average Margin"
+          value={canSeeCost && avgMarginBps !== null ? formatBps(avgMarginBps) : 'Protected'}
+          detail={canSeeCost ? `Net of ${(taxRateBps / 100).toFixed(0)}% VAT` : 'Cost access restricted'}
+          icon={canSeeCost ? IconPercentage : IconLock}
+          tone={canSeeCost && avgMarginBps !== null && avgMarginBps < 3000 ? 'attention' : 'default'}
+        />
+        <Metric
+          label="Price Log Revisions"
+          value={changes.length}
+          detail="Recent audit adjustments"
+          icon={IconHistory}
+          tone="default"
+        />
+      </div>
+
       {rules.length > 0 ? (
-        <p className="mb-16 text-body text-ink-muted">
+        <div className="rounded-md border border-hairline bg-raised/30 px-16 py-10 text-body text-ink-muted">
           Applies {rules.join('; ')}. Outside those hours the floor charges {baseName}.
-        </p>
+        </div>
       ) : null}
 
       <DataTable
@@ -170,16 +205,18 @@ export function PriceListView({
       />
 
       {changes.length > 0 ? (
-        <RevealSection className="mt-40" aria-labelledby="recent-price-changes">
-          <h2 id="recent-price-changes" className="border-b border-hairline pb-8 text-subtitle text-ink">
-            Recent price changes
-          </h2>
-          <ul>
+        <ConsoleBentoCard
+          title="Recent Tariff Adjustments"
+          subtitle="Audit log of authorized price revisions and removals"
+          icon={IconHistory}
+          tone="default"
+        >
+          <ul className="divide-y divide-rule">
             {changes.map((c) => (
-              <li key={c.id} className="grid grid-cols-[150px_minmax(0,1fr)_auto] items-baseline gap-16 border-b border-rule py-8">
+              <li key={c.id} className="grid grid-cols-[150px_minmax(0,1fr)_auto] items-baseline gap-16 py-10 transition-colors hover:bg-raised/20">
                 <span className="font-mono tabular text-num-sm text-ink-subtle">{formatDateTime(c.at, timezone)}</span>
                 <span className="min-w-0 text-body text-ink">
-                  {c.variant ? `${c.variant}: ` : ''}
+                  {c.variant ? <span className="font-medium text-ink">{c.variant}: </span> : null}
                   <span className="text-ink-muted">{c.reason}</span>
                   <span className="text-ink-subtle"> · {c.by}</span>
                 </span>
@@ -189,11 +226,11 @@ export function PriceListView({
               </li>
             ))}
           </ul>
-        </RevealSection>
+        </ConsoleBentoCard>
       ) : null}
 
       <PriceDialog target={editing} list={list} onClose={() => setEditing(null)} />
-    </>
+    </div>
   );
 }
 

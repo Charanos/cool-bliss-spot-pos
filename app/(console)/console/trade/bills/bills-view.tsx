@@ -2,13 +2,15 @@
 
 import type { BillScope, BillStatus, TenderKind } from '@bliss/shared/domain';
 import { formatDateTime, formatIsoDate, plural } from '@bliss/shared/format';
-import { type Cents, formatDecimal, isPositive, sum } from '@bliss/shared/money';
+import { type Cents, ZERO, cents, formatDecimal, isPositive, sum } from '@bliss/shared/money';
 import { ShareBars } from '@bliss/ui/components/console/bar-chart';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { RevealSection } from '@bliss/ui/components/console/shell';
 import { Money } from '@bliss/ui/components/money';
 import { SeatChip } from '@bliss/ui/components/seat-chip';
 import { StatusChip } from '@bliss/ui/components/status';
+import { ConsoleBentoCard, Metric } from '@bliss/ui/components/console/metric';
+import { IconAlertCircle, IconCreditCard, IconDiscount2, IconReceipt, IconReceiptTax } from '@tabler/icons-react';
 import { SCOPE_LABEL, TENDER_LABEL } from '../../_lib/labels';
 import { UrlSelect } from '../../_components/url-select';
 
@@ -121,27 +123,59 @@ export function BillsView({
   ];
 
   const total = sum(rows.map((r) => r.total));
+  const totalDiscount = sum(rows.map((r) => r.discount));
+  const discountCount = rows.filter((r) => isPositive(r.discount)).length;
+  const voidedCount = rows.filter((r) => r.status === 'voided').length;
+  const avgBill = rows.length > 0 ? cents(Math.round(Number(total) / rows.length)) : ZERO;
   const kinds = mix.map((m) => ({ value: m.kind, label: TENDER_LABEL[m.kind] }));
 
   return (
-    <>
-      <RevealSection className="mb-32 grid grid-cols-1 gap-32 border-b border-hairline pb-24 desktop:grid-cols-[minmax(220px,1fr)_2fr]">
-        <div className="flex flex-col gap-4">
-          <span className="text-label text-ink-subtle">Settled, {rangeLabel}</span>
-          <Money value={total} size="title-lg" decimals="whole" />
-          <span className="text-body text-ink-muted">{plural(rows.length, 'bill')}</span>
-        </div>
-        <div>
-          <span className="text-label text-ink-subtle">How guests paid, as the cashier recorded it</span>
-          {mix.length > 0 ? (
-            <div className="mt-8">
-              <ShareBars rows={mix.map((m) => ({ key: m.kind, label: TENDER_LABEL[m.kind], value: m.amount, detail: plural(m.count, 'tender') }))} />
-            </div>
-          ) : (
-            <p className="mt-8 text-body text-ink-muted">No tenders in this range.</p>
-          )}
-        </div>
-      </RevealSection>
+    <div className="flex flex-col gap-24">
+      {/* Executive Billing Performance Metrics */}
+      <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
+        <Metric
+          label={`Settled Revenue (${rangeLabel})`}
+          value={<Money value={total} currency={false} decimals="whole" />}
+          detail={`${plural(rows.length, 'bill')} finalized`}
+          icon={IconReceipt}
+          tone="poured"
+        />
+        <Metric
+          label="Average Ticket"
+          value={<Money value={avgBill} currency={false} decimals="whole" />}
+          detail="Per settled party"
+          icon={IconReceiptTax}
+          tone="default"
+        />
+        <Metric
+          label="Discounts Absorbed"
+          value={<Money value={totalDiscount} currency={false} decimals="whole" />}
+          detail={`${plural(discountCount, 'bill')} discounted`}
+          icon={IconDiscount2}
+          tone={totalDiscount > 0 ? 'attention' : 'default'}
+        />
+        <Metric
+          label="Voided / Exceptions"
+          value={voidedCount}
+          detail="Bills reversed or voided"
+          icon={IconAlertCircle}
+          tone={voidedCount > 0 ? 'stop' : 'default'}
+        />
+      </div>
+
+      {/* Tender Settlement Mix Bento */}
+      {mix.length > 0 ? (
+        <ConsoleBentoCard
+          title="Tender Settlement Mix"
+          subtitle="How guests paid across cash, card, and digital channels, as the cashier recorded it"
+          icon={IconCreditCard}
+          tone="default"
+        >
+          <div className="py-8">
+            <ShareBars rows={mix.map((m) => ({ key: m.kind, label: TENDER_LABEL[m.kind], value: m.amount, detail: plural(m.count, 'tender') }))} />
+          </div>
+        </ConsoleBentoCard>
+      ) : null}
 
       <DataTable
         id="trade-bills"
@@ -162,6 +196,6 @@ export function BillsView({
         exportDate={exportDate}
         empty={{ title: 'No bills in this range', body: 'Bills appear once the counter settles a tab or a seat.' }}
       />
-    </>
+    </div>
   );
 }
