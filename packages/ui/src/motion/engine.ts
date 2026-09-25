@@ -81,7 +81,8 @@ export function initMotion(): void {
   initialised = true;
 
   // force3D ensures GSAP always uses translate3d/matrix3d — GPU-composited paths only.
-  gsap.defaults({ duration: 0.16, ease: ease.out, overwrite: 'auto', force3D: true });
+  gsap.config({ force3D: true });
+  gsap.defaults({ duration: 0.16, ease: ease.out, overwrite: 'auto' });
   gsap.globalTimeline.timeScale(1);
   // Smooth over hiccups up to 500ms; clamp the simulated delta to 33ms so missed frames
   // don't cause a visible "jump" on a busy POS tablet.

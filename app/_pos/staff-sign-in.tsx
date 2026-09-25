@@ -35,7 +35,7 @@ const BACKDROPS = {
 
 type BackdropKey = keyof typeof BACKDROPS;
 
-const DEFAULT_BACKDROP: Record<StaffSurface, BackdropKey> = { floor: 'bulbs', counter: 'pour' };
+const DEFAULT_BACKDROP: Record<StaffSurface, BackdropKey> = { floor: 'bulbs', counter: 'pour', console: 'bulbs' };
 
 const backdropUrl = (key: BackdropKey) => `https://images.unsplash.com/photo-${BACKDROPS[key]}?q=80&w=1200&auto=format&fit=crop`;
 
@@ -124,6 +124,11 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
         {!person ? (
           <>
             <header className="relative z-10 flex flex-col items-end text-right">
+              <div className="absolute left-0 top-0">
+                <VeilButton icon={IconArrowLeft} onClick={() => router.push('/')}>
+                  Back to home
+                </VeilButton>
+              </div>
               <h1 className="mt-16 font-mono text-title font-medium text-balance text-ink pad:mt-32 pad:text-title-lg tablet:text-heading">Sign in to {device?.label ?? SURFACE_NAME[surface]}</h1>
               <p className="mt-12 text-body text-ink-subtle">Choose your name, then enter your PIN.</p>
             </header>

@@ -75,13 +75,12 @@ const person = (key: string, fullName: string, displayName: string, role: RoleKe
 });
 
 export const STAFF: Staff[] = [
-  person('wanjiru', 'Wanjiru Kamau', 'Wanjiru', 'owner', 0),
-  person('otieno', 'Otieno Ochieng', 'Otieno', 'manager', 1),
+  person('sam', 'Sam Kamau', 'Sam', 'owner', 0),
+  person('dan', 'Dan Ochieng', 'Dan', 'manager', 1),
   person('kevin', 'Kevin Mwangi', 'Kevin', 'supervisor', 2),
   person('grace', 'Grace Achieng', 'Grace', 'cashier', 3),
   person('amina', 'Amina Hassan', 'Amina', 'waiter', 4),
   person('peter', 'Peter Njoroge', 'Peter', 'waiter', 6),
-  person('joseph', 'Joseph Mutua', 'Joseph', 'stock_controller', 7),
 ];
 
 export const staffByKey = (key: string): Staff => STAFF.find((s) => s.id === seedId(`staff:${key}`))!;
@@ -97,9 +96,8 @@ export const DEV_PINS: Record<string, string> = {
   [staffByKey('peter').id]: '222222',
   [staffByKey('kevin').id]: '333333',
   [staffByKey('grace').id]: '444444',
-  [staffByKey('otieno').id]: '555555',
-  [staffByKey('wanjiru').id]: '666666',
-  [staffByKey('joseph').id]: '777777',
+  [staffByKey('dan').id]: '555555',
+  [staffByKey('sam').id]: '666666',
 };
 
 const enrolledAt = Date.UTC(2026, 7, 28, 9, 0, 0);
@@ -110,7 +108,7 @@ const device = (key: string, label: string, kind: Device['kind']): Device => ({
   label,
   kind,
   enrolledAt,
-  enrolledBy: staffByKey('otieno').id,
+  enrolledBy: staffByKey('dan').id,
   lastSeenAt: null,
   lastEventSeq: 0,
   appVersion: '1.0.0',

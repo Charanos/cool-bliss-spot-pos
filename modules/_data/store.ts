@@ -186,8 +186,9 @@ export async function fresh(): Promise<void> {
   const s = state();
   if (s.checking) return s.checking;
   s.checking = (async () => {
-    const client = await s.pool.connect();
+    let client: PoolClient | null = null;
     try {
+      client = await s.pool.connect();
       // One snapshot: the version and the rows it names are read at the same instant.
       await client.query('begin isolation level repeatable read read only');
       const latest = await versionOf(client);
@@ -195,10 +196,10 @@ export async function fresh(): Promise<void> {
       await client.query('commit');
       s.checkedAt = Date.now();
     } catch (error) {
-      await client.query('rollback').catch(() => undefined);
+      await client?.query('rollback').catch(() => undefined);
       throw error;
     } finally {
-      client.release();
+      client?.release();
       s.checking = null;
     }
   })();

@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: 'Sales' };
 export default async function SalesPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
   const range = businessRange(params.range, '28');
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   const canSeeMargin = identity.can(actor.staffId, 'report.margin');
   const summary = reporting.salesSummary(range.from, range.to, range.previous);
   const days = reporting.salesByDay(range.from, range.to);

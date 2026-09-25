@@ -13,7 +13,7 @@ const WINDOWS = [30, 60, 90] as const;
 export default async function DeadStockPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
   const days = WINDOWS.find((w) => String(w) === params.days) ?? 60;
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   const rows = reporting.deadStock(days).map((r) => ({ ...r, category: catalogue.categoryOfVariant(r.variantId)?.name ?? '' }));
   return (
     <DeadStockTable

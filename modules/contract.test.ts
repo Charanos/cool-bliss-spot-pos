@@ -28,8 +28,8 @@ describe('blind count', () => {
     expect(view.lines.every((l) => 'expectedQty' in l)).toBe(true);
   });
 
-  it('keeps expected hidden on a count opened now', () => {
-    const actor = identity.currentConsoleActor();
+  it('keeps expected hidden on a count opened now', async () => {
+    const actor = await identity.currentConsoleActor();
     const bar = inventory.locations().find((l) => l.kind === 'service')!;
     const opened = inventory.openCount({ locationId: bar.id, kind: 'spot', categoryIds: [], notes: null, actor });
     const view = inventory.countLines(opened.id);
@@ -49,8 +49,8 @@ describe('drawer', () => {
 });
 
 describe('availability', () => {
-  it('lets a hold outrank a positive stock figure (R2)', () => {
-    const actor = identity.currentConsoleActor();
+  it('lets a hold outrank a positive stock figure (R2)', async () => {
+    const actor = await identity.currentConsoleActor();
     const tusker = catalogue.variants().find((v) => v.name === 'Tusker 500ml')!;
     expect(inventory.onHand(tusker.id)).toBeGreaterThan(0);
     const before = availability.evaluate(tusker.id);
@@ -66,8 +66,8 @@ describe('availability', () => {
     for (const v of hunters) expect(availability.evaluate(v.id).reason).toBe('hold');
   });
 
-  it('refuses a hold without a ten character reason', () => {
-    const actor = identity.currentConsoleActor();
+  it('refuses a hold without a ten character reason', async () => {
+    const actor = await identity.currentConsoleActor();
     const coke = catalogue.variants().find((v) => v.name === 'Coke 300ml')!;
     expect(() => inventory.placeHold({ variantId: coke.id, reason: 'broke', expectedBack: null, actor })).toThrow(/10 characters/);
   });

@@ -41,7 +41,7 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
   await fresh();
   const theme = (await cookies()).get('bliss-console-theme')?.value === 'dark' ? 'dark' : 'light';
   const outlet = identity.outlet();
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   const clock = reporting.clock();
   const devices = identity.devices();
   const online = devices.filter((d) => d.online).length;

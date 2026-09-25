@@ -13,8 +13,8 @@ export const metadata: Metadata = { title: 'Pour variance' };
  * N-07 and R9: between the last two full counts of the bar shelf, what should have gone out in sold
  * serves against what the counts say went out, in bottles, millilitres and money at cost.
  */
-export default function PourVariancePage() {
-  const actor = identity.currentConsoleActor();
+export default async function PourVariancePage() {
+  const actor = await identity.currentConsoleActor();
   const tz = identity.outlet().timezone;
   const { from, to, rows } = reporting.pourVariance();
   if (!from || !to) {

@@ -313,7 +313,7 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
   }
 
   const dayStart = (date: IsoDate) => zonedInstant(date, 0, TZ);
-  const joseph = staffByKey('joseph').id;
+  const dan = staffByKey('dan').id;
   const grace = staffByKey('grace').id;
   const kevin = staffByKey('kevin').id;
   const counter = deviceByKey('counter-1').id;
@@ -324,8 +324,8 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
     const cost = UNIT_COST.get(stockId) ?? ZERO;
     avgCost.set(stockId, cost);
     const at = dayStart(firstDate) + 9 * HOUR;
-    move({ variantId: stockId, locationId: STORE, qty: OPENING_STORE[product.id] ?? product.reorderQty * 1.5, type: 'opening_balance', at, date: firstDate, sourceType: 'opening', sourceId: null, by: joseph });
-    move({ variantId: stockId, locationId: BAR, qty: barPar(stockId), type: 'opening_balance', at, date: firstDate, sourceType: 'opening', sourceId: null, by: joseph });
+    move({ variantId: stockId, locationId: STORE, qty: OPENING_STORE[product.id] ?? product.reorderQty * 1.5, type: 'opening_balance', at, date: firstDate, sourceType: 'opening', sourceId: null, by: dan });
+    move({ variantId: stockId, locationId: BAR, qty: barPar(stockId), type: 'opening_balance', at, date: firstDate, sourceType: 'opening', sourceId: null, by: dan });
   }
 
   const pendingPos: { po: PurchaseOrder; lines: PurchaseOrderLine[]; expected: IsoDate }[] = [];
@@ -364,7 +364,7 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
         grnNumber,
         deliveryNoteRef: `DN-${Math.floor(10000 + rand() * 89999)}`,
         receivedAt: at,
-        receivedBy: joseph,
+        receivedBy: dan,
         stockLocationId: STORE,
         status: 'posted',
         varianceNote: short ? 'One case short on the delivery note, supplier to credit' : null,
@@ -394,7 +394,7 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
           [line.unitCostCents, received],
         ]);
         avgCost.set(line.productVariantId, blended);
-        move({ variantId: line.productVariantId, locationId: STORE, qty: received, type: 'receipt', at, date, sourceType: 'goods_receipt', sourceId: receiptId, by: joseph });
+        move({ variantId: line.productVariantId, locationId: STORE, qty: received, type: 'receipt', at, date, sourceType: 'goods_receipt', sourceId: receiptId, by: dan });
         onOrder.delete(line.productVariantId);
         const sp = supplierProducts.get(line.productVariantId);
         if (sp) {
@@ -465,9 +465,9 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
           expectedAt: dayStart(addDays(date, supplier.leadTimeDays)) + 11 * HOUR,
           subtotalCents: subtotal,
           totalCents: subtotal,
-          raisedBy: joseph,
+          raisedBy: dan,
           raisedAt,
-          approvedBy: staffByKey('otieno').id,
+          approvedBy: staffByKey('dan').id,
           approvedAt: raisedAt + 25 * MIN,
           notes: null,
         };
@@ -484,8 +484,8 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
       if (qty <= 0) continue;
       const at = start + 15 * HOUR + Math.floor(rand() * 20) * MIN;
       const transferId = seedId(`transfer:${date}:${stockId}`);
-      move({ variantId: stockId, locationId: STORE, qty: -qty, type: 'transfer_out', at, date, sourceType: 'transfer', sourceId: transferId, by: joseph });
-      move({ variantId: stockId, locationId: BAR, qty, type: 'transfer_in', at, date, sourceType: 'transfer', sourceId: transferId, by: joseph });
+      move({ variantId: stockId, locationId: STORE, qty: -qty, type: 'transfer_out', at, date, sourceType: 'transfer', sourceId: transferId, by: dan });
+      move({ variantId: stockId, locationId: BAR, qty, type: 'transfer_in', at, date, sourceType: 'transfer', sourceId: transferId, by: dan });
     }
 
     // Sunday blind count of the bar shelf at 15:40, once the shelf is stocked for the night.
@@ -517,12 +517,12 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
           varianceQty,
           varianceCents,
           reason,
-          countedBy: joseph,
+          countedBy: dan,
           countedAt: at + i * MIN,
           recountOf: null,
         });
         if (varianceQty !== 0) {
-          move({ variantId: stockId, locationId: BAR, qty: varianceQty, type: 'count_adjustment', at: at + 50 * MIN, date, sourceType: 'stock_count', sourceId: countId, reason, by: joseph, physicalQty: 0 });
+          move({ variantId: stockId, locationId: BAR, qty: varianceQty, type: 'count_adjustment', at: at + 50 * MIN, date, sourceType: 'stock_count', sourceId: countId, reason, by: dan, physicalQty: 0 });
           physical.set(key(stockId, BAR), counted);
         }
       });
@@ -534,14 +534,14 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
         kind: 'full',
         isBlind: true,
         status: 'committed',
-        openedBy: joseph,
+        openedBy: dan,
         openedAt: at,
-        committedBy: joseph,
+        committedBy: dan,
         committedAt: at + 50 * MIN,
         totalVarianceCents: totalVariance,
         notes: null,
       });
-      auditEvents.push(audit('count.committed', 'stock_count', countId, at + 50 * MIN, joseph, null, { totalVarianceCents: totalVariance.toString() }, 'Weekly full count of the bar shelf', 'notable'));
+      auditEvents.push(audit('count.committed', 'stock_count', countId, at + 50 * MIN, dan, null, { totalVarianceCents: totalVariance.toString() }, 'Weekly full count of the bar shelf', 'notable'));
     }
 
     // Occasional breakage, recorded properly.
@@ -960,35 +960,35 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
   const today = clock.current;
   const openCountAt = Math.min(zonedInstant(today, 10 * HOUR + 30 * MIN, TZ), now - 50 * MIN);
   const beerCountId = seedId(`count:${today}:beer-cycle`);
-  counts.push({ id: beerCountId, outletId: OUTLET.id, businessDate: today, stockLocationId: BAR, kind: 'cycle', isBlind: true, status: 'counting', openedBy: joseph, openedAt: openCountAt, committedBy: null, committedAt: null, totalVarianceCents: null, notes: 'Beer fridge, after the delivery' });
+  counts.push({ id: beerCountId, outletId: OUTLET.id, businessDate: today, stockLocationId: BAR, kind: 'cycle', isBlind: true, status: 'counting', openedBy: dan, openedAt: openCountAt, committedBy: null, committedAt: null, totalVarianceCents: null, notes: 'Beer fridge, after the delivery' });
   TRACKED_STOCK_VARIANTS.filter((id) => productOf.get(id)!.categoryId === seedId('category:beer')).forEach((id, i) => {
     const counted = i < 3 ? Math.round(get(physical, id, BAR)) : null;
-    countLines.push({ id: seedId(`countline:${beerCountId}:${i}`), stockCountId: beerCountId, productVariantId: id, expectedQty: get(ledger, id, BAR), countedQty: counted, varianceQty: null, varianceCents: null, reason: null, countedBy: counted === null ? null : joseph, countedAt: counted === null ? null : openCountAt + i * MIN, recountOf: null });
+    countLines.push({ id: seedId(`countline:${beerCountId}:${i}`), stockCountId: beerCountId, productVariantId: id, expectedQty: get(ledger, id, BAR), countedQty: counted, varianceQty: null, varianceCents: null, reason: null, countedBy: counted === null ? null : dan, countedAt: counted === null ? null : openCountAt + i * MIN, recountOf: null });
   });
   const spiritCountId = seedId(`count:${today}:spirits-spot`);
-  counts.push({ id: spiritCountId, outletId: OUTLET.id, businessDate: today, stockLocationId: BAR, kind: 'spot', isBlind: true, status: 'review', openedBy: joseph, openedAt: openCountAt - 40 * MIN, committedBy: null, committedAt: null, totalVarianceCents: null, notes: 'Spot check after the Gilbeys variance' });
+  counts.push({ id: spiritCountId, outletId: OUTLET.id, businessDate: today, stockLocationId: BAR, kind: 'spot', isBlind: true, status: 'review', openedBy: dan, openedAt: openCountAt - 40 * MIN, committedBy: null, committedAt: null, totalVarianceCents: null, notes: 'Spot check after the Gilbeys variance' });
   TRACKED_STOCK_VARIANTS.filter((id) => productOf.get(id)!.categoryId === seedId('category:spirits')).forEach((id, i) => {
     const expected = get(ledger, id, BAR);
     const counted = Math.round(get(physical, id, BAR) * 10) / 10;
     const varianceQty = roundQty(counted - expected);
     const cost = avgCost.get(id) ?? ZERO;
-    countLines.push({ id: seedId(`countline:${spiritCountId}:${i}`), stockCountId: spiritCountId, productVariantId: id, expectedQty: expected, countedQty: counted, varianceQty, varianceCents: multiplyByQuantity(cost, varianceQty), reason: null, countedBy: joseph, countedAt: openCountAt - 30 * MIN + i * MIN, recountOf: null });
+    countLines.push({ id: seedId(`countline:${spiritCountId}:${i}`), stockCountId: spiritCountId, productVariantId: id, expectedQty: expected, countedQty: counted, varianceQty, varianceCents: multiplyByQuantity(cost, varianceQty), reason: null, countedBy: dan, countedAt: openCountAt - 30 * MIN + i * MIN, recountOf: null });
   });
 
   // A draft order for the Jameson gap and a price change on record.
   poNumber += 1;
-  purchaseOrders.push({ id: seedId(`po:${poNumber}`), outletId: OUTLET.id, supplierId: supplierByKey('kariuki').id, poNumber, status: 'draft', expectedAt: null, subtotalCents: shillings(17400), totalCents: shillings(17400), raisedBy: joseph, raisedAt: now - 3 * HOUR, approvedBy: null, approvedAt: null, notes: 'Jameson finished mid service, needs approval' });
+  purchaseOrders.push({ id: seedId(`po:${poNumber}`), outletId: OUTLET.id, supplierId: supplierByKey('kariuki').id, poNumber, status: 'draft', expectedAt: null, subtotalCents: shillings(17400), totalCents: shillings(17400), raisedBy: dan, raisedAt: now - 3 * HOUR, approvedBy: null, approvedAt: null, notes: 'Jameson finished mid service, needs approval' });
   purchaseOrderLines.push({ id: seedId(`poline:${poNumber}:0`), purchaseOrderId: seedId(`po:${poNumber}`), productVariantId: v('jameson', 'bottle'), qtyOrdered: 6, qtyReceived: 0, unitCostCents: shillings(2900), lineTotalCents: shillings(17400) });
   const priceChangeAt = zonedInstant(priceRiseDate, 10 * HOUR, TZ);
-  auditEvents.push(audit('price.changed', 'price_list_item', seedId(`priceitem:happy-hour:${v('tusker', 'bottle')}:0`), priceChangeAt, staffByKey('otieno').id, { priceCents: '28000' }, { priceCents: '30000' }, 'Supplier case price went up seven per cent', 'notable'));
-  auditEvents.push(audit('device.enrolled', 'device', deviceByKey('floor-3').id, zonedInstant(firstDate, 9 * HOUR, TZ), staffByKey('otieno').id, null, { label: 'Floor 3' }, null, 'info'));
+  auditEvents.push(audit('price.changed', 'price_list_item', seedId(`priceitem:happy-hour:${v('tusker', 'bottle')}:0`), priceChangeAt, staffByKey('dan').id, { priceCents: '28000' }, { priceCents: '30000' }, 'Supplier case price went up seven per cent', 'notable'));
+  auditEvents.push(audit('device.enrolled', 'device', deviceByKey('floor-3').id, zonedInstant(firstDate, 9 * HOUR, TZ), staffByKey('dan').id, null, { label: 'Floor 3' }, null, 'info'));
 
   // Dead letters: two orders Floor 3 could not send last night.
   const lastNightLate = zonedInstant(clock.lastNight, 23 * HOUR + 38 * MIN, TZ);
   const deadLetters = [
     { id: seedId('dead:1'), deviceId: deviceByKey('floor-3').id, outboxEntryId: seedId('outbox:floor-3:812'), kind: 'order.fire', payload: { tab: 'T4', lines: 2 }, rejectionCode: 'SEAT_ALREADY_SETTLED', rejectionDetail: 'Seat 2 on tab 31 was settled at 23:31 before this order arrived', firstSeenAt: lastNightLate, resolvedAt: null, resolvedBy: null, resolutionNote: null },
     { id: seedId('dead:2'), deviceId: deviceByKey('floor-3').id, outboxEntryId: seedId('outbox:floor-3:815'), kind: 'line.move', payload: { tab: 'T4' }, rejectionCode: 'SEAT_ALREADY_SETTLED', rejectionDetail: 'The target seat was settled while the tablet was offline', firstSeenAt: lastNightLate + 2 * MIN, resolvedAt: null, resolvedBy: null, resolutionNote: null },
-    { id: seedId('dead:3'), deviceId: deviceByKey('floor-2').id, outboxEntryId: seedId('outbox:floor-2:402'), kind: 'seat.remove', payload: { tab: 'T9' }, rejectionCode: 'SEAT_HAS_LINES', rejectionDetail: 'Seat 3 has 2 lines on it', firstSeenAt: lastNightLate - 6 * 24 * HOUR, resolvedAt: lastNightLate - 6 * 24 * HOUR + 14 * HOUR, resolvedBy: staffByKey('otieno').id, resolutionNote: 'Lines were moved at the counter, nothing lost' },
+    { id: seedId('dead:3'), deviceId: deviceByKey('floor-2').id, outboxEntryId: seedId('outbox:floor-2:402'), kind: 'seat.remove', payload: { tab: 'T9' }, rejectionCode: 'SEAT_HAS_LINES', rejectionDetail: 'Seat 3 has 2 lines on it', firstSeenAt: lastNightLate - 6 * 24 * HOUR, resolvedAt: lastNightLate - 6 * 24 * HOUR + 14 * HOUR, resolvedBy: staffByKey('dan').id, resolutionNote: 'Lines were moved at the counter, nothing lost' },
   ];
 
   const presence: DevicePresence[] = [

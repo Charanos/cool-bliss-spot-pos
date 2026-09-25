@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import * as identity from '@/modules/identity/service';
 import * as settlement from '@/modules/settlement/service';
 import * as trade from '@/modules/trade/service';
-import { SCOPE_LABEL } from '../../../../(console)/console/_lib/labels';
+import { SCOPE_LABEL } from '../../../../(console)/console/(shell)/_lib/labels';
 import {
   Receipt,
   ReceiptHeader,

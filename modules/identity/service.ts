@@ -99,9 +99,21 @@ export function withdrawDevice(input: { deviceId: string; reason: string; actor:
  * The Console session. Custom JWT with email, password and TOTP arrives in Phase 1; until then the
  * development session is the owner, so every permission guard still runs against a real role.
  */
-export function currentConsoleActor(): Actor & { staff: Staff; role: Role } {
-  const staff = identityTables().staff.find((s) => s.displayName === 'Wanjiru')!;
-  return { staffId: staff.id, deviceId: null, staff, role: roleFor(staff.id)! };
+export async function currentConsoleActor(): Promise<Actor & { staff: Staff; role: Role }> {
+  const { cookies } = await import('next/headers');
+  const { redirect } = await import('next/navigation');
+  const cookieStore = await cookies();
+  const staffId = cookieStore.get('bliss-console-session')?.value;
+  let staff: Staff | null = null;
+  if (staffId) {
+    staff = identityTables().staff.find((s) => s.id === staffId) ?? null;
+  }
+  
+  if (!staff) {
+    redirect('/console/sign-in');
+  }
+  
+  return { staffId: staff!.id, deviceId: null, staff: staff!, role: roleFor(staff!.id)! };
 }
 
 /* ---------------------------------------------------------- people and roles */

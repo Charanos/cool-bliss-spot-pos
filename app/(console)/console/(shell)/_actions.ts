@@ -30,28 +30,28 @@ async function attempt(paths: string[], work: () => void): Promise<ActionResult>
 }
 
 export async function placeHold(input: { variantId: string; reason: string; expectedBack: string | null }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console'], () => {
     inventory.placeHold({ variantId: input.variantId, reason: input.reason, expectedBack: input.expectedBack || null, actor });
   });
 }
 
 export async function releaseHold(input: { holdId: string; note: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console'], () => {
     inventory.releaseHold({ holdId: input.holdId, note: input.note, actor });
   });
 }
 
 export async function writeOff(input: { variantId: string; locationId: string; qty: number; category: inventory.WriteOffCategory; reason: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console'], () => {
     inventory.writeOff({ ...input, actor });
   });
 }
 
 export async function openCount(formData: FormData): Promise<void> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   const locationId = String(formData.get('locationId') ?? '');
   const kind = String(formData.get('kind') ?? 'full') as CountKind;
   const categoryId = String(formData.get('categoryId') ?? '');
@@ -62,7 +62,7 @@ export async function openCount(formData: FormData): Promise<void> {
 }
 
 export async function recordCounted(input: { countLineId: string; countedQty: number | null }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   try {
     inventory.recordCounted({ ...input, actor });
     return { ok: true };
@@ -72,36 +72,36 @@ export async function recordCounted(input: { countLineId: string; countedQty: nu
 }
 
 export async function submitForReview(input: { countId: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt([`/console/inventory/counts`], () => inventory.submitForReview({ countId: input.countId, actor }));
 }
 
 export async function recountLine(input: { countLineId: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt([`/console/inventory/counts`], () => inventory.returnLineToCounting({ countLineId: input.countLineId, actor }));
 }
 
 export async function commitCount(input: { countId: string; reasons: Record<string, string>; reason: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console'], () => {
     inventory.commitCount({ ...input, actor });
   });
 }
 
 export async function cancelCount(input: { countId: string; reason: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console/inventory/counts'], () => inventory.cancelCount({ ...input, actor }));
 }
 
 export async function withdrawDevice(input: { deviceId: string; reason: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console'], () => {
     identity.withdrawDevice({ ...input, actor });
   });
 }
 
 export async function resolveDeadLetter(input: { id: string; reason: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console'], () => {
     sync.resolve({ ...input, actor });
   });
@@ -122,42 +122,42 @@ function amount(input: string, what: string): Cents {
 }
 
 export async function setPrice(input: { listId: string; variantId: string; price: string | null; reason: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console'], () => {
     pricing.setPrice({ listId: input.listId, variantId: input.variantId, priceCents: input.price === null ? null : amount(input.price, 'the price'), reason: input.reason, actor });
   });
 }
 
 export async function updateStockSettings(input: { productId: string; lowStockThreshold: number | null; reorderPoint: number; reorderQty: number; leadTimeDays: number }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console'], () => {
     catalogue.updateStockSettings({ ...input, actor });
   });
 }
 
 export async function setStaffRole(input: { staffId: string; roleId: string; reason: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console/people'], () => {
     identity.setStaffRole({ ...input, actor });
   });
 }
 
 export async function setEmploymentStatus(input: { staffId: string; status: EmploymentStatus; reason: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console/people'], () => {
     identity.setEmploymentStatus({ ...input, actor });
   });
 }
 
 export async function setRolePermission(input: { roleId: string; permission: PermissionKey; granted: boolean; reason: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console/people'], () => {
     identity.setRolePermission({ ...input, actor });
   });
 }
 
 export async function raisePurchaseOrder(input: { supplierId: string; lines: { variantId: string; qty: number; unitCost: string }[]; expectedAt: string | null; notes: string | null }): Promise<ActionResult & { id?: string }> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   let id: string | undefined;
   const result = await attempt(['/console/purchasing'], () => {
     const order = procurement.raisePurchaseOrder({
@@ -173,21 +173,21 @@ export async function raisePurchaseOrder(input: { supplierId: string; lines: { v
 }
 
 export async function receiveAgainstOrder(input: { purchaseOrderId: string; deliveryNoteRef: string; lines: procurement.ReceiveLine[]; varianceNote: string | null }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console'], () => {
     procurement.receiveAgainstOrder({ ...input, actor });
   });
 }
 
 export async function cancelPurchaseOrder(input: { purchaseOrderId: string; reason: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console/purchasing'], () => {
     procurement.cancelPurchaseOrder({ ...input, actor });
   });
 }
 
 export async function approvePurchaseOrder(input: { purchaseOrderId: string }): Promise<ActionResult> {
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   return attempt(['/console/purchasing'], () => {
     procurement.approvePurchaseOrder({ ...input, actor });
   });

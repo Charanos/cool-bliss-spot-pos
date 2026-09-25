@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: 'Price lists' };
  */
 export default async function PriceListsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   const lists = pricing
     .priceLists()
     .filter((l) => l.status === 'active')

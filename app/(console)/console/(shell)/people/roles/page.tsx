@@ -23,8 +23,8 @@ const PERMISSIONS: { key: PermissionKey; label: string; detail: string }[] = [
   { key: 'device.manage', label: 'Manage devices', detail: 'Register and withdraw tablets' },
 ];
 
-export default function RolesPage() {
-  const actor = identity.currentConsoleActor();
+export default async function RolesPage() {
+  const actor = await identity.currentConsoleActor();
   const staff = identity.staffList();
   const roles = identity.roles().map((r) => ({
     id: r.id,

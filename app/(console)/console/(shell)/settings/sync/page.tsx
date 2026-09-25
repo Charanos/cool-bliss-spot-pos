@@ -29,10 +29,10 @@ const CODE: Record<string, string> = {
  * Dead letters, docs/04: what a tablet could not send and the server would not accept. Nothing is
  * dropped silently. Each one stays here until a person writes down what was done about it.
  */
-export default function SyncPage() {
+export default async function SyncPage() {
   const tz = identity.outlet().timezone;
   const devices = identity.devices();
-  const actor = identity.currentConsoleActor();
+  const actor = await identity.currentConsoleActor();
   const rows: DeadLetterRow[] = sync.deadLetters().map((d) => {
     const payload = (d.payload ?? {}) as { tab?: string; lines?: number };
     return {

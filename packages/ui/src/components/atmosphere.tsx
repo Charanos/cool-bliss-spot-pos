@@ -114,12 +114,28 @@ export function FadeRule({ orientation = 'x', className }: { orientation?: 'x' |
   return <span aria-hidden="true" className={cx('block shrink-0', orientation === 'x' ? 'rule-fade-x w-[160px]' : 'rule-fade-y', className)} />;
 }
 
-/** A quiet pill control over atmosphere. The label is a verb naming the outcome. */
 export function VeilButton({ icon: Glyph, children, className, type = 'button', ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { icon?: TablerIcon }) {
   return (
-    <button {...rest} type={type} className={cx('surface-veil group inline-flex h-control-md items-center gap-8 rounded-dot px-16 text-ink-subtle', className)}>
-      {Glyph ? <Glyph size={16} stroke={ICON_STROKE} aria-hidden="true" className="transition-transform duration-[var(--bliss-duration-surface)] ease-out group-hover:-translate-x-2" /> : null}
-      <span className="eyebrow tracking-[0.15em]">{children}</span>
+    <button 
+      {...rest} 
+      type={type} 
+      className={cx(
+        'surface-veil group inline-flex h-control-md items-center gap-10 rounded-dot px-20 text-ink-subtle',
+        'transition-all duration-[400ms] ease-out',
+        'hover:text-ink hover:shadow-sm hover:-translate-y-[1px]',
+        'active:scale-[0.98] active:translate-y-0 active:duration-75',
+        className
+      )}
+    >
+      {Glyph ? (
+        <Glyph 
+          size={16} 
+          stroke={ICON_STROKE} 
+          aria-hidden="true" 
+          className="transition-transform duration-[400ms] ease-out group-hover:-translate-x-2 group-hover:scale-110" 
+        />
+      ) : null}
+      <span className="eyebrow tracking-[0.15em] transition-colors duration-[400ms]">{children}</span>
     </button>
   );
 }

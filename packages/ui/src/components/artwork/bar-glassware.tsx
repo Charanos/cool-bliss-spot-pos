@@ -7,7 +7,7 @@
  */
 export function AmbientBarArtwork() {
   return (
-    <div className="pointer-events-none absolute inset-0 z-[-1] overflow-hidden bg-page">
+    <div className="pointer-events-none absolute inset-0 z-[-1] overflow-hidden">
       <svg
         aria-hidden="true"
         focusable="false"
@@ -72,9 +72,9 @@ export function AmbientBarArtwork() {
           <ellipse cx="150" cy="60" rx="140" ry="25" stroke="var(--color-ink)" strokeOpacity="0.15" strokeWidth="4" />
           
           {/* Liquid Body */}
-          <path d="M 30 90 C 30 160, 120 180, 150 180 C 180 180, 270 160, 270 90 Z" fill="url(#bliss-bar-liquid-teal-body)" style={{ mixBlendMode: 'overlay' }} />
+          <path d="M 30 90 C 30 160, 120 180, 150 180 C 180 180, 270 160, 270 90 Z" fill="url(#bliss-bar-liquid-teal-body)" />
           {/* Liquid Surface */}
-          <ellipse cx="150" cy="90" rx="120" ry="20" fill="url(#bliss-bar-liquid-teal-surface)" style={{ mixBlendMode: 'overlay' }} />
+          <ellipse cx="150" cy="90" rx="120" ry="20" fill="url(#bliss-bar-liquid-teal-surface)" />
 
           {/* Front Body of the Coupe */}
           <path d="M 10 60 C 10 160, 100 200, 150 200 C 200 200, 290 160, 290 60" fill="url(#bliss-bar-glass-dark)" />
@@ -85,7 +85,7 @@ export function AmbientBarArtwork() {
           <path d="M 25 75 C 25 140, 80 180, 140 190" stroke="url(#bliss-bar-highlight)" strokeWidth="3" strokeLinecap="round" />
 
           {/* Playful Citrus Twist (Amber) overlapping */}
-          <path d="M 250 10 C 320 20, 240 100, 280 140 C 320 180, 260 160, 220 120" fill="none" stroke="var(--color-attention)" strokeOpacity="0.3" strokeWidth="16" strokeLinecap="round" style={{ mixBlendMode: 'overlay' }} />
+          <path d="M 250 10 C 320 20, 240 100, 280 140 C 320 180, 260 160, 220 120" fill="none" stroke="var(--color-attention)" strokeOpacity="0.3" strokeWidth="16" strokeLinecap="round" />
         </g>
 
         {/* ===================== RIGHT FLANK: HIGH FIDELITY ROCKS & SHAKER ===================== */}
@@ -98,12 +98,12 @@ export function AmbientBarArtwork() {
             <ellipse cx="100" cy="20" rx="80" ry="15" stroke="var(--color-ink)" strokeOpacity="0.15" strokeWidth="4" />
             
             {/* Liquid Body */}
-            <path d="M 32 100 L 40 220 C 45 230, 155 230, 160 220 L 168 100 Z" fill="url(#bliss-bar-liquid-amber-body)" style={{ mixBlendMode: 'overlay' }} />
+            <path d="M 32 100 L 40 220 C 45 230, 155 230, 160 220 L 168 100 Z" fill="url(#bliss-bar-liquid-amber-body)" />
             {/* Liquid Surface */}
-            <ellipse cx="100" cy="100" rx="68" ry="12" fill="url(#bliss-bar-liquid-amber-surface)" style={{ mixBlendMode: 'overlay' }} />
+            <ellipse cx="100" cy="100" rx="68" ry="12" fill="url(#bliss-bar-liquid-amber-surface)" />
             
             {/* High Fidelity Ice Block */}
-            <g style={{ mixBlendMode: 'overlay' }} transform="translate(60, 60)">
+            <g transform="translate(60, 60)">
               {/* Top Face */}
               <polygon points="40,0 80,15 40,30 0,15" fill="var(--color-glint)" fillOpacity="0.15" />
               {/* Left Face */}

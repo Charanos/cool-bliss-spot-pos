@@ -8,8 +8,8 @@ export const metadata: Metadata = { title: 'Devices' };
 const KIND: Record<string, string> = { floor: 'Floor tablet', counter: 'Counter', bar: 'Bar screen', console: 'Console' };
 
 /** X-02: every registered device, whether it is online, and what it is holding that has not been sent. */
-export default function DevicesPage() {
-  const actor = identity.currentConsoleActor();
+export default async function DevicesPage() {
+  const actor = await identity.currentConsoleActor();
   const clock = reporting.clock();
   const rows: DeviceTableRow[] = identity.devices().map((d) => ({
     id: d.id,

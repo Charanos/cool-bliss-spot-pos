@@ -7,8 +7,12 @@
  * changes when the team list changes. Anyone not listed signs in with their initials.
  */
 const PHOTO: Record<string, string> = {
-  Amina: '1580489944761-15a19d654956',
-  Peter: '1506794778202-cad84cf45f1d',
+  Amina: '1589156191108-c762ff4b96ab',
+  Peter: '1546525848-3ce03ca516f6',
+  Grace: '1589156280159-27698a70f29e',
+  Kevin: '1518882570151-157128e78fa1',
+  Sam: '1531901599143-df5010ab9438',
+  Dan: '1563721572772-fbf713fff374',
 };
 
 export function staffPhoto(displayName: string): string | null {

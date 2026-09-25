@@ -7,8 +7,8 @@ import { type StaffRow, StaffTable } from './staff-table';
 
 export const metadata: Metadata = { title: 'Staff' };
 
-export default function StaffPage() {
-  const actor = identity.currentConsoleActor();
+export default async function StaffPage() {
+  const actor = await identity.currentConsoleActor();
   const clock = reporting.clock();
   const shifts = trade.shiftsBetween(addDays(clock.current, -27), clock.current);
   const devices = identity.devices();
