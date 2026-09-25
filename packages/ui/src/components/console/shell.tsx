@@ -238,33 +238,33 @@ export interface TabLink {
 export function RouteTabs({ tabs, label }: { tabs: TabLink[]; label: string }) {
   const pathname = usePathname();
   return (
-    <nav aria-label={label} className="mt-16 border-b border-hairline">
-      <ul className="-mb-px flex gap-20 overflow-x-auto no-scrollbar">
+    <nav aria-label={label} className="mt-20 flex">
+      <ul className="flex items-center gap-4 rounded-full bg-control/20 p-[4px] ring-1 ring-hairline/40 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] overflow-x-auto no-scrollbar">
         {tabs.map((tab) => {
           const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
           return (
-            <li key={tab.href}>
+            <li key={tab.href} className="shrink-0">
               <Link
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
                 className={cx(
-                  'relative inline-flex h-[42px] items-center gap-8 whitespace-nowrap text-body-sm transition-colors duration-150 press-feedback',
-                  active ? 'text-ink font-medium' : 'text-ink-subtle hover:text-ink',
+                  'relative inline-flex h-[32px] items-center gap-8 rounded-full px-16 text-body-sm transition-all duration-200 outline-none',
+                  'focus-visible:ring-2 focus-visible:ring-accent/50',
+                  active 
+                    ? 'bg-page text-ink font-medium shadow-[0_2px_8px_rgba(0,0,0,0.08),_0_0_0_1px_rgba(0,0,0,0.03)]' 
+                    : 'text-ink-subtle hover:text-ink hover:bg-control/40',
                 )}
               >
                 <span>{tab.label}</span>
                 {tab.count !== undefined ? (
                   <span
                     className={cx(
-                      'inline-flex items-center rounded-sm px-6 py-2 font-mono tabular text-micro',
-                      active ? 'bg-control text-ink' : 'bg-control/60 text-ink-subtle',
+                      'inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full px-[6px] font-mono tabular text-[10px] font-bold leading-none tracking-wide transition-colors duration-200',
+                      active ? 'bg-accent/10 text-accent-text' : 'bg-control/50 text-ink-subtle group-hover:bg-control/80',
                     )}
                   >
                     {tab.count}
                   </span>
-                ) : null}
-                {active ? (
-                  <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[2px] bg-accent rounded-t-sm" />
                 ) : null}
               </Link>
             </li>

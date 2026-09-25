@@ -1,6 +1,6 @@
 'use client';
 
-import { SelectField } from '@bliss/ui/components/fields';
+import { FilterDropdown } from '@bliss/ui/components/console/data-table';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
 
@@ -27,18 +27,18 @@ export function UrlSelect({
   const params = useSearchParams();
   const [pending, start] = useTransition();
   return (
-    <div className="w-[200px]" aria-busy={pending}>
-      <SelectField
+    <div aria-busy={pending} className="opacity-100 transition-opacity aria-busy:opacity-50">
+      <FilterDropdown
         label={label}
-        pending={pending}
         value={params.get(param) ?? fallback}
-        onChange={(e) => {
+        onChange={(val) => {
           const next = new URLSearchParams(params.toString());
-          if (e.target.value) next.set(param, e.target.value);
+          if (val && val !== fallback) next.set(param, val);
           else next.delete(param);
           start(() => router.replace(`${pathname}?${next.toString()}`, { scroll: false }));
         }}
-        options={allLabel === null ? options : [{ value: '', label: allLabel }, ...options]}
+        options={options}
+        allLabel={allLabel}
       />
     </div>
   );

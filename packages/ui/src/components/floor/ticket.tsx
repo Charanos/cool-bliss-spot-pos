@@ -114,7 +114,7 @@ export function TicketLineView({ qty, name, lineTotal, state, detail, pouredAt, 
             ) : state === 'poured' ? (
               <span className="inline-flex shrink-0 items-center gap-6 text-poured">
                 <Dot tone="poured" />
-                {pouredAt ? `Poured ${pouredAt} · to serve` : 'Poured · to serve'}
+                {pouredAt ? `Poured ${pouredAt}` : 'Poured'}
               </span>
             ) : state === 'served' ? (
               <span className="inline-flex shrink-0 items-center gap-6 text-served">

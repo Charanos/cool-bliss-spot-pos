@@ -16,7 +16,7 @@ import { SeatChip } from '@bliss/ui/components/seat-chip';
 import { Dot } from '@bliss/ui/components/status';
 import { useNow } from '@bliss/ui/hooks';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconArrowLeft, IconArrowRight, IconCheck, IconDoorExit } from '@tabler/icons-react';
+import { IconArrowLeft, IconArrowRight, IconCheck, IconDoorExit, IconPrinter } from '@tabler/icons-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
@@ -65,7 +65,7 @@ export default function SettleTabPage() {
   const [tenders, setTenders] = useState<TenderDraft[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ change: Cents; paid: Cents } | null>(null);
+  const [result, setResult] = useState<{ change: Cents; paid: Cents; billId: string } | null>(null);
 
   // A split already under way owns the screen: the rest of the tab is spoken for until it is done.
   const splitGroupId = view?.split?.groupId ?? null;
@@ -125,7 +125,7 @@ export default function SettleTabPage() {
     try {
       const groupId = plan.split ? (plan.split.groupId ?? newId(null)) : null;
       if (plan.split && groupId) await setMeta(`split:${tabId}`, { groupId, count: plan.split.count });
-      await settle({
+      const billId = await settle({
         scope,
         tabId,
         tabSeatId: plan.seatId,
@@ -136,7 +136,7 @@ export default function SettleTabPage() {
         tenders,
       });
       const change = sum(tenders.map((t) => (t.tendered ? subtract(t.tendered, t.amount) : ZERO)));
-      setResult({ change, paid: due });
+      setResult({ change, paid: due, billId });
       setTenders([]);
       haptic('success');
       notify({
@@ -337,6 +337,14 @@ export default function SettleTabPage() {
                 <p className="text-body text-ink-muted">No change to give.</p>
               )}
             </div>
+            <Button
+              variant="secondary"
+              size="xl"
+              icon={IconPrinter}
+              onClick={() => window.open(`/print/bill/${result.billId}`, '_blank')}
+            >
+              Print Final Receipt
+            </Button>
             {nothingLeft ? (
               <div className="flex flex-col gap-12">
                 <p className="text-body text-ink-muted">

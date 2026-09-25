@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as settlement from '@/modules/settlement/service';
+import { businessRange, rangeOptions } from '../../_lib/range';
 import { type DrawerRow, DrawersTable } from './drawers-table';
 
 export const metadata: Metadata = { title: 'Drawers' };
@@ -9,11 +10,14 @@ export const metadata: Metadata = { title: 'Drawers' };
  * Drawer sessions, newest first. Each row is read through drawerFor, so a session still counting
  * arrives here with no expected figure in it at all. docs/01 R7.
  */
-export default function DrawersPage() {
+export default async function DrawersPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const params = await searchParams;
+  const range = businessRange(params.range, '7'); // Drawers default to 7 days
   const outlet = identity.outlet();
   const devices = identity.devices();
+  
   const rows: DrawerRow[] = settlement
-    .drawerSessions()
+    .drawerSessionsBetween(range.from, range.to)
     .map((s) => settlement.drawerFor(s.businessDate))
     .filter((d): d is NonNullable<typeof d> => d !== null)
     .map((d) => ({
@@ -33,5 +37,15 @@ export default function DrawersPage() {
       status: d.status,
     }));
 
-  return <DrawersTable rows={rows} timezone={outlet.timezone} threshold={outlet.drawerVarianceThresholdCents} />;
+  return (
+    <DrawersTable 
+      rows={rows} 
+      timezone={outlet.timezone} 
+      threshold={outlet.drawerVarianceThresholdCents}
+      rangeOptions={rangeOptions(true)}
+      rangeKey={range.key}
+      rangeLabel={range.label}
+      exportDate={range.to}
+    />
+  );
 }

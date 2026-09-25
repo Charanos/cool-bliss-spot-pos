@@ -9,7 +9,7 @@ import { MetaLine } from '@bliss/ui/components/working';
 import { SeatSelector } from '@bliss/ui/components/floor/seat-selector';
 import { useNow } from '@bliss/ui/hooks';
 import { orderFire } from '@bliss/ui/motion/floor';
-import { IconArrowBackUp, IconArrowLeft, IconArrowsRightLeft, IconCheck, IconDoorExit, IconFlame, IconReceipt, IconReceipt2, IconUserPlus } from '@tabler/icons-react';
+import { IconArrowBackUp, IconArrowLeft, IconArrowsRightLeft, IconCheck, IconDoorExit, IconFlame, IconReceipt, IconReceipt2, IconUserPlus, IconPrinter } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams, useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
@@ -234,9 +234,15 @@ export default function TabScreen() {
                   { key: 'move', label: 'Move to another table', icon: IconArrowsRightLeft, onSelect: () => setOverlay({ kind: 'move-tab' }) },
                   ...(stage === 'to_serve' ? [{ key: 'served', label: 'Mark everything served', icon: IconCheck, onSelect: () => void deliverTable(tabId, label) }] : []),
                   ...(stage === 'bill'
-                    ? [{ key: 'bill', label: 'Take back the bill request', icon: IconArrowBackUp, onSelect: () => void takeBackBill(tabId, label) }]
+                    ? [
+                        { key: 'bill', label: 'Take back the bill request', icon: IconArrowBackUp, onSelect: () => void takeBackBill(tabId, label) },
+                        { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => window.open(`/print/tab/${tabId}`, '_blank') }
+                      ]
                     : stage && stage !== 'empty'
-                      ? [{ key: 'bill', label: 'Ask for the bill', icon: IconReceipt, onSelect: () => void askBill(tabId, label) }]
+                      ? [
+                          { key: 'bill', label: 'Ask for the bill', icon: IconReceipt, onSelect: () => void askBill(tabId, label) },
+                          { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => window.open(`/print/tab/${tabId}`, '_blank') }
+                        ]
                       : []),
                   // Only while nothing has been fired: a tab with something on it is paid, not closed.
                   ...(allLines.every(({ state }) => state === 'draft')

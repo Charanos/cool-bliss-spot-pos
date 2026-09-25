@@ -19,6 +19,10 @@ export function tableById(id: string | null) {
   return id ? (tradeTables().tables.find((t) => t.id === id) ?? null) : null;
 }
 
+export function zoneById(id: string | null) {
+  return id ? (tradeTables().zones.find((z) => z.id === id) ?? null) : null;
+}
+
 let lineIndex: { source: OrderLine[]; length: number; byTab: Map<string, OrderLine[]> } | null = null;
 let seatIndex: { source: TabSeat[]; length: number; byTab: Map<string, TabSeat[]> } | null = null;
 

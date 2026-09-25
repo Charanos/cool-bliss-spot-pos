@@ -25,7 +25,7 @@ export function ButtonLink({
   icon: Glyph,
   className,
   ...rest
-}: LinkProps & { children: ReactNode; variant?: Variant; size?: 'md' | 'lg'; icon?: TablerIcon; className?: string }) {
+}: LinkProps & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, keyof LinkProps> & { children: ReactNode; variant?: Variant; size?: 'md' | 'lg'; icon?: TablerIcon; className?: string }) {
   return (
     <Link
       href={href}

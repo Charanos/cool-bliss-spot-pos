@@ -56,6 +56,12 @@ export function drawerSessions() {
   return [...settlementTables().drawerSessions].sort((a, b) => b.openedAt - a.openedAt);
 }
 
+export function drawerSessionsBetween(from: IsoDate, to: IsoDate) {
+  return [...settlementTables().drawerSessions]
+    .filter((s) => s.businessDate >= from && s.businessDate <= to)
+    .sort((a, b) => b.openedAt - a.openedAt);
+}
+
 /**
  * docs/01-product-spec.md R7: expected cash is absent from every response before the counted figure
  * is committed. An open session is returned without the field at all.

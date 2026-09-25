@@ -1,10 +1,12 @@
 'use client';
 
 import { formatElapsed, formatIsoDate, formatTime } from '@bliss/shared/format';
-import { type Cents, formatDecimal, isPositive } from '@bliss/shared/money';
+import { type Cents, formatDecimal, isPositive, sum, add } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
-import { Money } from '@bliss/ui/components/money';
+import { Metric } from '@bliss/ui/components/console/metric';
+import { Money, Num } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
+import { IconAlertCircle, IconClock, IconReceipt, IconUsers } from '@tabler/icons-react';
 import { UrlSelect } from '../../_components/url-select';
 
 export interface ShiftRow {
@@ -45,7 +47,7 @@ export function ShiftsTable({
     {
       key: 'hours',
       header: 'Hours',
-      width: '130px',
+      width: '180px',
       sortValue: (r) => r.startedAt,
       csv: (r) => `${new Date(r.startedAt).toISOString()} ${r.endedAt ? new Date(r.endedAt).toISOString() : ''}`,
       cell: (r) =>
@@ -96,19 +98,61 @@ export function ShiftsTable({
     },
   ];
 
+  const totalShifts = rows.length;
+  const activeStaff = rows.filter((r) => r.open).length;
+  const totalSales = sum(rows.map((r) => r.sales));
+  const totalExceptions = sum(rows.map((r) => add(r.voids, r.discounts)));
+
   return (
-    <DataTable
-      id="trade-shifts"
-      caption="Shifts"
-      rows={rows}
-      columns={columns}
-      rowKey={(r) => r.id}
-      defaultSort={{ key: 'hours', dir: 'desc' }}
-      leading={<UrlSelect param="range" label="Range" options={rangeOptions} allLabel={null} fallback={rangeKey} />}
-      filters={[{ kind: 'select', key: 'person', label: 'Person', options: staff, test: (r, v) => r.staffId === v }]}
-      exportName="shifts"
-      exportDate={exportDate}
-      empty={{ title: 'No shifts in this range', body: 'A shift starts when someone signs in on a floor tablet or the counter.' }}
-    />
+    <div className="flex flex-col gap-24">
+      {/* Executive Shift Performance Metrics */}
+      <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
+        <Metric
+          label={`Total Shifts${rangeKey ? ` (${rangeOptions.find(o => o.value === rangeKey)?.label ?? rangeKey})` : ''}`}
+          value={<Num size="title-lg">{totalShifts}</Num>}
+          detail="Staff sessions logged"
+          icon={IconUsers}
+          tone="default"
+        />
+        <Metric
+          label="Active Staff"
+          value={<Num size="title-lg">{activeStaff}</Num>}
+          detail="Currently on the floor"
+          icon={IconClock}
+          tone={activeStaff > 0 ? 'poured' : 'default'}
+        />
+        <Metric
+          label="Sales Driven"
+          value={<Money value={totalSales} currency={false} decimals="whole" size="title-lg" />}
+          detail="Revenue across shifts"
+          icon={IconReceipt}
+          tone="default"
+        />
+        <Metric
+          label="Exceptions & Voids"
+          value={<Money value={totalExceptions} currency={false} decimals="whole" size="title-lg" />}
+          detail="Discounts & Voids"
+          icon={IconAlertCircle}
+          tone={totalExceptions > 0n ? 'attention' : 'default'}
+        />
+      </div>
+
+      {/* Elegant visual separator */}
+      <div className="h-[1px] mt-20 w-full bg-gradient-to-r from-transparent via-hairline/60 to-transparent opacity-80" aria-hidden="true" />
+
+      <DataTable
+        id="trade-shifts"
+        caption="Shifts"
+        rows={rows}
+        columns={columns}
+        rowKey={(r) => r.id}
+        defaultSort={{ key: 'hours', dir: 'desc' }}
+        leading={<UrlSelect param="range" label="Range" options={rangeOptions} allLabel={null} fallback={rangeKey} />}
+        filters={[{ kind: 'select', key: 'person', label: 'Person', options: staff, test: (r, v) => r.staffId === v }]}
+        exportName="shifts"
+        exportDate={exportDate}
+        empty={{ title: 'No shifts in this range', body: 'A shift starts when someone signs in on a floor tablet or the counter.' }}
+      />
+    </div>
   );
 }

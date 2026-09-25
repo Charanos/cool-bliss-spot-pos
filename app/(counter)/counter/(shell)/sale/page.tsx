@@ -12,7 +12,7 @@ import { Sheet } from '@bliss/ui/components/floor/sheet';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Money } from '@bliss/ui/components/money';
 import { useNow } from '@bliss/ui/hooks';
-import { IconArrowRight, IconCheck, IconShoppingBag, IconTrash } from '@tabler/icons-react';
+import { IconArrowRight, IconCheck, IconShoppingBag, IconTrash, IconPrinter } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { PageHeader } from '@/app/_pos/chrome';
@@ -67,7 +67,7 @@ export default function QuickSalePage() {
   const [tenders, setTenders] = useState<TenderDraft[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ change: Cents; paid: Cents } | null>(null);
+  const [done, setDone] = useState<{ change: Cents; paid: Cents; billId: string } | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const wide = useMinWidth(768);
 
@@ -114,7 +114,7 @@ export default function QuickSalePage() {
     setBusy(true);
     setError(null);
     try {
-      await settle({
+      const billId = await settle({
         scope: 'quick_sale',
         tabId: null,
         tabSeatId: null,
@@ -125,7 +125,7 @@ export default function QuickSalePage() {
         tenders,
       });
       const change = sum(tenders.map((t) => (t.tendered ? subtract(t.tendered, t.amount) : ZERO)));
-      setDone({ change, paid: due });
+      setDone({ change, paid: due, billId });
       setCart([]);
       setTenders([]);
       setSheetOpen(false);
@@ -152,19 +152,29 @@ export default function QuickSalePage() {
   };
 
   const doneCard = done ? (
-    <div className="flex flex-col gap-12 rounded-[20px] bg-poured-wash p-16 tablet:p-20">
-      <p className="flex items-center gap-8 text-body-lg text-poured">
-        <IconCheck size={20} stroke={ICON_STROKE} aria-hidden="true" />
-        Sale recorded · {formatKes(done.paid, { decimals: 'whole' })}
-      </p>
-      {isPositive(done.change) ? (
-        <div>
-          <span className="caps text-ink-subtle">Change to give</span>
-          <Money value={done.change} size="display" tone="money" decimals="whole" />
-        </div>
-      ) : (
-        <p className="text-body text-ink-muted">No change to give.</p>
-      )}
+    <div className="flex flex-col gap-16">
+      <div className="flex flex-col gap-12 rounded-[20px] bg-poured-wash p-16 tablet:p-20">
+        <p className="flex items-center gap-8 text-body-lg text-poured">
+          <IconCheck size={20} stroke={ICON_STROKE} aria-hidden="true" />
+          Sale recorded · {formatKes(done.paid, { decimals: 'whole' })}
+        </p>
+        {isPositive(done.change) ? (
+          <div>
+            <span className="caps text-ink-subtle">Change to give</span>
+            <Money value={done.change} size="display" tone="money" decimals="whole" />
+          </div>
+        ) : (
+          <p className="text-body text-ink-muted">No change to give.</p>
+        )}
+      </div>
+      <Button
+        variant="secondary"
+        size="xl"
+        icon={IconPrinter}
+        onClick={() => window.open(`/print/bill/${done.billId}`, '_blank')}
+      >
+        Print Final Receipt
+      </Button>
     </div>
   ) : null;
 

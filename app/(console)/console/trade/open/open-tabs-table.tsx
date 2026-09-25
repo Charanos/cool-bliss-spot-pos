@@ -1,14 +1,14 @@
 'use client';
 
 import { formatElapsed, formatTime } from '@bliss/shared/format';
-import { type Cents, formatDecimal, sum } from '@bliss/shared/money';
+import { type Cents, formatDecimal, formatKes, sum } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric } from '@bliss/ui/components/console/metric';
 import { AnimatedMoney, Money } from '@bliss/ui/components/money';
-import { SeatChip } from '@bliss/ui/components/seat-chip';
+import { SeatChipStack } from '@bliss/ui/components/working';
 import { StatusChip } from '@bliss/ui/components/status';
 import { useHydrated, useNow } from '@bliss/ui/hooks';
-import { IconBeer, IconClock, IconReceipt, IconUsers } from '@tabler/icons-react';
+import { IconBeer, IconClock, IconReceipt, IconUsers, IconPrinter } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 
 export interface OpenTabRow {
@@ -48,7 +48,7 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
       csv: (r) => r.table,
       cell: (r) => <StackCell primary={r.number ? `${r.table} · tab ${r.number}` : r.table} secondary={r.zone} />,
     },
-    { key: 'waiter', header: 'Waiter', width: '110px', sortValue: (r) => r.waiter, csv: (r) => r.waiter, cell: (r) => <span className="text-body text-ink">{r.waiter}</span> },
+    { key: 'waiter', header: 'Waiter', width: '110px', sortValue: (r) => r.waiter, csv: (r) => r.waiter, cell: (r) => <span className="text-body-sm font-medium text-ink">{r.waiter}</span> },
     {
       key: 'opened',
       header: 'Open for',
@@ -57,9 +57,9 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
       sortValue: (r) => r.openedAt,
       csv: (r) => new Date(r.openedAt).toISOString(),
       cell: (r) => (
-        <span className="flex flex-col items-end " title={`Opened ${formatTime(r.openedAt, timezone)}`}>
+        <span className="flex flex-col items-end" title={`Opened ${formatTime(r.openedAt, timezone)}`}>
           <NumCell tone={now - r.openedAt > LONG_OPEN_MS ? 'low' : 'default'}>{formatElapsed(Math.max(0, now - r.openedAt))}</NumCell>
-          <span className="font-mono tabular text-num-sm text-ink-subtle">{formatTime(r.openedAt, timezone)}</span>
+          <span className="font-mono tabular text-micro text-ink-subtle mt-[2px]">{formatTime(r.openedAt, timezone)}</span>
         </span>
       ),
     },
@@ -69,16 +69,16 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
       width: 'minmax(140px,1fr)',
       sortValue: (r) => r.guests,
       csv: (r) => r.guests,
-      cell: (r) =>
-        r.seats.length > 1 ? (
-          <span className="flex flex-wrap items-center gap-4" aria-label={`${r.seats.length} seats`}>
-            {r.seats.map((s) => (
-              <SeatChip key={s.seatNo} seat={s.seatNo} label={s.label} settled={s.settled} size="dense" />
-            ))}
-          </span>
-        ) : (
-          <span className="text-body text-ink-subtle">One guest</span>
-        ),
+      cell: (r) => (
+        r.seats.length > 0 ? (
+          <SeatChipStack
+            seats={r.seats.map((s) => ({ seatNo: s.seatNo, label: s.label, settled: s.settled }))}
+            size="dense"
+            max={8}
+            overlapping
+          />
+        ) : <span className="text-body-sm text-ink-subtle">—</span>
+      ),
     },
     {
       key: 'lines',
@@ -88,9 +88,9 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
       sortValue: (r) => r.lines,
       csv: (r) => r.lines,
       cell: (r) => (
-        <span className="flex flex-col items-end ">
+        <span className="flex flex-col items-end">
           <NumCell>{r.lines}</NumCell>
-          {r.pending > 0 ? <span className="text-body-sm text-info font-medium">{r.pending} at bar</span> : null}
+          {r.pending > 0 ? <span className="font-mono tabular text-micro text-info font-medium mt-[2px]">{r.pending} at bar</span> : null}
         </span>
       ),
     },
@@ -101,10 +101,27 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
       align: 'right',
       sortValue: (r) => r.lastFiredAt,
       csv: (r) => (r.lastFiredAt ? new Date(r.lastFiredAt).toISOString() : ''),
-      cell: (r) => (r.lastFiredAt ? <NumCell tone="muted">{formatElapsed(Math.max(0, now - r.lastFiredAt))} ago</NumCell> : <NumCell tone="muted">··</NumCell>),
+      cell: (r) => (r.lastFiredAt ? (
+        <span className="flex flex-col items-end">
+          <NumCell tone="default">{formatElapsed(Math.max(0, now - r.lastFiredAt))}</NumCell>
+          <span className="font-mono tabular text-micro text-ink-subtle mt-[2px]">ago</span>
+        </span>
+      ) : <span className="font-mono tabular text-body-sm text-ink-disabled">—</span>),
     },
     { key: 'state', header: 'State', width: '120px', sortValue: (r) => (r.partSettled ? 0 : 1), csv: (r) => (r.partSettled ? 'Part settled' : 'Open'), cell: (r) => <StatusChip status={r.partSettled ? 'settled' : 'open'} label={r.partSettled ? 'Part settled' : 'Open'} /> },
-    { key: 'total', header: 'Total', width: '120px', align: 'right', sortValue: (r) => r.total, csv: (r) => formatDecimal(r.total), cell: (r) => <Money value={r.total} currency={false} /> },
+    { 
+      key: 'total', 
+      header: 'Total', 
+      width: '120px', 
+      align: 'right', 
+      sortValue: (r) => r.total, 
+      csv: (r) => formatDecimal(r.total), 
+      cell: (r) => (
+        <span className="font-mono tabular text-body-sm font-medium text-ink">
+          {formatKes(r.total, { decimals: 'always' })}
+        </span>
+      ) 
+    },
   ];
 
   const total = sum(rows.map((r) => r.total));
@@ -113,8 +130,8 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
   const longOpenCount = rows.filter((r) => now - r.openedAt > LONG_OPEN_MS).length;
 
   return (
-    <div className="flex flex-col gap-20">
-      <div className="grid grid-cols-1 gap-16 tablet:grid-cols-2 desktop:grid-cols-4">
+    <div className="flex flex-col gap-24">
+      <div className="grid grid-cols-1 gap-20 tablet:grid-cols-2 desktop:grid-cols-4">
         <Metric
           label="Floor exposure"
           icon={IconReceipt}
@@ -145,6 +162,9 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
         />
       </div>
 
+      {/* Elegant visual separator */}
+      <div className="h-[1px] mt-20 w-full bg-gradient-to-r from-transparent via-hairline/60 to-transparent opacity-80" aria-hidden="true" />
+
       <DataTable
         id="trade-open"
         caption="Open tabs"
@@ -158,7 +178,10 @@ export function OpenTabsTable({ rows, now: serverNow, timezone, zones, waiters }
           { kind: 'select', key: 'waiter', label: 'Waiter', options: waiters, test: (r, v) => r.waiterId === v },
         ]}
         rowHref={(r) => `/console/trade/tabs/${r.id}`}
-        rowActions={(r) => [{ key: 'open', label: 'Open the tab', icon: IconReceipt, onSelect: () => router.push(`/console/trade/tabs/${r.id}`) }]}
+        rowActions={(r) => [
+          { key: 'print', label: 'Print requested bill', icon: IconPrinter, onSelect: () => window.open(`/print/tab/${r.id}`, '_blank') },
+          { key: 'open', label: 'Open the tab', icon: IconReceipt, onSelect: () => router.push(`/console/trade/tabs/${r.id}`) }
+        ]}
         exportName="open-tabs"
         empty={{ title: 'No tabs are open', body: 'Tabs appear here the moment a waiter opens one on the floor.' }}
         footer={

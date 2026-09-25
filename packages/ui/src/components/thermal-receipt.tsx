@@ -1,0 +1,128 @@
+import type { ReactNode } from 'react';
+import { cx } from '../lib/cx';
+
+/**
+ * Production-grade Thermal Receipt primitives.
+ * Designed strictly for 80mm thermal printers (approx 48 chars wide).
+ * Uses pure black and white to avoid dithering on thermal heads.
+ * Typography is strictly monospaced for flawless alignment.
+ */
+
+export function Receipt({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cx(
+        'w-[300px] bg-white text-black font-mono text-[12px] leading-tight p-4',
+        'flex flex-col mx-auto',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function ReceiptHeader({
+  venueName,
+  title,
+  subtitle,
+  logoUrl,
+}: {
+  venueName: string;
+  title?: string;
+  subtitle?: string;
+  logoUrl?: string;
+}) {
+  return (
+    <div className="flex flex-col items-center text-center mb-6">
+      {logoUrl ? (
+        <img 
+          src={logoUrl} 
+          alt={venueName} 
+          className="w-[120px] object-contain mb-4 filter grayscale contrast-125"
+        />
+      ) : null}
+      <h1 className="text-[18px] font-bold uppercase tracking-wider mb-2">{venueName}</h1>
+      {title ? <div className="text-[14px] font-semibold uppercase">{title}</div> : null}
+      {subtitle ? <div className="text-[12px] mt-1">{subtitle}</div> : null}
+    </div>
+  );
+}
+
+export function ReceiptRule() {
+  return <div className="w-full border-b border-dashed border-black my-4" aria-hidden="true" />;
+}
+
+export function ReceiptMeta({ items }: { items: { label: string; value: string | ReactNode }[] }) {
+  return (
+    <div className="flex flex-col w-full text-[12px] mb-4">
+      {items.map((item, i) => (
+        <div key={i} className="flex justify-between w-full">
+          <span>{item.label}:</span>
+          <span className="font-semibold">{item.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ReceiptItemsHeader() {
+  return (
+    <div className="flex justify-between w-full font-bold border-b border-black pb-2 mb-2">
+      <span className="w-[15%]">QTY</span>
+      <span className="w-[55%]">ITEM</span>
+      <span className="w-[30%] text-right">TOTAL</span>
+    </div>
+  );
+}
+
+export function ReceiptItemRow({
+  qty,
+  description,
+  total,
+}: {
+  qty: number | string;
+  description: string;
+  total: string;
+}) {
+  return (
+    <div className="flex justify-between w-full items-start mb-2">
+      <span className="w-[15%] font-semibold">{qty}</span>
+      <span className="w-[55%] pr-2 break-words leading-snug">{description}</span>
+      <span className="w-[30%] text-right font-semibold">{total}</span>
+    </div>
+  );
+}
+
+export function ReceiptTotalRow({
+  label,
+  value,
+  bold = false,
+  large = false,
+}: {
+  label: string;
+  value: string;
+  bold?: boolean;
+  large?: boolean;
+}) {
+  return (
+    <div
+      className={cx(
+        'flex justify-between w-full',
+        bold && 'font-bold',
+        large ? 'text-[16px] mt-2 mb-2' : 'text-[12px] mb-1'
+      )}
+    >
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}
+
+export function ReceiptFooter({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex flex-col items-center text-center mt-8 mb-4 gap-2">
+      {children}
+    </div>
+  );
+}

@@ -99,7 +99,7 @@ export const STATUS: Record<StatusKey, { word: string; tone: Tone }> = {
 export function StatusChip({ status, label, className }: { status: StatusKey; label?: string; className?: string }) {
   const { word, tone } = STATUS[status];
   return (
-    <span className={cx('inline-flex h-chip-dense shrink-0 items-center gap-6 whitespace-nowrap text-micro micro-caps', textTone[tone], className)}>
+    <span className={cx('inline-flex h-[22px] shrink-0 items-center gap-6 whitespace-nowrap rounded-full px-8 text-micro micro-caps ring-1 ring-inset shadow-[0_1px_2px_rgba(0,0,0,0.02)]', pillTone[tone], className)}>
       <Dot tone={tone} />
       {label ?? word}
     </span>

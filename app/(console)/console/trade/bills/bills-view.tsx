@@ -6,7 +6,7 @@ import { type Cents, ZERO, cents, formatDecimal, isPositive, sum } from '@bliss/
 import { ShareBars } from '@bliss/ui/components/console/bar-chart';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { RevealSection } from '@bliss/ui/components/console/shell';
-import { Money } from '@bliss/ui/components/money';
+import { Money, Num } from '@bliss/ui/components/money';
 import { SeatChip } from '@bliss/ui/components/seat-chip';
 import { StatusChip } from '@bliss/ui/components/status';
 import { ConsoleBentoCard, Metric } from '@bliss/ui/components/console/metric';
@@ -135,34 +135,36 @@ export function BillsView({
       <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
         <Metric
           label={`Settled Revenue (${rangeLabel})`}
-          value={<Money value={total} currency={false} decimals="whole" />}
+          value={<Money value={total} currency={false} decimals="whole" size="title-lg" />}
           detail={`${plural(rows.length, 'bill')} finalized`}
           icon={IconReceipt}
           tone="poured"
         />
         <Metric
           label="Average Ticket"
-          value={<Money value={avgBill} currency={false} decimals="whole" />}
+          value={<Money value={avgBill} currency={false} decimals="whole" size="title-lg" />}
           detail="Per settled party"
           icon={IconReceiptTax}
           tone="default"
         />
         <Metric
           label="Discounts Absorbed"
-          value={<Money value={totalDiscount} currency={false} decimals="whole" />}
+          value={<Money value={totalDiscount} currency={false} decimals="whole" size="title-lg" />}
           detail={`${plural(discountCount, 'bill')} discounted`}
           icon={IconDiscount2}
           tone={totalDiscount > 0 ? 'attention' : 'default'}
         />
         <Metric
           label="Voided / Exceptions"
-          value={voidedCount}
+          value={<Num size="title-lg">{voidedCount}</Num>}
           detail="Bills reversed or voided"
           icon={IconAlertCircle}
           tone={voidedCount > 0 ? 'stop' : 'default'}
         />
       </div>
-
+      
+      {/* Elegant visual separator */}
+      <div className="h-[1px] mt-20 w-full bg-gradient-to-r from-transparent via-hairline/60 to-transparent opacity-80" aria-hidden="true" />
       {/* Tender Settlement Mix Bento */}
       {mix.length > 0 ? (
         <ConsoleBentoCard

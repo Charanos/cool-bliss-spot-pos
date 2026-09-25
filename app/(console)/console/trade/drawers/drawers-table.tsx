@@ -4,9 +4,10 @@ import { formatIsoDate, formatTime } from '@bliss/shared/format';
 import { type Cents, abs, compare, formatDecimal, formatKes, isNegative, isZero, sum } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { Metric } from '@bliss/ui/components/console/metric';
-import { Money } from '@bliss/ui/components/money';
+import { Money, Num } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
 import { IconAlertTriangle, IconCash, IconClock, IconScale } from '@tabler/icons-react';
+import { UrlSelect } from '../../_components/url-select';
 
 export interface DrawerRow {
   id: string;
@@ -25,7 +26,23 @@ export interface DrawerRow {
   status: 'open' | 'counting' | 'closed';
 }
 
-export function DrawersTable({ rows, timezone, threshold }: { rows: DrawerRow[]; timezone: string; threshold: Cents }) {
+export function DrawersTable({ 
+  rows, 
+  timezone, 
+  threshold,
+  rangeOptions,
+  rangeKey,
+  rangeLabel,
+  exportDate
+}: { 
+  rows: DrawerRow[]; 
+  timezone: string; 
+  threshold: Cents;
+  rangeOptions?: { value: string; label: string }[];
+  rangeKey?: string;
+  rangeLabel?: string;
+  exportDate?: string;
+}) {
   const outside = (r: DrawerRow) => r.variance !== null && compare(abs(r.variance), threshold) > 0;
   const activeDrawers = rows.filter((r) => r.status !== 'closed').length;
   const closedDrawers = rows.filter((r) => r.status === 'closed').length;
@@ -116,15 +133,15 @@ export function DrawersTable({ rows, timezone, threshold }: { rows: DrawerRow[];
       {/* Executive Drawer Audit Metrics */}
       <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
         <Metric
-          label="Drawer Shifts"
-          value={rows.length}
+          label={`Drawer Shifts${rangeLabel ? ` (${rangeLabel})` : ''}`}
+          value={<Num size="title-lg">{rows.length}</Num>}
           detail={`${closedDrawers} closed · ${activeDrawers} open`}
           icon={IconCash}
           tone="default"
         />
         <Metric
           label="Active at Counter"
-          value={activeDrawers}
+          value={<Num size="title-lg">{activeDrawers}</Num>}
           detail="Floats currently in trade"
           icon={IconClock}
           tone={activeDrawers > 0 ? 'poured' : 'default'}
@@ -133,12 +150,12 @@ export function DrawersTable({ rows, timezone, threshold }: { rows: DrawerRow[];
           label="Net Cash Variance"
           value={
             recordedVariances.length > 0 ? (
-              <span className="font-mono tabular">
-                {netNeg ? '-' : '+'}
-                <Money value={abs(netVariance)} currency={false} decimals="whole" tone={outsideTotal ? 'attention' : 'default'} />
+              <span className="font-mono tabular flex items-center">
+                {netNeg ? <span className="text-title-lg mr-2">-</span> : <span className="text-title-lg mr-2">+</span>}
+                <Money value={abs(netVariance)} currency={false} decimals="whole" size="title-lg" tone={outsideTotal ? 'attention' : 'default'} />
               </span>
             ) : (
-              <span className="font-mono tabular text-ink-muted">0</span>
+              <span className="font-mono tabular text-ink-muted text-title-lg">0</span>
             )
           }
           detail="Audit discrepancy sum"
@@ -147,12 +164,15 @@ export function DrawersTable({ rows, timezone, threshold }: { rows: DrawerRow[];
         />
         <Metric
           label="Threshold Alerts"
-          value={flaggedCount}
+          value={<Num size="title-lg">{flaggedCount}</Num>}
           detail={`Over ${formatKes(threshold, { decimals: 'whole' })} variance`}
           icon={IconAlertTriangle}
           tone={flaggedCount > 0 ? 'stop' : 'default'}
         />
       </div>
+
+      {/* Elegant visual separator */}
+      <div className="h-[1px] mt-20 w-full bg-gradient-to-r from-transparent via-hairline/60 to-transparent opacity-80" aria-hidden="true" />
 
       <DataTable
         id="trade-drawers"
@@ -162,8 +182,10 @@ export function DrawersTable({ rows, timezone, threshold }: { rows: DrawerRow[];
         rowKey={(r) => r.id}
         defaultSort={{ key: 'date', dir: 'desc' }}
         filters={[{ kind: 'toggle', key: 'outside', label: `Over ${formatKes(threshold, { decimals: 'whole' })} out`, test: outside }]}
+        leading={rangeOptions && rangeKey ? <UrlSelect param="range" label="Range" options={rangeOptions} allLabel={null} fallback={rangeKey} /> : undefined}
         rowTone={(r) => (outside(r) ? 'attention' : 'default')}
         exportName="drawers"
+        exportDate={exportDate}
         empty={{ title: 'No drawer sessions yet', body: 'A session starts when a cashier counts the float into the drawer at the counter.' }}
       />
     </div>
