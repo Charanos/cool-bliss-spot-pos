@@ -14,3 +14,8 @@ Thumbs.db
 public/sw.js
 public/sw.js.map
 public/swe-worker-*.js
+
+# Uploads
+public/uploads/**
+!public/uploads/.gitkeep
+

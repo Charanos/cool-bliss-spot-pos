@@ -3,6 +3,9 @@ import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import * as procurement from '@/modules/procurement/service';
+import { ButtonLink } from '@bliss/ui/components/button-link';
+import { IconPlus } from '@tabler/icons-react';
+import { TabIntro } from '../../_components/workspace';
 import { type ReceiptRow, ReceiptsTable } from './receipts-table';
 
 export const metadata: Metadata = { title: 'Receipts' };
@@ -31,5 +34,12 @@ export default function ReceiptsPage() {
       note: r.varianceNote,
     };
   });
-  return <ReceiptsTable rows={rows} timezone={outlet.timezone} suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} />;
+  return (
+    <>
+      <TabIntro action={<ButtonLink href="/console/purchasing/receipts/new" variant="primary" icon={IconPlus}>New Goods Received Note</ButtonLink>}>
+        Log intake from suppliers, KRA eTIMS invoices, and track FEFO stock batch expiration.
+      </TabIntro>
+      <ReceiptsTable rows={rows} timezone={outlet.timezone} suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} />
+    </>
+  );
 }

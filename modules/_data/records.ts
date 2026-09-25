@@ -45,6 +45,8 @@ export const COLLECTIONS = [
   'holds',
   'counts',
   'countLines',
+  'stockBatches',
+  'goodsReceivedNotes',
   'purchaseOrders',
   'purchaseOrderLines',
   'receipts',

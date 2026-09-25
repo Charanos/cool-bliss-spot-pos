@@ -11,5 +11,6 @@ export const procurementTables = () => {
     purchaseOrderLines: d.purchaseOrderLines,
     receipts: d.receipts,
     receiptLines: d.receiptLines,
+    goodsReceivedNotes: d.goodsReceivedNotes,
   };
 };

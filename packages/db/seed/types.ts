@@ -19,10 +19,12 @@ import type {
   ServiceTable,
   Shift,
   Staff,
+  StockBatch,
   StockCount,
   StockHold,
   StockLocation,
   StockMovement,
+  GoodsReceivedNote,
   Tab,
   TabSeat,
   Tender,
@@ -228,6 +230,8 @@ export interface Dataset {
   holds: StockHold[];
   counts: StockCount[];
   countLines: StockCountLine[];
+  stockBatches: StockBatch[];
+  goodsReceivedNotes: GoodsReceivedNote[];
   purchaseOrders: PurchaseOrder[];
   purchaseOrderLines: PurchaseOrderLine[];
   receipts: GoodsReceipt[];

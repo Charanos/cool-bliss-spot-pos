@@ -51,14 +51,18 @@ export interface MoneyProps {
  */
 export function Money({ value, size = 'num', tone = 'default', currency = true, decimals = 'always', className }: MoneyProps) {
   const negative = isNegative(value);
+  const large = size === 'display' || size === 'title-lg' || size === 'title' || size === 'num-xl';
   return (
-    <span className={cx('inline-flex items-baseline gap-4 whitespace-nowrap', className)} aria-label={formatKes(value, { decimals })}>
+    <span className={cx('inline-flex items-baseline gap-[0.25em] whitespace-nowrap', className)} aria-label={formatKes(value, { decimals })}>
       {currency ? (
-        <span aria-hidden="true" className={cx('text-label font-medium text-ink-subtle', size === 'num-xl' || size === 'display' ? 'text-body-sm' : null)}>
+        <span aria-hidden="true" className={cx(
+          'font-semibold tracking-[0.06em] text-ink-subtle uppercase',
+          large ? 'text-[12px]' : 'text-[10px]'
+        )}>
           KES
         </span>
       ) : null}
-      <span aria-hidden="true" className={cx('font-mono tabular', numSize[size], negative ? 'text-stop' : toneClass[tone])}>
+      <span aria-hidden="true" className={cx('font-mono tabular tracking-tight', numSize[size], negative ? 'text-stop font-medium' : toneClass[tone])}>
         {formatFigure(value, { decimals })}
       </span>
     </span>

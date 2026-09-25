@@ -1,6 +1,6 @@
 'use client';
 
-import { IconArrowDown, IconArrowUp, IconChevronDown, IconDownload, IconLayoutGrid, IconLayoutRows, IconSearch, IconSelector, IconX, IconCheck } from '@tabler/icons-react';
+import { IconArrowDown, IconArrowUp, IconChevronDown, IconChevronLeft, IconChevronRight, IconDownload, IconLayoutGrid, IconLayoutRows, IconSearch, IconSelector, IconX, IconCheck } from '@tabler/icons-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -26,7 +26,7 @@ export interface Column<Row> {
   /** A CSS grid track: '120px', 'minmax(200px, 2fr)'. */
   width: string;
   align?: 'left' | 'right';
-  cell: (row: Row) => ReactNode;
+  cell: (row: Row, ctx: { grid: boolean }) => ReactNode;
   sortValue?: (row: Row) => number | string | bigint | null;
   csv?: (row: Row) => string | number | null;
   /** Hidden from the column menu and always shown. */
@@ -226,6 +226,63 @@ export function FilterDropdown({
   );
 }
 
+function TablePagination({
+  validPage,
+  totalPages,
+  write
+}: {
+  validPage: number;
+  totalPages: number;
+  write: (patch: Record<string, string | null>) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between border-t border-hairline/40 px-24 py-16 bg-raised/20 rounded-b-[16px] backdrop-blur-md">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle/70">
+        Pagination
+      </span>
+      <div className="flex items-center gap-6">
+        <button
+          type="button"
+          onClick={() => write({ page: validPage > 2 ? String(validPage - 1) : null })}
+          disabled={validPage <= 1}
+          className={cx(
+            "group relative inline-flex h-[32px] items-center gap-6 rounded-full pl-10 pr-12 text-[11px] font-semibold uppercase tracking-[0.05em] transition-all duration-300 outline-none",
+            validPage <= 1 
+              ? "text-ink-subtle/30 cursor-not-allowed" 
+              : "text-ink-subtle hover:text-ink bg-control/20 hover:bg-control/40 ring-1 ring-inset ring-hairline/30 hover:ring-hairline/60 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
+          )}
+        >
+          <IconChevronLeft size={14} stroke={2.5} className={cx("transition-transform duration-300", validPage > 1 && "group-hover:-translate-x-[2px]")} />
+          Prev
+        </button>
+        
+        <div className="flex items-center px-4">
+          <div className="flex h-[32px] items-center rounded-full bg-control/10 px-12 ring-1 ring-inset ring-hairline/20 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+             <span className="text-body-sm font-medium text-ink tabular-nums">{validPage}</span>
+             <span className="text-body-sm font-medium text-ink-subtle/50 mx-4">/</span>
+             <span className="text-body-sm font-medium text-ink-subtle tabular-nums">{totalPages}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => write({ page: String(validPage + 1) })}
+          disabled={validPage >= totalPages}
+          className={cx(
+            "group relative inline-flex h-[32px] items-center gap-6 rounded-full pl-12 pr-10 text-[11px] font-semibold uppercase tracking-[0.05em] transition-all duration-300 outline-none",
+            validPage >= totalPages 
+              ? "text-ink-subtle/30 cursor-not-allowed" 
+              : "text-ink-subtle hover:text-ink bg-control/20 hover:bg-control/40 ring-1 ring-inset ring-hairline/30 hover:ring-hairline/60 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
+          )}
+        >
+          Next
+          <IconChevronRight size={14} stroke={2.5} className={cx("transition-transform duration-300", validPage < totalPages && "group-hover:translate-x-[2px]")} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function DataTable<Row>({
   id,
   caption,
@@ -401,10 +458,10 @@ export function DataTable<Row>({
           <div key={c.key} role="cell" className={cx('min-w-0 py-[12px]', c.wrap ? '' : 'truncate', c.align === 'right' ? 'text-right' : 'text-left')}>
             {href && i === 0 ? (
               <Link href={href} className="block min-w-0 rounded-sm outline-offset-4 hover:underline hover:decoration-hairline hover:underline-offset-4">
-                {c.cell(row)}
+                {c.cell(row, { grid: false })}
               </Link>
             ) : (
-              c.cell(row)
+              c.cell(row, { grid: false })
             )}
           </div>
         ))}
@@ -610,7 +667,7 @@ export function DataTable<Row>({
             </div>
           </div>
 
-          <div ref={scrollRef} role="rowgroup" data-lenis-prevent="" className="overflow-y-auto overscroll-contain" style={{ maxHeight: virtual ? maxHeight : undefined }}>
+          <div ref={scrollRef} role="rowgroup" {...(virtual ? { 'data-lenis-prevent': '' } : {})} className={cx(virtual ? 'overflow-y-auto overscroll-contain' : '')} style={{ maxHeight: virtual ? maxHeight : undefined }}>
             {filtered.length === 0 ? (
               rows.length === 0 ? (
                 <EmptyState className="px-24" title={empty.title} body={empty.body} action={empty.action} />
@@ -640,21 +697,7 @@ export function DataTable<Row>({
             )}
           </div>
           {footer ? <div className="border-t border-hairline/80 px-24 py-12">{footer}</div> : null}
-          {totalPages > 1 && !footer ? (
-            <div className="flex items-center justify-between border-t border-hairline/80 px-24 py-12 bg-raised/30 rounded-b-[16px]">
-              <span className="text-body-sm text-ink-subtle">
-                Page <span className="font-medium text-ink">{validPage}</span> of <span className="font-medium text-ink">{totalPages}</span>
-              </span>
-              <div className="flex items-center gap-8">
-                <Button variant="secondary" onClick={() => write({ page: validPage > 2 ? String(validPage - 1) : null })} disabled={validPage <= 1}>
-                  Previous
-                </Button>
-                <Button variant="secondary" onClick={() => write({ page: String(validPage + 1) })} disabled={validPage >= totalPages}>
-                  Next
-                </Button>
-              </div>
-            </div>
-          ) : null}
+          {totalPages > 1 && !footer ? <TablePagination validPage={validPage} totalPages={totalPages} write={write} /> : null}
         </div>
       )}
 
@@ -702,7 +745,7 @@ export function DataTable<Row>({
                 <div className="flex items-start justify-between gap-12 bg-control/20 px-16 py-12 border-b border-hairline/40">
                   <div className="flex flex-col min-w-0">
                      <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle mb-[2px]">{primaryColumn.header}</span>
-                     <div className="text-body font-medium text-ink truncate">{primaryColumn.cell(row)}</div>
+                     <div className="text-body font-medium text-ink truncate">{primaryColumn.cell(row, { grid: true })}</div>
                   </div>
                   {rowActions ? (
                     <div className="shrink-0 -mr-4 -mt-4 opacity-100 focus-within:opacity-100 desktop:opacity-0 desktop:group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
@@ -718,7 +761,7 @@ export function DataTable<Row>({
                   <div key={c.key} className="flex items-start justify-between gap-16 min-w-0">
                     <span className="text-[10px] font-medium uppercase tracking-[0.05em] text-ink-subtle shrink-0 mt-[2px]">{c.header}</span>
                     <div className="text-body-sm text-ink text-right flex-1 flex justify-end min-w-0">
-                      {c.cell(row)}
+                      {c.cell(row, { grid: true })}
                     </div>
                   </div>
                 ))}
@@ -730,18 +773,8 @@ export function DataTable<Row>({
       )}
 
       {isGridView && totalPages > 1 ? (
-        <div className="col-span-full flex items-center justify-between border-t border-hairline/80 px-24 py-12 bg-raised/30 rounded-b-[16px]">
-          <span className="text-body-sm text-ink-subtle">
-            Page <span className="font-medium text-ink">{validPage}</span> of <span className="font-medium text-ink">{totalPages}</span>
-          </span>
-          <div className="flex items-center gap-8">
-            <Button variant="secondary" onClick={() => write({ page: validPage > 2 ? String(validPage - 1) : null })} disabled={validPage <= 1}>
-              Previous
-            </Button>
-            <Button variant="secondary" onClick={() => write({ page: String(validPage + 1) })} disabled={validPage >= totalPages}>
-              Next
-            </Button>
-          </div>
+        <div className="col-span-full">
+           <TablePagination validPage={validPage} totalPages={totalPages} write={write} />
         </div>
       ) : null}
 

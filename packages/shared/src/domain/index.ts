@@ -254,12 +254,43 @@ export type MovementType =
   | 'return_to_supplier'
   | 'opening_balance';
 
+export interface StockBatch {
+  id: Id;
+  outletId: Id;
+  productVariantId: Id;
+  stockLocationId: Id;
+  batchNumber: string | null;
+  initialQty: number;
+  remainingQty: number;
+  unitCostCents: Cents;
+  receivedAt: EpochMs;
+  expiryDate: EpochMs | null;
+}
+
+export type GrnStatus = 'pending_variance_approval' | 'approved';
+
+export interface GoodsReceivedNote {
+  id: Id;
+  outletId: Id;
+  purchaseOrderId: Id | null;
+  supplierId: Id;
+  invoiceNumber: string | null;
+  etimsInvoiceRef: string | null;
+  mediaUrls: string[];
+  status: GrnStatus;
+  receivedBy: Id;
+  receivedAt: EpochMs;
+  deviceTime: EpochMs;
+  gpsLocation: string | null;
+}
+
 export interface StockMovement {
   id: Id;
   outletId: Id;
   businessDate: IsoDate;
   productVariantId: Id;
   stockLocationId: Id;
+  stockBatchId: Id | null;
   /** Signed, in the variant's stock unit: bottles for spirits, units for beer. */
   qtyDelta: number;
   volumeDeltaMl: number | null;

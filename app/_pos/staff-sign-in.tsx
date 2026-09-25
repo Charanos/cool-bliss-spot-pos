@@ -123,14 +123,19 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
         <AmbientTerminalArtwork />
         {!person ? (
           <>
-            <header className="relative z-10 flex flex-col items-end text-right">
-              <div className="absolute left-0 top-0">
-                <VeilButton icon={IconArrowLeft} onClick={() => router.push('/')}>
-                  Back to home
-                </VeilButton>
+            <header className="relative z-10 flex flex-col gap-16 pad:gap-24 tablet:flex-row tablet:items-start tablet:justify-between tablet:gap-16">
+              <VeilButton 
+                icon={IconArrowLeft} 
+                onClick={() => router.push('/')} 
+                className="self-end origin-right scale-90 tablet:self-start tablet:origin-top-left"
+              >
+                Back to home
+              </VeilButton>
+              
+              <div className="flex flex-col items-end text-right">
+                <h1 className="font-mono text-title font-medium text-balance text-ink pad:text-title-lg tablet:text-heading">Sign in to {device?.label ?? SURFACE_NAME[surface]}</h1>
+                <p className="mt-8 tablet:mt-12 text-body text-ink-subtle">Choose your name, then enter your PIN.</p>
               </div>
-              <h1 className="mt-16 font-mono text-title font-medium text-balance text-ink pad:mt-32 pad:text-title-lg tablet:text-heading">Sign in to {device?.label ?? SURFACE_NAME[surface]}</h1>
-              <p className="mt-12 text-body text-ink-subtle">Choose your name, then enter your PIN.</p>
             </header>
 
             <div className="relative z-10 mt-auto flex flex-col gap-16 pt-20 pad:pt-32">
@@ -184,8 +189,12 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
           </>
         ) : (
           <>
-            <header className="absolute inset-x-32 top-32 z-20 flex items-start justify-end">
-              <VeilButton icon={IconArrowLeft} onClick={() => choose(null)}>
+            <header className="relative z-20 flex items-start justify-end tablet:justify-start">
+              <VeilButton 
+                icon={IconArrowLeft} 
+                onClick={() => choose(null)}
+                className="origin-right scale-90 tablet:origin-top-left"
+              >
                 Switch profile
               </VeilButton>
             </header>

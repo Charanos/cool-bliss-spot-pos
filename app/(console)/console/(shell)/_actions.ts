@@ -192,3 +192,29 @@ export async function approvePurchaseOrder(input: { purchaseOrderId: string }): 
     procurement.approvePurchaseOrder({ ...input, actor });
   });
 }
+
+export async function recordGoodsReceipt(input: {
+  purchaseOrderId?: string | null;
+  supplierId: string;
+  deliveryNoteRef: string;
+  invoiceNumber?: string | null;
+  etimsInvoiceRef?: string | null;
+  mediaUrls?: string[];
+  lines: procurement.IntakeLineInput[];
+  varianceNote?: string | null;
+  gpsLocation?: string | null;
+}): Promise<ActionResult & { id?: string; grnNumber?: number }> {
+  const actor = await identity.currentConsoleActor();
+  let id: string | undefined;
+  let grnNumber: number | undefined;
+  const result = await attempt(['/console/purchasing', '/console/purchasing/receipts', '/console/inventory', '/console/inventory/stock'], () => {
+    const receipt = procurement.recordGoodsReceipt({
+      ...input,
+      actor,
+    });
+    id = receipt.id;
+    grnNumber = receipt.grnNumber;
+  });
+  return result.ok ? { ok: true, id, grnNumber } : result;
+}
+

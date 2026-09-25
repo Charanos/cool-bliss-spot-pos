@@ -1,6 +1,6 @@
 import 'server-only';
 
-import type { CountKind, MovementType, StockCount, StockHold, StockMovement } from '@bliss/shared/domain';
+import type { CountKind, MovementType, StockBatch, StockCount, StockHold, StockMovement } from '@bliss/shared/domain';
 import { createUuidV7 } from '@bliss/shared/id';
 import { type Cents, ZERO, add, multiplyByQuantity, weightedAverage } from '@bliss/shared/money';
 import { type Actor, checkReason, requireReasoned } from '@bliss/shared/reason';
@@ -112,6 +112,7 @@ export function lastMovementAt(variantId: string, types: MovementType[] = ['sale
 export function recordMovement(input: {
   variantId: string;
   locationId: string;
+  stockBatchId?: string | null;
   qtyDelta: number;
   type: MovementType;
   sourceType: string;
@@ -131,6 +132,7 @@ export function recordMovement(input: {
     businessDate: businessDate(now, outlet.timezone, outlet.businessDayCutover),
     productVariantId: input.variantId,
     stockLocationId: input.locationId,
+    stockBatchId: input.stockBatchId ?? null,
     qtyDelta: input.qtyDelta,
     volumeDeltaMl: null,
     unitCostCents:
@@ -151,6 +153,39 @@ export function recordMovement(input: {
   inventoryTables().movements.push(movement);
   bumpAvailabilityVersion();
   return movement;
+}
+
+export function createBatch(input: {
+  variantId: string;
+  locationId: string;
+  qty: number;
+  unitCostCents: Cents;
+  batchNumber: string | null;
+  expiryDate: number | null;
+  actor: Actor;
+}) {
+  const batch = {
+    id: nextId(),
+    outletId: identity.outlet().id,
+    productVariantId: input.variantId,
+    stockLocationId: input.locationId,
+    batchNumber: input.batchNumber,
+    initialQty: input.qty,
+    remainingQty: input.qty,
+    unitCostCents: input.unitCostCents,
+    receivedAt: Date.now(),
+    expiryDate: input.expiryDate,
+  };
+  inventoryTables().stockBatches.push(batch);
+  return batch;
+}
+
+export function batches(): StockBatch[] {
+  return inventoryTables().stockBatches;
+}
+
+export function batchesForVariant(variantId: string): StockBatch[] {
+  return inventoryTables().stockBatches.filter((b) => b.productVariantId === variantId);
 }
 
 /* ------------------------------------------------------------------- holds */
@@ -251,6 +286,7 @@ export function writeOff(input: { variantId: string; locationId: string; qty: nu
     businessDate: businessDate(now, outlet.timezone, outlet.businessDayCutover),
     productVariantId: stock.stockVariantId,
     stockLocationId: input.locationId,
+    stockBatchId: null,
     qtyDelta: -qty,
     volumeDeltaMl: null,
     unitCostCents: averageCost(stock.stockVariantId),
@@ -464,6 +500,7 @@ export function commitCount(input: { countId: string; reasons: Record<string, st
       businessDate: c.businessDate,
       productVariantId: line.productVariantId,
       stockLocationId: c.stockLocationId,
+      stockBatchId: null,
       qtyDelta: line.varianceQty,
       volumeDeltaMl: null,
       unitCostCents: averageCost(line.productVariantId),
@@ -587,20 +624,54 @@ function saleLocation(variantId: string, amount: number, prefer: SaleInput['pref
   return (all.find((l) => l.isDefaultSale) ?? all.find((l) => l.kind === 'service') ?? all[0]!).id;
 }
 
+function depleteBatches(variantId: string, locationId: string, amount: number): { batchId: string | null; qty: number }[] {
+  const batches = inventoryTables().stockBatches
+    .filter((b) => b.productVariantId === variantId && b.stockLocationId === locationId && b.remainingQty > 0)
+    .sort((a, b) => {
+      if (a.expiryDate && b.expiryDate) return a.expiryDate - b.expiryDate;
+      if (a.expiryDate) return -1;
+      if (b.expiryDate) return 1;
+      return a.receivedAt - b.receivedAt;
+    });
+
+  let remaining = amount;
+  const deductions: { batchId: string | null; qty: number }[] = [];
+
+  for (const batch of batches) {
+    if (remaining <= 0) break;
+    const take = Math.min(batch.remainingQty, remaining);
+    batch.remainingQty = Math.round((batch.remainingQty - take) * 10_000) / 10_000;
+    remaining = Math.round((remaining - take) * 10_000) / 10_000;
+    deductions.push({ batchId: batch.id, qty: take });
+  }
+
+  if (remaining > 0) {
+    deductions.push({ batchId: null, qty: remaining });
+  }
+
+  return deductions;
+}
+
 /** Write the sale movements for a fired line or a quick sale item. The ledger is the only stock write. */
 export function recordSale(input: SaleInput) {
   for (const [variantId, amount] of depletionFor(input)) {
     if (amount === 0) continue;
-    recordMovement({
-      variantId,
-      locationId: saleLocation(variantId, amount, input.preferLocationKind),
-      qtyDelta: -amount,
-      type: 'sale',
-      sourceType: 'order_line',
-      sourceId: input.lineId,
-      reason: null,
-      actor: input.actor,
-    });
+    const locationId = saleLocation(variantId, amount, input.preferLocationKind);
+    const deductions = depleteBatches(variantId, locationId, amount);
+    for (const { batchId, qty } of deductions) {
+      if (qty <= 0) continue;
+      recordMovement({
+        variantId,
+        locationId,
+        stockBatchId: batchId,
+        qtyDelta: -qty,
+        type: 'sale',
+        sourceType: 'order_line',
+        sourceId: input.lineId,
+        reason: null,
+        actor: input.actor,
+      });
+    }
   }
 }
 

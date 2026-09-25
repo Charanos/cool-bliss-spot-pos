@@ -8,6 +8,7 @@ import { AnimatedMoney, Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
 import { IconAlertTriangle, IconBan, IconHistory, IconLock, IconLockOpen, IconScale, IconShoppingCart } from '@tabler/icons-react';
 import { ButtonLink } from '@bliss/ui/components/button-link';
+import { cx } from '@bliss/ui/lib/cx';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { HoldDialog, ReleaseHoldDialog, WriteOffDialog } from '../../_components/dialogs';
@@ -46,13 +47,28 @@ export function StockTable({
       fixed: true,
       sortValue: (r) => r.variant,
       csv: (r) => r.variant,
-      cell: (r) => (
-        <span className="flex min-w-0 items-center gap-12">
+      cell: (r, ctx) => (
+        <span className="flex min-w-0 items-center gap-12 group/item cursor-pointer">
           {r.imageKey ? (
             // eslint-disable-next-line @next/next/no-img-element -- a 32px catalogue thumbnail from the asset store
-            <img src={`https://images.unsplash.com/photo-${r.imageKey}?auto=format&fit=crop&w=64&h=64&q=60`} alt="" className="size-[32px] shrink-0 rounded-sm object-cover" loading="lazy" />
+            <img 
+              src={`https://images.unsplash.com/photo-${r.imageKey}?auto=format&fit=crop&w=128&h=128&q=70`} 
+              alt="" 
+              className={cx(
+                "shrink-0 rounded-[10px] object-cover shadow-sm transition-transform duration-300 group-hover/item:scale-105 group-hover/item:shadow-lg",
+                ctx?.grid ? "size-[80px]" : "size-[40px]"
+              )} 
+              loading="lazy" 
+            />
           ) : (
-            <span className="size-[32px] shrink-0" />
+            <span 
+              className={cx(
+                "shrink-0 rounded-[8px] bg-control/20 ring-1 ring-inset ring-hairline/30 flex items-center justify-center transition-colors duration-200 group-hover/item:bg-control/40",
+                ctx?.grid ? "size-[64px]" : "size-[36px]"
+              )}
+            >
+               <span className={cx("font-medium text-ink-subtle/40", ctx?.grid ? "text-title" : "text-micro")}>{r.variant.slice(0, 1).toUpperCase()}</span>
+            </span>
           )}
           <StackCell primary={r.variant} secondary={r.categoryName} />
         </span>
@@ -149,6 +165,9 @@ export function StockTable({
           detail={varianceCount > 0 ? 'Lines outside 2% tolerance' : 'Within count tolerance'}
         />
       </div>
+
+      {/* Elegant visual separator */}
+      <div className="h-[1px] mt-8 w-full mt-32 bg-gradient-to-r from-transparent via-hairline/60 to-transparent opacity-80" aria-hidden="true" />
 
       <DataTable
         leading={<UrlSelect param="location" label="Location" options={locations} allLabel="All locations" />}

@@ -66,7 +66,7 @@ export function ReceiptsTable({ rows, timezone, suppliers }: { rows: ReceiptRow[
       rows={rows}
       columns={columns}
       rowKey={(r) => r.id}
-      rowHref={(r) => (r.poId ? `/console/purchasing/orders/${r.poId}` : '/console/purchasing/receipts')}
+      rowHref={(r) => `/console/purchasing/receipts/${r.id}`}
       defaultSort={{ key: 'received', dir: 'desc' }}
       search={{ placeholder: 'Delivery note or GRN', test: (r, q) => r.deliveryNote.toLowerCase().includes(q) || String(r.number).includes(q) }}
       filters={[

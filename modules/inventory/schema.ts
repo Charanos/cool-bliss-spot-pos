@@ -10,6 +10,8 @@ export const inventoryTables = () => {
     holds: d.holds,
     counts: d.counts,
     countLines: d.countLines,
+    stockBatches: d.stockBatches,
+    goodsReceivedNotes: d.goodsReceivedNotes,
     recipes: d.recipes,
     pourSpecs: d.pourSpecs,
   };

@@ -1,8 +1,9 @@
 import 'server-only';
 
 import type { GoodsReceipt, PurchaseOrder, PurchaseOrderLine } from '@bliss/db/seed/types';
+import type { GoodsReceivedNote } from '@bliss/shared/domain';
 import { createUuidV7 } from '@bliss/shared/id';
-import { type Cents, ZERO, isNegative, multiplyByQty, percentChangeBps, sum } from '@bliss/shared/money';
+import { type Cents, ZERO, cents, isNegative, multiplyByQty, percentChangeBps, sum } from '@bliss/shared/money';
 import { type Actor, checkReason, requireReasoned } from '@bliss/shared/reason';
 import * as audit from '../audit/service';
 import * as catalogue from '../catalogue/service';
@@ -32,6 +33,25 @@ export function receipts() {
 
 export function receiptLines(receiptId: string) {
   return procurementTables().receiptLines.filter((l) => l.goodsReceiptId === receiptId);
+}
+
+export function receiptById(id: string) {
+  return procurementTables().receipts.find((r) => r.id === id) ?? null;
+}
+
+export function goodsReceivedNotes() {
+  return procurementTables().goodsReceivedNotes;
+}
+
+export function noteForReceipt(receiptId: string) {
+  const receipt = receiptById(receiptId);
+  if (!receipt) return null;
+  return (
+    procurementTables().goodsReceivedNotes.find((n) =>
+      (receipt.purchaseOrderId && n.purchaseOrderId === receipt.purchaseOrderId) ||
+      (n.supplierId === receipt.supplierId && Math.abs(n.receivedAt - receipt.receivedAt) < 30000)
+    ) ?? null
+  );
 }
 
 export function supplierProducts(supplierId?: string) {
@@ -180,6 +200,8 @@ export interface ReceiveLine {
   qtyReceived: number;
   qtyRejected: number;
   rejectionReason: string | null;
+  batchNumber: string | null;
+  expiryDate: string | null;
 }
 
 /**
@@ -187,7 +209,17 @@ export interface ReceiveLine {
  * order's cost, which moves the average; rejected units need a reason. A short delivery leaves the
  * order partially received and needs a variance note, so the difference is never silent.
  */
-export function receiveAgainstOrder(input: { purchaseOrderId: string; deliveryNoteRef: string; lines: ReceiveLine[]; varianceNote: string | null; actor: Actor }): GoodsReceipt {
+export function receiveAgainstOrder(input: {
+  purchaseOrderId: string;
+  deliveryNoteRef: string;
+  invoiceNumber?: string | null;
+  etimsInvoiceRef?: string | null;
+  mediaUrls?: string[];
+  gpsLocation?: string | null;
+  lines: ReceiveLine[];
+  varianceNote: string | null;
+  actor: Actor;
+}): GoodsReceipt {
   assertPurchasing(input.actor, 'receiving deliveries');
   const t = procurementTables();
   const order = t.purchaseOrders.find((p) => p.id === input.purchaseOrderId);
@@ -230,6 +262,22 @@ export function receiveAgainstOrder(input: { purchaseOrderId: string; deliveryNo
     varianceNote: input.varianceNote?.trim() || null,
   };
   t.receipts.push(receipt);
+
+  const grn = {
+    id: nextId(),
+    outletId: order.outletId,
+    purchaseOrderId: order.id,
+    supplierId: order.supplierId,
+    invoiceNumber: input.invoiceNumber ?? null,
+    etimsInvoiceRef: input.etimsInvoiceRef ?? null,
+    mediaUrls: input.mediaUrls ?? [],
+    status: short ? ('pending_variance_approval' as const) : ('approved' as const),
+    receivedBy: input.actor.staffId,
+    receivedAt: Date.now(),
+    deviceTime: Date.now(),
+    gpsLocation: input.gpsLocation ?? null,
+  };
+  t.goodsReceivedNotes.push(grn);
   for (const { line, orderLine } of checked) {
     if (line.qtyReceived === 0 && line.qtyRejected === 0) continue;
     t.receiptLines.push({
@@ -247,9 +295,20 @@ export function receiveAgainstOrder(input: { purchaseOrderId: string; deliveryNo
     // received against the same order, or the remainder cancelled with a reason.
     orderLine.qtyReceived += line.qtyReceived;
     if (line.qtyReceived > 0) {
+      const batch = inventory.createBatch({
+        variantId: orderLine.productVariantId,
+        locationId: store.id,
+        qty: line.qtyReceived,
+        unitCostCents: orderLine.unitCostCents,
+        batchNumber: line.batchNumber ?? null,
+        expiryDate: line.expiryDate ? new Date(line.expiryDate).getTime() : null,
+        actor: input.actor,
+      });
+
       inventory.recordMovement({
         variantId: orderLine.productVariantId,
         locationId: store.id,
+        stockBatchId: batch.id,
         qtyDelta: line.qtyReceived,
         type: 'receipt',
         sourceType: 'goods_receipt',
@@ -301,3 +360,216 @@ export function approvePurchaseOrder(input: { purchaseOrderId: string; actor: Ac
   audit.record({ outletId: order.outletId, actorStaffId: input.actor.staffId, action: 'purchase_order.approved', entityType: 'purchase_order', entityId: order.id, before: { status: 'draft' }, after: { status: 'sent' }, reason: null, severity: 'info' });
   return order;
 }
+
+export interface IntakeLineInput {
+  variantId: string;
+  qtyReceived: number;
+  qtyExpected?: number;
+  qtyRejected?: number;
+  rejectionReason?: string | null;
+  batchNumber?: string | null;
+  expiryDate?: string | null;
+  unitCostCents?: Cents | number | null;
+  purchaseOrderLineId?: string | null;
+}
+
+export interface RecordGoodsReceiptInput {
+  purchaseOrderId?: string | null;
+  supplierId: string;
+  deliveryNoteRef: string;
+  invoiceNumber?: string | null;
+  etimsInvoiceRef?: string | null;
+  mediaUrls?: string[];
+  lines: IntakeLineInput[];
+  varianceNote?: string | null;
+  gpsLocation?: string | null;
+  actor: Actor;
+}
+
+/**
+ * Record a comprehensive goods receipt note (GRN).
+ * Fully updates receipts, goodsReceivedNotes, FEFO stock batches, stock movements, and PO status.
+ */
+export function recordGoodsReceipt(input: RecordGoodsReceiptInput): GoodsReceipt {
+  assertPurchasing(input.actor, 'recording goods receipt');
+  const t = procurementTables();
+
+  const supplier = t.suppliers.find((s) => s.id === input.supplierId);
+  if (!supplier) throw new Error('Please select a valid supplier.');
+
+  const deliveryNoteRef = input.deliveryNoteRef.trim();
+  if (deliveryNoteRef.length === 0) throw new Error("Enter the supplier's delivery note reference.");
+
+  if (!input.lines || input.lines.length === 0) {
+    throw new Error('Enter at least one line item to record intake.');
+  }
+
+  const store = inventory.locations().find((l) => l.isDefaultReceipt) ?? inventory.locations()[0]!;
+  const outlet = identity.outlet();
+
+  const order = input.purchaseOrderId ? t.purchaseOrders.find((p) => p.id === input.purchaseOrderId) : null;
+  const orderLines = order ? t.purchaseOrderLines.filter((l) => l.purchaseOrderId === order.id) : [];
+
+  let hasShortfall = false;
+
+  const validatedLines = input.lines.map((line) => {
+    const variant = catalogue.variantById(line.variantId);
+    if (!variant) throw new Error(`Product variant with id "${line.variantId}" not found.`);
+
+    if (!Number.isInteger(line.qtyReceived) || line.qtyReceived < 0) {
+      throw new Error(`Enter whole units for ${variant.name}.`);
+    }
+
+    const qtyRejected = line.qtyRejected ?? 0;
+    if (!Number.isInteger(qtyRejected) || qtyRejected < 0) {
+      throw new Error(`Invalid rejected quantity for ${variant.name}.`);
+    }
+
+    if (qtyRejected > 0 && (!line.rejectionReason || line.rejectionReason.trim().length === 0)) {
+      throw new Error(`Please specify why ${qtyRejected} × ${variant.name} were rejected.`);
+    }
+
+    const orderLine = line.purchaseOrderLineId
+      ? orderLines.find((l) => l.id === line.purchaseOrderLineId)
+      : orderLines.find((l) => l.productVariantId === line.variantId);
+
+    const qtyExpected = line.qtyExpected ?? (orderLine ? orderLine.qtyOrdered - orderLine.qtyReceived : line.qtyReceived);
+
+    if (line.qtyReceived < qtyExpected) {
+      hasShortfall = true;
+    }
+
+    let unitCost: Cents;
+    if (line.unitCostCents !== undefined && line.unitCostCents !== null && line.unitCostCents !== 0) {
+      unitCost = typeof line.unitCostCents === 'number' ? cents(line.unitCostCents) : line.unitCostCents;
+    } else if (orderLine) {
+      unitCost = orderLine.unitCostCents;
+    } else {
+      const sp = t.supplierProducts.find((p) => p.supplierId === input.supplierId && p.productVariantId === line.variantId);
+      unitCost = sp ? sp.lastCostCents : (inventory.averageCost(line.variantId) ?? ZERO);
+    }
+
+    return {
+      line,
+      variant,
+      orderLine,
+      qtyExpected,
+      qtyReceived: line.qtyReceived,
+      qtyRejected,
+      unitCostCents: unitCost,
+    };
+  });
+
+  if (validatedLines.every((l) => l.qtyReceived === 0 && l.qtyRejected === 0)) {
+    throw new Error('Enter at least one received quantity greater than zero.');
+  }
+
+  const grnNumber = t.receipts.reduce((max, r) => Math.max(max, r.grnNumber), 0) + 1;
+
+  const receipt: GoodsReceipt = {
+    id: nextId(),
+    outletId: outlet.id,
+    purchaseOrderId: order ? order.id : null,
+    supplierId: input.supplierId,
+    grnNumber,
+    deliveryNoteRef,
+    receivedAt: Date.now(),
+    receivedBy: input.actor.staffId,
+    stockLocationId: store.id,
+    status: 'posted',
+    varianceNote: input.varianceNote?.trim() || null,
+  };
+  t.receipts.push(receipt);
+
+  const grn: GoodsReceivedNote = {
+    id: nextId(),
+    outletId: outlet.id,
+    purchaseOrderId: order ? order.id : null,
+    supplierId: input.supplierId,
+    invoiceNumber: input.invoiceNumber?.trim() || null,
+    etimsInvoiceRef: input.etimsInvoiceRef?.trim() || null,
+    mediaUrls: input.mediaUrls || [],
+    status: hasShortfall ? 'pending_variance_approval' : 'approved',
+    receivedBy: input.actor.staffId,
+    receivedAt: Date.now(),
+    deviceTime: Date.now(),
+    gpsLocation: input.gpsLocation || null,
+  };
+  t.goodsReceivedNotes.push(grn);
+
+  for (const { line, orderLine, qtyExpected, qtyReceived, qtyRejected, unitCostCents } of validatedLines) {
+    if (qtyReceived === 0 && qtyRejected === 0) continue;
+
+    t.receiptLines.push({
+      id: nextId(),
+      goodsReceiptId: receipt.id,
+      purchaseOrderLineId: orderLine ? orderLine.id : null,
+      productVariantId: line.variantId,
+      qtyExpected,
+      qtyReceived,
+      qtyRejected,
+      rejectionReason: qtyRejected > 0 ? (line.rejectionReason?.trim() ?? null) : null,
+      unitCostCents,
+    });
+
+    if (orderLine) {
+      orderLine.qtyReceived += qtyReceived;
+    }
+
+    if (qtyReceived > 0) {
+      const batch = inventory.createBatch({
+        variantId: line.variantId,
+        locationId: store.id,
+        qty: qtyReceived,
+        unitCostCents,
+        batchNumber: line.batchNumber?.trim() || null,
+        expiryDate: line.expiryDate ? new Date(line.expiryDate).getTime() : null,
+        actor: input.actor,
+      });
+
+      inventory.recordMovement({
+        variantId: line.variantId,
+        locationId: store.id,
+        stockBatchId: batch.id,
+        qtyDelta: qtyReceived,
+        type: 'receipt',
+        sourceType: 'goods_receipt',
+        sourceId: receipt.id,
+        reason: `GRN #${receipt.grnNumber} - ${deliveryNoteRef}`,
+        actor: input.actor,
+        unitCostCents,
+      });
+    }
+  }
+
+  if (order) {
+    const before = order.status;
+    order.status = orderLines.every((l) => l.qtyReceived >= l.qtyOrdered) ? 'received' : 'partially_received';
+    audit.record({
+      outletId: order.outletId,
+      actorStaffId: input.actor.staffId,
+      action: 'goods_receipt.posted',
+      entityType: 'goods_receipt',
+      entityId: receipt.id,
+      before: { orderStatus: before },
+      after: { orderStatus: order.status, grnNumber: receipt.grnNumber, deliveryNoteRef },
+      reason: receipt.varianceNote,
+      severity: 'info',
+    });
+  } else {
+    audit.record({
+      outletId: outlet.id,
+      actorStaffId: input.actor.staffId,
+      action: 'goods_receipt.posted',
+      entityType: 'goods_receipt',
+      entityId: receipt.id,
+      before: null,
+      after: { grnNumber: receipt.grnNumber, deliveryNoteRef, supplierId: input.supplierId },
+      reason: receipt.varianceNote,
+      severity: 'info',
+    });
+  }
+
+  return receipt;
+}
+

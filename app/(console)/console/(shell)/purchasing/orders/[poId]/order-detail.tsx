@@ -5,6 +5,7 @@ import { plural } from '@bliss/shared/format';
 import { type Cents, multiplyByQty, sum } from '@bliss/shared/money';
 import { REASON_MIN_LENGTH, checkReason } from '@bliss/shared/reason';
 import { Button } from '@bliss/ui/components/button';
+import { ButtonLink } from '@bliss/ui/components/button-link';
 import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
 import { RevealSection } from '@bliss/ui/components/console/shell';
 import { InlineNotice } from '@bliss/ui/components/feedback';
@@ -72,9 +73,9 @@ export function OrderDetail({ order, lines, receipts, storeName }: { order: { id
               </Button>
             ) : null}
             {receivable && !receiving ? (
-              <Button icon={IconPackageImport} onClick={() => setReceiving(true)}>
+              <ButtonLink href={`/console/purchasing/receipts/new?poId=${order.id}`} icon={IconPackageImport}>
                 Receive delivery
-              </Button>
+              </ButtonLink>
             ) : null}
             {order.status !== 'received' && order.status !== 'cancelled' ? (
               <Button variant="quiet-destructive" icon={IconX} onClick={() => setCancelling(true)}>
@@ -214,7 +215,7 @@ function ReceiveForm({ orderId, lines, storeName, onDone }: { orderId: string; l
         purchaseOrderId: orderId,
         deliveryNoteRef: deliveryNote,
         varianceNote: anyShort ? varianceNote : null,
-        lines: rows.map((x) => ({ purchaseOrderLineId: x.l.id, qtyReceived: x.inQty ?? 0, qtyRejected: x.outQty ?? 0, rejectionReason: reasons[x.l.id] ?? null })),
+        lines: rows.map((x) => ({ purchaseOrderLineId: x.l.id, qtyReceived: x.inQty ?? 0, qtyRejected: x.outQty ?? 0, rejectionReason: reasons[x.l.id] ?? null, batchNumber: null, expiryDate: null })),
       });
       if (!r.ok) {
         setError(r.message);
