@@ -1,22 +1,20 @@
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
+import * as pricing from '@/modules/pricing/service';
 import * as trade from '@/modules/trade/service';
 import { ZoningManager } from './zoning-manager';
 
-export const metadata: Metadata = { title: 'Zoning & Tables' };
+export const metadata: Metadata = { title: 'Zones and tables' };
 
+/** The floor as the tablets draw it: zones, the tables in each, and how many seats a table has. */
 export default async function ZoningPage() {
   const actor = await identity.currentConsoleActor();
-  const zones = trade.zones();
-  const tables = trade.tables();
-  
   return (
-    <div className="flex flex-col gap-24">
-      <ZoningManager 
-        zones={zones} 
-        tables={tables} 
-        canManage={identity.can(actor.staffId, 'staff.manage')} 
-      />
-    </div>
+    <ZoningManager
+      zones={trade.zones()}
+      tables={trade.tables()}
+      priceLists={pricing.priceLists().map((l) => ({ value: l.id, label: l.name }))}
+      canManage={identity.can(actor.staffId, 'staff.manage')}
+    />
   );
 }

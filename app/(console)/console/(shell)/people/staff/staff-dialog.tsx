@@ -7,7 +7,6 @@ import { SelectField, TextField } from '@bliss/ui/components/fields';
 import { IconCamera } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { type ChangeEvent, type FormEvent, useEffect, useState, useTransition } from 'react';
-import { staffPhoto } from '@/lib/pos/staff-photos';
 import { createStaff, updateStaff } from '../../_actions/people';
 import { uploadFiles } from '../../_lib/upload';
 import type { StaffRow } from './staff-table';
@@ -40,7 +39,8 @@ export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRo
     if (!open) return;
     setFullName(target?.name ?? '');
     setDisplayName(target?.displayName ?? '');
-    setRoleId(target?.roleId ?? roles[0]?.value ?? '');
+    // A new person starts as a waiter, the role with the least reach, never as the first role listed.
+    setRoleId(target?.roleId ?? (roles.find((r) => r.label === 'Waiter') ?? roles[roles.length - 1])?.value ?? '');
     setContactNumber(target?.contactNumber ?? '');
     setPin('');
     setAvatarUrl(target?.avatarUrl ?? '');
@@ -74,7 +74,7 @@ export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRo
     });
   }
 
-  const photo = avatarUrl || staffPhoto(displayName);
+  const photo = avatarUrl;
   const initials = displayName.trim().slice(0, 2).toUpperCase();
 
   return (
@@ -127,7 +127,6 @@ export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRo
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
             placeholder="Six digits"
-            mono
             helper={editing && target ? PIN_HELP[target.pinState] : 'Six digits, not a run or a repeat.'}
           />
         </fieldset>

@@ -37,7 +37,7 @@ export default async function RolesPage() {
   }));
   return (
     <>
-      <TabIntro>A permission is enforced on the server, not only hidden in the interface. A waiter asking for a cost price gets no cost field back at all.</TabIntro>
+      <TabIntro>What each role can do. A change applies from that person&rsquo;s next action, on every device, and is recorded with its reason.</TabIntro>
       <RolesMatrix roles={roles} permissions={PERMISSIONS} canManage={identity.can(actor.staffId, 'staff.manage')} />
     </>
   );
