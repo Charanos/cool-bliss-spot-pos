@@ -60,13 +60,13 @@ export function Rail({
     if (!/Mac|iPhone|iPad/.test(navigator.platform)) setShortcut('Ctrl K');
   }, []);
 
+  // The cookie is saved outside the state update: an updater must stay pure, and React refuses a
+  // transition started from inside one.
   const toggle = useCallback(() => {
-    setCollapsed((current) => {
-      const next = !current;
-      start(() => setRailCollapsed(next));
-      return next;
-    });
-  }, []);
+    const next = !collapsed;
+    setCollapsed(next);
+    start(() => setRailCollapsed(next));
+  }, [collapsed]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
