@@ -12,10 +12,10 @@ export const metadata: Metadata = { title: 'Drawers' };
  */
 export default async function DrawersPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
-  const range = businessRange(params.range, '7'); // Drawers default to 7 days
+  const range = businessRange(params.range, '7');
   const outlet = identity.outlet();
   const devices = identity.devices();
-  
+
   const rows: DrawerRow[] = settlement
     .drawerSessionsBetween(range.from, range.to)
     .map((s) => settlement.drawerFor(s.businessDate))
@@ -38,9 +38,9 @@ export default async function DrawersPage({ searchParams }: { searchParams: Prom
     }));
 
   return (
-    <DrawersTable 
-      rows={rows} 
-      timezone={outlet.timezone} 
+    <DrawersTable
+      rows={rows}
+      timezone={outlet.timezone}
       threshold={outlet.drawerVarianceThresholdCents}
       rangeOptions={rangeOptions(true)}
       rangeKey={range.key}

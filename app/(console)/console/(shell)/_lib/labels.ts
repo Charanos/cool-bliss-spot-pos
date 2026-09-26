@@ -4,6 +4,15 @@ import type { StatusKey } from '@bliss/ui/components/status';
 
 /** Words for stored enums, in one place so every Console view says the same thing. docs/08. */
 
+export const ROLE_LABEL: Record<string, string> = {
+  owner: 'Owner',
+  manager: 'Manager',
+  supervisor: 'Supervisor',
+  cashier: 'Cashier',
+  waiter: 'Waiter',
+  stock_controller: 'Stock controller',
+};
+
 export const TENDER_LABEL: Record<TenderKind, string> = {
   cash: 'Cash',
   mpesa: 'M-Pesa',

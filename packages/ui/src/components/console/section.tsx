@@ -226,3 +226,79 @@ export function DetailHeader({
     </header>
   );
 }
+
+/**
+ * A notice that belongs to the page: something that needs a person, said once, with what to do and
+ * the one figure that matters. A wash of its tone, not a card: it sits above the work, not inside it.
+ */
+export function Callout({
+  tone = 'low',
+  title,
+  children,
+  aside,
+  action,
+  className,
+}: {
+  tone?: 'stop' | 'low' | 'info' | 'poured';
+  title: ReactNode;
+  children?: ReactNode;
+  /** A figure or a short fact on the trailing side. */
+  aside?: ReactNode;
+  action?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      role="status"
+      className={cx(
+        'flex flex-wrap items-center justify-between gap-x-24 gap-y-12 rounded-card px-20 py-16',
+        tone === 'stop' ? 'bg-stop-wash' : tone === 'info' ? 'bg-info-wash' : tone === 'poured' ? 'bg-poured-wash' : 'bg-low-wash',
+        className,
+      )}
+    >
+      <div className="flex min-w-0 items-start gap-12">
+        <span aria-hidden="true" className={cx('mt-6 size-dot shrink-0 rounded-dot', tone === 'stop' ? 'bg-stop' : tone === 'info' ? 'bg-info' : tone === 'poured' ? 'bg-poured' : 'bg-low')} />
+        <div className="flex min-w-0 flex-col gap-2">
+          <p className="text-title-card text-ink">{title}</p>
+          {children ? <p className="measure text-body-sm text-ink-muted">{children}</p> : null}
+        </div>
+      </div>
+      {aside || action ? (
+        <div className="flex shrink-0 items-center gap-16">
+          {aside}
+          {action}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/**
+ * The foot of a bill, an order or a delivery: the parts, then the one figure they come to, under a
+ * rule. Values are right-aligned so their figures line up with the column above.
+ */
+export function Totals({
+  items,
+  total,
+  className,
+}: {
+  items: readonly ({ label: ReactNode; value: ReactNode } | null | false)[];
+  total: { label: ReactNode; value: ReactNode };
+  className?: string;
+}) {
+  const shown = items.filter(Boolean) as { label: ReactNode; value: ReactNode }[];
+  return (
+    <dl className={cx('flex flex-col gap-8', className)}>
+      {shown.map((item, i) => (
+        <div key={i} className="flex items-baseline justify-between gap-16">
+          <dt className="text-body-sm text-ink-muted">{item.label}</dt>
+          <dd className="text-right">{item.value}</dd>
+        </div>
+      ))}
+      <div className="mt-4 flex items-baseline justify-between gap-16 border-t border-rule pt-12">
+        <dt className="text-title-card text-ink">{total.label}</dt>
+        <dd className="text-right">{total.value}</dd>
+      </div>
+    </dl>
+  );
+}

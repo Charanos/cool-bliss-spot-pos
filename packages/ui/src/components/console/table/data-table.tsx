@@ -398,7 +398,7 @@ export function DataTable<Row>({
                         key={c.key}
                         role="columnheader"
                         aria-sort={sorted ? (sortDir === 'asc' ? 'ascending' : 'descending') : c.sortValue ? 'none' : undefined}
-                        className={cx('min-w-0', c.align === 'right' && 'text-right')}
+                        className={cx('flex min-w-0 items-center', c.align === 'right' && 'justify-end')}
                       >
                         {c.sortValue ? (
                           <button

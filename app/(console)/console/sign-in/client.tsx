@@ -1,11 +1,10 @@
 'use client';
 
-import { SURFACE_NAME, SURFACE_ROLES } from '@bliss/shared/identity';
-import { ActionNode, Avatar, Eyebrow, FadeRule, GlassButton, GlassPane, PhotoBackdrop, VeilButton } from '@bliss/ui/components/atmosphere';
+import { SURFACE_ROLES } from '@bliss/shared/identity';
+import { ActionNode, Avatar, Eyebrow, FadeRule, GlassButton, PhotoBackdrop, VeilButton } from '@bliss/ui/components/atmosphere';
 import { AtmosphereClock } from '@bliss/ui/components/atmosphere-clock';
 import { AmbientConsoleArtwork } from '@bliss/ui/components/artwork/console-flow';
 import { BlissWordmark } from '@bliss/ui/components/brand';
-import { Skeleton } from '@bliss/ui/components/feedback';
 import { PinPad } from '@bliss/ui/components/pin-pad';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconArrowLeft } from '@tabler/icons-react';
@@ -13,16 +12,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { staffPhoto } from '@/lib/pos/staff-photos';
 import type { StaffSummary } from '@/modules/identity/service';
+import { ROLE_LABEL } from '../(shell)/_lib/labels';
 import { signInToConsole } from './actions';
 
-const ROLE_LABEL: Record<string, string> = {
-  waiter: 'Waiter',
-  supervisor: 'Supervisor',
-  cashier: 'Cashier',
-  manager: 'Manager',
-  owner: 'Owner',
-  stock_controller: 'Stock controller',
-};
 
 const BACKDROP = '1621275471769-e6aa344546d5';
 

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
+import * as reporting from '@/modules/reporting/service';
 import * as settlement from '@/modules/settlement/service';
 import * as trade from '@/modules/trade/service';
 import { businessRange, rangeOptions } from '../../_lib/range';
@@ -10,7 +11,8 @@ export const metadata: Metadata = { title: 'Bills' };
 /** Settled bills for a range of business days, with how they were paid as the cashier recorded it. */
 export default async function BillsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
-  const range = businessRange(params.range, 'tonight');
+  // Tonight while the bar is trading; last night once it has closed, when "tonight" is not a choice.
+  const range = businessRange(params.range, reporting.clock().tradingInProgress ? 'tonight' : '1');
   const outlet = identity.outlet();
   const tenders = settlement.tendersByBill();
 

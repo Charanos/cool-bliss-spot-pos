@@ -329,6 +329,8 @@ export const size = {
   lightbox: 720,
   /** A KPI card's figure row, so a row of metrics shares one baseline. */
   'kpi-min': 136,
+  /** The totals block at the foot of a bill, an order or a delivery. */
+  totals: 320,
   'panel-tender': 420,
   strip: 56,
   /** The top bar on a phone, and on any screen shorter than the `short` variant's ceiling. */
