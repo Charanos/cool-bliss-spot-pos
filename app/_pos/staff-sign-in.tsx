@@ -12,7 +12,7 @@ import { IconArrowLeft } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useOutlet, useStaffDirectory } from '@/lib/pos/queries';
-import { signIn, useDevice, useSession } from '@/lib/pos/session';
+import { pairDevice, signIn, useDevice, useSession } from '@/lib/pos/session';
 import { staffPhoto } from '@/lib/pos/staff-photos';
 import { useSync, wakeSync } from '@/lib/pos/sync';
 
@@ -65,6 +65,8 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // A newly registered device asks for its pairing code once, before the first PIN.
+  const [pairing, setPairing] = useState(false);
   const backdrop = useBackdrop(surface);
   const roles = SURFACE_ROLES[surface];
 
@@ -89,9 +91,18 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
     if (!chosen) return;
     setPending(true);
     setError(null);
+    if (pairing) {
+      const paired = await pairDevice(value);
+      setPending(false);
+      setPin('');
+      if (paired.ok) setPairing(false);
+      else setError(paired.message);
+      return;
+    }
     const result = await signIn(chosen, value);
     setPending(false);
     if (!result.ok) {
+      if (result.pairing) setPairing(true);
       setError(result.message);
       setPin('');
     }
@@ -204,9 +215,9 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
                 <Avatar src={staffPhoto(person.displayName)} name={person.displayName} size="lg" className="mb-24" />
                 <h1 className="ink-sheen font-mono text-persona">{person.displayName}</h1>
                 <Eyebrow as="p" tone={pending ? 'accent' : 'subtle'} aria-live="polite" className={cx('mb-16 mt-8', pending && 'animate-breathe')}>
-                  {pending ? 'Checking your PIN' : 'Enter your 6 digit PIN'}
+                  {pairing ? (pending ? 'Checking the code' : 'Enter the pairing code from the Console') : pending ? 'Checking your PIN' : 'Enter your 6 digit PIN'}
                 </Eyebrow>
-                <PinPad value={pin} onChange={setPin} onComplete={(v) => void submit(v)} label={`PIN for ${person.displayName}`} error={error} disabled={pending} />
+                <PinPad value={pin} onChange={setPin} onComplete={(v) => void submit(v)} label={pairing ? 'Pairing code for this device' : `PIN for ${person.displayName}`} error={error} disabled={pending} />
               </div>
             </div>
           </>

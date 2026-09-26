@@ -442,8 +442,8 @@ export interface SalesSummary {
 export function salesSummary(from: IsoDate, to: IsoDate, previous: { from: IsoDate; to: IsoDate }): SalesSummary {
   const settled = (a: IsoDate, b: IsoDate) => settlement.billsBetween(a, b).filter((bill) => bill.status !== 'open');
   const bills = settled(from, to);
-  const netSales = sum(bills.map((b) => b.totalCents));
-  const before = sum(settled(previous.from, previous.to).map((b) => b.totalCents));
+  const netSales = sum(bills.map(settlement.billNet));
+  const before = sum(settled(previous.from, previous.to).map(settlement.billNet));
   const lines = trade.linesBetween(from, to);
   const revenue = exVat(sum(lines.map((l) => l.lineTotalCents)));
   const voided = trade.voidedBetween(from, to);

@@ -79,7 +79,7 @@ export function useGrid(now: number, timezone: string | undefined) {
       if (variant.status !== 'active') continue;
       const product = productById.get(variant.productId);
       const category = product ? categoryById.get(product.categoryId) : undefined;
-      if (!product || !category || product.status !== 'active') continue;
+      if (!product || !category || product.status !== 'active' || category.status !== 'active') continue;
       const entry = availabilityById.get(variant.id);
       const resolved = tryResolvePrice(index, { variantId: variant.id, qty: 1, at: now, timeZone: timezone });
       tiles.push({
@@ -102,7 +102,7 @@ export function useGrid(now: number, timezone: string | undefined) {
     const counts = new Map<string, number>();
     for (const t of tiles) counts.set(t.categoryId, (counts.get(t.categoryId) ?? 0) + 1);
     const activeRule = tiles.find((t) => t.ruleName)?.ruleName ?? null;
-    return { categories: data.categories.map((c) => ({ ...c, count: counts.get(c.id) ?? 0 })), tiles, activeRule };
+    return { categories: data.categories.filter((c) => c.status === 'active').map((c) => ({ ...c, count: counts.get(c.id) ?? 0 })), tiles, activeRule };
   }, [data, index, now, timezone]);
 }
 

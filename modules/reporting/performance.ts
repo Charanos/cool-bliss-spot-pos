@@ -83,8 +83,8 @@ export function performance(from: IsoDate, to: IsoDate, previous: { from: IsoDat
   const bills = settlement.billsBetween(from, to).filter((b) => b.status !== 'open');
   const billIds = new Set(bills.map((b) => b.id));
   const tenders = settlement.readTables().tenders.filter((t) => billIds.has(t.billId));
-  const settled = sum(bills.map((b) => b.totalCents));
-  const before = sum(settlement.billsBetween(previous.from, previous.to).filter((b) => b.status !== 'open').map((b) => b.totalCents));
+  const settled = sum(bills.map(settlement.billNet));
+  const before = sum(settlement.billsBetween(previous.from, previous.to).filter((b) => b.status !== 'open').map(settlement.billNet));
 
   const lines = trade.linesBetween(from, to);
   const voided = trade.voidedBetween(from, to);

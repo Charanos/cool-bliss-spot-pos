@@ -6,10 +6,12 @@ import { wireResponse } from '@/lib/wire';
 import { fresh, withWrite } from '@/modules/_data/store';
 import * as credentials from '@/modules/identity/credentials';
 import * as identity from '@/modules/identity/service';
+import * as venue from '@/modules/identity/venue';
 
 export const dynamic = 'force-dynamic';
 
 const signIn = z.object({ action: z.literal('sign-in'), deviceId: z.string().max(64), staffId: z.string().max(64), pin: z.string().regex(/^\d{6}$/) });
+const pair = z.object({ action: z.literal('pair'), deviceId: z.string().max(64), code: z.string().regex(/^\d{6}$/) });
 const approve = z.object({ action: z.literal('approve'), deviceId: z.string().max(64), pin: z.string().regex(/^\d{6}$/), permission: z.enum(['void.approve', 'discount.approve', 'hold.set']) });
 
 const lockedMessage = (until: number, timezone: string) => `This PIN is locked until ${formatTime(until, timezone)}. A manager can unlock it in the Console.`;
@@ -40,6 +42,28 @@ export async function POST(request: Request) {
 
   const addressState = credentials.attemptStatus(address);
   if (addressState.locked) return wireResponse({ ok: false, message: `Too many wrong PINs from this device. Try again at ${formatTime(addressState.until, outlet.timezone)}.` }, { status: 429 });
+
+  // Pairing: the first time a device is used, it proves it is the one the manager registered.
+  const asPair = pair.safeParse(json);
+  if (asPair.success) {
+    const key = `pair:${device.id}`;
+    const state = credentials.attemptStatus(key);
+    if (state.locked) return wireResponse({ ok: false, message: `Pairing is paused until ${formatTime(state.until, outlet.timezone)} after several wrong codes.` }, { status: 423 });
+    const result = await withWrite(() => venue.pairDevice(device.id, asPair.data.code));
+    if (result === 'paired') {
+      credentials.clearAttempts(key);
+      return wireResponse({ ok: true });
+    }
+    credentials.recordFailure(address);
+    credentials.recordFailure(key);
+    return wireResponse(
+      { ok: false, message: result === 'expired' ? 'That code has run out. A manager can make a new one in Console, Settings, Devices.' : 'That code does not match. Check the code shown in the Console.' },
+      { status: 401 },
+    );
+  }
+  if (venue.pairingRequired(device.id)) {
+    return wireResponse({ ok: false, code: 'PAIRING_REQUIRED', message: `${device.label} needs pairing first. Enter the six-digit code shown in Console, Settings, Devices.` }, { status: 409 });
+  }
 
   const asSignIn = signIn.safeParse(json);
   if (asSignIn.success) {

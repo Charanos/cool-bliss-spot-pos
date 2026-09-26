@@ -38,7 +38,22 @@ export function zones() {
 }
 
 export function tables() {
-  return tradeTables().tables;
+  return tradeTables().tables.filter((t) => !t.archived);
+}
+
+/**
+ * Remove a table that has never held a tab: added by mistake, or never used. A table with history
+ * is taken out of service instead, so its nights still read back.
+ */
+export function removeServiceTable(input: { tableId: string; actor: Actor }): void {
+  assertCan(input.actor.staffId, 'staff.manage', 'changing tables');
+  const t = tradeTables();
+  const table = t.tables.find((x) => x.id === input.tableId && !x.archived);
+  if (!table) throw new DomainError('That table is no longer on the floor.');
+  if (t.tabs.some((x) => x.serviceTableId === table.id)) throw new DomainError(`${table.label} has held tabs, so it stays for the record. Take it out of service instead.`);
+  table.archived = true;
+  bumpCatalogueVersion();
+  audit.record({ outletId: table.outletId, actorStaffId: input.actor.staffId, action: 'table.removed', entityType: 'service_table', entityId: table.id, before: { label: table.label }, after: null, reason: null, severity: 'info' });
 }
 
 export function tableById(id: string | null) {
@@ -291,7 +306,7 @@ export function createServiceTable(input: { zoneId: string; label: string; seats
   assertCan(input.actor.staffId, 'staff.manage', 'adding tables');
   const zone = activeZone(input.zoneId);
   const label = cleanLabel(input.label, 'table label', 12);
-  if (tradeTables().tables.some((t) => t.status !== 'out_of_service' && t.label.toLowerCase() === label.toLowerCase())) throw new DomainError(`There is already a table ${label}.`);
+  if (tradeTables().tables.some((t) => !t.archived && t.status !== 'out_of_service' && t.label.toLowerCase() === label.toLowerCase())) throw new DomainError(`There is already a table ${label}.`);
   const table: ServiceTable = {
     id: createId(),
     outletId: outlet().id,
@@ -318,7 +333,7 @@ export function updateServiceTable(input: { tableId: string; zoneId: string; lab
   if (!table) throw new DomainError('That table is not part of this outlet.');
   const zone = activeZone(input.zoneId);
   const label = cleanLabel(input.label, 'table label', 12);
-  if (tradeTables().tables.some((t) => t.id !== table.id && t.status !== 'out_of_service' && t.label.toLowerCase() === label.toLowerCase())) throw new DomainError(`There is already a table ${label}.`);
+  if (tradeTables().tables.some((t) => t.id !== table.id && !t.archived && t.status !== 'out_of_service' && t.label.toLowerCase() === label.toLowerCase())) throw new DomainError(`There is already a table ${label}.`);
   if (input.status !== 'available' && input.status !== 'out_of_service' && input.status !== table.status) throw new DomainError('A table is in service or out of service. It is occupied only while a tab is open on it.');
   const open = openTabOn(table.id);
   if (open && input.status === 'out_of_service') throw new DomainError(`Table ${table.label} has an open tab. Take it out of service once it is settled.`);

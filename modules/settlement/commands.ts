@@ -314,7 +314,8 @@ export function countDrawer(input: { sessionId: string; countedCents: Cents; act
     const open = closePreflight();
     if (open.length > 0) throw new CommandRejected('VALIDATION_FAILED', `${open.length} ${open.length === 1 ? 'tab is' : 'tabs are'} still open. They must be settled or voided first.`);
     if (compare(input.countedCents, ZERO) < 0) throw new CommandRejected('VALIDATION_FAILED', 'A count cannot be below zero.');
-    const drops = t.cashMovements.filter((m) => m.drawerSessionId === session.id && m.kind === 'drop_to_safe').map((m) => m.amountCents);
+    // Drops to the safe and refunds paid out both left the drawer.
+    const drops = t.cashMovements.filter((m) => m.drawerSessionId === session.id && (m.kind === 'drop_to_safe' || m.kind === 'payout')).map((m) => m.amountCents);
     const expected = expectedCash({ float: session.openingFloatCents, cashTaken: cashTakenIn(session.id), drops });
     session.status = 'counting';
     session.countedCashCents = input.countedCents;

@@ -79,7 +79,7 @@ export function stockVariants(): ProductVariant[] {
 export function modifierGroupsFor(variantId: string) {
   const t = catalogueTables();
   return t.variantModifierGroups
-    .filter((x) => x.productVariantId === variantId)
+    .filter((x) => x.productVariantId === variantId && !x.removed)
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((x) => {
       const group = t.modifierGroups.find((g) => g.id === x.modifierGroupId)!;
@@ -92,7 +92,7 @@ export function modifierGroups() {
   return t.modifierGroups.map((group) => ({
     group,
     modifiers: t.modifiers.filter((m) => m.modifierGroupId === group.id),
-    variantCount: t.variantModifierGroups.filter((x) => x.modifierGroupId === group.id).length,
+    variantCount: t.variantModifierGroups.filter((x) => x.modifierGroupId === group.id && !x.removed).length,
   }));
 }
 
@@ -111,7 +111,7 @@ export function snapshot() {
     variants: t.variants,
     modifierGroups: t.modifierGroups,
     modifiers: t.modifiers,
-    variantModifierGroups: t.variantModifierGroups,
+    variantModifierGroups: t.variantModifierGroups.filter((x) => !x.removed),
   };
 }
 

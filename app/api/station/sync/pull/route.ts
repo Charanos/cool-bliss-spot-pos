@@ -62,7 +62,7 @@ export async function GET(request: Request) {
         const role = identity.roleFor(s.id);
         return { id: s.id, displayName: s.displayName, roleKey: role?.key ?? 'waiter', permissions: role?.permissions ?? [], colourIndex: s.colourIndex };
       });
-    body.devices = identity.devices().map((d) => ({ id: d.id, label: d.label, kind: d.kind, status: d.status }));
+    body.devices = identity.devices().map((d) => ({ id: d.id, label: d.label, kind: d.kind, status: d.status, pairing: d.pairingPending }));
   }
 
   if (reset || knownAvailability !== map.version) body.availability = map.entries;

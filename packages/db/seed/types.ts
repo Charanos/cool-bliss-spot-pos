@@ -92,6 +92,8 @@ export interface PurchaseOrderLine {
   qtyReceived: number;
   unitCostCents: Cents;
   lineTotalCents: Cents;
+  /** Taken off the order before anything arrived. The row stays, since stored rows are never deleted. */
+  removed?: boolean;
 }
 
 export interface GoodsReceipt {
@@ -134,6 +136,8 @@ export interface SupplierProduct {
   lastCostCents: Cents;
   lastPurchasedAt: number;
   history: { at: number; costCents: Cents }[];
+  /** No longer bought from this supplier. The row and its cost history stay. */
+  removed?: boolean;
 }
 
 /** Cash that moved in or out of a drawer other than a sale: the float and drops to the safe. docs/04. */
@@ -173,6 +177,10 @@ export interface DrawerSession {
   varianceCents: Cents | null;
   varianceReason: string | null;
   status: 'open' | 'counting' | 'closed';
+  /** A manager's review of a closed drawer in the Console. */
+  reviewedBy?: string | null;
+  reviewedAt?: number | null;
+  reviewNote?: string | null;
 }
 
 export interface DevicePresence {

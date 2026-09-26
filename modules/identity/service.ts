@@ -33,7 +33,7 @@ export function displayName(id: string | null | undefined): string {
 }
 
 export function roles(): Role[] {
-  return identityTables().roles;
+  return identityTables().roles.filter((r) => !r.archived);
 }
 
 export function roleFor(staffId: string): Role | null {
@@ -54,7 +54,9 @@ export function assertCan(staffId: string, permission: PermissionKey, doing: str
   }
 }
 
-export interface DeviceRow extends Device {
+export interface DeviceRow extends Omit<Device, 'pairingHash'> {
+  /** A pairing code has been issued and not yet used. */
+  pairingPending: boolean;
   online: boolean;
   lastSeenAt: number | null;
   signedInStaffId: string | null;
@@ -64,10 +66,13 @@ export interface DeviceRow extends Device {
 
 export function devices(): DeviceRow[] {
   const { devices: list, presence } = identityTables();
-  return list.map((d) => {
+  const now = Date.now();
+  return list.map(({ pairingHash, ...d }) => {
     const p = presence.find((x) => x.deviceId === d.id);
     return {
       ...d,
+      // The code itself never leaves the server; only whether one is waiting to be used.
+      pairingPending: Boolean(pairingHash) && (d.pairingExpiresAt ?? 0) > now,
       online: d.status === 'active' && Boolean(p?.online),
       lastSeenAt: p?.lastSeenAt ?? d.lastSeenAt,
       signedInStaffId: d.status === 'active' ? (p?.staffId ?? null) : null,
@@ -258,7 +263,7 @@ export function staffSummaries(filter: (s: Staff) => boolean = () => true): Staf
 /** Seniority, so nobody hands out more authority than they hold. */
 const RANK: Record<RoleKey, number> = { waiter: 1, cashier: 2, supervisor: 3, stock_controller: 3, manager: 4, owner: 5 };
 
-function rankOf(role: Role | null | undefined): number {
+export function rankOf(role: Role | null | undefined): number {
   return role ? RANK[role.key] : 0;
 }
 

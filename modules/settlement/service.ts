@@ -1,7 +1,7 @@
 import 'server-only';
 
 import type { Bill, TenderKind } from '@bliss/shared/domain';
-import { type Cents, ZERO, add, sum } from '@bliss/shared/money';
+import { type Cents, ZERO, add, isPositive, subtract, sum } from '@bliss/shared/money';
 import type { IsoDate } from '@bliss/shared/time';
 import type { DrawerSession } from '@bliss/db/seed/types';
 import { settlementTables } from './schema';
@@ -48,8 +48,20 @@ export function tendersByBill() {
   return byBill;
 }
 
+/** What a bill brought in: its total less anything given back. */
+export function billNet(bill: Pick<Bill, 'totalCents' | 'refundedCents'>): Cents {
+  return subtract(bill.totalCents, bill.refundedCents ?? ZERO);
+}
+
 export function netSales(date: IsoDate): Cents {
-  return sum(billsOn(date).map((b) => b.totalCents));
+  return sum(billsOn(date).map(billNet));
+}
+
+/** Bill lines already refunded, so none is given back twice. */
+export function refundedLineIds(billId: string): Set<string> {
+  const ids = new Set<string>();
+  for (const x of settlementTables().tenders) if (x.billId === billId && x.refundOfLineIds) for (const id of x.refundOfLineIds) ids.add(id);
+  return ids;
 }
 
 export function tenderMix(from: IsoDate, to: IsoDate): { kind: TenderKind; amount: Cents; count: number }[] {
@@ -87,19 +99,26 @@ export function drawerFor(date: IsoDate) {
   return { ...session, stage: 'closed' as const };
 }
 
-let billedIndex: { source: unknown[]; length: number; ids: Set<string> } | null = null;
+let billedIndex: { source: unknown[]; length: number; voided: number; ids: Set<string> } | null = null;
 
-/** Order lines already on a bill. A line is billed once, ever. */
+/** Order lines on a bill that stands. A line is billed once; a voided bill gives its lines back. */
 export function billedLineIds(): Set<string> {
-  const { billLines } = settlementTables();
-  if (billedIndex && billedIndex.source === billLines && billedIndex.length === billLines.length) return billedIndex.ids;
+  const { billLines, bills } = settlementTables();
+  const voidedBills = bills.filter((b) => b.status === 'voided');
+  if (billedIndex && billedIndex.source === billLines && billedIndex.length === billLines.length && billedIndex.voided === voidedBills.length) return billedIndex.ids;
+  const voided = new Set(voidedBills.map((b) => b.id));
   const ids = new Set<string>();
-  for (const l of billLines) if (l.orderLineId) ids.add(l.orderLineId);
-  billedIndex = { source: billLines, length: billLines.length, ids };
+  for (const l of billLines) if (l.orderLineId && !voided.has(l.billId)) ids.add(l.orderLineId);
+  billedIndex = { source: billLines, length: billLines.length, voided: voidedBills.length, ids };
   return ids;
 }
 
 export function billsForTab(tabId: string): Bill[] {
+  return settlementTables().bills.filter((b) => b.tabId === tabId && b.status !== 'voided');
+}
+
+/** Every bill a tab has had, voided ones included, for its record. */
+export function allBillsForTab(tabId: string): Bill[] {
   return settlementTables().bills.filter((b) => b.tabId === tabId);
 }
 
@@ -113,7 +132,7 @@ export function openDrawerFor(deviceId: string) {
  * figure, the counted figure and the variance are absent from the object, not merely null.
  */
 export function drawerProjection(session: DrawerSession) {
-  const drops = settlementTables().cashMovements.filter((m) => m.drawerSessionId === session.id && m.kind === 'drop_to_safe');
+  const drops = settlementTables().cashMovements.filter((m) => m.drawerSessionId === session.id && (m.kind === 'drop_to_safe' || m.kind === 'payout'));
   const base = {
     id: session.id,
     businessDate: session.businessDate,
@@ -150,14 +169,15 @@ export function cashTakenIn(sessionId: string): Cents[] {
   const w = sessionWindow(sessionId);
   if (!w) return [];
   const t = settlementTables();
-  const bills = new Set(t.bills.filter((b) => b.deviceId === w.session.deviceId && b.status === 'settled' && (b.settledAt ?? 0) >= w.session.openedAt && (b.settledAt ?? 0) <= w.until).map((b) => b.id));
-  return t.tenders.filter((x) => x.kind === 'cash' && bills.has(x.billId)).map((x) => x.amountCents);
+  const bills = new Set(t.bills.filter((b) => b.deviceId === w.session.deviceId && b.status !== 'voided' && b.status !== 'open' && (b.settledAt ?? 0) >= w.session.openedAt && (b.settledAt ?? 0) <= w.until).map((b) => b.id));
+  // A refund is paid out of whichever drawer is open when it happens, as a payout: not here.
+  return t.tenders.filter((x) => x.kind === 'cash' && isPositive(x.amountCents) && bills.has(x.billId)).map((x) => x.amountCents);
 }
 
 function cashBillCount(sessionId: string): number {
   const w = sessionWindow(sessionId);
   if (!w) return 0;
   const t = settlementTables();
-  const bills = new Set(t.bills.filter((b) => b.deviceId === w.session.deviceId && b.status === 'settled' && (b.settledAt ?? 0) >= w.session.openedAt && (b.settledAt ?? 0) <= w.until).map((b) => b.id));
-  return new Set(t.tenders.filter((x) => x.kind === 'cash' && bills.has(x.billId)).map((x) => x.billId)).size;
+  const bills = new Set(t.bills.filter((b) => b.deviceId === w.session.deviceId && b.status !== 'voided' && b.status !== 'open' && (b.settledAt ?? 0) >= w.session.openedAt && (b.settledAt ?? 0) <= w.until).map((b) => b.id));
+  return new Set(t.tenders.filter((x) => x.kind === 'cash' && isPositive(x.amountCents) && bills.has(x.billId)).map((x) => x.billId)).size;
 }

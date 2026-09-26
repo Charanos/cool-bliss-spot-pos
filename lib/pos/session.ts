@@ -57,7 +57,7 @@ export function useSession(): StaffSession | null | undefined {
   return useLiveQuery(async () => (await getMeta<StaffSession>(META.session)) ?? null, []);
 }
 
-export type SignInResult = { ok: true } | { ok: false; message: string };
+export type SignInResult = { ok: true } | { ok: false; message: string; pairing?: boolean };
 
 export async function signIn(staffId: string, pin: string): Promise<SignInResult> {
   const device = await ensureDevice();
@@ -65,6 +65,7 @@ export async function signIn(staffId: string, pin: string): Promise<SignInResult
   try {
     const { body } = await api.post<{
       ok: boolean;
+      code?: string;
       message?: string;
       staff?: { id: string; displayName: string; roleKey: StaffSession['roleKey']; permissions: StaffSession['permissions'] };
       signedInAt?: number;
@@ -75,6 +76,7 @@ export async function signIn(staffId: string, pin: string): Promise<SignInResult
       staffId,
       pin,
     });
+    if (body.code === 'PAIRING_REQUIRED') return { ok: false, message: body.message ?? 'This device needs pairing first.', pairing: true };
     if (!body.ok || !body.staff || !body.token) return { ok: false, message: body.message ?? 'That PIN was not recognised.' };
     await setMeta(META.stationToken, body.token);
     const session: StaffSession = {
@@ -90,6 +92,18 @@ export async function signIn(staffId: string, pin: string): Promise<SignInResult
     return { ok: true };
   } catch {
     return { ok: false, message: 'No connection. Signing in needs the network once; orders already on this tablet are safe.' };
+  }
+}
+
+/** Pair this device with the six-digit code shown in the Console when it was registered. */
+export async function pairDevice(code: string): Promise<SignInResult> {
+  const device = await ensureDevice();
+  if (!device) return { ok: false, message: 'This device is not registered to Cool Bliss Spot. A manager needs to add it in Console, Settings, Devices.' };
+  try {
+    const { body } = await api.post<{ ok: boolean; message?: string }>('/api/station/identity', { action: 'pair', deviceId: device.id, code });
+    return body.ok ? { ok: true } : { ok: false, message: body.message ?? 'That code does not match.', pairing: true };
+  } catch {
+    return { ok: false, message: 'No connection. Pairing needs the network once.', pairing: true };
   }
 }
 

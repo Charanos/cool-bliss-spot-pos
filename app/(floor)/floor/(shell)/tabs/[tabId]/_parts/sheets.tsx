@@ -55,7 +55,7 @@ export function ModifierSheet({
     const groups: { group: ModifierGroup; modifiers: Modifier[] }[] = [];
     for (const link of links) {
       const group = await db.modifierGroups.get(link.modifierGroupId);
-      if (!group) continue;
+      if (!group || group.status !== 'active' || link.removed) continue;
       const modifiers = (await db.modifiers.where('modifierGroupId').equals(group.id).toArray()).filter((m) => m.status === 'active').sort((a, b) => a.sortOrder - b.sortOrder);
       groups.push({ group, modifiers });
     }

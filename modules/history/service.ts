@@ -1,7 +1,7 @@
 import 'server-only';
 
 import type { TenderKind } from '@bliss/shared/domain';
-import { type Cents, ZERO, add, compare, scale, sum } from '@bliss/shared/money';
+import { type Cents, ZERO, add, compare, scale, subtract, sum } from '@bliss/shared/money';
 import type { IsoDate } from '@bliss/shared/time';
 import { type HistoryBill, type HistoryDay, type HistoryLine, type HistoryResult, type HistorySale, type HistorySummary, type HistoryTab, type HistoryTabState, HISTORY_MAX_DAYS, isSeated, tabLabel } from '@bliss/shared/trade';
 import { dataset } from '../_data/source';
@@ -84,7 +84,8 @@ export function history(query: HistoryQuery): HistoryResult {
   const tendersByBill = new Map<string, { kind: TenderKind; amountCents: Cents }[]>();
   for (const t of money.tenders) tendersByBill.set(t.billId, [...(tendersByBill.get(t.billId) ?? []), { kind: t.kind, amountCents: t.amountCents }]);
 
-  const bills = money.bills.filter((b) => b.businessDate >= from && b.businessDate <= to && b.status !== 'open');
+  // A voided bill was set aside and settled again; the station's history shows what stands.
+  const bills = money.bills.filter((b) => b.businessDate >= from && b.businessDate <= to && b.status !== 'open' && b.status !== 'voided');
   const billsByTab = new Map<string, typeof bills>();
   for (const b of bills) if (b.tabId) billsByTab.set(b.tabId, [...(billsByTab.get(b.tabId) ?? []), b]);
 
@@ -93,7 +94,7 @@ export function history(query: HistoryQuery): HistoryResult {
     billNumber: b.billNumber,
     scope: b.scope,
     seatNo: b.tabSeatId ? (seatNo.get(b.tabSeatId) ?? null) : null,
-    totalCents: b.totalCents,
+    totalCents: subtract(b.totalCents, b.refundedCents ?? ZERO),
     settledAt: b.settledAt,
     settledBy: identity.displayName(b.settledBy),
     device: b.deviceId ? (deviceLabel.get(b.deviceId) ?? 'A device') : 'A device',

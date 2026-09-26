@@ -41,6 +41,8 @@ export interface DeviceEntry {
   label: string;
   kind: string;
   status: string;
+  /** Registered in the Console and waiting for its pairing code. */
+  pairing?: boolean;
 }
 
 export interface RecipeEntry {

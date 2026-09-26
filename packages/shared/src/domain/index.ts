@@ -47,10 +47,13 @@ export interface Outlet {
 
 export interface Role {
   id: Id;
+  /** Where the role signs in and how senior it is. A role made in the Console takes its base role's key. */
   key: RoleKey;
   name: string;
   isSystem: boolean;
   permissions: PermissionKey[];
+  /** Deleted in the Console. The row stays, since stored rows are never deleted. */
+  archived?: boolean;
 }
 
 export type EmploymentStatus = 'active' | 'suspended' | 'left';
@@ -85,6 +88,9 @@ export interface Device {
   status: DeviceStatus;
   revokedAt: EpochMs | null;
   revokedReason: string | null;
+  /** A one-time pairing code, hashed, set when the device is registered or reinstated in the Console. */
+  pairingHash?: string | null;
+  pairingExpiresAt?: EpochMs | null;
 }
 
 /* ------------------------------------------------------- catalogue and pricing */
@@ -173,6 +179,8 @@ export interface VariantModifierGroup {
   productVariantId: Id;
   modifierGroupId: Id;
   sortOrder: number;
+  /** Unlinked in the Console. The row stays, since stored rows are never deleted. */
+  removed?: boolean;
 }
 
 export interface PriceList {
@@ -365,6 +373,8 @@ export interface ServiceTable {
   positionX: number;
   positionY: number;
   status: TableStatus;
+  /** Removed in the Console, never having held a tab. The row stays. */
+  archived?: boolean;
 }
 
 export type TabStatus = 'open' | 'part_settled' | 'settling' | 'settled' | 'voided' | 'merged_into';
@@ -526,6 +536,12 @@ export interface Bill {
   settledAt: EpochMs | null;
   settledBy: Id | null;
   deviceId: Id;
+  /** Set when a manager voids the bill in the Console: its lines go back on the tab. */
+  voidedAt?: EpochMs | null;
+  voidedBy?: Id | null;
+  voidReason?: string | null;
+  /** What has been given back so far. The bill's net is its total less this. */
+  refundedCents?: Cents;
 }
 
 /** A tender is a record of what the cashier observed. Bliss never processes a payment. */
@@ -542,6 +558,8 @@ export interface Tender {
   createdBy: Id;
   deviceId: Id;
   createdAt: EpochMs;
+  /** A refund: the amount is negative, and these are the bill lines it gave back. */
+  refundOfLineIds?: Id[];
 }
 
 /* ---------------------------------------------------------------- platform */

@@ -77,3 +77,11 @@ export async function cancelCount(raw: { countId: string; reason: string }): Pro
     inventory.cancelCount({ ...input, actor });
   }, { revalidate: ['/console/inventory'] });
 }
+
+export async function reverseWriteOff(raw: { groupId: string; reason: string }): Promise<ActionResult> {
+  return runAction(z.object({ groupId: id('write-off'), reason }), raw, (input, actor) => inventory.reverseWriteOff({ ...input, actor }), { revalidate: ['/console/inventory'] });
+}
+
+export async function updateHold(raw: { holdId: string; expectedBack: string | null }): Promise<ActionResult> {
+  return runAction(z.object({ holdId: id('hold'), expectedBack: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a date.').nullable() }), raw, (input, actor) => inventory.updateHold({ ...input, actor }), { revalidate: ['/console/inventory'] });
+}

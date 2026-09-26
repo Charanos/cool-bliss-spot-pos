@@ -28,7 +28,7 @@ export function purchaseOrders() {
 }
 
 export function purchaseOrderLines(poId: string) {
-  return procurementTables().purchaseOrderLines.filter((l) => l.purchaseOrderId === poId);
+  return procurementTables().purchaseOrderLines.filter((l) => l.purchaseOrderId === poId && !l.removed);
 }
 
 export function receipts() {
@@ -69,13 +69,13 @@ export function noteForReceipt(receiptId: string): GoodsReceivedNote | null {
 }
 
 export function supplierProducts(supplierId?: string) {
-  return procurementTables().supplierProducts.filter((sp) => !supplierId || sp.supplierId === supplierId);
+  return procurementTables().supplierProducts.filter((sp) => !sp.removed && (!supplierId || sp.supplierId === supplierId));
 }
 
 /** Cost movement per supplier product: the alert when a case quietly went up six per cent. */
 export function costChanges() {
-  return procurementTables()
-    .supplierProducts.map((sp) => {
+  return supplierProducts()
+    .map((sp) => {
       const history = [...sp.history].sort((a, b) => a.at - b.at);
       const last = history[history.length - 1];
       const previous = [...history].reverse().find((h) => last && h.costCents !== last.costCents);
@@ -103,7 +103,7 @@ export interface ReorderSuggestion {
 export function reorderSuggestions(): ReorderSuggestion[] {
   const t = procurementTables();
   const open = new Set(t.purchaseOrders.filter((p) => p.status === 'sent' || p.status === 'partially_received' || p.status === 'draft').map((p) => p.id));
-  const openLines = t.purchaseOrderLines.filter((l) => open.has(l.purchaseOrderId));
+  const openLines = t.purchaseOrderLines.filter((l) => open.has(l.purchaseOrderId) && !l.removed);
   return catalogue
     .stockVariants()
     .map((v) => {
@@ -166,6 +166,7 @@ export function raisePurchaseOrder(input: { supplierId: string; lines: RaiseOrde
   if (input.expectedAt !== null && (!Number.isFinite(input.expectedAt) || input.expectedAt < Date.now() - 86_400_000)) throw new DomainError('The expected date cannot be in the past.');
   const supplier = t.suppliers.find((s) => s.id === input.supplierId);
   if (!supplier) throw new DomainError('Choose a supplier for this order.');
+  if (supplier.status !== 'active') throw new DomainError(`${supplier.name} is archived. Bring them back in Suppliers before ordering.`);
   const lines = input.lines.filter((l) => l.qty > 0);
   if (lines.length === 0) throw new DomainError('Add at least one line with a quantity.');
   if (lines.length > 200) throw new DomainError('An order has at most 200 lines.');
@@ -235,50 +236,6 @@ function expiryInstant(value: string | null | undefined): number | null {
   const at = zonedInstant(value, 24 * 60 * 60_000 - 1, outlet.timezone);
   if (!Number.isFinite(at)) throw new DomainError('Enter expiry dates as a date, such as 2027-03-31.');
   return at;
-}
-
-export interface ReceiveLine {
-  purchaseOrderLineId: string;
-  qtyReceived: number;
-  qtyRejected: number;
-  rejectionReason: string | null;
-  batchNumber: string | null;
-  expiryDate: string | null;
-}
-
-/** N-05: receive against a purchase order, line by line. A thin form of the full intake below. */
-export function receiveAgainstOrder(input: {
-  purchaseOrderId: string;
-  deliveryNoteRef: string;
-  invoiceNumber?: string | null;
-  mediaUrls?: string[];
-  lines: ReceiveLine[];
-  varianceNote: string | null;
-  requestId?: string | null;
-  actor: Actor;
-}): GoodsReceipt {
-  const order = procurementTables().purchaseOrders.find((p) => p.id === input.purchaseOrderId);
-  if (!order) throw new DomainError('That purchase order does not exist.');
-  const orderLines = purchaseOrderLines(order.id);
-  return recordGoodsReceipt({
-    purchaseOrderId: order.id,
-    supplierId: order.supplierId,
-    deliveryNoteRef: input.deliveryNoteRef,
-    invoiceNumber: input.invoiceNumber ?? null,
-    mediaUrls: input.mediaUrls ?? [],
-    varianceNote: input.varianceNote,
-    requestId: input.requestId ?? null,
-    lines: input.lines.map((l) => ({
-      purchaseOrderLineId: l.purchaseOrderLineId,
-      variantId: orderLines.find((ol) => ol.id === l.purchaseOrderLineId)?.productVariantId ?? '',
-      qtyReceived: l.qtyReceived,
-      qtyRejected: l.qtyRejected,
-      rejectionReason: l.rejectionReason,
-      batchNumber: l.batchNumber,
-      expiryDate: l.expiryDate,
-    })),
-    actor: input.actor,
-  });
 }
 
 /** Cancel what is still outstanding. Anything already received stays received. */
@@ -371,7 +328,7 @@ export function recordGoodsReceipt(input: RecordGoodsReceiptInput): GoodsReceipt
     if (order.status !== 'sent' && order.status !== 'partially_received') throw new DomainError(`Order ${order.poNumber} is ${order.status.replace('_', ' ')} and cannot be received against.`);
     if (order.supplierId !== supplier.id) throw new DomainError(`Order ${order.poNumber} is with ${supplierById(order.supplierId)?.name ?? 'another supplier'}, not ${supplier.name}.`);
   }
-  const orderLines = order ? t.purchaseOrderLines.filter((l) => l.purchaseOrderId === order.id) : [];
+  const orderLines = order ? t.purchaseOrderLines.filter((l) => l.purchaseOrderId === order.id && !l.removed) : [];
   const claimed = new Map<string, number>();
 
   let short = false;

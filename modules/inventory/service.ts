@@ -6,7 +6,7 @@ import type { CountKind, MovementType, StockBatch, StockCount, StockHold, StockM
 import { createUuidV7 } from '@bliss/shared/id';
 import { type Cents, ZERO, add, multiplyByQuantity, weightedAverage } from '@bliss/shared/money';
 import { type Actor, checkReason, requireReasoned } from '@bliss/shared/reason';
-import { businessDate } from '@bliss/shared/time';
+import { type IsoDate, businessDate } from '@bliss/shared/time';
 import { bumpAvailabilityVersion } from '../_data/source';
 import * as audit from '../audit/service';
 import * as catalogue from '../catalogue/service';
@@ -312,6 +312,8 @@ export function writeOff(input: { variantId: string; locationId: string; qty: nu
   const now = Date.now();
   const cost = averageCost(stock.stockVariantId);
   const written: StockMovement[] = [];
+  // One key for the whole write-off, so it can be taken back as one.
+  const group = nextId();
   // An expiry write-off takes the lot closest to its date, like every other draw.
   for (const { batchId, qty: part } of depleteBatches(stock.stockVariantId, qty)) {
     if (part <= 0) continue;
@@ -327,7 +329,7 @@ export function writeOff(input: { variantId: string; locationId: string; qty: nu
       unitCostCents: cost,
       movementType: input.category,
       sourceType: 'write_off',
-      sourceId: null,
+      sourceId: group,
       reason,
       occurredAt: now,
       createdBy: actor.staffId,
@@ -620,7 +622,7 @@ export function latestVariance(variantId: string): { pct: number; qty: number; c
 }
 
 export function recipes() {
-  return inventoryTables().recipes;
+  return inventoryTables().recipes.filter((r) => r.status !== 'archived');
 }
 
 export function pourSpecs() {
@@ -628,7 +630,42 @@ export function pourSpecs() {
 }
 
 export function recipeFor(variantId: string) {
-  return inventoryTables().recipes.find((r) => r.productVariantId === variantId) ?? null;
+  return inventoryTables().recipes.find((r) => r.productVariantId === variantId && r.status !== 'archived') ?? null;
+}
+
+/**
+ * Take back a write-off recorded by mistake, the same business day it was made. The units return
+ * to the lots they came from, as a count adjustment that names the write-off it undoes.
+ */
+export function reverseWriteOff(input: { groupId: string; reason: string; actor: Actor }): void {
+  const { reason, actor } = requireReasoned(input);
+  identity.assertCan(actor.staffId, 'stock.writeoff', 'taking back write-offs');
+  const all = inventoryTables().movements;
+  const taken = all.filter((m) => m.sourceType === 'write_off' && m.sourceId === input.groupId);
+  if (taken.length === 0) throw new DomainError('That write-off is not in the ledger.');
+  if (all.some((m) => m.sourceType === 'write_off_reversal' && m.sourceId === input.groupId)) throw new DomainError('That write-off was taken back already.');
+  const outlet = identity.outlet();
+  const now = Date.now();
+  const today = businessDate(now, outlet.timezone, outlet.businessDayCutover);
+  if (taken[0]!.businessDate !== today) throw new DomainError('A write-off can be taken back on the business day it was made. Correct it with a count instead.');
+  for (const m of taken) {
+    restoreBatch(m.stockBatchId, -m.qtyDelta);
+    all.push({ ...m, id: nextId(), qtyDelta: -m.qtyDelta, movementType: 'count_adjustment', sourceType: 'write_off_reversal', sourceId: input.groupId, reason, occurredAt: now, createdBy: actor.staffId, businessDate: today });
+  }
+  bumpAvailabilityVersion();
+  audit.record({ outletId: outlet.id, actorStaffId: actor.staffId, action: 'stock.write_off_reversed', entityType: 'stock_movement', entityId: taken[0]!.id, before: { qty: -taken.reduce((a, m) => a + m.qtyDelta, 0) }, after: { qty: 0 }, reason, severity: 'notable' });
+}
+
+/** Change when a held item is expected back. */
+export function updateHold(input: { holdId: string; expectedBack: IsoDate | null; actor: Actor }): void {
+  identity.assertCan(input.actor.staffId, 'hold.set', 'changing holds');
+  const hold = inventoryTables().holds.find((h) => h.id === input.holdId);
+  if (!hold || hold.status !== 'active') throw new DomainError('That hold has been released.');
+  if (input.expectedBack !== null && !/^\d{4}-\d{2}-\d{2}$/.test(input.expectedBack)) throw new DomainError('Enter a date, such as 2027-03-31.');
+  if (hold.expectedBack === input.expectedBack) return;
+  const before = { expectedBack: hold.expectedBack };
+  hold.expectedBack = input.expectedBack;
+  audit.record({ outletId: hold.outletId, actorStaffId: input.actor.staffId, action: 'hold.updated', entityType: 'stock_hold', entityId: hold.id, before, after: { expectedBack: input.expectedBack }, reason: null, severity: 'info' });
 }
 
 /* ---------------------------------------------------------------- sale cascade */
