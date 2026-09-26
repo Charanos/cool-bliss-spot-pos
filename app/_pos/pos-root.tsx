@@ -10,6 +10,7 @@ import { pruneAcked, startSync, useSync } from '@/lib/pos/sync';
 import { startUpdates } from '@/lib/pos/updates';
 import { refreshHaptics } from '@/lib/pos/haptics';
 import { initDisplay } from '@/lib/pos/display';
+import { useKeepAwake } from '@/lib/pos/wake';
 
 /**
  * The client root for a staff device, Floor or Counter: motion defaults once, the sync cycle once, and
@@ -18,6 +19,7 @@ import { initDisplay } from '@/lib/pos/display';
  */
 export function PosRoot({ children }: { children: ReactNode }) {
   const sync = useSync();
+  useKeepAwake();
 
   useEffect(() => {
     initMotion();

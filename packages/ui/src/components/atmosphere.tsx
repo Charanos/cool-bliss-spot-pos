@@ -168,8 +168,8 @@ export function Avatar({ src, name, size = 'md', className }: { src?: string | n
 export function PhotoBackdrop({ src, className }: { src: string; className?: string }) {
   return (
     <div aria-hidden="true" className={cx('pointer-events-none absolute inset-0 z-0', className)}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- decorative photography, sized by its container */}
-      <img src={src} alt="" className="size-full object-cover opacity-60 mix-blend-luminosity" />
+      {/* Decorative: offline or blocked, it simply is not there. */}
+      <Photo src={src} className="ambient-art size-full object-cover opacity-60 mix-blend-luminosity" />
       <div className="absolute inset-0 bg-gradient-to-b from-page/10 via-page/50 to-page" />
       <div className="absolute inset-0 bg-gradient-to-r from-transparent to-page" />
     </div>
