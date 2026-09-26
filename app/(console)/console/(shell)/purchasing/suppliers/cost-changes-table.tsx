@@ -20,11 +20,12 @@ export interface CostChangeRow {
 /** A rise above five per cent is worth a look at the sell price. */
 const NOTABLE_BPS = 500;
 
+/** Supplier prices that moved, largest rise first. */
 export function CostChangesTable({ rows, timezone }: { rows: CostChangeRow[]; timezone: string }) {
   const columns: Column<CostChangeRow>[] = [
-    { key: 'item', header: 'Item', width: 'minmax(180px,1.5fr)', fixed: true, sortValue: (r) => r.item, csv: (r) => r.item, cell: (r) => <StackCell primary={r.item} secondary={`${r.supplier} · ${r.sku}`} /> },
-    { key: 'from', header: 'Was', width: '110px', align: 'right', sortValue: (r) => r.from, csv: (r) => formatDecimal(r.from), cell: (r) => <Money value={r.from} currency={false} tone="muted" /> },
-    { key: 'to', header: 'Now', width: '110px', align: 'right', sortValue: (r) => r.to, csv: (r) => formatDecimal(r.to), cell: (r) => <Money value={r.to} currency={false} /> },
+    { key: 'item', header: 'Item', width: 'minmax(180px,1.5fr)', fixed: true, sortValue: (r) => r.item, csv: (r) => r.item, cell: (r) => <StackCell primary={r.item} secondary={`${r.supplier}, ${r.sku}`} /> },
+    { key: 'from', header: 'Was', width: '110px', align: 'right', sortValue: (r) => r.from, csv: (r) => formatDecimal(r.from), cell: (r) => <Money value={r.from} currency={false} size="num-md" tone="muted" /> },
+    { key: 'to', header: 'Now', width: '110px', align: 'right', sortValue: (r) => r.to, csv: (r) => formatDecimal(r.to), cell: (r) => <Money value={r.to} currency={false} size="num-md" /> },
     {
       key: 'change',
       header: 'Change',
@@ -40,6 +41,7 @@ export function CostChangesTable({ rows, timezone }: { rows: CostChangeRow[]; ti
     <DataTable
       id="purchasing-cost-changes"
       caption="Supplier cost changes"
+      noun={['change', 'changes']}
       rows={rows}
       columns={columns}
       rowKey={(r) => r.id}

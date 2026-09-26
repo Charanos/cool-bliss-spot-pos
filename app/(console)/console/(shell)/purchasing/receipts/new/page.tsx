@@ -1,77 +1,71 @@
-import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
-import { PageHeader } from '@bliss/ui/components/console/shell';
+import { ButtonLink } from '@bliss/ui/components/button-link';
+import { DetailHeader } from '@bliss/ui/components/console/section';
 import { StatusChip } from '@bliss/ui/components/status';
+import { IconFileInvoice } from '@tabler/icons-react';
+import type { Metadata } from 'next';
+import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import * as procurement from '@/modules/procurement/service';
-import * as catalogue from '@/modules/catalogue/service';
-import { GrnIntakeForm } from './grn-intake-form';
+import { RecordCrumb } from '../../../_components/shell/crumbs';
+import { GrnIntakeForm, type IntakeItem, type IntakeOrder } from './grn-intake-form';
 
-export default async function NewGoodsReceivedNotePage(props: { searchParams: Promise<{ poId?: string }> }) {
+export const metadata: Metadata = { title: 'Receive a delivery' };
+
+/** Receive a delivery, against an open order (?poId=) or by hand. */
+export default async function ReceiveDeliveryPage({ searchParams }: { searchParams: Promise<{ poId?: string }> }) {
   await identity.currentConsoleActor();
-  const searchParams = await props.searchParams;
-  
-  const stores = inventory.locations().filter((l) => l.isDefaultReceipt || l.kind === 'store');
-  const suppliers = procurement.suppliers().map(s => ({ id: s.id, name: s.name }));
-  const availableVariants = catalogue.stockVariants().length > 0 ? catalogue.stockVariants() : catalogue.variants();
-  const variants = availableVariants.map((v) => {
-    const product = catalogue.productById(v.productId);
-    const pName = product ? product.name.trim() : '';
-    const vName = v.name.trim();
-    const name = pName && !vName.toLowerCase().startsWith(pName.toLowerCase())
-      ? `${pName} ${vName}`
-      : vName;
+  const { poId } = await searchParams;
 
-    return {
-      id: v.id,
-      name,
-      supplierIds: procurement.supplierProducts().filter((sp) => sp.productVariantId === v.id).map((sp) => sp.supplierId),
-      unitCostCents: inventory.averageCost(v.id) as unknown as number,
-    };
-  }).sort((a, b) => a.name.localeCompare(b.name));
-  
-  let prefillOrder = null;
-  if (searchParams.poId) {
-    const order = procurement.purchaseOrders().find(p => p.id === searchParams.poId);
-    if (order) {
-      const lines = procurement.purchaseOrderLines(order.id);
-      prefillOrder = {
-        id: order.id,
-        poNumber: order.poNumber,
-        supplierId: order.supplierId,
-        lines: lines.map(l => ({
-          id: l.id,
-          purchaseOrderLineId: l.id,
-          variantId: l.productVariantId,
-          qtyExpected: l.qtyOrdered - l.qtyReceived,
-          qtyReceived: l.qtyOrdered - l.qtyReceived,
-          unitCostCents: l.unitCostCents,
-        }))
-      };
-    }
-  }
+  const supplierProducts = procurement.supplierProducts();
+  const stocked = catalogue.stockVariants();
+  const items: IntakeItem[] = (stocked.length > 0 ? stocked : catalogue.variants())
+    .map((v) => {
+      const product = catalogue.productById(v.productId);
+      const productName = product?.name.trim() ?? '';
+      const name = productName && !v.name.trim().toLowerCase().startsWith(productName.toLowerCase()) ? `${productName} ${v.name.trim()}` : v.name.trim();
+      return { id: v.id, name, supplierIds: supplierProducts.filter((sp) => sp.productVariantId === v.id).map((sp) => sp.supplierId), unitCostCents: inventory.averageCost(v.id) };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const po = poId ? procurement.purchaseOrders().find((p) => p.id === poId) : undefined;
+  const receivable = po && (po.status === 'sent' || po.status === 'partially_received');
+  const order: IntakeOrder | null =
+    po && receivable
+      ? {
+          id: po.id,
+          poNumber: po.poNumber,
+          supplierId: po.supplierId,
+          lines: procurement
+            .purchaseOrderLines(po.id)
+            .filter((l) => l.qtyOrdered > l.qtyReceived)
+            .map((l) => ({ purchaseOrderLineId: l.id, variantId: l.productVariantId, qtyExpected: l.qtyOrdered - l.qtyReceived })),
+        }
+      : null;
 
   return (
-    <>
-      <div className="mb-12 mt-4">
-        <PageHeader 
-          title="Receive Goods" 
-          badge={prefillOrder ? <StatusChip status="open" label={`Against PO #${prefillOrder.poNumber}`} /> : null}
-          description="Log intake from suppliers, verify against delivery notes, and record exact batch numbers for FEFO compliance."
-        />
-      </div>
-      
-      <div className="mx-auto max-w-[1000px] animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <Suspense fallback={<div className="animate-pulse h-96 bg-raised rounded-lg border border-hairline shadow-raised" />}>
-          <GrnIntakeForm 
-            stores={stores} 
-            suppliers={suppliers}
-            variants={variants}
-            prefillOrder={prefillOrder}
-          />
-        </Suspense>
-      </div>
-    </>
+    <div className="flex flex-col gap-24">
+      <RecordCrumb label="Receive a delivery" />
+      <DetailHeader
+        back={order ? { href: `/console/purchasing/orders/${order.id}`, label: `Order ${order.poNumber}` } : { href: '/console/purchasing/receipts', label: 'Deliveries' }}
+        title="Receive a delivery"
+        status={order ? <StatusChip status="sent" label={`Against order ${order.poNumber}`} /> : null}
+        meta={
+          <p className="measure text-ui text-ink-muted">
+            {po && !receivable
+              ? `Order ${po.poNumber} is not open for delivery, so this is recorded by hand.`
+              : 'Count what came against the delivery note. Batches and expiry dates let the bar pour the oldest stock first.'}
+          </p>
+        }
+        actions={
+          order ? null : (
+            <ButtonLink href="/console/purchasing/orders" variant="secondary" icon={IconFileInvoice}>
+              Receive against an order
+            </ButtonLink>
+          )
+        }
+      />
+      <GrnIntakeForm suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} items={items} order={order} />
+    </div>
   );
 }

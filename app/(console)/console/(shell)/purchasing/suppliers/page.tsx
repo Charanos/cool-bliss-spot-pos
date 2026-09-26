@@ -1,6 +1,8 @@
 import { formatBps, formatDate, plural } from '@bliss/shared/format';
 import { formatKes, sum } from '@bliss/shared/money';
-import { RevealSection } from '@bliss/ui/components/console/shell';
+import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Section } from '@bliss/ui/components/console/section';
+import { StatusChip } from '@bliss/ui/components/status';
 import { Money } from '@bliss/ui/components/money';
 import type { Metadata } from 'next';
 import * as catalogue from '@/modules/catalogue/service';
@@ -27,49 +29,36 @@ export default function SuppliersPage() {
   }));
 
   return (
-    <>
-      <div className="grid grid-cols-1 gap-16 tablet:grid-cols-3">
+    <div className="flex flex-col gap-40">
+      <div className="grid grid-cols-1 gap-16 pad:grid-cols-2 desktop:grid-cols-3">
         {procurement.suppliers().map((s) => {
           const own = orders.filter((o) => o.supplierId === s.id && o.status !== 'cancelled');
           const last = own[0];
-          const products = procurement.supplierProducts(s.id).length;
           return (
-            <RevealSection key={s.id} className="flex flex-col gap-12 rounded-md border border-hairline bg-raised p-20 shadow-raised">
-              <div>
-                <h2 className="text-subtitle text-ink">{s.name}</h2>
-                <p className="text-body-sm text-ink-muted">{s.contactName}</p>
-              </div>
-              <dl className="grid grid-cols-2 gap-x-16 gap-y-8 text-body-sm">
-                <dt className="text-ink-subtle">Delivers in</dt>
-                <dd className="text-right font-mono tabular text-num-sm text-ink">{plural(s.leadTimeDays, 'day')}</dd>
-                <dt className="text-ink-subtle">Pays in</dt>
-                <dd className="text-right font-mono tabular text-num-sm text-ink">{plural(s.paymentTermsDays, 'day')}</dd>
-                <dt className="text-ink-subtle">Minimum order</dt>
-                <dd className="text-right font-mono tabular text-num-sm text-ink">{formatKes(s.minOrderCents, { decimals: 'whole' })}</dd>
-                <dt className="text-ink-subtle">Items supplied</dt>
-                <dd className="text-right font-mono tabular text-num-sm text-ink">{products}</dd>
-                <dt className="text-ink-subtle">Ordered in 56 days</dt>
-                <dd className="text-right">
-                  <Money value={sum(own.map((o) => o.totalCents))} currency={false} decimals="whole" size="num-sm" />
-                </dd>
-              </dl>
-              <p className="mt-auto border-t border-rule pt-12 text-body-sm text-ink-muted">{last ? `Last order PO ${last.poNumber} on ${formatDate(last.raisedAt, tz)}` : 'No orders yet'}</p>
-            </RevealSection>
+            <Card key={s.id} as="article" className="h-full">
+              <CardHeader band title={s.name} subtitle={s.contactName} meta={s.status === 'archived' ? <StatusChip status="retired" label="Archived" /> : null} />
+              <CardStats>
+                <Stat label="Delivers in">{plural(s.leadTimeDays, 'day')}</Stat>
+                <Stat label="Pays in">{plural(s.paymentTermsDays, 'day')}</Stat>
+                <Stat label="Minimum order">{formatKes(s.minOrderCents, { decimals: 'whole' })}</Stat>
+                <Stat label="Items supplied">{procurement.supplierProducts(s.id).length}</Stat>
+              </CardStats>
+              <CardFooter>
+                <span className="text-body-sm text-ink-muted">{last ? `Last order ${last.poNumber}, ${formatDate(last.raisedAt, tz)}` : 'No orders yet'}</span>
+                <Money value={sum(own.map((o) => o.totalCents))} size="num-md" decimals="whole" />
+              </CardFooter>
+            </Card>
           );
         })}
       </div>
 
-      <RevealSection className="mt-40" aria-labelledby="cost-changes">
-        <div className="mb-12 flex flex-wrap items-baseline justify-between gap-16">
-          <h2 id="cost-changes" className="text-subtitle text-ink">
-            Cost changes
-          </h2>
-          <p className="text-body-sm text-ink-muted">
-            {changes.length > 0 ? `Largest rise ${formatBps(Math.max(...changes.map((c) => c.changeBps)), { signed: true })}. Check prices still carry their margin.` : ''}
-          </p>
-        </div>
+      <Section
+        id="cost-changes"
+        title="Cost changes"
+        description={changes.length > 0 ? `Largest rise ${formatBps(Math.max(...changes.map((c) => c.changeBps)), { signed: true })}. Check the sell prices still carry their margin.` : 'What each supplier charged on the last delivery against the one before.'}
+      >
         <CostChangesTable rows={changes} timezone={tz} />
-      </RevealSection>
-    </>
+      </Section>
+    </div>
   );
 }

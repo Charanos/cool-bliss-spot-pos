@@ -295,7 +295,7 @@ export function Totals({
           <dd className="text-right">{item.value}</dd>
         </div>
       ))}
-      <div className="mt-4 flex items-baseline justify-between gap-16 border-t border-rule pt-12">
+      <div className={cx('flex items-baseline justify-between gap-16', shown.length > 0 && 'mt-4 border-t border-rule pt-12')}>
         <dt className="text-title-card text-ink">{total.label}</dt>
         <dd className="text-right">{total.value}</dd>
       </div>

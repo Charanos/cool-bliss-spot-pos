@@ -26,9 +26,10 @@ export interface OrderRow {
   notes: string | null;
 }
 
+/** Purchase orders, newest first: their state, and how much of each has come. */
 export function OrdersTable({ rows, timezone, suppliers }: { rows: OrderRow[]; timezone: string; suppliers: { value: string; label: string }[] }) {
   const columns: Column<OrderRow>[] = [
-    { key: 'number', header: 'Order', width: '90px', fixed: true, sortValue: (r) => r.number, csv: (r) => r.number, cell: (r) => <span className="font-mono tabular text-num text-ink">PO {r.number}</span> },
+    { key: 'number', header: 'Order', width: '90px', fixed: true, sortValue: (r) => r.number, csv: (r) => r.number, cell: (r) => <span className="font-mono tabular text-num-md text-ink">{r.number}</span> },
     { key: 'supplier', header: 'Supplier', width: 'minmax(180px,1.5fr)', sortValue: (r) => r.supplier, csv: (r) => r.supplier, cell: (r) => <StackCell primary={r.supplier} secondary={r.notes ?? undefined} /> },
     {
       key: 'status',
@@ -52,14 +53,16 @@ export function OrdersTable({ rows, timezone, suppliers }: { rows: OrderRow[]; t
         </NumCell>
       ),
     },
-    { key: 'total', header: 'Value', width: '120px', align: 'right', sortValue: (r) => r.total, csv: (r) => formatDecimal(r.total), cell: (r) => <Money value={r.total} currency={false} decimals="whole" /> },
+    { key: 'total', header: 'Value', width: '120px', align: 'right', sortValue: (r) => r.total, csv: (r) => formatDecimal(r.total), cell: (r) => <Money value={r.total} currency={false} size="num-md" decimals="whole" /> },
   ];
 
   return (
     <DataTable
       id="purchasing-orders"
       caption="Purchase orders"
+      noun={['order', 'orders']}
       rows={rows}
+      rowTone={(r) => (r.status === 'cancelled' ? 'muted' : 'default')}
       columns={columns}
       rowKey={(r) => r.id}
       rowHref={(r) => `/console/purchasing/orders/${r.id}`}
@@ -79,9 +82,10 @@ export function OrdersTable({ rows, timezone, suppliers }: { rows: OrderRow[]; t
         { kind: 'select', key: 'supplier', label: 'Supplier', options: suppliers, test: (r, v) => r.supplierId === v },
       ]}
       exportName="purchase-orders"
+      emptyFiltered={{ title: 'No orders match', body: 'Clear the state or supplier to see every order.' }}
       empty={{
         title: 'No purchase orders yet',
-        body: 'Raise one from the reorder suggestions, which come from real sales.',
+        body: 'Raise one from the reorder suggestions, which are worked out from what sold.',
         action: (
           <ButtonLink href="/console/purchasing/reorder" icon={IconShoppingCart}>
             See reorder suggestions

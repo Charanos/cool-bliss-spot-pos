@@ -5,6 +5,7 @@ import { type OrderRow, OrdersTable } from './orders-table';
 
 export const metadata: Metadata = { title: 'Purchase orders' };
 
+/** Every purchase order, from draft to received. */
 export default function OrdersPage() {
   const outlet = identity.outlet();
   const rows: OrderRow[] = procurement.purchaseOrders().map((po) => {
