@@ -7,7 +7,7 @@ import { Switch, TextField } from '@bliss/ui/components/fields';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { useNow } from '@bliss/ui/hooks';
 import { cx } from '@bliss/ui/lib/cx';
-import { staffPhoto } from '@/lib/pos/staff-photos';
+import { useStaffPhotos } from '@/lib/pos/staff-photos';
 import {
   IconAlertCircle,
   IconBattery,
@@ -58,14 +58,7 @@ interface StationDropdownProps {
  * Replaces native OS select to guarantee crisp dark-mode rendering,
  * rounded corners, and consistent touch ergonomics across devices.
  */
-function StationDropdown({
-  label,
-  helper,
-  value,
-  options,
-  onChange,
-  className,
-}: StationDropdownProps) {
+function StationDropdown({ label, helper, value, options, onChange, className }: StationDropdownProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -91,9 +84,7 @@ function StationDropdown({
 
   return (
     <div ref={containerRef} className={cx('relative flex flex-col gap-8', className)}>
-      {label ? (
-        <label className="text-body-sm text-ink-subtle font-medium">{label}</label>
-      ) : null}
+      {label ? <label className="text-body-sm text-ink-subtle font-medium">{label}</label> : null}
 
       <div className="relative">
         <button
@@ -107,17 +98,8 @@ function StationDropdown({
           aria-haspopup="listbox"
           aria-expanded={open}
         >
-          <span className="text-body-sm font-medium text-ink truncate">
-            {selectedOption?.label ?? 'Select option'}
-          </span>
-          <IconChevronDown
-            size={16}
-            stroke={ICON_STROKE}
-            className={cx(
-              'text-ink-subtle shrink-0 transition-transform duration-200',
-              open && 'rotate-180 text-accent',
-            )}
-          />
+          <span className="text-body-sm font-medium text-ink truncate">{selectedOption?.label ?? 'Select option'}</span>
+          <IconChevronDown size={16} stroke={ICON_STROKE} className={cx('text-ink-subtle shrink-0 transition-transform duration-200', open && 'rotate-180 text-accent')} />
         </button>
 
         {open ? (
@@ -139,19 +121,11 @@ function StationDropdown({
                   }}
                   className={cx(
                     'flex items-center justify-between px-16 py-12 rounded-md text-body-sm font-medium transition-colors text-left cursor-pointer',
-                    isSelected
-                      ? 'bg-accent/15 text-accent-text'
-                      : 'text-ink-muted hover:text-ink hover:bg-control-hover',
+                    isSelected ? 'bg-accent/15 text-accent-text' : 'text-ink-muted hover:text-ink hover:bg-control-hover',
                   )}
                 >
                   <span className="truncate">{o.label}</span>
-                  {isSelected ? (
-                    <IconCheck
-                      size={16}
-                      stroke={ICON_STROKE}
-                      className="text-accent-text shrink-0 ml-8"
-                    />
-                  ) : null}
+                  {isSelected ? <IconCheck size={16} stroke={ICON_STROKE} className="text-accent-text shrink-0 ml-8" /> : null}
                 </button>
               );
             })}
@@ -159,9 +133,7 @@ function StationDropdown({
         ) : null}
       </div>
 
-      {helper ? (
-        <span className="text-body-sm text-ink-subtle mt-2">{helper}</span>
-      ) : null}
+      {helper ? <span className="text-body-sm text-ink-subtle mt-2">{helper}</span> : null}
     </div>
   );
 }
@@ -179,6 +151,7 @@ function StationDropdown({
  * - Safe Hardware Unbind guard
  */
 export function TabletStationCard() {
+  const photoOf = useStaffPhotos();
   const router = useRouter();
   const device = useDevice();
   const session = useSession();
@@ -203,7 +176,7 @@ export function TabletStationCard() {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   const tz = outlet?.timezone ?? 'Africa/Nairobi';
-  const photoUrl = session?.displayName ? staffPhoto(session.displayName) : null;
+  const photoUrl = photoOf(session?.staffId);
   const initials = session?.displayName
     ? session.displayName
         .split(/\s+/)
@@ -234,19 +207,22 @@ export function TabletStationCard() {
     const nav = navigator as NavigatorWithBattery;
     if (typeof nav.getBattery === 'function') {
       let bRef: BatteryManager | null = null;
-      nav.getBattery().then((battery) => {
-        bRef = battery;
-        setBatteryLevel(Math.round(battery.level * 100));
-        setIsCharging(battery.charging);
-        const update = () => {
+      nav
+        .getBattery()
+        .then((battery) => {
+          bRef = battery;
           setBatteryLevel(Math.round(battery.level * 100));
           setIsCharging(battery.charging);
-        };
-        battery.addEventListener('levelchange', update);
-        battery.addEventListener('chargingchange', update);
-      }).catch(() => {
-        // Battery API blocked or unsupported
-      });
+          const update = () => {
+            setBatteryLevel(Math.round(battery.level * 100));
+            setIsCharging(battery.charging);
+          };
+          battery.addEventListener('levelchange', update);
+          battery.addEventListener('chargingchange', update);
+        })
+        .catch(() => {
+          // Battery API blocked or unsupported
+        });
       return () => {
         if (bRef) {
           bRef.removeEventListener('levelchange', () => {});
@@ -374,9 +350,7 @@ export function TabletStationCard() {
         <div className="rounded-lg bg-sunken/60 border border-rule-raised/20 p-20 flex flex-col gap-24">
           <div className="flex flex-col tablet:flex-row tablet:items-center justify-between gap-16">
             <div className="flex items-center gap-8 min-w-0">
-              <span className="text-body-sm font-medium text-ink-subtle">
-                Hardware terminal
-              </span>
+              <span className="text-body-sm font-medium text-ink-subtle">Hardware terminal</span>
               <Badge tone="neutral" className="!rounded-dot px-6 py-px font-mono text-micro">
                 {device?.label ?? 'None'}
               </Badge>
@@ -398,15 +372,9 @@ export function TabletStationCard() {
           {/* Station Operational Nickname / Alias CRUD */}
           <div className="flex flex-col gap-12">
             <div className="flex items-center justify-between gap-8">
-              <span className="text-body-sm font-medium text-ink">
-                Station nickname / operational alias
-              </span>
+              <span className="text-body-sm font-medium text-ink">Station nickname / operational alias</span>
               {!isEditingNickname ? (
-                <button
-                  type="button"
-                  onClick={handleStartEditNickname}
-                  className="inline-flex items-center gap-6 text-body-sm font-medium text-accent hover:underline cursor-pointer"
-                >
+                <button type="button" onClick={handleStartEditNickname} className="inline-flex items-center gap-6 text-body-sm font-medium text-accent hover:underline cursor-pointer">
                   <IconEdit size={16} stroke={ICON_STROKE} />
                   <span>{nickname ? 'Edit alias' : 'Set alias'}</span>
                 </button>
@@ -431,38 +399,19 @@ export function TabletStationCard() {
                     }}
                   />
                 </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={IconCheck}
-                  onClick={() => void handleSaveNickname()}
-                  className="!rounded-dot px-12"
-                >
+                <Button variant="primary" size="sm" icon={IconCheck} onClick={() => void handleSaveNickname()} className="!rounded-dot px-12">
                   Save
                 </Button>
                 {nickname ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void handleClearNickname()}
-                    className="!rounded-dot px-12 text-stop hover:bg-stop/10"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => void handleClearNickname()} className="!rounded-dot px-12 text-stop hover:bg-stop/10">
                     Clear
                   </Button>
                 ) : null}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={IconX}
-                  onClick={() => setIsEditingNickname(false)}
-                  className="!rounded-dot px-8"
-                />
+                <Button variant="secondary" size="sm" icon={IconX} onClick={() => setIsEditingNickname(false)} className="!rounded-dot px-8" />
               </div>
             ) : (
               <div className="flex items-center justify-between gap-12 bg-control rounded-md p-16">
-                <span className="text-body-sm text-ink truncate font-medium">
-                  {nickname ? nickname : 'No station alias set (tap edit to assign)'}
-                </span>
+                <span className="text-body-sm text-ink truncate font-medium">{nickname ? nickname : 'No station alias set (tap edit to assign)'}</span>
                 {nickname ? (
                   <Badge tone="accent" className="!rounded-dot px-6 py-px font-mono text-micro shrink-0">
                     Named Station
@@ -477,9 +426,7 @@ export function TabletStationCard() {
         <div className="rounded-lg bg-sunken/60 border border-rule-raised/20 p-20 flex flex-col gap-24">
           <div className="flex items-center gap-8">
             <IconMapPin size={20} stroke={ICON_STROKE} className="text-ink-subtle" />
-            <span className="text-body font-medium text-ink">
-              Service zone & order ticket routing
-            </span>
+            <span className="text-body font-medium text-ink">Service zone & order ticket routing</span>
           </div>
 
           <div className="grid grid-cols-1 tablet:grid-cols-2 gap-20">
@@ -509,17 +456,10 @@ export function TabletStationCard() {
         {/* ── Block 3: Signed-In Operator & Quick Actions ─────────────── */}
         <div className="rounded-lg bg-sunken/60 border border-rule-raised/20 p-20 flex flex-col tablet:flex-row tablet:items-center justify-between gap-20">
           <div className="flex items-center gap-12 min-w-0">
-            <div
-              aria-hidden="true"
-              className="flex size-[40px] items-center justify-center overflow-hidden rounded-dot bg-accent-wash text-body-sm font-medium text-accent-text select-none shrink-0"
-            >
+            <div aria-hidden="true" className="flex size-[40px] items-center justify-center overflow-hidden rounded-dot bg-accent-wash text-body-sm font-medium text-accent-text select-none shrink-0">
               {photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={photoUrl}
-                  alt={session?.displayName ?? ''}
-                  className="h-full w-full object-cover"
-                />
+                <img src={photoUrl} alt={session?.displayName ?? ''} className="h-full w-full object-cover" />
               ) : (
                 initials
               )}
@@ -527,39 +467,23 @@ export function TabletStationCard() {
 
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-8 flex-wrap">
-                <span className="text-body font-medium text-ink truncate">
-                  {session?.displayName ?? 'No Operator Signed In'}
-                </span>
+                <span className="text-body font-medium text-ink truncate">{session?.displayName ?? 'No Operator Signed In'}</span>
                 <Badge tone="neutral" className="!rounded-dot px-8 py-px font-mono text-micro">
                   {session?.roleKey === 'supervisor' ? 'Supervisor' : 'Floor Waiter'}
                 </Badge>
               </div>
               <span className="mt-2 font-mono text-micro text-ink-subtle pad:truncate">
-                {session?.signedInAt
-                  ? `Active on shift since ${formatTime(session.signedInAt, tz)} (${formatAgo(now - session.signedInAt)})`
-                  : 'Requires PIN sign-in'}
+                {session?.signedInAt ? `Active on shift since ${formatTime(session.signedInAt, tz)} (${formatAgo(now - session.signedInAt)})` : 'Requires PIN sign-in'}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-8 shrink-0 flex-wrap">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={IconRefresh}
-              onClick={() => router.push('/floor/sign-in')}
-              className="!rounded-dot px-16 text-body-sm font-medium"
-            >
+            <Button variant="secondary" size="sm" icon={IconRefresh} onClick={() => router.push('/floor/sign-in')} className="!rounded-dot px-16 text-body-sm font-medium">
               Switch operator
             </Button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={IconLogout}
-              onClick={() => void handleSignOut()}
-              className="!rounded-dot px-12 text-stop hover:bg-stop/10 text-body-sm font-medium"
-            >
+            <Button variant="ghost" size="sm" icon={IconLogout} onClick={() => void handleSignOut()} className="!rounded-dot px-12 text-stop hover:bg-stop/10 text-body-sm font-medium">
               Sign out
             </Button>
           </div>
@@ -571,50 +495,28 @@ export function TabletStationCard() {
             <div className="flex flex-col gap-4 min-w-0">
               <div className="flex items-center gap-8">
                 <IconDeviceMobileVibration size={20} stroke={ICON_STROKE} className="text-ink-subtle" />
-                <span className="text-body font-medium text-ink">
-                  Tactile haptic tap feedback
-                </span>
+                <span className="text-body font-medium text-ink">Tactile haptic tap feedback</span>
               </div>
-              <span className="text-body-sm text-ink-subtle pl-24 ">
-                Vibrates subtly on order button presses, seat assignments and bill items.
-              </span>
+              <span className="text-body-sm text-ink-subtle pl-24 ">Vibrates subtly on order button presses, seat assignments and bill items.</span>
             </div>
             <div className="shrink-0">
-              <Switch
-                label=""
-                checked={Boolean(haptics)}
-                onChange={(v) => void handleToggleHaptics(v)}
-              />
+              <Switch label="" checked={Boolean(haptics)} onChange={(v) => void handleToggleHaptics(v)} />
             </div>
           </div>
 
           {/* Device Power & Resolution Telemetry */}
           <div className="flex items-center justify-between gap-12 flex-wrap font-mono text-micro text-ink-subtle pt-6 pl-24">
             <div className="flex items-center gap-6">
-              {isCharging ? (
-                <IconBatteryCharging size={14} stroke={ICON_STROKE} className="text-served" />
-              ) : (
-                <IconBattery size={14} stroke={ICON_STROKE} className="text-ink-subtle" />
-              )}
-              <span>
-                {batteryLevel !== null
-                  ? `${batteryLevel}% ${isCharging ? '(Charging)' : '(Battery)'}`
-                  : 'AC Connected · Power Stable'}
-              </span>
+              {isCharging ? <IconBatteryCharging size={14} stroke={ICON_STROKE} className="text-served" /> : <IconBattery size={14} stroke={ICON_STROKE} className="text-ink-subtle" />}
+              <span>{batteryLevel !== null ? `${batteryLevel}% ${isCharging ? '(Charging)' : '(Battery)'}` : 'AC Connected · Power Stable'}</span>
             </div>
           </div>
         </div>
 
         {/* ── Block 5: Hardware De-Registration / Unbind Guard ────────── */}
         <div className="flex items-center justify-between gap-12 px-8 pt-4">
-          <span className="font-mono text-micro text-ink-disabled">
-            Station enrolled in Cool Bliss Spot cluster
-          </span>
-          <button
-            type="button"
-            onClick={() => setShowUnbindModal(true)}
-            className="text-body-sm font-medium text-ink-subtle hover:text-stop transition-colors cursor-pointer"
-          >
+          <span className="font-mono text-micro text-ink-disabled">Station enrolled in Cool Bliss Spot cluster</span>
+          <button type="button" onClick={() => setShowUnbindModal(true)} className="text-body-sm font-medium text-ink-subtle hover:text-stop transition-colors cursor-pointer">
             Unbind hardware registration...
           </button>
         </div>
@@ -625,30 +527,16 @@ export function TabletStationCard() {
             <div className="flex items-start gap-12">
               <IconAlertCircle size={20} stroke={ICON_STROKE} className="shrink-0 mt-2 text-stop" />
               <div className="flex flex-col gap-4 min-w-0">
-                <span className="text-body font-medium text-stop">
-                  Unbind {device?.label ?? 'this tablet'} from Floor?
-                </span>
-                <p className="font-mono text-micro text-stop/90 ">
-                  This disconnects the tablet identity from the floor station. You will need to re-bind or enroll the device again in Console.
-                </p>
+                <span className="text-body font-medium text-stop">Unbind {device?.label ?? 'this tablet'} from Floor?</span>
+                <p className="font-mono text-micro text-stop/90 ">This disconnects the tablet identity from the floor station. You will need to re-bind or enroll the device again in Console.</p>
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-8 pt-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowUnbindModal(false)}
-                className="!rounded-dot px-12 text-body-sm font-medium"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowUnbindModal(false)} className="!rounded-dot px-12 text-body-sm font-medium">
                 Cancel
               </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => void handleConfirmUnbind()}
-                className="!rounded-dot px-16 text-body-sm font-medium bg-stop text-page hover:brightness-110"
-              >
+              <Button variant="primary" size="sm" onClick={() => void handleConfirmUnbind()} className="!rounded-dot px-16 text-body-sm font-medium bg-stop text-page hover:brightness-110">
                 Confirm unbind
               </Button>
             </div>

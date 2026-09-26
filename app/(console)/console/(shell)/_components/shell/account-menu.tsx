@@ -1,6 +1,7 @@
 'use client';
 
 import { cx } from '@bliss/ui/lib/cx';
+import { Photo } from '@bliss/ui/components/photo';
 import { IconCash, IconDeviceDesktop, IconDeviceTablet, IconKey, IconLogout, IconMoon, IconSelector, IconSun } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useCallback, useLayoutEffect, useRef, useState, useTransition } from 'react';
@@ -92,8 +93,7 @@ export function AccountMenu({ name, role, photo, theme: initialTheme, pin, compa
         )}
       >
         {photo ? (
-          // eslint-disable-next-line @next/next/no-img-element -- a staff photo, sized by CSS
-          <img src={photo} alt="" className="size-control-md shrink-0 rounded-dot object-cover ring-2 ring-desk-chip shadow-chip" />
+          <Photo src={photo} className="size-control-md shrink-0 rounded-dot object-cover ring-2 ring-desk-chip shadow-chip" />
         ) : (
           <span aria-hidden="true" className="flex size-control-md shrink-0 items-center justify-center rounded-dot bg-desk-chip text-label font-medium text-ink shadow-chip">
             {initials}

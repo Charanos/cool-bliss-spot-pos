@@ -89,10 +89,23 @@ for (const name of Object.keys(consoleElevation)) push(`  --shadow-${name}: var(
 push('}');
 push();
 
+/** '#6FC6D6' as '111 198 214', or null for anything that is not a solid hex colour. */
+function channels(value: string): string | null {
+  const hex = /^#([0-9a-f]{6})$/i.exec(value.trim())?.[1];
+  if (!hex) return null;
+  return [0, 2, 4].map((i) => Number.parseInt(hex.slice(i, i + 2), 16)).join(' ');
+}
+
 function themeBlock(selector: string, name: keyof typeof themes, scheme: 'light' | 'dark', indent = '') {
   push(`${indent}${selector} {`);
   push(`${indent}  color-scheme: ${scheme};`);
   for (const [key, value] of Object.entries(themes[name])) push(`${indent}  --bliss-${key}: ${value};`);
+  // Channels for every solid colour, so a translucent tint is rgb(var(--bliss-x-rgb) / 20%): read by
+  // every browser Bliss supports, where color-mix() is not (Safari 15 on the Floor's iPad). docs/11 D-24.
+  for (const [key, value] of Object.entries(themes[name])) {
+    const rgb = channels(value);
+    if (rgb) push(`${indent}  --bliss-${key}-rgb: ${rgb};`);
+  }
   push(`${indent}  --bliss-scrim: ${colour.scrim};`);
   push(`${indent}  --bliss-shadow-raised: ${elevation[name]};`);
   push(`${indent}  --bliss-shadow-lift: ${atmosphere.lift[name]};`);
@@ -112,6 +125,8 @@ push('}');
 push();
 
 push(':root {');
+// Seat colours as channels, outside @theme so they are always emitted: inline styles use them.
+colour.seat.forEach((hex, i) => push(`  --bliss-seat-${i + 1}-rgb: ${channels(hex)};`));
 push(`  --bliss-duration-hover: ${motion.hoverMs}ms;`);
 push(`  --bliss-duration-card: ${motion.cardMs}ms;`);
 push(`  --bliss-duration-press: ${motion.pressMs}ms;`);

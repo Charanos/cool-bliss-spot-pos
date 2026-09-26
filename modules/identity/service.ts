@@ -252,6 +252,8 @@ export interface StaffSummary {
   employmentStatus: EmploymentStatus;
   /** Digits in their PIN, so a keypad completes at the right length. */
   pinLength: number;
+  /** Their photograph, uploaded in the Console; initials when absent. */
+  avatarUrl: string | null;
 }
 
 export function staffSummaries(filter: (s: Staff) => boolean = () => true): StaffSummary[] {
@@ -268,6 +270,7 @@ export function staffSummaries(filter: (s: Staff) => boolean = () => true): Staf
         colourIndex: s.colourIndex,
         employmentStatus: s.employmentStatus,
         pinLength: s.pinLength ?? 6,
+        avatarUrl: s.avatarUrl ?? null,
       };
     });
 }

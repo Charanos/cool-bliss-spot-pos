@@ -71,21 +71,13 @@ const SeatColumn = memo(function SeatColumn({
       className={cx(
         'relative flex shrink-0 size-[40px] flex-col items-center justify-center rounded-full outline-none transition-all duration-[250ms] ease-out',
         shared ? 'border border-dashed border-shared text-shared bg-transparent' : cx(seatBgClass(seat as number), 'text-seat-ink'),
-        settled && 'opacity-40'
+        settled && 'opacity-40',
       )}
-      style={
-        selected
-          ? { boxShadow: `0 0 0 2px var(--color-page), 0 0 0 4px ${shared ? 'color-mix(in oklab, var(--color-glint) 50%, transparent)' : 'var(--color-glint)'}` }
-          : undefined
-      }
+      style={selected ? { boxShadow: `0 0 0 2px var(--color-page), 0 0 0 4px ${shared ? 'rgb(var(--bliss-glint-rgb) / 50%)' : 'var(--color-glint)'}` } : undefined}
       {...press}
     >
       <span className="font-mono tabular font-medium text-[14px] leading-none">{shared ? '··' : seat}</span>
-      {label || shared ? (
-        <span className="mt-4 max-w-full truncate px-4 text-[8.5px] font-medium leading-none opacity-90">
-          {shared ? 'Shared' : displaySeatLabel(label!)}
-        </span>
-      ) : null}
+      {label || shared ? <span className="mt-4 max-w-full truncate px-4 text-[8.5px] font-medium leading-none opacity-90">{shared ? 'Shared' : displaySeatLabel(label!)}</span> : null}
     </button>
   );
 });
@@ -126,16 +118,7 @@ export function SeatSelector({ seats, sharedTotal, selected, onSelect, onSeatMen
             onMenu={() => onSeatMenu(s.id)}
           />
         ))}
-        <SeatColumn
-          ref={refFor('shared')}
-          seat="shared"
-          selected={selected === 'shared'}
-          label={null}
-          settled={false}
-          total={sharedTotal}
-          onSelect={() => onSelect('shared')}
-          onMenu={null}
-        />
+        <SeatColumn ref={refFor('shared')} seat="shared" selected={selected === 'shared'} label={null} settled={false} total={sharedTotal} onSelect={() => onSelect('shared')} onMenu={null} />
         <div className="flex shrink-0 flex-col items-center justify-center">
           <button
             type="button"

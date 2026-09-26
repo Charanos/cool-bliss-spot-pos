@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./tsconfig.base.json": "./tsconfig.base.json",
-    "./eslint-plugin": "./eslint-plugin/index.js"
+    "./eslint-plugin": "./eslint-plugin/index.js",
+    "./postcss-rgb-alpha": "./postcss-rgb-alpha.cjs"
   }
 }

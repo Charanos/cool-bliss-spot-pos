@@ -13,7 +13,6 @@ import { Badge } from '../badge';
 import { ICON_STROKE } from '../icon';
 import { Money } from '../money';
 
-
 export type TileGlyph = 'beer' | 'spirit' | 'wine' | 'soft' | 'food' | 'bottle';
 
 const GLYPH_NAME: Record<TileGlyph, string> = {
@@ -80,21 +79,7 @@ export interface ProductTileProps {
  *   last_few   count plus a 1px corner tick
  *   finished   40% opacity, one diagonal hairline, FINISHED or ON HOLD chip, not tappable, still focusable
  */
-export const ProductTile = memo(function ProductTile({
-  variantId,
-  name,
-  price,
-  ruled,
-  state,
-  reason,
-  qtyAvailable,
-  category,
-  glyph,
-  imageUrl,
-  onAdd,
-  onLongPress,
-  inCart = 0,
-}: ProductTileProps) {
+export const ProductTile = memo(function ProductTile({ variantId, name, price, ruled, state, reason, qtyAvailable, category, glyph, imageUrl, onAdd, onLongPress, inCart = 0 }: ProductTileProps) {
   const ref = useRef<HTMLButtonElement>(null);
   const hairlineRef = useRef<HTMLSpanElement>(null);
   const previousState = useRef(state);
@@ -160,17 +145,13 @@ export const ProductTile = memo(function ProductTile({
               loading="lazy"
               decoding="async"
               onError={() => setImageFailed(true)}
-              className={cx(
-                'size-full object-cover transition-transform duration-[500ms] ease-out group-hover:scale-105',
-                finished ? 'grayscale' : 'saturate-[0.9] contrast-[1.05] brightness-[0.88]',
-              )}
+              className={cx('size-full object-cover transition-transform duration-[500ms] ease-out group-hover:scale-105', finished ? 'grayscale' : 'saturate-[0.9] contrast-[1.05] brightness-[0.88]')}
             />
             {/* Rich cinematic dark mask */}
             <div
               className="absolute inset-0 pointer-events-none transition-opacity duration-300 group-hover:opacity-90"
               style={{
-                background:
-                  'linear-gradient(to top, var(--color-sunken) 0%, color-mix(in oklab, var(--color-sunken) 94%, transparent) 28%, color-mix(in oklab, var(--color-sunken) 60%, transparent) 62%, color-mix(in oklab, var(--color-page) 35%, transparent) 100%)',
+                background: 'linear-gradient(to top, var(--color-sunken) 0%, rgb(var(--bliss-sunken-rgb) / 94%) 28%, rgb(var(--bliss-sunken-rgb) / 60%) 62%, rgb(var(--bliss-page-rgb) / 35%) 100%)',
               }}
             />
           </>
@@ -190,39 +171,20 @@ export const ProductTile = memo(function ProductTile({
 
         {/* Availability / Quantity / Status Badge (Top Right) */}
         <Badge
-          tone={
-            held
-              ? 'attention'
-              : finished
-                ? 'stop'
-                : state === 'low' || state === 'last_few'
-                  ? 'attention'
-                  : 'neutral'
-          }
+          tone={held ? 'attention' : finished ? 'stop' : state === 'low' || state === 'last_few' ? 'attention' : 'neutral'}
           className="absolute top-[8px] right-[8px] z-20 backdrop-blur-glass bg-page/85 shadow-raised px-[7px] py-[3px] text-[10px] font-medium rounded-[6px]"
         >
-          {held
-            ? (count > 0 ? `On hold · ${count}` : 'On hold')
-            : finished
-              ? (count > 0 ? `Finished · ${count}` : '0 left')
-              : `${count} left`}
+          {held ? (count > 0 ? `On hold · ${count}` : 'On hold') : finished ? (count > 0 ? `Finished · ${count}` : '0 left') : `${count} left`}
         </Badge>
       </span>
 
       <span className="relative z-10 flex flex-1 flex-col justify-between px-[14px] pb-[12px] pt-[8px]">
-        <span
-          className="line-clamp-2 min-h-[38px] text-[14px] font-medium text-ink leading-[19px]"
-          title={name}
-        >
+        <span className="line-clamp-2 min-h-[38px] text-[14px] font-medium text-ink leading-[19px]" title={name}>
           {name}
         </span>
 
         <div className="mt-auto flex items-center justify-between pt-[6px]">
-          {price ? (
-            <Money value={price} size="num" tone={ruled ? 'accent' : 'default'} />
-          ) : (
-            <span className="text-[12px] font-medium text-ink-subtle">No price</span>
-          )}
+          {price ? <Money value={price} size="num" tone={ruled ? 'accent' : 'default'} /> : <span className="text-[12px] font-medium text-ink-subtle">No price</span>}
 
           <span
             aria-hidden="true"
@@ -233,9 +195,7 @@ export const ProductTile = memo(function ProductTile({
         </div>
       </span>
 
-      {state === 'last_few' ? (
-        <span aria-hidden="true" className="pointer-events-none absolute bottom-[6px] right-[6px] size-[10px] border-b border-r border-attention" />
-      ) : null}
+      {state === 'last_few' ? <span aria-hidden="true" className="pointer-events-none absolute bottom-[6px] right-[6px] size-[10px] border-b border-r border-attention" /> : null}
 
       {finished ? (
         <span ref={hairlineRef} aria-hidden="true" className="pointer-events-none absolute inset-0 origin-left text-ink-disabled">
@@ -247,4 +207,3 @@ export const ProductTile = memo(function ProductTile({
     </button>
   );
 });
-

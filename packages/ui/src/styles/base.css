@@ -1,4 +1,11 @@
 @layer base {
+  /* Tailwind's own placeholder tint needs color-mix(); this one reads everywhere (docs/11 D-24). */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-ink-subtle);
+    opacity: 1;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
@@ -535,16 +542,35 @@
 }
 
 /*
- * A notice's surface: raised glass washed with its tone, a glow from the leading corner and a fine
- * dot grid in the same tone. The tone arrives as --notice-tone, set per notice.
+ * A notice's surface: raised, washed with its tone, a glow from the leading corner and a fine dot
+ * grid in the same tone. The tone arrives as channels, --notice-tone-rgb, set per notice by a
+ * notice-tone-* utility, so it reads in every browser Bliss supports (docs/11 D-24).
  */
 @utility notice-surface {
-  background-color: color-mix(in oklab, var(--notice-tone, var(--color-accent)) 9%, var(--color-raised));
+  --notice-wash: rgb(var(--notice-tone-rgb, var(--bliss-accent-rgb)) / 9%);
+  background-color: var(--color-raised);
   background-image:
-    radial-gradient(ellipse at 0% 0%, color-mix(in oklab, var(--notice-tone, var(--color-accent)) 20%, transparent) 0%, transparent 70%),
-    radial-gradient(color-mix(in oklab, var(--notice-tone, var(--color-accent)) 18%, transparent) 1px, transparent 1.3px);
-  background-size: 100% 100%, 10px 10px;
-  background-position: 0 0, 5px 5px;
+    linear-gradient(var(--notice-wash), var(--notice-wash)),
+    radial-gradient(ellipse at 0% 0%, rgb(var(--notice-tone-rgb, var(--bliss-accent-rgb)) / 20%) 0%, transparent 70%),
+    radial-gradient(rgb(var(--notice-tone-rgb, var(--bliss-accent-rgb)) / 18%) 1px, transparent 1.3px);
+  background-size: 100% 100%, 100% 100%, 10px 10px;
+  background-position: 0 0, 0 0, 5px 5px;
+}
+
+@utility notice-tone-poured {
+  --notice-tone-rgb: var(--bliss-poured-rgb);
+}
+
+@utility notice-tone-info {
+  --notice-tone-rgb: var(--bliss-info-rgb);
+}
+
+@utility notice-tone-low {
+  --notice-tone-rgb: var(--bliss-low-rgb);
+}
+
+@utility notice-tone-stop {
+  --notice-tone-rgb: var(--bliss-stop-rgb);
 }
 
 /* An invitation rather than an object: a free table. Sleek solid glass, filled with a warm glow on hover. */
@@ -908,10 +934,28 @@
  * A card that needs a second look: its edge takes the tone and its head a faint wash of it, fading
  * down the card. Never a bar down one side.
  */
-@utility card-tone-* {
-  --card-tone: --value(--color-*);
-  border-color: color-mix(in oklab, var(--card-tone) 45%, var(--color-edge));
-  background-image: linear-gradient(to bottom, color-mix(in oklab, var(--card-tone) 8%, transparent), transparent 112px);
+@utility card-tone-stop {
+  --card-tone-rgb: var(--bliss-stop-rgb);
+  border-color: rgb(var(--card-tone-rgb) / 45%);
+  background-image: linear-gradient(to bottom, rgb(var(--card-tone-rgb) / 8%), transparent 112px);
+}
+
+@utility card-tone-poured {
+  --card-tone-rgb: var(--bliss-poured-rgb);
+  border-color: rgb(var(--card-tone-rgb) / 45%);
+  background-image: linear-gradient(to bottom, rgb(var(--card-tone-rgb) / 8%), transparent 112px);
+}
+
+@utility card-tone-low {
+  --card-tone-rgb: var(--bliss-low-rgb);
+  border-color: rgb(var(--card-tone-rgb) / 45%);
+  background-image: linear-gradient(to bottom, rgb(var(--card-tone-rgb) / 8%), transparent 112px);
+}
+
+@utility card-tone-accent {
+  --card-tone-rgb: var(--bliss-accent-rgb);
+  border-color: rgb(var(--card-tone-rgb) / 45%);
+  background-image: linear-gradient(to bottom, rgb(var(--card-tone-rgb) / 8%), transparent 112px);
 }
 
 /* A scrolling list whose foot fades into the desk, so a cut-off row reads as "more below". */

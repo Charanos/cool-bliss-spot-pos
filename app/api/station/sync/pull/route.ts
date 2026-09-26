@@ -61,7 +61,15 @@ export async function GET(request: Request) {
       .filter((s) => s.employmentStatus === 'active')
       .map((s) => {
         const role = identity.roleFor(s.id);
-        return { id: s.id, displayName: s.displayName, roleKey: role?.key ?? 'waiter', permissions: role?.permissions ?? [], colourIndex: s.colourIndex, pinLength: s.pinLength ?? 6 };
+        return {
+          id: s.id,
+          displayName: s.displayName,
+          roleKey: role?.key ?? 'waiter',
+          permissions: role?.permissions ?? [],
+          colourIndex: s.colourIndex,
+          pinLength: s.pinLength ?? 6,
+          avatarUrl: s.avatarUrl ?? null,
+        };
       });
     body.devices = identity.devices().map((d) => ({ id: d.id, label: d.label, kind: d.kind, status: d.status, pairing: d.pairingPending }));
   }

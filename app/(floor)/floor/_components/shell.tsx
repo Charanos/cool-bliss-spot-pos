@@ -1,5 +1,6 @@
 'use client';
 
+import { Photo } from '@bliss/ui/components/photo';
 import { AmbientFloorArtwork } from '@bliss/ui/components/artwork/floor-workspace';
 import { BlissMark } from '@bliss/ui/components/brand';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
@@ -14,7 +15,7 @@ import { UpdateBar } from '@/app/_pos/update-bar';
 import { useFloorWatch } from '@/app/_pos/watchers';
 import { useFiredOrders, useOpenTabs, useOutlet } from '@/lib/pos/queries';
 import { useSession } from '@/lib/pos/session';
-import { staffPhoto } from '@/lib/pos/staff-photos';
+import { useStaffPhotos } from '@/lib/pos/staff-photos';
 import { useSync } from '@/lib/pos/sync';
 import { SearchDialog } from './search-dialog';
 
@@ -28,6 +29,7 @@ import { SearchDialog } from './search-dialog';
  * `short` (a phone on its side, or a tablet with the keyboard up) takes the dock labels away.
  */
 export function FloorShell({ children }: { children: ReactNode }) {
+  const photoOf = useStaffPhotos();
   const session = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -61,7 +63,7 @@ export function FloorShell({ children }: { children: ReactNode }) {
   const mine = tabs?.filter((t) => t.tab.assignedTo === session.staffId).length ?? 0;
   const needsMe = orders?.filter((o) => o.state === 'needs_you').length ?? 0;
   const firstName = session.displayName.trim().split(/\s+/)[0] ?? session.displayName;
-  const photoUrl = staffPhoto(session.displayName);
+  const photoUrl = photoOf(session.staffId);
 
   const nav: DockItem[] = [
     { href: '/floor/tabs', label: 'Tabs', icon: IconLayoutGrid, badge: mine || undefined },
@@ -98,13 +100,11 @@ export function FloorShell({ children }: { children: ReactNode }) {
             <>
               <LiveClock timeZone={outlet?.timezone} />
               <Link href="/floor/shift" aria-label={`${session.displayName}, view shift`} className="flex shrink-0 items-center gap-8 rounded-md p-2 press-feedback hover:bg-control/40">
-                <span aria-hidden="true" className="flex size-control-sm items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-label font-medium text-accent-text">
-                  {photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={photoUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    firstName.slice(0, 1)
-                  )}
+                <span
+                  aria-hidden="true"
+                  className="flex size-control-sm items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-label font-medium text-accent-text"
+                >
+                  {photoUrl ? <Photo src={photoUrl} className="h-full w-full object-cover" /> : firstName.slice(0, 1)}
                 </span>
                 <span className="hidden min-w-0 text-left tablet:block">
                   <span className="block max-w-[120px] truncate text-body-sm font-medium text-ink">{firstName}</span>

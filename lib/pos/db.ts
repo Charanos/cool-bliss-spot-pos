@@ -36,6 +36,8 @@ export interface StaffDirectoryEntry {
   colourIndex: number;
   /** Digits in their PIN, so the keypad completes at the right length. Six when absent. */
   pinLength?: number;
+  /** Their photograph, uploaded in the Console; initials when absent. */
+  avatarUrl?: string | null;
 }
 
 export interface DeviceEntry {

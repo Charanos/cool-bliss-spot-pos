@@ -1,5 +1,6 @@
 'use client';
 
+import { Photo } from '@bliss/ui/components/photo';
 import { Button } from '@bliss/ui/components/button';
 import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
 import { InlineNotice } from '@bliss/ui/components/feedback';
@@ -102,12 +103,7 @@ export function StaffDialog({
         <div className="flex items-center gap-16">
           <label className="group relative flex size-avatar shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-dot bg-control text-title-card text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus">
             <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={choosePhoto} disabled={uploading} aria-label="Choose a photo" />
-            {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt="" className="size-full object-cover" />
-            ) : (
-              <span aria-hidden="true">{initials || '?'}</span>
-            )}
+            {photo ? <Photo src={photo} className="size-full object-cover" /> : <span aria-hidden="true">{initials || '?'}</span>}
             <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center bg-scrim text-on-scrim opacity-0 transition-hover group-hover:opacity-100">
               <IconCamera size={20} stroke={1.5} />
             </span>

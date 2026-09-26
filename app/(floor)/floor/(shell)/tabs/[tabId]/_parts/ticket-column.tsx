@@ -5,7 +5,7 @@ import { AnimatedMoney } from '@bliss/ui/components/money';
 import { EmptyState } from '@bliss/ui/components/feedback';
 import { MetaLine } from '@bliss/ui/components/working';
 import { cx } from '@bliss/ui/lib/cx';
-import { SeatGroupHeader, seatColorVar } from '@bliss/ui/components/floor/ticket';
+import { SeatGroupHeader, seatRgbVar } from '@bliss/ui/components/floor/ticket';
 import { type FlipState, captureRows, lineEnter, playRowMove } from '@bliss/ui/motion/floor';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import type { TabDetail } from '@/lib/pos/queries';
@@ -66,20 +66,22 @@ export const TicketColumn = forwardRef<
 
   const selectedSeat = detail.seats.find((s) => s.id === detail.selected);
   const selectedTotal = detail.selected === 'shared' ? detail.sharedTotal : (selectedSeat?.total ?? null);
-  const selectedName =
-    detail.selected === 'shared' ? 'Shared' : selectedSeat ? `Seat ${selectedSeat.seatNo}${selectedSeat.label ? ` · ${displaySeatLabel(selectedSeat.label)}` : ''}` : null;
+  const selectedName = detail.selected === 'shared' ? 'Shared' : selectedSeat ? `Seat ${selectedSeat.seatNo}${selectedSeat.label ? ` · ${displaySeatLabel(selectedSeat.label)}` : ''}` : null;
 
   return (
-    <section aria-label="Ticket" className={cx(
-      "flex flex-col z-40 bg-page shadow-[inset_1px_0_8px_rgba(0,0,0,0.15)]",
-      mobileOpen ? "fixed inset-0 h-dvh" : "hidden tablet:flex min-h-0 w-rail-ticket shrink-0 relative"
-    )}>
+    <section
+      aria-label="Ticket"
+      className={cx('flex flex-col z-40 bg-page shadow-[inset_1px_0_8px_rgba(0,0,0,0.15)]', mobileOpen ? 'fixed inset-0 h-dvh' : 'hidden tablet:flex min-h-0 w-rail-ticket shrink-0 relative')}
+    >
       {/* ── Title section moved from center panel ──────────────────────── */}
-      <div className={cx('flex shrink-0 items-center justify-between border-b border-rule px-12 py-12 pad:h-[88px] pad:px-24 pad:py-0', mobileOpen && 'safe-t safe-x [--bliss-gutter-t:12px] [--bliss-gutter-x:12px] pad:[--bliss-gutter-x:24px]')}>
+      <div
+        className={cx(
+          'flex shrink-0 items-center justify-between border-b border-rule px-12 py-12 pad:h-[88px] pad:px-24 pad:py-0',
+          mobileOpen && 'safe-t safe-x [--bliss-gutter-t:12px] [--bliss-gutter-x:12px] pad:[--bliss-gutter-x:24px]',
+        )}
+      >
         <div className="flex flex-col justify-center min-w-0">
-          <h1 className="text-title font-medium text-ink  truncate">
-            {detail?.label ?? '\u00a0'}
-          </h1>
+          <h1 className="text-title font-medium text-ink  truncate">{detail?.label ?? '\u00a0'}</h1>
           {metaItems.length > 0 && (
             <div className="flex items-center min-w-0 pt-2">
               <MetaLine items={metaItems} className="flex-nowrap whitespace-nowrap overflow-hidden text-ellipsis text-body-sm text-ink-muted" />
@@ -95,43 +97,30 @@ export const TicketColumn = forwardRef<
 
       <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-8 pt-8 pb-16">
         {detail.groups.length === 0 ? (
-          <EmptyState
-            title="Nothing on this tab yet"
-            body={detail.showControls ? 'Pick a seat, then add serves from the grid.' : 'Add serves from the grid.'}
-            className="py-32"
-          />
+          <EmptyState title="Nothing on this tab yet" body={detail.showControls ? 'Pick a seat, then add serves from the grid.' : 'Add serves from the grid.'} className="py-32" />
         ) : (
           detail.groups.map((group, gi) => {
             const isSelected = detail.selected === (group.seat?.id ?? 'shared');
             const seatNo = group.seat ? group.seat.seatNo : ('shared' as const);
-            const seatColor = seatColorVar(seatNo);
+            const seatRgb = seatRgbVar(seatNo);
             const prevGroup = gi > 0 ? detail.groups[gi - 1] : null;
             const prevSelected = prevGroup ? detail.selected === (prevGroup.seat?.id ?? 'shared') : false;
 
             return (
               <div
                 key={group.key}
-                className={cx(
-                  'rounded-[16px] transition-all duration-200',
+                className={cx('rounded-[16px] transition-all duration-200', isSelected ? 'p-16 my-8 border bg-raised/70' : cx('px-16 py-8', gi > 0 && !prevSelected && 'border-t border-rule/50 mt-6'))}
+                style={
                   isSelected
-                    ? 'p-16 my-8 border backdrop-blur-[24px]'
-                    : cx('px-16 py-8', gi > 0 && !prevSelected && 'border-t border-rule/50 mt-6')
-                )}
-                style={isSelected ? {
-                  backgroundColor: `color-mix(in srgb, ${seatColor} 14%, color-mix(in oklab, var(--color-raised) 70%, transparent))`,
-                  borderColor: `color-mix(in srgb, ${seatColor} 32%, transparent)`,
-                  boxShadow: `0 8px 32px -8px color-mix(in srgb, ${seatColor} 18%, transparent), inset 0 1px 1px color-mix(in srgb, white 8%, transparent), inset 0 0 0 1px color-mix(in srgb, white 3%, transparent)`,
-                  backgroundImage: `radial-gradient(ellipse at 50% 0%, color-mix(in srgb, ${seatColor} 14%, transparent) 0%, transparent 75%), radial-gradient(color-mix(in srgb, ${seatColor} 9%, transparent) 1.5px, transparent 1.5px)`,
-                  backgroundSize: '100% 100%, 24px 24px',
-                  backgroundPosition: '0 0, 12px 12px',
-                } : undefined}
+                    ? {
+                        backgroundImage: `linear-gradient(rgb(${seatRgb} / 14%), rgb(${seatRgb} / 14%))`,
+                        borderColor: `rgb(${seatRgb} / 32%)`,
+                        boxShadow: `0 8px 32px -8px rgb(${seatRgb} / 18%)`,
+                      }
+                    : undefined
+                }
               >
-                <SeatGroupHeader
-                  seat={group.seat ? group.seat.seatNo : 'shared'}
-                  label={group.seat?.label ?? null}
-                  subtotal={group.subtotal}
-                  settled={group.seat?.status === 'settled'}
-                />
+                <SeatGroupHeader seat={group.seat ? group.seat.seatNo : 'shared'} label={group.seat?.label ?? null} subtotal={group.subtotal} settled={group.seat?.status === 'settled'} />
                 <div>
                   {group.lines.map(({ line, state, deliveredAt, modifiers, name, imageUrl }) => (
                     <TicketRow

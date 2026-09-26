@@ -10,7 +10,6 @@ import { cx } from '@bliss/ui/lib/cx';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { staffPhoto } from '@/lib/pos/staff-photos';
 import type { StaffSummary } from '@/modules/identity/service';
 import { ROLE_LABEL } from '../(shell)/_lib/labels';
 import { pinWeakness } from '@bliss/shared/pin';
@@ -138,7 +137,7 @@ export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSum
                   {people.map((p) => (
                     <li key={p.id}>
                       <GlassButton onClick={() => choose(p.id)} className="flex w-full items-center gap-16">
-                        <Avatar src={staffPhoto(p.displayName)} name={p.displayName} />
+                        <Avatar src={p.avatarUrl} name={p.displayName} />
                         <span className="flex flex-1 flex-col justify-center gap-6">
                           <span className="text-title font-medium text-ink">{p.displayName}</span>
                           <Eyebrow size="caps" tone="muted">
@@ -162,7 +161,7 @@ export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSum
 
               <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center">
                 <div className="pointer-events-auto mt-32 flex w-full max-w-[340px] flex-col items-center">
-                  <Avatar src={staffPhoto(person.displayName)} name={person.displayName} size="lg" className="mb-24" />
+                  <Avatar src={person.avatarUrl} name={person.displayName} size="lg" className="mb-24" />
                   <h1 className="ink-sheen font-mono text-persona">{person.displayName}</h1>
                   <Eyebrow as="p" tone={pending || change ? 'accent' : 'subtle'} aria-live="polite" className={cx('mt-8', pending && 'animate-breathe', change ? 'mb-8' : 'mb-16')}>
                     {prompt}
