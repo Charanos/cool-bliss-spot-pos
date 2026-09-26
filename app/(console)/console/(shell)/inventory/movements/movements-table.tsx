@@ -59,7 +59,7 @@ export function MovementsTable({ rows, timezone, locations, variantName }: { row
     {
       key: 'at',
       header: 'When',
-      width: '150px',
+      width: '136px',
       fixed: true,
       sortValue: (r) => r.at,
       csv: (r) => new Date(r.at).toISOString(),
@@ -68,7 +68,7 @@ export function MovementsTable({ rows, timezone, locations, variantName }: { row
     {
       key: 'variant',
       header: 'Product',
-      width: 'minmax(160px,1.4fr)',
+      width: 'minmax(150px,1.4fr)',
       sortValue: (r) => r.variant,
       csv: (r) => r.variant,
       cell: (r) => (
@@ -82,7 +82,7 @@ export function MovementsTable({ rows, timezone, locations, variantName }: { row
         />
       ),
     },
-    { key: 'type', header: 'Type', width: '150px', sortValue: (r) => r.type, csv: (r) => MOVEMENT_LABEL[r.type], cell: (r) => <span className="text-ui text-ink">{MOVEMENT_LABEL[r.type]}</span> },
+    { key: 'type', header: 'Type', width: '120px', sortValue: (r) => r.type, csv: (r) => MOVEMENT_LABEL[r.type], cell: (r) => <span className="text-ui text-ink">{MOVEMENT_LABEL[r.type]}</span> },
     {
       key: 'qty',
       header: 'Quantity',
@@ -109,7 +109,7 @@ export function MovementsTable({ rows, timezone, locations, variantName }: { row
     {
       key: 'value',
       header: 'Value',
-      width: '100px',
+      width: '92px',
       align: 'right',
       sortValue: (r) => multiplyByQuantity(r.unitCost, r.qty),
       csv: (r) => formatDecimal(multiplyByQuantity(r.unitCost, r.qty)),
@@ -118,7 +118,7 @@ export function MovementsTable({ rows, timezone, locations, variantName }: { row
     {
       key: 'source',
       header: 'From',
-      width: 'minmax(130px,1fr)',
+      width: 'minmax(110px,1fr)',
       sortValue: (r) => r.source.label,
       csv: (r) => r.source.label,
       cell: (r) =>
@@ -130,11 +130,11 @@ export function MovementsTable({ rows, timezone, locations, variantName }: { row
           <span className="truncate text-ui text-ink-muted">{r.source.label}</span>
         ),
     },
-    { key: 'by', header: 'By', width: '100px', sortValue: (r) => r.by, csv: (r) => r.by, cell: (r) => <span className="text-ui text-ink-muted">{r.by}</span> },
+    { key: 'by', header: 'By', width: '88px', sortValue: (r) => r.by, csv: (r) => r.by, cell: (r) => <span className="text-ui text-ink-muted">{r.by}</span> },
     {
       key: 'reason',
       header: 'Reason',
-      width: 'minmax(160px,1.4fr)',
+      width: 'minmax(120px,1.2fr)',
       csv: (r) => r.reason ?? '',
       cell: (r) => (
         <span className="truncate text-body-sm text-ink-muted" title={r.reason ?? undefined}>
