@@ -18,6 +18,7 @@ import { downloadCsv, exportFilename, toCsv } from '../csv';
 import { FilterSelect } from '../filter-select';
 import { ResultCount, SearchInput, ToggleChip, Toolbar } from '../toolbar';
 import { useUrlState } from '../url-state';
+import { foldColumns } from './fold';
 import { Pagination } from './pagination';
 
 export interface Column<Row> {
@@ -35,6 +36,12 @@ export interface Column<Row> {
   wrap?: boolean;
   /** In the CSV only: a detail the screen shows inside another cell. */
   exportOnly?: boolean;
+  /**
+   * When the card is too narrow for every column (a 1280 or 1366 laptop), columns fold into a detail
+   * line under the row's first cell instead of the table scrolling sideways. Higher folds first; 0
+   * never folds. Without it, text columns fold before figures, and the total on the right stays.
+   */
+  fold?: number;
 }
 
 export type FilterDef<Row> =
@@ -152,15 +159,22 @@ export function DataTable<Row>({
   const initialView = defaultView ?? (gridAvailable ? 'grid' : 'table');
   const view = read('view') ?? initialView;
   const isGrid = gridAvailable && view === 'grid';
-  const rowHeight = density === 'compact' ? 36 : 44;
+  const baseRowHeight = density === 'compact' ? 36 : 44;
 
   const hidden = new Set((read('hide') ?? '').split(',').filter(Boolean));
-  const visibleColumns = columns.filter((c) => !c.exportOnly && (c.fixed || !hidden.has(c.key)));
-  const template = [...visibleColumns.map((c) => c.width), rowActions ? '48px' : null].filter(Boolean).join(' ');
+  const shownColumns = columns.filter((c) => !c.exportOnly && (c.fixed || !hidden.has(c.key)));
   // The table fills its card, and scrolls sideways only when the columns' minimums no longer fit.
   // (Sizing it to max-content instead would let one long cell push every column wider than the card.)
-  const tracks = [...visibleColumns.map((c) => c.width), ...(rowActions ? ['48px'] : [])];
-  const minWidth = tracks.reduce((n, w) => n + Number(/(\d+(?:\.\d+)?)px/.exec(w)?.[1] ?? 0), 0) + 16 * Math.max(0, tracks.length - 1) + 40;
+  const widthOf = (cols: readonly Column<Row>[]) => {
+    const tracks = [...cols.map((c) => c.width), ...(rowActions ? ['48px'] : [])];
+    return tracks.reduce((n, w) => n + Number(/(\d+(?:\.\d+)?)px/.exec(w)?.[1] ?? 0), 0) + 16 * Math.max(0, tracks.length - 1) + 40;
+  };
+  const [available, setAvailable] = useState<number | null>(null);
+  const folded = useMemo(() => foldColumns(shownColumns, available, widthOf), [shownColumns.map((c) => c.key).join(), available, rowActions ? 1 : 0]); // eslint-disable-line react-hooks/exhaustive-deps
+  const visibleColumns = shownColumns.filter((c) => !folded.has(c.key));
+  const foldedColumns = shownColumns.filter((c) => folded.has(c.key));
+  const template = [...visibleColumns.map((c) => c.width), rowActions ? '48px' : null].filter(Boolean).join(' ');
+  const minWidth = widthOf(visibleColumns);
 
   const query = read('q') ?? '';
   const sortParam = read('sort');
@@ -210,7 +224,16 @@ export function DataTable<Row>({
       <Pagination page={page} pages={pages} total={filtered.length} perPage={perPage} perPageOptions={sizes} noun={noun} onPage={goPage} onPerPage={(n) => write({ per: n === fallbackSize ? null : String(n), page: null })} />
     ) : null;
 
+  const rowHeight = baseRowHeight + (foldedColumns.length > 0 ? 20 : 0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const widthRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = widthRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(([entry]) => setAvailable(Math.round(entry!.contentRect.width)));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isGrid]);
   const virtual = !isGrid && shown.length > VIRTUAL_THRESHOLD;
   const virtualizer = useVirtualizer({ count: shown.length, getScrollElement: () => scrollRef.current, estimateSize: () => rowHeight, overscan: 12, enabled: virtual });
 
@@ -287,6 +310,16 @@ export function DataTable<Row>({
             ) : (
               c.cell(row, { grid: false })
             )}
+            {i === 0 && foldedColumns.length > 0 ? (
+              <div className="mt-2 flex min-w-0 items-baseline gap-x-12 overflow-hidden text-body-sm text-ink-muted">
+                {foldedColumns.map((f) => (
+                  <span key={f.key} className="flex min-w-0 shrink items-baseline gap-4 truncate">
+                    <span className="shrink-0 text-ink-subtle">{f.header}</span>
+                    <span className="min-w-0 truncate">{f.cell(row, { grid: false })}</span>
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
         ))}
         {rowActions ? (
@@ -408,7 +441,7 @@ export function DataTable<Row>({
         )
       ) : (
         <div className={cx('min-w-0', variant === 'card' && 'overflow-hidden card-surface')}>
-          <div className="scroll-x">
+          <div ref={widthRef} className="scroll-x">
             <div role="table" aria-label={caption} aria-rowcount={filtered.length + 1} className="w-full" style={{ minWidth }}>
               <div role="rowgroup">
                 <div role="row" aria-rowindex={1} style={{ gridTemplateColumns: template }} className={cx('grid min-h-row-compact items-center gap-16 border-b border-edge', variant === 'card' ? 'card-band px-20' : 'px-20')}>
@@ -480,3 +513,4 @@ export function DataTable<Row>({
     </div>
   );
 }
+
