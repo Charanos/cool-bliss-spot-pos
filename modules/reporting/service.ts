@@ -331,7 +331,7 @@ export function voidsByStaff(from: IsoDate, to: IsoDate) {
         sales: sold,
         voidRateBps: shareBps(voidValue, add(sold, voidValue)),
         discounts: sum(shifts.filter((s) => s.staffId === staffId).map((s) => s.discountsCents)),
-        reasons: voided.slice(0, 4).map((l) => ({ reason: l.voidReason ?? '', at: l.voidedAt ?? 0 })),
+        reasons: voided.slice(0, 4).map((l) => ({ reason: l.voidReason ?? '', at: l.voidedAt ?? 0, tabId: l.tabId })),
       };
     })
     .sort((a, b) => b.voidRateBps - a.voidRateBps);

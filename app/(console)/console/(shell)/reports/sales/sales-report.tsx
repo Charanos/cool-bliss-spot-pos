@@ -1,18 +1,20 @@
 'use client';
 
 import { formatBps, formatDayShort } from '@bliss/shared/format';
-import { type Cents, formatDecimal } from '@bliss/shared/money';
+import { type Cents, compare, formatDecimal, isPositive } from '@bliss/shared/money';
+import { ChartCaption } from '@bliss/ui/components/console/chart-caption';
 import { type BarDatum, BarChart, ShareBars } from '@bliss/ui/components/console/bar-chart';
 import { type Column, DataTable, NumCell } from '@bliss/ui/components/console/data-table';
 import { Card, CardBody, CardHeader } from '@bliss/ui/components/console/card';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
-import { Section } from '@bliss/ui/components/console/section';
+import { Section, Separator } from '@bliss/ui/components/console/section';
 import { AnimatedMoney, Money } from '@bliss/ui/components/money';
 import {
   IconAlertTriangle,
   IconBuildingStore,
   IconCash,
   IconChartBar,
+  IconFlame,
   IconReceipt,
   IconReceipt2,
   IconScale,
@@ -63,6 +65,7 @@ export function SalesReport({
 }) {
   const showMargin = summary.grossMarginBps !== null;
   const hourly = chartCaption.startsWith('Sales by hour');
+  const peak = chart.reduce<BarDatum | null>((max, d) => (!max || compare(d.value, max.value) > 0 ? d : max), null);
 
   const categoryColumns: Column<CategoryRow>[] = [
     { key: 'name', header: 'Category', width: 'minmax(120px,1.5fr)', fixed: true, sortValue: (r) => r.name, csv: (r) => r.name, cell: (r) => <span className="truncate text-ui font-medium text-ink">{r.name}</span> },
@@ -129,15 +132,25 @@ export function SalesReport({
 
       <Card aria-labelledby="sales-chart">
         <CardHeader band level="h2" titleId="sales-chart" icon={IconChartBar} title={hourly ? 'Sales by hour' : 'Sales by business day'} subtitle={hourly ? 'By the hour each line was fired' : 'What the settled bills came to, each business day'} />
-        <CardBody className="pt-16">
-          <BarChart data={chart} caption={chartCaption} height={240} tooltipLabel={hourly ? (d) => `${d.label}:00 to ${d.label}:59` : (d) => formatDayShort(d.key)} />
+        <CardBody className="flex flex-col gap-16 pt-16">
+          {peak && isPositive(peak.value) ? (
+            <ChartCaption
+              icon={<IconFlame size={16} stroke={1.5} />}
+              label={hourly ? 'Busiest hour' : 'Best day'}
+              figures={[hourly ? `${peak.label}:00` : formatDayShort(peak.key), <Money key="peak" value={peak.value} size="num-md" decimals="whole" />]}
+              note={hourly ? 'Fired lines' : 'Settled bills'}
+            />
+          ) : null}
+          <BarChart data={chart} highlightKey={peak?.key} caption={chartCaption} height={240} tooltipLabel={hourly ? (d) => `${d.label}:00 to ${d.label}:59` : (d) => formatDayShort(d.key)} />
         </CardBody>
       </Card>
+
+      <Separator variant="pill" label="Where it came from" />
 
       <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-2">
         <Card aria-labelledby="sales-categories">
           <CardHeader band level="h2" titleId="sales-categories" icon={IconBuildingStore} title="By category" />
-          <DataTable id="report-categories" caption="Sales by category" rows={categories} columns={categoryColumns} rowKey={(r) => r.id} defaultSort={{ key: 'value', dir: 'desc' }} urlState={false} toolbar={false} variant="naked" empty={{ title: 'No sales in this range', body: 'Choose a longer range.' }} />
+          <DataTable id="report-categories" caption="Sales by category" rows={categories} columns={categoryColumns} rowKey={(r) => r.id} rowHref={(r) => `/console/catalogue/categories/${r.id}`} defaultSort={{ key: 'value', dir: 'desc' }} urlState={false} toolbar={false} variant="naked" empty={{ title: 'No sales in this range', body: 'Choose a longer range.' }} />
         </Card>
 
         <Card aria-labelledby="sales-tenders">
@@ -154,6 +167,7 @@ export function SalesReport({
           rows={movers}
           columns={moverColumns}
           rowKey={(r) => r.productId}
+          rowHref={(r) => `/console/catalogue/products/${r.productId}`}
           defaultSort={{ key: 'value', dir: 'desc' }}
           urlState={false}
           toolbar={false}

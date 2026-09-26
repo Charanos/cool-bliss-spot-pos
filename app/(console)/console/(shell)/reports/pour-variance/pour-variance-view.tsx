@@ -1,10 +1,11 @@
 'use client';
 
 import { formatQty } from '@bliss/shared/format';
-import { type Cents, formatDecimal, isPositive } from '@bliss/shared/money';
+import { type Cents, formatDecimal, formatKes, isPositive } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
-import { IconAlertTriangle, IconBottle, IconCheck, IconDroplet } from '@tabler/icons-react';
+import { Callout } from '@bliss/ui/components/console/section';
+import { IconAlertTriangle, IconBottle, IconCheck, IconDroplet, IconGlassFull } from '@tabler/icons-react';
 import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
 import type { PourVarianceRow } from '@/modules/reporting/service';
@@ -16,6 +17,7 @@ import type { PourVarianceRow } from '@/modules/reporting/service';
 export function PourVarianceView({
   period,
   rows,
+  products,
   lost,
   outside,
   worst,
@@ -23,6 +25,8 @@ export function PourVarianceView({
 }: {
   period: string;
   rows: PourVarianceRow[];
+  /** Product for each variant, for the row link. */
+  products: Record<string, string>;
   lost: Cents;
   outside: number;
   worst: { name: string; ml: number } | null;
@@ -75,6 +79,17 @@ export function PourVarianceView({
   return (
     <div className="flex flex-col gap-32">
       <p className="measure text-ui text-ink-muted">Between the last two full counts of the bar shelf, {period}: what sold serves say should have gone, against what the counts say went.</p>
+      {outside > 0 ? (
+        <Callout
+          size="hero"
+          tone="stop"
+          icon={<IconGlassFull size={22} stroke={1.5} />}
+          title={`${outside} ${outside === 1 ? 'product poured' : 'products poured'} outside tolerance`}
+          aside={canSeeCost && isPositive(lost) ? <span className="font-mono tabular text-num-lg">{formatKes(lost, { decimals: 'whole' })}</span> : undefined}
+        >
+          {worst ? `${worst.name} is furthest out, ${Math.abs(worst.ml).toLocaleString('en-KE')}ml ${worst.ml > 0 ? 'more out than sold' : 'less out than sold'}. ` : ''}Check the measures, then the count.
+        </Callout>
+      ) : null}
       <MetricGrid columns={canSeeCost ? 4 : 3}>
         {canSeeCost ? <Metric label="Lost at cost" icon={IconDroplet} tone={isPositive(lost) ? 'attention' : 'default'} value={<Money value={lost} size="num-kpi" decimals="whole" />} detail="More out than sold, at average cost" /> : null}
         <Metric label="Outside tolerance" icon={IconAlertTriangle} tone={outside > 0 ? 'stop' : 'poured'} value={<CountUp value={outside} />} detail={`Of ${rows.length} products poured by the serve`} />
@@ -93,6 +108,7 @@ export function PourVarianceView({
         rows={rows}
         columns={columns}
         rowKey={(r) => r.variantId}
+        rowHref={(r) => (products[r.variantId] ? `/console/catalogue/products/${products[r.variantId]}` : '/console/inventory/stock')}
         defaultSort={{ key: canSeeCost ? 'value' : 'pct', dir: 'desc' }}
         filters={[{ kind: 'toggle', key: 'outside', label: 'Outside tolerance only', test: (r) => r.outside }]}
         rowTone={(r) => (r.outside ? 'attention' : 'default')}
