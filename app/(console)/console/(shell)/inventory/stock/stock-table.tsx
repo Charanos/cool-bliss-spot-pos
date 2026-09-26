@@ -44,7 +44,7 @@ export function StockTable({
     {
       key: 'product',
       header: 'Product',
-      width: 'minmax(240px,2fr)',
+      width: 'minmax(220px,2fr)',
       fixed: true,
       sortValue: (r) => r.variant,
       csv: (r) => r.variant,

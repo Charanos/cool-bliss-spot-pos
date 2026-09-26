@@ -149,6 +149,10 @@ export function DataTable<Row>({
   const hidden = new Set((read('hide') ?? '').split(',').filter(Boolean));
   const visibleColumns = columns.filter((c) => !c.exportOnly && (c.fixed || !hidden.has(c.key)));
   const template = [...visibleColumns.map((c) => c.width), rowActions ? '48px' : null].filter(Boolean).join(' ');
+  // The table fills its card, and scrolls sideways only when the columns' minimums no longer fit.
+  // (Sizing it to max-content instead would let one long cell push every column wider than the card.)
+  const tracks = [...visibleColumns.map((c) => c.width), ...(rowActions ? ['48px'] : [])];
+  const minWidth = tracks.reduce((n, w) => n + Number(/(\d+(?:\.\d+)?)px/.exec(w)?.[1] ?? 0), 0) + 16 * Math.max(0, tracks.length - 1) + 40;
 
   const query = read('q') ?? '';
   const sortParam = read('sort');
@@ -388,7 +392,7 @@ export function DataTable<Row>({
       ) : (
         <div className={cx('min-w-0', variant === 'card' && 'overflow-hidden card-surface')}>
           <div className="scroll-x">
-            <div role="table" aria-label={caption} aria-rowcount={filtered.length + 1} className="w-max min-w-full">
+            <div role="table" aria-label={caption} aria-rowcount={filtered.length + 1} className="w-full" style={{ minWidth }}>
               <div role="rowgroup">
                 <div role="row" aria-rowindex={1} style={{ gridTemplateColumns: template }} className={cx('grid min-h-row-compact items-center gap-16 border-b border-edge', variant === 'card' ? 'card-band px-20' : 'px-20')}>
                   {visibleColumns.map((c) => {

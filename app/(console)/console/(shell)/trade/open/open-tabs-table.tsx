@@ -69,17 +69,17 @@ export function OpenTabsTable({
     {
       key: 'table',
       header: 'Table',
-      width: 'minmax(180px,1.4fr)',
+      width: 'minmax(160px,1.4fr)',
       fixed: true,
       sortValue: (r) => r.table,
       csv: (r) => r.table,
       cell: (r) => <StackCell primary={title(r)} secondary={r.zone} />,
     },
-    { key: 'waiter', header: 'Waiter', width: '120px', sortValue: (r) => r.waiter, csv: (r) => r.waiter, cell: (r) => <span className="text-ui text-ink">{r.waiter}</span> },
+    { key: 'waiter', header: 'Waiter', width: '112px', sortValue: (r) => r.waiter, csv: (r) => r.waiter, cell: (r) => <span className="text-ui text-ink">{r.waiter}</span> },
     {
       key: 'opened',
       header: 'Open for',
-      width: '110px',
+      width: '104px',
       align: 'right',
       sortValue: (r) => r.openedAt,
       csv: (r) => new Date(r.openedAt).toISOString(),
@@ -93,7 +93,7 @@ export function OpenTabsTable({
     {
       key: 'seats',
       header: 'Seats',
-      width: 'minmax(140px,1fr)',
+      width: 'minmax(120px,1fr)',
       sortValue: (r) => r.guests,
       csv: (r) => r.guests,
       cell: (r) => (r.seats.length > 0 ? <SeatChipStack seats={r.seats} size="dense" max={8} overlapping /> : <span className="text-body-sm text-ink-subtle">One seat</span>),
@@ -101,7 +101,7 @@ export function OpenTabsTable({
     {
       key: 'lines',
       header: 'Lines',
-      width: '96px',
+      width: '88px',
       align: 'right',
       sortValue: (r) => r.lines,
       csv: (r) => r.lines,
@@ -115,7 +115,7 @@ export function OpenTabsTable({
     {
       key: 'last',
       header: 'Last order',
-      width: '100px',
+      width: '88px',
       align: 'right',
       sortValue: (r) => r.lastFiredAt,
       csv: (r) => (r.lastFiredAt ? new Date(r.lastFiredAt).toISOString() : ''),
@@ -124,12 +124,12 @@ export function OpenTabsTable({
     {
       key: 'state',
       header: 'State',
-      width: '120px',
+      width: '112px',
       sortValue: (r) => (pastClose(r) ? 0 : r.partSettled ? 1 : 2),
       csv: (r) => (pastClose(r) ? 'Past close' : r.partSettled ? 'Part settled' : 'Open'),
       cell: state,
     },
-    { key: 'total', header: 'Total', width: '130px', align: 'right', sortValue: (r) => r.total, csv: (r) => formatDecimal(r.total), cell: (r) => <Money value={r.total} size="num-md" /> },
+    { key: 'total', header: 'Total', width: '120px', align: 'right', sortValue: (r) => r.total, csv: (r) => formatDecimal(r.total), cell: (r) => <Money value={r.total} size="num-md" /> },
   ];
 
   const total = sum(rows.map((r) => r.total));

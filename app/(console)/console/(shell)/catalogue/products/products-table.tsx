@@ -3,11 +3,11 @@
 import type { CategoryColourToken } from '@bliss/shared/domain';
 import { type Cents, formatDecimal } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
-import { Metric } from '@bliss/ui/components/console/metric';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
-import { categoryEdgeClass } from '@bliss/ui/lib/seat';
 import { IconBottle, IconBuildingWarehouse, IconCategory, IconCheck } from '@tabler/icons-react';
+import { ProductThumb } from '../../_components/product-thumb';
 
 export interface ProductRow {
   id: string;
@@ -29,6 +29,7 @@ export interface ProductRow {
   status: 'active' | 'archived';
 }
 
+/** Everything on the menu: how it is sold, from what price, and how its stock is watched. */
 export function ProductsTable({ rows, categories }: { rows: ProductRow[]; categories: { value: string; label: string }[] }) {
   const activeCount = rows.filter((r) => r.status === 'active').length;
   const archivedCount = rows.filter((r) => r.status === 'archived').length;
@@ -38,20 +39,14 @@ export function ProductsTable({ rows, categories }: { rows: ProductRow[]; catego
     {
       key: 'name',
       header: 'Product',
-      width: 'minmax(240px,2fr)',
+      width: 'minmax(220px,2fr)',
       fixed: true,
       sortValue: (r) => r.name,
       csv: (r) => r.name,
       cell: (r) => (
         <span className="flex min-w-0 items-center gap-12">
-          <span className="relative size-[36px] shrink-0 overflow-hidden rounded-sm bg-sunken">
-            {r.imageKey ? (
-              // eslint-disable-next-line @next/next/no-img-element -- a 36px catalogue thumbnail from the asset store
-              <img src={`https://images.unsplash.com/photo-${r.imageKey}?auto=format&fit=crop&w=72&h=72&q=60`} alt="" className="size-full object-cover" loading="lazy" />
-            ) : null}
-            <span aria-hidden="true" className={`absolute inset-y-0 left-0 w-[3px] ${categoryEdgeClass(r.colour)}`} />
-          </span>
-          <StackCell primary={r.name} secondary={`${r.category} · ${r.sku}`} />
+          <ProductThumb name={r.name} imageKey={r.imageKey} colour={r.colour} />
+          <StackCell primary={r.name} secondary={`${r.category}, ${r.sku}`} />
         </span>
       ),
     },
@@ -59,63 +54,40 @@ export function ProductsTable({ rows, categories }: { rows: ProductRow[]; catego
     {
       key: 'serves',
       header: 'Sold as',
-      width: 'minmax(160px,1.4fr)',
+      width: 'minmax(140px,1.2fr)',
       csv: (r) => r.serves.join('; '),
-      cell: (r) => <span className="text-body text-ink-muted" title={r.serves.join(', ')}>{r.serves.join(', ')}</span>,
+      cell: (r) => <span className="truncate text-body-sm text-ink-muted" title={r.serves.join(', ')}>{r.serves.join(', ')}</span>,
     },
-    { key: 'container', header: 'Bottle', width: '80px', align: 'right', sortValue: (r) => r.container, csv: (r) => r.container ?? '', cell: (r) => <NumCell tone="muted">{r.container ? `${r.container}ml` : '··'}</NumCell> },
-    { key: 'price', header: 'From', width: '100px', align: 'right', sortValue: (r) => r.fromPrice, csv: (r) => (r.fromPrice === null ? '' : formatDecimal(r.fromPrice)), cell: (r) => (r.fromPrice === null ? <NumCell tone="muted">··</NumCell> : <Money value={r.fromPrice} currency={false} decimals="whole" />) },
+    { key: 'container', header: 'Bottle', width: '80px', align: 'right', sortValue: (r) => r.container, csv: (r) => r.container ?? '', cell: (r) => <NumCell tone="muted">{r.container ? `${r.container}ml` : 'None'}</NumCell> },
+    { key: 'price', header: 'From', width: '100px', align: 'right', sortValue: (r) => r.fromPrice, csv: (r) => (r.fromPrice === null ? '' : formatDecimal(r.fromPrice)), cell: (r) => (r.fromPrice === null ? <NumCell tone="muted">No price</NumCell> : <Money value={r.fromPrice} currency={false} size="num-md" decimals="whole" />) },
     {
       key: 'threshold',
       header: 'Low at',
-      width: '90px',
+      width: '96px',
       align: 'right',
       sortValue: (r) => r.effectiveThreshold,
       csv: (r) => r.effectiveThreshold,
-      cell: (r) => (r.tracked ? <span title={r.thresholdIsDefault ? 'Outlet default' : 'Set for this product'}><NumCell tone={r.thresholdIsDefault ? 'muted' : 'default'}>{r.effectiveThreshold}</NumCell></span> : <NumCell tone="muted">··</NumCell>),
+      cell: (r) => (r.tracked ? <span title={r.thresholdIsDefault ? 'Outlet default' : 'Set for this product'}><NumCell tone={r.thresholdIsDefault ? 'muted' : 'default'}>{r.effectiveThreshold}</NumCell></span> : <NumCell tone="muted">None</NumCell>),
     },
-    { key: 'supplier', header: 'Supplier', width: 'minmax(140px,1fr)', sortValue: (r) => r.supplier, csv: (r) => r.supplier ?? '', cell: (r) => <span className="text-body text-ink-muted">{r.supplier ?? 'None'}</span> },
-    { key: 'status', header: 'State', width: '100px', sortValue: (r) => r.status, csv: (r) => r.status, cell: (r) => <StatusChip status={r.status === 'active' ? 'active' : 'retired'} label={r.status === 'active' ? 'On sale' : 'Archived'} /> },
+    { key: 'supplier', header: 'Supplier', width: 'minmax(120px,1fr)', sortValue: (r) => r.supplier, csv: (r) => r.supplier ?? '', cell: (r) => <span className="truncate text-ui text-ink-muted">{r.supplier ?? 'None set'}</span> },
+    { key: 'status', header: 'State', width: '112px', sortValue: (r) => r.status, csv: (r) => r.status, cell: (r) => <StatusChip status={r.status === 'active' ? 'active' : 'retired'} label={r.status === 'active' ? 'On sale' : 'Archived'} /> },
   ];
 
   return (
-    <div className="flex flex-col gap-24">
-      {/* Executive Catalogue Metrics */}
-      <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
-        <Metric
-          label="Catalogued Products"
-          value={rows.length}
-          detail={`${activeCount} on sale · ${archivedCount} archived`}
-          icon={IconBottle}
-          tone="default"
-        />
-        <Metric
-          label="Active on Sale"
-          value={activeCount}
-          detail="Enabled across POS fleet"
-          icon={IconCheck}
-          tone="poured"
-        />
-        <Metric
-          label="Stock Tracked"
-          value={trackedCount}
-          detail="Automatic inventory deduct"
-          icon={IconBuildingWarehouse}
-          tone="default"
-        />
-        <Metric
-          label="Active Categories"
-          value={categoryCount}
-          detail="Assigned drink families"
-          icon={IconCategory}
-          tone="default"
-        />
-      </div>
+    <div className="flex flex-col gap-32">
+      <MetricGrid>
+        <Metric label="Products" icon={IconBottle} value={<CountUp value={rows.length} />} detail={archivedCount > 0 ? `${archivedCount} archived` : 'None archived'} />
+        <Metric label="On sale" icon={IconCheck} tone="poured" value={<CountUp value={activeCount} delayMs={60} />} detail="On the floor and at the counter" />
+        <Metric label="Stock tracked" icon={IconBuildingWarehouse} value={<CountUp value={trackedCount} delayMs={120} />} detail="Counted, and warned about when low" />
+        <Metric label="Categories" icon={IconCategory} href="/console/catalogue/categories" value={<CountUp value={categoryCount} delayMs={180} />} detail="The floor's tabs" />
+      </MetricGrid>
 
       <DataTable
         id="catalogue-products"
         caption="Products"
+        noun={['product', 'products']}
         rows={rows}
+        rowTone={(r) => (r.status === 'archived' ? 'muted' : 'default')}
         columns={columns}
         rowKey={(r) => r.id}
         rowHref={(r) => `/console/catalogue/products/${r.id}`}
@@ -126,7 +98,8 @@ export function ProductsTable({ rows, categories }: { rows: ProductRow[]; catego
           { kind: 'toggle', key: 'own-threshold', label: 'Own low threshold', test: (r) => !r.thresholdIsDefault },
         ]}
         exportName="products"
-        empty={{ title: 'Your catalogue is empty', body: 'Import a CSV, or add your first product by hand.' }}
+        empty={{ title: 'No products yet', body: 'Products appear here once they are in the catalogue.' }}
+        emptyFiltered={{ title: 'No products match', body: 'Clear the category, the toggle or the search to see every product.' }}
       />
     </div>
   );
