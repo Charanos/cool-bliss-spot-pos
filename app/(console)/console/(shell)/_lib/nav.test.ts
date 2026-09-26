@@ -34,8 +34,8 @@ describe('the nav manifest', () => {
 
   it('names every list page on disk, except the ones that only redirect or create', () => {
     const named = new Set(WORKSPACES.flatMap((w) => [w.href, ...w.pages.map((p) => p.href)]));
-    // Record and create pages, and old addresses kept as redirects, are reached from a list, not the rail.
-    const unlisted = listPages(SHELL).filter((href) => !named.has(href) && !/\/(new|dynamics)$/.test(href));
+    // Record and create pages, old addresses kept as redirects, and the development gallery are not in the rail.
+    const unlisted = listPages(SHELL).filter((href) => !named.has(href) && !/\/(new|dynamics|kit)$/.test(href));
     expect(unlisted).toEqual([]);
   });
 

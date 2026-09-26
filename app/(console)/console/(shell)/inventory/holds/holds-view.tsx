@@ -50,7 +50,7 @@ export function HoldsView({ active, released, holdable, timezone }: { active: Ac
       csv: (r) => formatDateTime(r.placedAt, timezone),
       cell: (r) => <StackCell primary={<span className="font-mono tabular text-num-md">{formatDateTime(r.placedAt, timezone)}</span>} secondary={formatAgo(now - r.placedAt)} />,
     },
-    { key: 'reason', header: 'Reason', width: 'minmax(260px,2.4fr)', wrap: true, csv: (r) => r.reason, cell: (r) => <span className="text-body-sm text-ink">{r.reason}</span> },
+    { key: 'reason', header: 'Reason', width: 'minmax(220px,2.4fr)', wrap: true, csv: (r) => r.reason, cell: (r) => <span className="text-body-sm text-ink">{r.reason}</span> },
     { key: 'back', header: 'Expected back', width: '130px', sortValue: (r) => r.expectedBack, csv: (r) => r.expectedBack ?? '', cell: (r) => <span className="text-body-sm text-ink-muted">{r.expectedBack ? formatIsoDate(r.expectedBack) : 'Not given'}</span> },
     {
       key: 'action',

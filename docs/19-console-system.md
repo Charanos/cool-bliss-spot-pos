@@ -81,8 +81,8 @@ brackets (`text-[13px]`, `shadow-[...]`, `rounded-[12px]`, `px-[6px]`) is refuse
 | Primitive | Use |
 |---|---|
 | `console/card`: `Card`, `CardHeader`, `CardBody`, `CardStats`, `Stat`, `CardFooter`, `IconTile` | every Card-family surface |
-| `console/metric`: `Metric`, `MetricGrid`, `CountUp` | a headline figure; a row of them |
-| `console/section`: `Section`, `SectionHeader`, `Overline`, `Separator`, `KeyValueList`, `MetaRow`, `SummaryStrip`, `LedgerList`, `LedgerItem`, `DetailHeader` | page composition |
+| `console/metric`: `Metric`, `MetricGrid`, `CountUp` | a headline figure; a row of them. `Metric` renders on the server too, so a server page may pass it an icon |
+| `console/section`: `Section`, `SectionHeader`, `Overline`, `Separator`, `KeyValueList`, `MetaRow`, `SummaryStrip`, `LedgerList`, `LedgerItem`, `DetailHeader`, `Callout`, `Totals` | page composition; a `Callout` says one thing that needs a person, `Totals` ends a bill, an order or a delivery |
 | `console/data-table`: `DataTable`, `NumCell`, `StackCell` | every table; four states, URL state, export |
 | `console/toolbar`: `Toolbar`, `SearchInput`, `ToggleChip`, `ResultCount` | the strip above a table or report |
 | `console/filter-select`: `FilterSelect` | a filter, as a real listbox |
@@ -94,6 +94,8 @@ brackets (`text-[13px]`, `shadow-[...]`, `rounded-[12px]`, `px-[6px]`) is refuse
 | `status`: `StatusChip`, `ToneChip`, `Dot`; `badge`: `Badge` | states and labels, in one set of tones |
 | `money`: `Money`, `AnimatedMoney` | every amount |
 | `choice`: `Segmented`, `FilterChips` | radio groups with arrow keys |
+
+Console-local parts: `ProductThumb` (a catalogue photograph or its initial, with the category edge) and `StaffAvatar` (an uploaded photo or initials, never a stock photograph). Every primitive is on one page at `/console/kit` when development data is on.
 
 Console server actions go through `runAction` (`app/(console)/console/(shell)/_lib/action.ts`): the
 session actor, a zod schema for every field, `withWrite`, safe error messages, revalidation.

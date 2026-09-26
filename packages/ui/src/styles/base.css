@@ -687,6 +687,9 @@
 
 /* A scroll container for a wide table: scrolls sideways, never clips, keeps its own scrollbar thin. */
 @utility scroll-x {
+  /* A containing block, so an absolutely placed child (a screen-reader label) scrolls with it
+     instead of widening the page. */
+  position: relative;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
