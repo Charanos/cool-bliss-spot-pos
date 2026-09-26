@@ -54,6 +54,39 @@ There is no WebKit in CI, so the device itself is the last check: Settings, This
 Floor or the Counter lists the engine, the screen and a pass or fail for each feature Bliss uses,
 and sends the same to the Console's device record with each pull.
 
+### Checking on the real devices
+
+CI has no WebKit and no weak panel, so each deploy is confirmed once on the devices themselves.
+
+**The iPad mini 4 (the Floor)**
+
+1. Open the Floor in Safari, add it to the Home Screen, and open it from there.
+2. Settings, This device: every feature row passes, and the engine reads Safari 15. The suggested
+   profile is Lite; keep it. Turn on Keep the screen on, or set Auto-Lock to Never in iPadOS.
+3. Sign in, open a tab, add two drinks to two seats, send. Turn the iPad on its side and back: the
+   grid, the seats and the dock stay whole in both, and nothing needs a pinch or a double tap.
+4. The ticket sheet opens from the dock and closes with a tap on the dimmed page.
+5. In Control Centre, turn on Airplane Mode, send an order, turn it off: the order reaches the
+   Counter once.
+
+**The counter laptop**
+
+1. Open the Counter in Chrome or Edge. Settings, This device: every row passes; the suggested
+   profile is Clarity; keep it.
+2. Status colours (new, poured, low, stopped) read apart from across the counter, and the grey
+   text is legible. If any of it still washes out, raise the laptop's own brightness first, then
+   tell us which screen and which colour.
+3. Press `?` for the keys; pour with `P`; settle a tab with a typed amount and Enter.
+
+**The Console, any laptop**
+
+1. Settings, Devices: each station shows the report it last sent, with its profile.
+2. Trade, Bills, and one report on a 1366 screen: no table scrolls sideways; the columns that do
+   not fit sit under the row's name.
+
+Anything that fails: a screenshot of Settings, This device, and of the screen itself, is enough to
+find it. On the iPad, Safari's Web Inspector from a Mac shows the console.
+
 ## 2. Rules that hold on every surface
 
 1. **The chrome is in the flow, never over it.** The Floor's dock is the last child of the shell's
