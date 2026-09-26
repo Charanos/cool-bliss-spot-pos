@@ -167,7 +167,7 @@ export function needsAttention(): AttentionItem[] {
   const outlet = identity.outlet();
   const { current, lastNight } = clock();
 
-  // First principle: Time is: open tab ≠ closed sale. Tabs sleeping past close are unclosed sales — alert, not a report.
+  // First principle: Time is: open tab ≠ closed sale. Tabs open past close are unsettled sales: an alert, not a report.
   const openTabs = trade.openTabs();
   const sleepingTabs = openTabs.filter((t) => t.tab.businessDate < current);
   if (sleepingTabs.length > 0) {
@@ -175,9 +175,9 @@ export function needsAttention(): AttentionItem[] {
     items.push({
       rank: -1,
       tone: 'stop',
-      text: `${plural(sleepingTabs.length, 'sleeping tab')} from earlier shifts unclosed (${formatKes(sleepingExposure, { decimals: 'whole' })} unclosed sales risk)`,
+      text: `${plural(sleepingTabs.length, 'tab')} still open from an earlier business day, ${formatKes(sleepingExposure, { decimals: 'whole' })} not settled`,
       href: '/console/trade/open',
-      cta: 'Audit & settle',
+      cta: 'See the tabs',
     });
   }
 
@@ -213,7 +213,7 @@ export function needsAttention(): AttentionItem[] {
   }
 
   const reorder = procurement.reorderSuggestions().length;
-  if (reorder > 0) items.push({ rank: 4, tone: 'info', text: `${plural(reorder, 'line')} below reorder point`, href: '/console/purchasing/reorder', cta: 'See suggestions' });
+  if (reorder > 0) items.push({ rank: 4, tone: 'info', text: `${plural(reorder, 'line')} below reorder point`, href: '/console/purchasing/reorder', cta: 'Reorder' });
 
   const variance = latestCommittedVariance();
   const worst = variance?.rows.find((r) => r.outside && isNegative(r.value));

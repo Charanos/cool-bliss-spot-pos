@@ -246,7 +246,7 @@ export function DataTable<Row>({
         style={{ gridTemplateColumns: template, ...(virtual ? { height: rowHeight } : { minHeight: rowHeight }), ...style }}
         className={cx(
           'group relative grid items-center gap-16 border-b border-rule last:border-b-0 transition-hover',
-          variant === 'card' ? 'px-20' : null,
+          'px-20',
           href && 'hover:bg-rail-hover focus-within:bg-rail-hover',
           tone === 'muted' && 'text-ink-subtle',
           // A mark, not a fill: a 2px edge on the rows that need a second look.
@@ -390,7 +390,7 @@ export function DataTable<Row>({
           <div className="scroll-x">
             <div role="table" aria-label={caption} aria-rowcount={filtered.length + 1} className="w-max min-w-full">
               <div role="rowgroup">
-                <div role="row" aria-rowindex={1} style={{ gridTemplateColumns: template }} className={cx('grid min-h-row-compact items-center gap-16 border-b border-edge', variant === 'card' ? 'card-band px-20' : null)}>
+                <div role="row" aria-rowindex={1} style={{ gridTemplateColumns: template }} className={cx('grid min-h-row-compact items-center gap-16 border-b border-edge', variant === 'card' ? 'card-band px-20' : 'px-20')}>
                   {visibleColumns.map((c) => {
                     const sorted = sortKey === c.key;
                     return (
