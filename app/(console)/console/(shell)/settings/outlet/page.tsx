@@ -1,128 +1,94 @@
-import { formatBps } from '@bliss/shared/format';
+import { formatBps, plural } from '@bliss/shared/format';
 import { formatKes } from '@bliss/shared/money';
-import { ConsoleBentoCard } from '@bliss/ui/components/console/metric';
-import {
-  IconBuildingStore,
-  IconCoins,
-  IconLayoutDashboard,
-  IconPackage,
-} from '@tabler/icons-react';
+import { Card, CardBody, CardHeader } from '@bliss/ui/components/console/card';
+import { KeyValueList } from '@bliss/ui/components/console/section';
+import { IconBuildingStore, IconCoins, IconLayoutDashboard, IconPackage } from '@tabler/icons-react';
 import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import * as trade from '@/modules/trade/service';
+import { TabIntro } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Outlet' };
 
 const LOCATION_KIND: Record<string, string> = { store: 'Store room', service: 'Behind the bar', retail: 'Bottle counter' };
 
-const icon = (Glyph: typeof IconBuildingStore) => <Glyph size={18} stroke={1.5} />;
-
-/**
- * Outlet profile and operating parameters.
- * Polished with Bento cards, ambient glow rules, and clear typography.
- */
+/** The outlet as Bliss knows it: who it is, when its day ends, how it charges, where its stock sits. */
 export default function OutletPage() {
   const outlet = identity.outlet();
   const zones = trade.zones();
   const tables = trade.tables();
 
   return (
-    <div className="grid grid-cols-1 gap-20 desktop:grid-cols-2">
-      <ConsoleBentoCard
-        icon={icon(IconBuildingStore)}
-        title="Outlet profile"
-        subtitle="Venue legal identity, cutover, and operating parameters"
-        tone="default"
-      >
-        <dl className="flex flex-col">
-          <Row label="Name">{outlet.name}</Row>
-          <Row label="Registered as">{outlet.legalName}</Row>
-          <Row label="Address">{outlet.address}</Row>
-          <Row label="Time zone">{outlet.timezone}</Row>
-          <Row label="Business day cutover" mono>
-            {outlet.businessDayCutover}
-          </Row>
-          <Row label="">
-            <span className="text-body-sm text-ink-subtle">
-              A sale at 01:47 belongs to the night before. Every report and day close keys on the business day.
-            </span>
-          </Row>
-        </dl>
-      </ConsoleBentoCard>
+    <>
+      <TabIntro>Name, tax details and when the business day ends. These are set when the outlet is set up.</TabIntro>
+      <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-2">
+        <Card aria-labelledby="outlet-profile">
+          <CardHeader band level="h2" titleId="outlet-profile" icon={IconBuildingStore} title="The outlet" />
+          <CardBody className="pt-4">
+            <KeyValueList
+              layout="inline"
+              items={[
+                { label: 'Name', value: outlet.name },
+                { label: 'Registered as', value: outlet.legalName },
+                { label: 'Address', value: outlet.address },
+                { label: 'Time zone', value: outlet.timezone },
+                { label: 'Business day ends', value: outlet.businessDayCutover, mono: true, hint: 'A sale at 01:47 belongs to the night before. Every report and day close follows the business day.' },
+              ]}
+            />
+          </CardBody>
+        </Card>
 
-      <ConsoleBentoCard
-        icon={icon(IconCoins)}
-        title="Fiscal & currency"
-        subtitle="Tax registration, currency base, and cash variance threshold"
-        tone="default"
-      >
-        <dl className="flex flex-col">
-          <Row label="Currency">Kenyan shilling (KES), kept in cents</Row>
-          <Row label="VAT rate" mono>
-            {formatBps(outlet.taxRateBps)}
-          </Row>
-          <Row label="Prices">{outlet.pricesTaxInclusive ? 'Include VAT' : 'Exclude VAT'}</Row>
-          <Row label="Rounding">Once, at tender, half up to the nearest shilling</Row>
-          <Row label="Drawer variance allowed" mono>
-            {formatKes(outlet.drawerVarianceThresholdCents, { decimals: 'whole' })}
-          </Row>
-          <Row label="">
-            <span className="text-body-sm text-ink-subtle">
-              Tenders are recorded as the cashier saw them. Bliss makes no call to external payment providers.
-            </span>
-          </Row>
-        </dl>
-      </ConsoleBentoCard>
+        <Card aria-labelledby="outlet-money">
+          <CardHeader band level="h2" titleId="outlet-money" icon={IconCoins} title="Tax and money" />
+          <CardBody className="pt-4">
+            <KeyValueList
+              layout="inline"
+              items={[
+                { label: 'Currency', value: 'Kenyan shilling (KES), kept in cents' },
+                { label: 'VAT', value: formatBps(outlet.taxRateBps), mono: true },
+                { label: 'Prices', value: outlet.pricesTaxInclusive ? 'Include VAT' : 'Exclude VAT' },
+                { label: 'Rounding', value: 'Once, when a bill is settled, half up to the nearest shilling' },
+                {
+                  label: 'Drawer allowed out by',
+                  value: formatKes(outlet.drawerVarianceThresholdCents, { decimals: 'whole' }),
+                  mono: true,
+                  hint: 'Tenders are recorded as the cashier saw them. Bliss does not contact any payment provider.',
+                },
+              ]}
+            />
+          </CardBody>
+        </Card>
 
-      <ConsoleBentoCard
-        icon={icon(IconPackage)}
-        title="Inventory locations"
-        subtitle="Stock tracking points, default delivery destination, and service bar"
-        tone="default"
-      >
-        <dl className="flex flex-col">
-          <Row label="Low stock default" mono>
-            {outlet.lowStockDefault} units
-          </Row>
-          {inventory.locations().map((l) => (
-            <Row key={l.id} label={l.name}>
-              {LOCATION_KIND[l.kind] ?? l.kind}
-              {l.isDefaultReceipt ? ', deliveries arrive here' : ''}
-              {l.isDefaultSale ? ', sales draw from here' : ''}
-            </Row>
-          ))}
-        </dl>
-      </ConsoleBentoCard>
+        <Card aria-labelledby="outlet-stock">
+          <CardHeader band level="h2" titleId="outlet-stock" icon={IconPackage} title="Stock locations" />
+          <CardBody className="pt-4">
+            <KeyValueList
+              layout="inline"
+              items={[
+                { label: 'Low stock, unless set', value: plural(outlet.lowStockDefault, 'unit'), mono: true },
+                ...inventory.locations().map((l) => ({
+                  label: l.name,
+                  value: [LOCATION_KIND[l.kind] ?? l.kind, l.isDefaultReceipt ? 'deliveries arrive here' : null, l.isDefaultSale ? 'sales draw from here' : null].filter(Boolean).join(', '),
+                })),
+              ]}
+            />
+          </CardBody>
+        </Card>
 
-      <ConsoleBentoCard
-        icon={icon(IconLayoutDashboard)}
-        title="Floor zones & capacity"
-        subtitle="Configured dining areas, tables, and total seats"
-        tone="default"
-      >
-        <dl className="flex flex-col">
-          {zones.map((z) => {
-            const own = tables.filter((t) => t.zoneId === z.id);
-            return (
-              <Row key={z.id} label={z.name}>
-                <span className="font-mono tabular text-num">{own.map((t) => t.label).join(' ')}</span>
-                <span className="block text-body-sm text-ink-subtle">{own.reduce((a, t) => a + t.seats, 0)} seats</span>
-              </Row>
-            );
-          })}
-        </dl>
-      </ConsoleBentoCard>
-    </div>
-  );
-}
-
-function Row({ label, children, mono }: { label: string; children: ReactNode; mono?: boolean }) {
-  return (
-    <div className="grid grid-cols-[180px_minmax(0,1fr)] gap-16 border-b border-rule/60 py-10 last:border-b-0">
-      <dt className="text-body-sm font-medium text-ink-subtle">{label}</dt>
-      <dd className={mono ? 'font-mono tabular text-num-sm text-ink' : 'text-body-sm text-ink'}>{children}</dd>
-    </div>
+        <Card aria-labelledby="outlet-floor">
+          <CardHeader band level="h2" titleId="outlet-floor" icon={IconLayoutDashboard} title="The floor" subtitle={`${plural(tables.length, 'table')}, ${plural(tables.reduce((n, t) => n + t.seats, 0), 'seat')}`} />
+          <CardBody className="pt-4">
+            <KeyValueList
+              layout="inline"
+              items={zones.map((z) => {
+                const own = tables.filter((t) => t.zoneId === z.id);
+                return { label: z.name, value: own.map((t) => t.label).join(', ') || 'No tables', hint: plural(own.reduce((n, t) => n + t.seats, 0), 'seat') };
+              })}
+            />
+          </CardBody>
+        </Card>
+      </div>
+    </>
   );
 }

@@ -33,7 +33,7 @@ const SEVERITY: Record<AuditSeverity, { label: string; tone: 'neutral' | 'low' |
 
 /** Before and after are stored as recorded. Shown as key and value lines rather than raw JSON. */
 function Snapshot({ json }: { json: string | null }) {
-  if (!json) return <p className="text-body text-ink-subtle">Nothing</p>;
+  if (!json) return <p className="text-body-sm text-ink-subtle">Nothing</p>;
   let value: unknown;
   try {
     value = JSON.parse(json);
@@ -53,6 +53,7 @@ function Snapshot({ json }: { json: string | null }) {
   );
 }
 
+/** The audit trail: who did what, when, and why, with the record before and after. Read only. */
 export function AuditTable({
   rows,
   timezone,
@@ -88,7 +89,7 @@ export function AuditTable({
       ),
     },
     { key: 'actor', header: 'Who', width: '120px', sortValue: (r) => r.actor, csv: (r) => r.actor, cell: (r) => <StackCell primary={r.actor} secondary={r.device ?? undefined} /> },
-    { key: 'reason', header: 'Reason given', width: 'minmax(220px,2fr)', wrap: true, csv: (r) => r.reason ?? '', cell: (r) => <span className="text-body text-ink-muted">{r.reason ?? <span className="text-ink-subtle">··</span>}</span> },
+    { key: 'reason', header: 'Reason given', width: 'minmax(220px,2fr)', wrap: true, csv: (r) => r.reason ?? '', cell: (r) => <span className="text-body-sm text-ink-muted">{r.reason ?? <span className="text-ink-subtle">None given</span>}</span> },
     { key: 'before', header: 'Before', width: '0px', exportOnly: true, csv: (r) => r.before ?? '', cell: () => null },
     { key: 'after', header: 'After', width: '0px', exportOnly: true, csv: (r) => r.after ?? '', cell: () => null },
   ];
@@ -98,6 +99,7 @@ export function AuditTable({
       <DataTable
         id="settings-audit"
         caption="Audit trail"
+        noun={['entry', 'entries']}
         rows={rows}
         columns={columns}
         rowKey={(r) => r.id}
@@ -122,6 +124,7 @@ export function AuditTable({
         exportName="audit"
         exportDate={exportDate}
         empty={{ title: 'Nothing recorded in this range', body: 'Every price change, void, write-off, hold and permission change is recorded here.' }}
+        emptyFiltered={{ title: 'No entries match', body: 'Clear the kind, person, severity or search to see every entry in the range.' }}
       />
       <ConsoleOverlay open={Boolean(open)} onClose={() => setOpen(null)} title={open?.label ?? ''} description={open ? `${open.actor}${open.device ? ` on ${open.device}` : ''}, ${formatDateTime(open.at, timezone)}` : undefined} width="md" placement="side">
         {open ? (
@@ -129,7 +132,7 @@ export function AuditTable({
             {open.reason ? (
               <div>
                 <h3 className="text-label text-ink-subtle">Reason given</h3>
-                <p className="mt-4 text-body text-ink">{open.reason}</p>
+                <p className="mt-4 text-ui text-ink">{open.reason}</p>
               </div>
             ) : null}
             <div>
@@ -145,7 +148,7 @@ export function AuditTable({
               </div>
             </div>
             <p className="font-mono text-num-sm text-ink-subtle">
-              {open.entityType} · {open.action}
+              {open.entityType}, {open.action}
             </p>
           </div>
         ) : null}

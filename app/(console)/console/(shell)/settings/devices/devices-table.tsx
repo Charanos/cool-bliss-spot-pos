@@ -1,13 +1,12 @@
 'use client';
 
 import type { DeviceStatus } from '@bliss/shared/domain';
-import { formatAgo, formatDate } from '@bliss/shared/format';
+import { formatAgo, formatDate, plural } from '@bliss/shared/format';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
-import { CountUp, Metric } from '@bliss/ui/components/console/metric';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Dot, StatusChip } from '@bliss/ui/components/status';
 import { useHydrated, useNow } from '@bliss/ui/hooks';
 import { IconCheck, IconCloudOff, IconDeviceTablet, IconDeviceTabletOff } from '@tabler/icons-react';
-import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { useState } from 'react';
 import { WithdrawDeviceDialog } from '../../_components/dialogs';
 
@@ -25,6 +24,7 @@ export interface DeviceTableRow {
   revokedReason: string | null;
 }
 
+/** Every registered device: connected or not, who is signed in, and what it holds that is not yet sent. */
 export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, canManage }: { rows: DeviceTableRow[]; now: number; latestVersion: string; timezone: string; canManage: boolean }) {
   const [withdraw, setWithdraw] = useState<{ deviceId: string; label: string } | null>(null);
   const clientNow = useNow(15_000);
@@ -44,8 +44,8 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
             <StatusChip status={r.status === 'lost' ? 'lost' : r.status === 'suspended' ? 'suspended' : 'retired'} label={r.status === 'lost' ? 'Withdrawn' : undefined} />
           </span>
         ) : (
-          <span className="flex flex-col ">
-            <span className="flex items-center gap-8 text-body text-ink">
+          <span className="flex flex-col">
+            <span className="flex items-center gap-8 text-ui text-ink">
               <Dot tone={r.online ? 'poured' : 'info'} />
               {r.online ? 'Online' : 'Offline'}
             </span>
@@ -53,7 +53,7 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
           </span>
         ),
     },
-    { key: 'signedIn', header: 'Signed in', width: '120px', sortValue: (r) => r.signedIn, csv: (r) => r.signedIn ?? '', cell: (r) => <span className="text-body text-ink-muted">{r.signedIn ?? '··'}</span> },
+    { key: 'signedIn', header: 'Signed in', width: '120px', sortValue: (r) => r.signedIn, csv: (r) => r.signedIn ?? '', cell: (r) => <span className="text-ui text-ink-muted">{r.signedIn ?? 'Nobody'}</span> },
     {
       key: 'held',
       header: 'Not yet sent',
@@ -61,7 +61,7 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
       align: 'right',
       sortValue: (r) => r.unsynced,
       csv: (r) => r.unsynced,
-      cell: (r) => (r.unsynced > 0 ? <span className="text-body text-info font-medium">{r.unsynced} held on tablet</span> : <NumCell tone="muted">··</NumCell>),
+      cell: (r) => (r.unsynced > 0 ? <span className="text-body-sm font-medium text-info">{r.unsynced} held</span> : <NumCell tone="muted">None</NumCell>),
     },
     {
       key: 'version',
@@ -70,7 +70,7 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
       sortValue: (r) => r.appVersion,
       csv: (r) => r.appVersion,
       cell: (r) => (
-        <span className="flex flex-col ">
+        <span className="flex flex-col">
           <NumCell tone="muted">{r.appVersion}</NumCell>
           {r.status === 'active' && r.appVersion !== latestVersion ? <span className="text-body-sm text-low">Update waiting</span> : null}
         </span>
@@ -82,62 +82,30 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
   const activeCount = rows.filter((r) => r.status === 'active').length;
   const heldOrdersCount = rows.reduce((n, r) => n + r.unsynced, 0);
   const tabletsCount = rows.filter((r) => r.kind.toLowerCase().includes('tablet')).length;
+  const outdated = rows.filter((r) => r.status === 'active' && r.appVersion !== latestVersion).length;
 
   return (
-    <div className="flex flex-col gap-20">
-      <div className="flex flex-col tablet:flex-row items-start tablet:items-center justify-between gap-16 rounded-xl bg-control/30 border border-hairline/60 p-16 shadow-[0_2px_8px_rgba(0,0,0,0.02)] backdrop-blur-sm">
-        <div className="flex items-center gap-14">
-          <div className="flex size-[36px] items-center justify-center rounded-lg bg-accent/15 text-accent-text shrink-0">
-            <IconDeviceTablet size={20} stroke={ICON_STROKE} aria-hidden="true" />
-          </div>
-          <div>
-            <div className="flex items-center gap-8">
-              <span className="text-body font-semibold text-ink">OFFLINE-FIRST ARCHITECTURE & POWER TOPOLOGY</span>
-              <span className="rounded-full bg-poured-wash border border-poured/30 px-8 py-[1px] text-micro font-bold text-poured uppercase tracking-wider">
-                Resilient Ledger
-              </span>
-            </div>
-            <p className="mt-2 text-body-sm text-ink-muted">
-              Local ledger on device (Dexie IndexedDB), synchronizing seamlessly when 4G/Wi-Fi returns. Power topology: Dedicated UPS on counter till + thermal printer + router. Battery-powered mobile tablets for floor servers.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-16 tablet:grid-cols-2 desktop:grid-cols-4">
+    <div className="flex flex-col gap-32">
+      <MetricGrid>
+        <Metric label="Online" icon={IconDeviceTablet} tone={onlineCount < activeCount ? 'attention' : 'poured'} value={`${onlineCount} of ${activeCount}`} detail="Registered devices connected now" />
         <Metric
-          label="Active fleet"
-          icon={IconDeviceTablet}
-          tone="default"
-          value={<span className="font-mono tabular">{onlineCount} / {activeCount}</span>}
-          detail="Devices currently connected"
-        />
-        <Metric
-          label="Unsynced orders"
+          label="Orders held on a device"
           icon={IconCloudOff}
-          tone={heldOrdersCount > 0 ? 'attention' : 'poured'}
+          tone={heldOrdersCount > 0 ? 'attention' : 'default'}
+          href="/console/settings/sync"
           value={<CountUp value={heldOrdersCount} delayMs={60} />}
-          detail={heldOrdersCount > 0 ? 'Queued locally on offline devices' : 'All devices synchronized'}
+          detail={heldOrdersCount > 0 ? 'They send when the device reconnects' : 'Every device has sent everything'}
         />
-        <Metric
-          label="Floor tablets"
-          icon={IconDeviceTablet}
-          tone="default"
-          value={<CountUp value={tabletsCount} delayMs={120} />}
-          detail="Assigned to table service"
-        />
-        <Metric
-          label="App version"
-          icon={IconCheck}
-          tone="default"
-          value={<span className="font-mono tabular">v{latestVersion}</span>}
-          detail="Production build status"
-        />
-      </div>
+        <Metric label="Floor tablets" icon={IconDeviceTablet} value={<CountUp value={tabletsCount} delayMs={120} />} detail="Used by waiters on the floor" />
+        <Metric label="Latest version" icon={IconCheck} value={latestVersion || 'None'} detail={outdated > 0 ? `${plural(outdated, 'device')} not yet updated` : 'Every device is up to date'} tone={outdated > 0 ? 'attention' : 'default'} />
+      </MetricGrid>
+
+      <p className="measure text-body-sm text-ink-muted">Each tablet keeps working without a connection and sends what it holds when it reconnects. A device that is lost or stolen is withdrawn here, and its PIN sessions end.</p>
 
       <DataTable
         id="settings-devices"
         caption="Registered devices"
+        noun={['device', 'devices']}
         rows={rows}
         columns={columns}
         rowKey={(r) => r.id}

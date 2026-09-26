@@ -241,6 +241,8 @@ function classStrings(source) {
         }
         out.push({ value, index: i });
         i = j;
+        // className="…" is one string: stop there, rather than reading on into the JSX that follows.
+        if (depth === 0 && /=\s*$/.test(start[0])) break;
       } else if (depth === 0 && (ch === ',' || ch === ';' || ch === '\n') && starts.length && source[start.index] === 'c') {
         // A bare cx( argument list ends at its closing paren, handled above.
       }

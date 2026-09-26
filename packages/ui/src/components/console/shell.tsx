@@ -1,10 +1,10 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { type ComponentProps, type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { cx } from '../../lib/cx';
 import { initMotion } from '../../motion/engine';
-import { pageEnter, refreshScrollTriggers, sectionReveal } from '../../motion/console';
+import { pageEnter, refreshScrollTriggers } from '../../motion/console';
 import { LenisProvider } from '../../motion/lenis-provider';
 
 export { RouteTabs, type TabLink } from './tabs';
@@ -37,21 +37,6 @@ export function ConsolePage({ children }: { children: ReactNode }) {
       {children}
     </div>
   );
-}
-
-/** A section that reveals as it scrolls in (section.reveal). Renders a plain section otherwise. */
-export function RevealSection(props: ComponentProps<'section'>) {
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
-    const tween = sectionReveal(el);
-    return () => {
-      tween?.scrollTrigger?.kill();
-      tween?.kill();
-    };
-  }, []);
-  return <section ref={ref} {...props} />;
 }
 
 export interface PageHeaderProps {
