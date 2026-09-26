@@ -1,5 +1,10 @@
-import { TableSkeleton } from '../_components/table-states';
+import { TableSkeleton } from '@bliss/ui/components/console/skeletons';
 
+/** The view in waiting, in its own shape; the workspace header and tabs are already on screen. */
 export default function InventoryLoading() {
-  return <TableSkeleton label="Reading inventory" />;
+  return (
+    <div aria-busy="true" aria-label="Loading inventory" className="flex flex-col gap-24">
+      <TableSkeleton />
+    </div>
+  );
 }

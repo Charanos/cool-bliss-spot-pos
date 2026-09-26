@@ -60,7 +60,6 @@ export default function OverviewPage() {
     <div className="flex flex-col gap-24">
       {/* ── Executive Command Header ────────────────────────────────── */}
       <PageHeader
-        eyebrow="OPERATIONAL INTELLIGENCE · VENUE OVERVIEW"
         title="Executive Overview"
         badge={null}
         description={`Reporting for ${formatWeekday(date)}, ${formatIsoDate(date)} (closing session) · ${headline.tabs} tabs closed · ${headline.seatsServed} guests served.`}

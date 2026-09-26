@@ -632,7 +632,7 @@
  * Capitals over a value, and rail group names. The source string stays sentence case, per docs/08;
  * the capitals are presentation, so a screen reader reads words, not letters.
  */
-@utility overline {
+@utility label-caps {
   font-family: var(--font-sans);
   font-size: var(--text-overline);
   line-height: var(--text-overline--line-height);

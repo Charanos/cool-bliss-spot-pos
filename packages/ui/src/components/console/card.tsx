@@ -140,7 +140,7 @@ export function CardStats({ columns = 2, className, children }: { columns?: 2 | 
 export function Stat({ label, children, tone, className }: { label: ReactNode; children: ReactNode; tone?: Extract<Tone, 'stop' | 'low' | 'poured' | 'accent'>; className?: string }) {
   return (
     <div className={cx('flex min-w-0 flex-col gap-2', className)}>
-      <dt className="overline truncate text-ink-subtle">{label}</dt>
+      <dt className="label-caps truncate text-ink-subtle">{label}</dt>
       <dd
         className={cx(
           'min-w-0 truncate text-ui font-medium tabular',

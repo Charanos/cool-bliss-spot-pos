@@ -57,7 +57,6 @@ export default async function NewGoodsReceivedNotePage(props: { searchParams: Pr
       <div className="mb-12 mt-4">
         <PageHeader 
           title="Receive Goods" 
-          eyebrow="Inventory Intake"
           badge={prefillOrder ? <StatusChip status="open" label={`Against PO #${prefillOrder.poNumber}`} /> : null}
           description="Log intake from suppliers, verify against delivery notes, and record exact batch numbers for FEFO compliance."
         />

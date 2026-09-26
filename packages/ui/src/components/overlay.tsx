@@ -225,7 +225,7 @@ export function Overlay({
               hideTitle && 'sr-only',
             )}
           >
-            {eyebrow ? <p className={cx('mb-8', solid ? 'overline text-ink-subtle' : 'font-mono text-caps text-attention')}>{eyebrow}</p> : null}
+            {eyebrow ? <p className={cx('mb-8', solid ? 'label-caps text-ink-subtle' : 'font-mono text-caps text-attention')}>{eyebrow}</p> : null}
             <div className="flex items-center gap-12">
               {leading ? (
                 <span aria-hidden="true" className="inline-flex shrink-0">

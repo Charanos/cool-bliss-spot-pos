@@ -12,11 +12,13 @@ export const metadata: Metadata = {
 const THEME_COOKIE = 'bliss-console-theme';
 
 /**
- * The Console is its own root layout: light by default, dark available, both first class.
- * docs/06-design-system.md section 4, Theme by surface.
+ * The Console is its own root layout: light by default, dark available, both first class, or the
+ * device's own choice (System). docs/06-design-system.md section 4, Theme by surface. The theme is
+ * set on <html> from the cookie, so the first paint is already in it.
  */
 export default async function ConsoleRootLayout({ children }: { children: ReactNode }) {
-  const theme = (await cookies()).get(THEME_COOKIE)?.value === 'dark' ? 'dark' : 'light';
+  const raw = (await cookies()).get(THEME_COOKIE)?.value;
+  const theme = raw === 'dark' || raw === 'system' ? raw : 'light';
   return (
     <html lang="en-KE" data-theme={theme} data-surface="console" className={fontVariables}>
       <body className="min-h-dvh bg-page text-ink antialiased">{children}</body>

@@ -108,14 +108,14 @@ export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRo
         </div>
 
         <fieldset className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
-          <legend className="mb-8 overline text-ink-subtle">Details</legend>
+          <legend className="mb-8 label-caps text-ink-subtle">Details</legend>
           <TextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Wanjiru" autoComplete="off" required />
           <TextField label="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Jane" helper="What the floor and the bills show." autoComplete="off" required />
           <TextField label="Contact number" type="tel" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="+254 712 345 678" autoComplete="off" />
         </fieldset>
 
         <fieldset className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
-          <legend className="mb-8 overline text-ink-subtle">Access</legend>
+          <legend className="mb-8 label-caps text-ink-subtle">Access</legend>
           <SelectField label="Role" value={roleId} onChange={(e) => setRoleId(e.target.value)} options={roles} required disabled={target?.isSelf} helper={target?.isSelf ? 'Another manager changes your role.' : undefined} />
           <TextField
             label={editing ? 'New PIN' : 'PIN'}

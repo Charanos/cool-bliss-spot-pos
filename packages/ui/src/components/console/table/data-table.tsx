@@ -196,7 +196,6 @@ export function DataTable<Row>({
     if (firstSignature.current === filterSignature) return;
     firstSignature.current = filterSignature;
     tableRowsEnter(Array.from(scrollRef.current?.querySelectorAll('[data-row]') ?? []));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the signature is the trigger
   }, [filterSignature]);
 
   const toggleSort = (key: string) => {

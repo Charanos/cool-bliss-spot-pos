@@ -4,17 +4,7 @@ import { Workspace } from '../_components/workspace';
 
 export default function TradeLayout({ children }: { children: ReactNode }) {
   return (
-    <Workspace
-      eyebrow="OPERATIONS · SERVICE REGISTER"
-      title="Trade"
-      description="Tabs, bills, drawers and shifts. Tenders are what the cashier recorded; Bliss never confirms a payment."
-      tabs={[
-        { href: '/console/trade/open', label: 'Open tabs', count: trade.openTabs().length || undefined },
-        { href: '/console/trade/bills', label: 'Bills' },
-        { href: '/console/trade/drawers', label: 'Drawers' },
-        { href: '/console/trade/shifts', label: 'Shifts' },
-      ]}
-    >
+    <Workspace workspace="trade" counts={{ '/console/trade/open': trade.openTabs().length }}>
       {children}
     </Workspace>
   );

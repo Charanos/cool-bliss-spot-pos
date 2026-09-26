@@ -109,7 +109,7 @@ export function BarChart({
           </div>
           {hovered ? (
             <div role="status" className="pointer-events-none absolute -top-12 right-0 z-popover rounded-md border border-edge bg-card px-12 py-8 shadow-popover">
-              <p className="overline text-ink-subtle">{tooltipLabel(hovered)}</p>
+              <p className="label-caps text-ink-subtle">{tooltipLabel(hovered)}</p>
               <p className="font-mono tabular text-num-md text-ink">{formatKes(hovered.value, { decimals: 'whole' })}</p>
             </div>
           ) : null}

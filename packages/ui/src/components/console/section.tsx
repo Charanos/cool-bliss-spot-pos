@@ -66,7 +66,7 @@ export function SectionHeader({
 
 /** Capitals over a value. Write the words in sentence case; the capitals are presentation. */
 export function Overline({ children, className, as: Tag = 'span' }: { children: ReactNode; className?: string; as?: 'span' | 'p' | 'dt' }) {
-  return <Tag className={cx('overline text-ink-subtle', className)}>{children}</Tag>;
+  return <Tag className={cx('label-caps text-ink-subtle', className)}>{children}</Tag>;
 }
 
 /** A rule between parts of a page, optionally named. One hairline, never a gradient. */
@@ -74,7 +74,7 @@ export function Separator({ label, className }: { label?: ReactNode; className?:
   if (!label) return <hr className={cx('border-0 border-t border-rule', className)} />;
   return (
     <div role="separator" className={cx('flex items-center gap-12', className)}>
-      <span className="overline shrink-0 text-ink-subtle">{label}</span>
+      <span className="label-caps shrink-0 text-ink-subtle">{label}</span>
       <span aria-hidden="true" className="h-px flex-1 bg-rule" />
     </div>
   );
@@ -113,7 +113,7 @@ export function KeyValueList({ items, columns = 1, layout = 'stacked', className
     <dl className={cx('grid gap-x-24 gap-y-16', grid, className)}>
       {items.map((item, i) => (
         <div key={i} className="flex min-w-0 flex-col gap-4">
-          <dt className="overline text-ink-subtle">{item.label}</dt>
+          <dt className="label-caps text-ink-subtle">{item.label}</dt>
           <dd className={cx('min-w-0 text-ui text-ink', item.mono && 'font-mono tabular')}>{item.value}</dd>
           {item.hint ? <p className="text-body-sm text-ink-subtle">{item.hint}</p> : null}
         </div>
@@ -157,7 +157,7 @@ export function SummaryStrip({ items, className }: { items: readonly { label: Re
     <dl className={cx('flex flex-wrap items-baseline gap-x-32 gap-y-12', className)}>
       {items.map((item, i) => (
         <div key={i} className="flex flex-col gap-4">
-          <dt className="overline text-ink-subtle">{item.label}</dt>
+          <dt className="label-caps text-ink-subtle">{item.label}</dt>
           <dd className="text-ui font-medium text-ink tabular">{item.value}</dd>
         </div>
       ))}

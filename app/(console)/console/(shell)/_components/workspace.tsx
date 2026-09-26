@@ -1,38 +1,53 @@
-import { PageHeader, RouteTabs, type TabLink } from '@bliss/ui/components/console/shell';
+import { EmptyState } from '@bliss/ui/components/feedback';
 import type { ReactNode } from 'react';
+import * as identity from '@/modules/identity/service';
+import { type WorkspaceKey, workspaceByKey } from '../_lib/nav';
+import { WorkspaceChrome } from './workspace-chrome';
 
-/** A workspace: a title, one line of context, route tabs, and the tab's content. docs/06 section 7.4. */
-export function Workspace({
-  title,
-  description,
-  eyebrow,
-  badge,
-  tabs,
+/**
+ * A workspace: its title and one sentence from the nav manifest, its views as underline tabs, and
+ * the view's content. A workspace that needs a permission refuses the whole of it without one, on
+ * the server, rather than hiding a link. docs/19 section 4.5.
+ */
+export async function Workspace({
+  workspace,
+  counts = {},
+  attention = [],
   actions,
   children,
 }: {
-  title: string;
-  description?: ReactNode;
-  eyebrow?: string;
-  badge?: ReactNode;
-  tabs: TabLink[];
+  workspace: WorkspaceKey;
+  /** A count beside a view: open tabs, lines in review. Keyed by the view's href. */
+  counts?: Record<string, number | undefined>;
+  /** Views whose count needs attention. */
+  attention?: readonly string[];
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  const w = workspaceByKey(workspace);
+  const actor = await identity.currentConsoleActor();
+  if (w.permission && !identity.can(actor.staffId, w.permission)) {
+    return (
+      <div className="flex flex-col gap-24">
+        <WorkspaceChrome title={w.label} description={w.description} tabs={[]} />
+        <EmptyState title={`${w.label} is not part of your role`} body={`${actor.role.name}s do not see ${w.label.toLowerCase()} here. An owner can change what your role can do in People, Roles.`} />
+      </div>
+    );
+  }
+  const tabs = w.pages.map((p) => ({ href: p.href, label: p.label, count: counts[p.href] || undefined, attention: attention.includes(p.href) }));
   return (
-    <>
-      <PageHeader title={title} description={description} eyebrow={eyebrow} badge={badge} actions={actions} />
-      <RouteTabs label={`${title} views`} tabs={tabs} />
-      <div className="mt-20">{children}</div>
-    </>
+    <div className="flex flex-col">
+      <WorkspaceChrome title={w.label} description={w.description} actions={actions} tabs={tabs} />
+      <div className="pt-24">{children}</div>
+    </div>
   );
 }
 
-/** One line of context above a table: a sentence and, optionally, an action. */
+/** One line of context above a view, and optionally its action. */
 export function TabIntro({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
-    <div className="mb-20 flex flex-wrap items-center justify-between gap-16">
-      <p className="text-body text-ink-muted">{children}</p>
+    <div className="mb-16 flex flex-wrap items-center justify-between gap-16">
+      <p className="measure text-body-sm text-ink-muted">{children}</p>
       {action}
     </div>
   );
