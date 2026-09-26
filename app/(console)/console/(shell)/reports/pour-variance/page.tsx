@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
 import { PourVarianceView } from './pour-variance-view';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Pour variance' };
 
@@ -19,18 +20,25 @@ export default async function PourVariancePage() {
   const { from, to, rows } = reporting.pourVariance();
   if (!from || !to) {
     return (
+    <>
+      <ViewHeader page="/console/reports/pour-variance" />
+
       <EmptyState
         title="Two full counts are needed"
         body="Pour variance compares sold serves with the change between two full counts of the bar shelf. Commit a second count to see it."
         action={<ButtonLink href="/console/inventory/counts/new">Start a count</ButtonLink>}
       />
-    );
+    </>
+  );
   }
   // More out than sold is what cost money; under-pouring is shown in the table but not added here.
   const lost = sum(rows.filter((r) => isPositive(r.varianceCents)).map((r) => r.varianceCents));
   const worst = [...rows].sort((a, b) => compare(abs(b.varianceCents), abs(a.varianceCents)))[0] ?? null;
 
   return (
+    <>
+      <ViewHeader page="/console/reports/pour-variance" />
+
     <PourVarianceView
       period={`${formatDateTime(from, tz)} to ${formatDateTime(to, tz)}`}
       rows={rows}
@@ -39,5 +47,6 @@ export default async function PourVariancePage() {
       worst={worst ? { name: worst.name, ml: worst.varianceMl } : null}
       canSeeCost={identity.can(actor.staffId, 'report.margin')}
     />
+    </>
   );
 }

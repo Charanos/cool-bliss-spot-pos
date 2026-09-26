@@ -3,6 +3,7 @@ import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { VoidsView } from './voids-view';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Voids and discounts' };
 
@@ -12,5 +13,10 @@ export default async function VoidsPage({ searchParams }: { searchParams: Promis
   const range = businessRange(params.range, '28');
   const tz = identity.outlet().timezone;
   const rows = reporting.voidsByStaff(range.from, range.to).map((r) => ({ ...r, reasons: r.reasons.map((x) => ({ ...x, at: x.at })) }));
-  return <VoidsView rows={rows} rangeKey={range.key} rangeOptions={rangeOptions(false)} timezone={tz} exportDate={range.to} />;
+  return (
+    <>
+      <ViewHeader page="/console/reports/voids" />
+      <VoidsView rows={rows} rangeKey={range.key} rangeOptions={rangeOptions(false)} timezone={tz} exportDate={range.to} />
+    </>
+  );
 }

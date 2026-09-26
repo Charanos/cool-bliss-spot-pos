@@ -6,6 +6,7 @@ import * as catalogue from '@/modules/catalogue/service';
 import * as inventory from '@/modules/inventory/service';
 import * as identity from '@/modules/identity/service';
 import { StockTable } from './stock-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Stock' };
 
@@ -92,11 +93,15 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
   }
 
   return (
+    <>
+      <ViewHeader page="/console/inventory/stock" />
+
     <StockTable
       rows={rows}
       locations={locations.map((l) => ({ value: l.id, label: l.name }))}
       categories={catalogue.categories().filter((c) => c.trackStock).map((c) => ({ value: c.id, label: c.name }))}
       exportDate={new Date().toISOString().slice(0, 10)}
     />
+    </>
   );
 }

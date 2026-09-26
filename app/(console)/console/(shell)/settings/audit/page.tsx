@@ -4,6 +4,7 @@ import * as identity from '@/modules/identity/service';
 import { actionLabel } from '../../_lib/labels';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { type AuditRow, AuditTable } from './audit-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Audit trail' };
 
@@ -33,5 +34,10 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   }));
   const families = [...new Set(rows.map((r) => r.family))].sort().map((f) => ({ value: f, label: actionLabel(f).replace(/^./, (c) => c.toUpperCase()) }));
   const actors = [...new Map(rows.map((r) => [r.actorId, r.actor])).entries()].filter(([id]) => id).map(([value, label]) => ({ value, label }));
-  return <AuditTable rows={rows} timezone={tz} rangeKey={range.key} rangeOptions={rangeOptions(false)} families={families} actors={actors} exportDate={range.to} />;
+  return (
+    <>
+      <ViewHeader page="/console/settings/audit" />
+      <AuditTable rows={rows} timezone={tz} rangeKey={range.key} rangeOptions={rangeOptions(false)} families={families} actors={actors} exportDate={range.to} />
+    </>
+  );
 }

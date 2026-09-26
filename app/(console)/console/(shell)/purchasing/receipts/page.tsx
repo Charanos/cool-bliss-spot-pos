@@ -5,7 +5,7 @@ import * as inventory from '@/modules/inventory/service';
 import * as procurement from '@/modules/procurement/service';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { IconPlus } from '@tabler/icons-react';
-import { TabIntro } from '../../_components/workspace';
+import { ViewHeader } from '../../_components/workspace';
 import { type ReceiptRow, ReceiptsTable } from './receipts-table';
 
 export const metadata: Metadata = { title: 'Deliveries' };
@@ -37,15 +37,9 @@ export default function ReceiptsPage() {
   });
   return (
     <>
-      <TabIntro
-        action={
-          <ButtonLink href="/console/purchasing/receipts/new" variant="primary" icon={IconPlus}>
+      <ViewHeader page="/console/purchasing/receipts" actions={<ButtonLink href="/console/purchasing/receipts/new" variant="primary" icon={IconPlus}>
             Receive a delivery
-          </ButtonLink>
-        }
-      >
-        What came off the van, against which order, and what went back.
-      </TabIntro>
+          </ButtonLink>} />
       <ReceiptsTable rows={rows} timezone={outlet.timezone} suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} />
     </>
   );

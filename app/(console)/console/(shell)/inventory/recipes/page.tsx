@@ -4,7 +4,7 @@ import { Section } from '@bliss/ui/components/console/section';
 import type { Metadata } from 'next';
 import * as catalogue from '@/modules/catalogue/service';
 import * as inventory from '@/modules/inventory/service';
-import { TabIntro } from '../../_components/workspace';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Recipes' };
 
@@ -20,7 +20,7 @@ export default function RecipesPage() {
   const head = 'px-12 py-12 text-label text-ink-subtle';
   return (
     <>
-      <TabIntro>How a sold serve comes out of stock. A Smirnoff and Coke takes a measure of the spirit and a bottle of the mixer.</TabIntro>
+      <ViewHeader page="/console/inventory/recipes" />
       <div className="flex flex-col gap-40">
         <Section id="recipes" title="Recipes" description="Drinks made from more than one stocked item.">
           <Card>

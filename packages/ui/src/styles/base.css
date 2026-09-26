@@ -756,3 +756,9 @@
 @utility grid-cols-kv {
   grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
 }
+
+/* The Console sheet, docs/19 section 4: inside it the page is the sheet's surface, so every
+ * `bg-page` (a sticky header, a table head) matches the sheet it sits on, in both themes. */
+@utility sheet-scope {
+  --bliss-page: var(--bliss-sheet);
+}

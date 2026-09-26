@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import * as catalogue from '@/modules/catalogue/service';
-import { TabIntro } from '../../_components/workspace';
+import { ViewHeader } from '../../_components/workspace';
 import { type CategoryRow, CategoriesTable } from './categories-table';
 
 export const metadata: Metadata = { title: 'Categories' };
@@ -22,7 +22,7 @@ export default function CategoriesPage() {
   }));
   return (
     <>
-      <TabIntro>The order is the order of the floor&rsquo;s tabs, and the colour marks the edge of every tile in the category.</TabIntro>
+      <ViewHeader page="/console/catalogue/categories" />
       <CategoriesTable rows={rows} />
     </>
   );

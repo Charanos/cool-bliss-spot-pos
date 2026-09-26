@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as sync from '@/modules/sync/service';
 import { type DeadLetterRow, SyncView } from './sync-view';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Sync' };
 
@@ -48,5 +49,10 @@ export default async function SyncPage() {
       note: d.resolutionNote,
     };
   });
-  return <SyncView rows={rows} timezone={tz} canResolve={identity.can(actor.staffId, 'device.manage')} />;
+  return (
+    <>
+      <ViewHeader page="/console/settings/sync" />
+      <SyncView rows={rows} timezone={tz} canResolve={identity.can(actor.staffId, 'device.manage')} />
+    </>
+  );
 }

@@ -4,6 +4,7 @@ import * as identity from '@/modules/identity/service';
 import * as pricing from '@/modules/pricing/service';
 import * as procurement from '@/modules/procurement/service';
 import { type ProductRow, ProductsTable } from './products-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Products' };
 
@@ -38,5 +39,10 @@ export default function ProductsPage() {
     };
   });
 
-  return <ProductsTable rows={rows} categories={catalogue.categories().map((c) => ({ value: c.id, label: c.name }))} />;
+  return (
+    <>
+      <ViewHeader page="/console/catalogue/products" />
+      <ProductsTable rows={rows} categories={catalogue.categories().map((c) => ({ value: c.id, label: c.name }))} />
+    </>
+  );
 }

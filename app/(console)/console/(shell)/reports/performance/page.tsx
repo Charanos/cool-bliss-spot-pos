@@ -11,7 +11,7 @@ import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import { type ItemPerformance, performance } from '@/modules/reporting/performance';
 import * as reporting from '@/modules/reporting/service';
-import { TabIntro } from '../../_components/workspace';
+import { ViewHeader } from '../../_components/workspace';
 import { UrlSelect } from '../../_components/url-select';
 import { TENDER_LABEL } from '../../_lib/labels';
 import { businessRange, rangeOptions } from '../../_lib/range';
@@ -57,9 +57,7 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
 
   return (
     <div className="flex flex-col gap-32">
-      <TabIntro action={<UrlSelect param="range" label="Range" options={rangeOptions(true)} allLabel={null} fallback={range.key} />}>
-        {range.label}. Built from bills, sales, deliveries, counts and shifts. Costs Bliss does not record, such as rent and wages, are not estimated.
-      </TabIntro>
+      <ViewHeader page="/console/reports/performance" badge={<span className="text-body-sm text-ink-muted">{range.label}</span>} actions={<UrlSelect param="range" label="Range" options={rangeOptions(true)} allLabel={null} fallback={range.key} />} />
 
       <MetricGrid>
         <Metric label="Settled" icon={IconReceipt} value={<Money value={r.sales.settled} size="num-kpi" decimals="whole" />} delta={r.sales.deltaBps === null ? null : { bps: r.sales.deltaBps, against: 'the days before' }} detail={r.sales.deltaBps === null ? plural(r.sales.bills, 'bill') : undefined} />

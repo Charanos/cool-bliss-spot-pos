@@ -4,6 +4,7 @@ import * as trade from '@/modules/trade/service';
 import { ROLE_LABEL } from '../../_lib/labels';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { type ShiftRow, ShiftsTable } from './shifts-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Shifts' };
 
@@ -32,6 +33,9 @@ export default async function ShiftsPage({ searchParams }: { searchParams: Promi
     }));
 
   return (
+    <>
+      <ViewHeader page="/console/trade/shifts" />
+
     <ShiftsTable
       rows={rows}
       timezone={outlet.timezone}
@@ -41,5 +45,6 @@ export default async function ShiftsPage({ searchParams }: { searchParams: Promi
       staff={[...new Map(rows.map((r) => [r.staffId, r.staff])).entries()].map(([value, label]) => ({ value, label }))}
       exportDate={range.to}
     />
+    </>
   );
 }

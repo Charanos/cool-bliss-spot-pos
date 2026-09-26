@@ -3,7 +3,7 @@ import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { IconClipboardList } from '@tabler/icons-react';
-import { TabIntro } from '../../_components/workspace';
+import { ViewHeader } from '../../_components/workspace';
 import { CountsTable } from './counts-table';
 
 export const metadata: Metadata = { title: 'Counts' };
@@ -30,15 +30,9 @@ export default function CountsPage() {
   });
   return (
     <>
-      <TabIntro
-        action={
-          <ButtonLink href="/console/inventory/counts/new" variant="primary" icon={IconClipboardList}>
+      <ViewHeader page="/console/inventory/counts" actions={<ButtonLink href="/console/inventory/counts/new" variant="primary" icon={IconClipboardList}>
             Start a count
-          </ButtonLink>
-        }
-      >
-        What is on the shelf against what the ledger expects. Whoever counts sees no expected figures.
-      </TabIntro>
+          </ButtonLink>} />
       <CountsTable rows={rows} timezone={identity.outlet().timezone} />
     </>
   );

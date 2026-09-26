@@ -9,7 +9,7 @@ import Link from 'next/link';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as pricing from '@/modules/pricing/service';
-import { TabIntro } from '../../_components/workspace';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Time rules' };
 
@@ -31,7 +31,7 @@ export default function RulesPage() {
 
   return (
     <>
-      <TabIntro>A time rule switches a price list on for its hours. Where two overlap the higher priority wins, and a line keeps the price it was fired at.</TabIntro>
+      <ViewHeader page="/console/pricing/rules" />
       {rules.length === 0 ? (
         <EmptyState title="No time rules" body="Every item sells at its base price all day. A rule is how a happy hour list comes on by itself." />
       ) : (

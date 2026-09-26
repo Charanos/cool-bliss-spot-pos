@@ -3,6 +3,7 @@ import * as catalogue from '@/modules/catalogue/service';
 import * as inventory from '@/modules/inventory/service';
 import * as procurement from '@/modules/procurement/service';
 import { type ReorderGroup, ReorderView } from './reorder-view';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Reorder' };
 
@@ -44,5 +45,10 @@ export default function ReorderPage() {
     bySupplier.set(key, group);
   }
   const groups = [...bySupplier.values()].sort((a, b) => (a.supplierId === null ? 1 : b.supplierId === null ? -1 : a.name.localeCompare(b.name)));
-  return <ReorderView groups={groups} />;
+  return (
+    <>
+      <ViewHeader page="/console/purchasing/reorder" />
+      <ReorderView groups={groups} />
+    </>
+  );
 }

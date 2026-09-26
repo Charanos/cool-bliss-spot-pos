@@ -19,7 +19,7 @@ import { gsap, isReduced } from './engine';
 interface LenisControls {
   stop(): void;
   start(): void;
-  scrollTo(target: number | string | HTMLElement): void;
+  scrollTo(target: number | string | HTMLElement, options?: { immediate?: boolean }): void;
 }
 
 const LenisContext = createContext<LenisControls | null>(null);
@@ -28,12 +28,17 @@ export function useLenis(): LenisControls | null {
   return useContext(LenisContext);
 }
 
-export function LenisProvider({ children }: { children: ReactNode }) {
+export function LenisProvider({ children, wrapperId }: { children: ReactNode; /** Scroll inside this element (the Console sheet) rather than the window. */ wrapperId?: string }) {
   const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
+    const wrapper = wrapperId ? document.getElementById(wrapperId) : null;
+    const content = wrapper?.firstElementChild instanceof HTMLElement ? wrapper.firstElementChild : null;
+    // ScrollTrigger measures against the same element Lenis moves.
+    if (wrapper) ScrollTrigger.defaults({ scroller: wrapper });
     if (isReduced()) return;
     const lenis = new Lenis({
+      ...(wrapper && content ? { wrapper, content, eventsTarget: wrapper } : {}),
       lerp: 0.1,
       smoothWheel: true,
       syncTouch: false,
@@ -52,21 +57,22 @@ export function LenisProvider({ children }: { children: ReactNode }) {
 
     return () => {
       gsap.ticker.remove(tick);
+      lenis.off('scroll', ScrollTrigger.update);
       lenis.destroy();
       lenisRef.current = null;
     };
-  }, []);
+  }, [wrapperId]);
 
   const controls = useMemo<LenisControls>(
     () => ({
       stop: () => lenisRef.current?.stop(),
       start: () => lenisRef.current?.start(),
-      scrollTo: (target) => {
-        if (lenisRef.current) lenisRef.current.scrollTo(target, { immediate: isReduced() });
-        else if (typeof target === 'number') window.scrollTo({ top: target });
+      scrollTo: (target, options) => {
+        if (lenisRef.current) lenisRef.current.scrollTo(target, { immediate: options?.immediate || isReduced(), force: true });
+        else if (typeof target === 'number') ((wrapperId && document.getElementById(wrapperId)) || window).scrollTo({ top: target });
       },
     }),
-    [],
+    [wrapperId],
   );
 
   return <LenisContext.Provider value={controls}>{children}</LenisContext.Provider>;

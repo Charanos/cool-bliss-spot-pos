@@ -1,54 +1,34 @@
+import { PageHeader } from '@bliss/ui/components/console/shell';
 import { EmptyState } from '@bliss/ui/components/feedback';
 import type { ReactNode } from 'react';
 import * as identity from '@/modules/identity/service';
-import { type WorkspaceKey, workspaceByKey } from '../_lib/nav';
-import { WorkspaceChrome } from './workspace-chrome';
+import { type WorkspaceKey, pageByHref, workspaceByKey } from '../_lib/nav';
 
 /**
- * A workspace: its title and one sentence from the nav manifest, its views as underline tabs, and
- * the view's content. A workspace that needs a permission refuses the whole of it without one, on
- * the server, rather than hiding a link. docs/19 section 4.5.
+ * A workspace. Its views are tabs in the sheet's header, so here it only guards: a workspace that
+ * needs a permission refuses the whole of it without one, on the server, rather than hiding a
+ * link. docs/19 section 4.5.
  */
-export async function Workspace({
-  workspace,
-  counts = {},
-  attention = [],
-  actions,
-  children,
-}: {
-  workspace: WorkspaceKey;
-  /** A count beside a view: open tabs, lines in review. Keyed by the view's href. */
-  counts?: Record<string, number | undefined>;
-  /** Views whose count needs attention. */
-  attention?: readonly string[];
-  actions?: ReactNode;
-  children: ReactNode;
-}) {
+export async function Workspace({ workspace, children }: { workspace: WorkspaceKey; children: ReactNode }) {
   const w = workspaceByKey(workspace);
   const actor = await identity.currentConsoleActor();
   if (w.permission && !identity.can(actor.staffId, w.permission)) {
     return (
       <div className="flex flex-col gap-24">
-        <WorkspaceChrome title={w.label} description={w.description} tabs={[]} />
+        <PageHeader title={w.label} description={w.description} />
         <EmptyState title={`${w.label} is not part of your role`} body={`${actor.role.name}s do not see ${w.label.toLowerCase()} here. An owner can change what your role can do in People, Roles.`} />
       </div>
     );
   }
-  const tabs = w.pages.map((p) => ({ href: p.href, label: p.label, count: counts[p.href] || undefined, attention: attention.includes(p.href) }));
-  return (
-    <div className="flex flex-col">
-      <WorkspaceChrome title={w.label} description={w.description} actions={actions} tabs={tabs} />
-      <div className="pt-24">{children}</div>
-    </div>
-  );
+  return <>{children}</>;
 }
 
-/** One line of context above a view, and optionally its action. */
-export function TabIntro({ children, action }: { children: ReactNode; action?: ReactNode }) {
-  return (
-    <div className="mb-16 flex flex-wrap items-center justify-between gap-16">
-      <p className="measure text-body-sm text-ink-muted">{children}</p>
-      {action}
-    </div>
-  );
+/**
+ * A view's header: its name and one sentence from the nav manifest, so the tab, the breadcrumb,
+ * the command menu and the page all call it the same thing. The page adds its actions and, at
+ * most, the one figure it is about.
+ */
+export function ViewHeader({ page, actions, aside, badge }: { page: string; actions?: ReactNode; aside?: ReactNode; badge?: ReactNode }) {
+  const { page: p } = pageByHref(page);
+  return <PageHeader title={p.label} description={p.description} actions={actions} aside={aside} badge={badge} />;
 }

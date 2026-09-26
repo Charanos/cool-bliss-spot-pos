@@ -4,6 +4,7 @@ import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
 import { DeadStockTable } from './dead-stock-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Dead stock' };
 
@@ -16,6 +17,9 @@ export default async function DeadStockPage({ searchParams }: { searchParams: Pr
   const actor = await identity.currentConsoleActor();
   const rows = reporting.deadStock(days).map((r) => ({ ...r, category: catalogue.categoryOfVariant(r.variantId)?.name ?? '' }));
   return (
+    <>
+      <ViewHeader page="/console/reports/dead-stock" />
+
     <DeadStockTable
       rows={rows}
       days={days}
@@ -24,5 +28,6 @@ export default async function DeadStockPage({ searchParams }: { searchParams: Pr
       timezone={identity.outlet().timezone}
       windows={WINDOWS.map((w) => ({ value: String(w), label: `No sale in ${w} days` }))}
     />
+    </>
   );
 }

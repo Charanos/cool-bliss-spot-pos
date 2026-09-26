@@ -3,6 +3,7 @@ import * as identity from '@/modules/identity/service';
 import * as settlement from '@/modules/settlement/service';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { type DrawerRow, DrawersTable } from './drawers-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Drawers' };
 
@@ -38,6 +39,9 @@ export default async function DrawersPage({ searchParams }: { searchParams: Prom
     }));
 
   return (
+    <>
+      <ViewHeader page="/console/trade/drawers" />
+
     <DrawersTable
       rows={rows}
       timezone={outlet.timezone}
@@ -47,5 +51,6 @@ export default async function DrawersPage({ searchParams }: { searchParams: Prom
       rangeLabel={range.label}
       exportDate={range.to}
     />
+    </>
   );
 }

@@ -6,6 +6,7 @@ import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import * as pricing from '@/modules/pricing/service';
 import { type PriceRow, PriceListView } from './price-list-view';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Price lists' };
 
@@ -70,6 +71,9 @@ export default async function PriceListsPage({ searchParams }: { searchParams: P
     }));
 
   return (
+    <>
+      <ViewHeader page="/console/pricing/lists" />
+
     <PriceListView
       lists={lists.map((l) => ({ value: l.id, label: l.name }))}
       list={{ id: list.id, name: list.name, kind: list.kind }}
@@ -83,5 +87,6 @@ export default async function PriceListsPage({ searchParams }: { searchParams: P
       timezone={identity.outlet().timezone}
       taxRateBps={identity.outlet().taxRateBps}
     />
+    </>
   );
 }

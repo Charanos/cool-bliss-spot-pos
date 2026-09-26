@@ -5,6 +5,7 @@ import * as inventory from '@/modules/inventory/service';
 import * as reporting from '@/modules/reporting/service';
 import { businessDayWindow, addDays } from '@bliss/shared/time';
 import { MovementsTable } from './movements-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Movements' };
 
@@ -40,11 +41,15 @@ export default async function MovementsPage({ searchParams }: { searchParams: Pr
     }));
 
   return (
+    <>
+      <ViewHeader page="/console/inventory/movements" />
+
     <MovementsTable
       rows={rows}
       timezone={outlet.timezone}
       locations={locations.map((l) => ({ value: l.id, label: l.name }))}
       variantName={variantId ? (catalogue.variantById(variantId)?.name ?? null) : null}
     />
+    </>
   );
 }

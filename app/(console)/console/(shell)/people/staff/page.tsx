@@ -4,6 +4,7 @@ import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
 import * as trade from '@/modules/trade/service';
 import { type StaffRow, StaffTable } from './staff-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Staff' };
 
@@ -36,11 +37,15 @@ export default async function StaffPage() {
   });
 
   return (
+    <>
+      <ViewHeader page="/console/people/staff" />
+
     <StaffTable
       rows={rows}
       roles={identity.roles().map((r) => ({ value: r.id, label: r.name }))}
       canManage={identity.can(actor.staffId, 'staff.manage')}
       timezone={identity.outlet().timezone}
     />
+    </>
   );
 }

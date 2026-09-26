@@ -4,7 +4,7 @@ import { Card, CardHeader } from '@bliss/ui/components/console/card';
 import { Money } from '@bliss/ui/components/money';
 import type { Metadata } from 'next';
 import * as catalogue from '@/modules/catalogue/service';
-import { TabIntro } from '../../_components/workspace';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Modifiers' };
 
@@ -13,7 +13,7 @@ export default function ModifiersPage() {
   const groups = catalogue.modifierGroups().sort((a, b) => a.group.sortOrder - b.group.sortOrder);
   return (
     <>
-      <TabIntro>Mixers, ice and garnish. A modifier linked to an item, such as Coke as a mixer, takes that item&rsquo;s stock when the line is fired.</TabIntro>
+      <ViewHeader page="/console/catalogue/modifiers" />
       <div className="grid grid-cols-1 gap-16 pad:grid-cols-2 desktop:grid-cols-3">
         {groups.map(({ group, modifiers, variantCount }) => (
           <Card key={group.id} as="article" className="h-full">

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as procurement from '@/modules/procurement/service';
 import { type OrderRow, OrdersTable } from './orders-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Purchase orders' };
 
@@ -28,5 +29,10 @@ export default function OrdersPage() {
       notes: po.notes,
     };
   });
-  return <OrdersTable rows={rows} timezone={outlet.timezone} suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} />;
+  return (
+    <>
+      <ViewHeader page="/console/purchasing/orders" />
+      <OrdersTable rows={rows} timezone={outlet.timezone} suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} />
+    </>
+  );
 }

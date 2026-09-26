@@ -5,6 +5,7 @@ import * as settlement from '@/modules/settlement/service';
 import * as trade from '@/modules/trade/service';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { BillsView, type BillRow } from './bills-view';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Bills' };
 
@@ -43,6 +44,9 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
     });
 
   return (
+    <>
+      <ViewHeader page="/console/trade/bills" />
+
     <BillsView
       rows={rows}
       timezone={outlet.timezone}
@@ -53,5 +57,6 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
       cashiers={[...new Map(rows.map((r) => [r.settledById, r.settledBy])).entries()].filter(([id]) => id).map(([value, label]) => ({ value, label }))}
       exportDate={range.to}
     />
+    </>
   );
 }

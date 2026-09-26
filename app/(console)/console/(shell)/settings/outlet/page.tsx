@@ -7,7 +7,7 @@ import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import * as trade from '@/modules/trade/service';
-import { TabIntro } from '../../_components/workspace';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Outlet' };
 
@@ -21,7 +21,7 @@ export default function OutletPage() {
 
   return (
     <>
-      <TabIntro>Name, tax details and when the business day ends. These are set when the outlet is set up.</TabIntro>
+      <ViewHeader page="/console/settings/outlet" />
       <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-2">
         <Card aria-labelledby="outlet-profile">
           <CardHeader band level="h2" titleId="outlet-profile" icon={IconBuildingStore} title="The outlet" />

@@ -100,42 +100,54 @@ Console-local parts: `ProductThumb` (a catalogue photograph or its initial, with
 Console server actions go through `runAction` (`app/(console)/console/(shell)/_lib/action.ts`): the
 session actor, a zod schema for every field, `withWrite`, safe error messages, revalidation.
 
-## 4. The shell
+## 4. The shell: a desk and a sheet
 
 ```
-┌──────────────┬────────────────────────────────────────────────────┐
-│ ◈ Cool Bliss │ Trade / Bills / Bill 142        ● 4 of 5 stations ▾│
-│ ● Trading ·  ├────────────────────────────────────────────────────┤
-│   Sat 26 Sep │ Trade                                              │
-│ ⌕ Search  ⌘K │ Open tabs, settled bills, drawer sessions, shifts. │
-│ SERVICE      │ Open tabs 6   Bills   Drawers   Shifts             │
-│ ▎Overview    │ ─────────────────────────────────────────────────  │
-│  Trade     6 │                                                    │
-│ STOCK        │   page content                                     │
-│  Inventory ●2│                                                    │
-│  Purchasing  │                                                    │
-│ MENU …       │                                                    │
-│ BUSINESS …   │                                                    │
-│  Settings  ●2│                                                    │
-│  Dan, Manager│                                                    │
-└──────────────┴────────────────────────────────────────────────────┘
+  desk (sunken, no surface of its own)   sheet (raised, rounded, scrolls on its own)
+┌──────────────────────┐ ┌──────────────────────────────────────────────────────────┐
+│ ◈ Cool Bliss Spot    │ │ ▣ Inventory › Stock        ● 6 orders waiting  ● 4 of 5 ▾│
+│   ● Trading · Sat 26 │ │ Stock   Counts ②   Movements   Recipes   Holds ①         │
+│ ⌕ Search or jump  ⌘K │ ├──────────────────────────────────────────────────────────┤
+│ SERVICE              │ │ Stock                                  STOCK AT COST     │
+│ ▢ Overview   (chip)  │ │ What is on hand at cost, what is ...   KES 431,968  [+]  │
+│   Trade            6 │ │                                                          │
+│ STOCK …              │ │ ┌metric┐┌metric┐┌metric┐┌metric┐                         │
+│ ┌ LAST NIGHT ──────┐ │ │ ┌ table or cards ───────────────────────────────┐       │
+│ │ KES 105,720 ▁▃▅▇ │ │ │                                                          │
+│ │ 79 bills  6 open │ │ │                                                          │
+│ └──────────────────┘ │ │                                                          │
+│   Settings  Collapse │ │                                                          │
+│   Dan, Manager       │ └──────────────────────────────────────────────────────────┘
+└──────────────────────┘
 ```
 
-- **The nav manifest** (`_lib/nav.ts`) names every workspace and view once. The rail, the workspace
-  header and tabs, the breadcrumbs, the command menu and page titles all read it.
-- **Rail**, 240px: the venue and its business day, search, the workspaces in four groups (Service,
-  Stock, Menu, Business), Settings, the account menu (theme, stations, sign out). It folds to 64px
-  with `[` and folds itself below 1280px.
-- **Top bar**, 56px: breadcrumbs (a detail page names its record with `<RecordCrumb>`), the stations
-  popover, and a warning only when orders are waiting. `R` refreshes data.
+- **The desk** (`bg-desk`) is the ground: the navigation sits on it directly, with no border and no
+  panel. What is active is a chip of the sheet's own surface (`bg-desk-active`, `shadow-chip`), so
+  the eye reads it as "the sheet is here". The search field and the Tonight reading are wells
+  sunk into the desk (`bg-desk-well`, `shadow-well`).
+- **The sheet** (`ConsoleSheet`) is the one raised surface: `rounded-sheet`, `shadow-sheet`, inset
+  `sheet-inset` from the viewport. It scrolls on its own (Lenis runs inside it, and ScrollTrigger
+  measures against it); the desk never scrolls. Inside it, `sheet-scope` makes `page` the sheet's
+  colour, so sticky headers and table heads match in both themes.
+- **The nav manifest** (`_lib/nav.ts`) names every workspace and view once, with the one sentence
+  each view's header shows. The desk, the sheet header's tabs, the breadcrumbs, the command menu
+  and page titles all read it. `_lib/counts.ts` reads every navigation count once per request.
+- **The desk navigation**, 232px: the venue and its business day, search, the workspaces in four
+  groups (Service, Stock, Menu, Business), Tonight (takings so far, the night by hour, bills and
+  open tabs; Last night once the day has closed), Settings, the fold, the account menu. It folds
+  to 60px with `[` and folds itself below 1280px.
+- **The sheet header** rides at the top of the sheet: the workspace's icon and the breadcrumb (a
+  record page names its record with `<RecordCrumb>`), orders waiting when there are any, and the
+  stations popover. Its second row is the workspace's views as underline tabs with their counts;
+  on a record page it is a way back to the list. `R` refreshes data.
+- **Page frame**: one column up to 1440px with 32px gutters. A list view opens with `ViewHeader`
+  (title and sentence from the manifest, at most one figure beside it, then its actions). A
+  record page uses `DetailHeader`.
 - **Command menu**, Cmd or Ctrl K: go to any view, find a record by number or name, do a common thing.
-- **Page frame**: one column up to 1440px with 32px gutters; the page title, one sentence, actions;
-  sticky underline tabs. A record page (`isRecordPath`) drops the workspace chrome and uses
-  `DetailHeader` with a way back.
 - **States**: each workspace has a loading skeleton in its own shape and an error boundary; the
   Console has a not-found page. A workspace that needs a permission refuses itself on the server.
 
-Below 1280px the rail is icons; below 1024px the page scrolls sideways rather than crushing.
+Below 1280px the desk is icons; below 1024px the page scrolls sideways rather than crushing.
 
 ## 5. Copy
 

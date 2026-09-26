@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
 import { type DeviceTableRow, DevicesTable } from './devices-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Devices' };
 
@@ -25,5 +26,10 @@ export default async function DevicesPage() {
     revokedReason: d.revokedReason,
   }));
   const latest = rows.map((r) => r.appVersion).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0] ?? '';
-  return <DevicesTable rows={rows} now={clock.now} latestVersion={latest} timezone={identity.outlet().timezone} canManage={identity.can(actor.staffId, 'device.manage')} />;
+  return (
+    <>
+      <ViewHeader page="/console/settings/devices" />
+      <DevicesTable rows={rows} now={clock.now} latestVersion={latest} timezone={identity.outlet().timezone} canManage={identity.can(actor.staffId, 'device.manage')} />
+    </>
+  );
 }

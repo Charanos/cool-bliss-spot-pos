@@ -9,6 +9,7 @@ import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as procurement from '@/modules/procurement/service';
 import { CostChangesTable, type CostChangeRow } from './cost-changes-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Suppliers' };
 
@@ -30,6 +31,7 @@ export default function SuppliersPage() {
 
   return (
     <div className="flex flex-col gap-40">
+      <ViewHeader page="/console/purchasing/suppliers" />
       <div className="grid grid-cols-1 gap-16 pad:grid-cols-2 desktop:grid-cols-3">
         {procurement.suppliers().map((s) => {
           const own = orders.filter((o) => o.supplierId === s.id && o.status !== 'cancelled');

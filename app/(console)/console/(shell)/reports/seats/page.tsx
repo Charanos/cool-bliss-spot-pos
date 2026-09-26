@@ -7,7 +7,7 @@ import type { Metadata } from 'next';
 import * as reporting from '@/modules/reporting/service';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { UrlSelect } from '../../_components/url-select';
-import { TabIntro } from '../../_components/workspace';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Seats' };
 
@@ -22,10 +22,10 @@ export default async function SeatsPage({ searchParams }: { searchParams: Promis
 
   const head = 'px-12 py-12 text-label text-ink-subtle';
   return (
+    <>
+      <ViewHeader page="/console/reports/seats" actions={<UrlSelect param="range" label="Range" options={rangeOptions(false)} allLabel={null} fallback={range.key} />} />
+
     <div className="flex flex-col gap-32">
-      <TabIntro action={<UrlSelect param="range" label="Range" options={rangeOptions(false)} allLabel={null} fallback={range.key} />}>
-        {range.label}. Seat 1 is whoever the waiter took first: positions describe the order people ordered in, not where they sat.
-      </TabIntro>
 
       <MetricGrid columns={3}>
         <Metric label="Lines on a seat" value={formatBps(data.attributionBps)} detail="At tables of two or more. The rest were left shared." />
@@ -78,5 +78,6 @@ export default async function SeatsPage({ searchParams }: { searchParams: Promis
         </Card>
       </div>
     </div>
+    </>
   );
 }

@@ -1,7 +1,7 @@
 import type { PermissionKey } from '@bliss/shared/domain';
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
-import { TabIntro } from '../../_components/workspace';
+import { ViewHeader } from '../../_components/workspace';
 import { RolesMatrix } from './roles-matrix';
 
 export const metadata: Metadata = { title: 'Roles and permissions' };
@@ -37,7 +37,7 @@ export default async function RolesPage() {
   }));
   return (
     <>
-      <TabIntro>What each role can do. A change applies from that person&rsquo;s next action, on every device, and is recorded with its reason.</TabIntro>
+      <ViewHeader page="/console/people/roles" />
       <RolesMatrix roles={roles} permissions={PERMISSIONS} canManage={identity.can(actor.staffId, 'staff.manage')} />
     </>
   );

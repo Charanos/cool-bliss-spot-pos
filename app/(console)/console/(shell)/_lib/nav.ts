@@ -22,6 +22,8 @@ export type WorkspaceKey = 'overview' | 'trade' | 'inventory' | 'purchasing' | '
 export interface NavPage {
   href: string;
   label: string;
+  /** One sentence under the page title: what the page answers or lets you do. */
+  description: string;
   /** Extra words the command menu matches: "till" finds Drawers. */
   keywords?: readonly string[];
 }
@@ -57,10 +59,10 @@ export const WORKSPACES: readonly NavWorkspace[] = [
     description: 'Open tabs, settled bills, drawer sessions and shifts.',
     group: 'service',
     pages: [
-      { href: '/console/trade/open', label: 'Open tabs', keywords: ['tables', 'floor'] },
-      { href: '/console/trade/bills', label: 'Bills', keywords: ['settled', 'payments', 'tenders'] },
-      { href: '/console/trade/drawers', label: 'Drawers', keywords: ['till', 'cash', 'variance'] },
-      { href: '/console/trade/shifts', label: 'Shifts', keywords: ['staff', 'handover'] },
+      { href: '/console/trade/open', label: 'Open tabs', description: 'Every tab on the floor now, what it holds, and how long it has been open.', keywords: ['tables', 'floor'] },
+      { href: '/console/trade/bills', label: 'Bills', description: 'Settled bills by business day, how they were paid, and each one in full.', keywords: ['settled', 'payments', 'tenders'] },
+      { href: '/console/trade/drawers', label: 'Drawers', description: 'Cash drawer sessions: what was expected, what was counted, and the difference.', keywords: ['till', 'cash', 'variance'] },
+      { href: '/console/trade/shifts', label: 'Shifts', description: 'Who worked, when, on which station, and what they sold.', keywords: ['staff', 'handover'] },
     ],
   },
   {
@@ -70,11 +72,11 @@ export const WORKSPACES: readonly NavWorkspace[] = [
     description: 'Stock on hand, counts, movements, recipes and holds.',
     group: 'stock',
     pages: [
-      { href: '/console/inventory/stock', label: 'Stock', keywords: ['on hand', 'levels'] },
-      { href: '/console/inventory/counts', label: 'Counts', keywords: ['stock take', 'variance'] },
-      { href: '/console/inventory/movements', label: 'Movements', keywords: ['ledger', 'write-off'] },
-      { href: '/console/inventory/recipes', label: 'Recipes', keywords: ['cocktails', 'pour'] },
-      { href: '/console/inventory/holds', label: 'Holds', keywords: ['86', 'unavailable'] },
+      { href: '/console/inventory/stock', label: 'Stock', description: 'What is on hand at cost, what is running low, and what the floor cannot sell.', keywords: ['on hand', 'levels'] },
+      { href: '/console/inventory/counts', label: 'Counts', description: 'Stock counts from start to commit, and the variance each one found.', keywords: ['stock take', 'variance'] },
+      { href: '/console/inventory/movements', label: 'Movements', description: 'Every change to stock: sales, deliveries, counts and write-offs.', keywords: ['ledger', 'write-off'] },
+      { href: '/console/inventory/recipes', label: 'Recipes', description: 'What each drink and dish draws from stock, and what a serve costs.', keywords: ['cocktails', 'pour'] },
+      { href: '/console/inventory/holds', label: 'Holds', description: 'Items taken off sale, why, and when they come back.', keywords: ['86', 'unavailable'] },
     ],
   },
   {
@@ -85,10 +87,10 @@ export const WORKSPACES: readonly NavWorkspace[] = [
     group: 'stock',
     permission: 'cost.read',
     pages: [
-      { href: '/console/purchasing/reorder', label: 'Reorder', keywords: ['suggestions', 'low stock'] },
-      { href: '/console/purchasing/orders', label: 'Orders', keywords: ['purchase order', 'po'] },
-      { href: '/console/purchasing/receipts', label: 'Deliveries', keywords: ['receipts', 'grn', 'goods received'] },
-      { href: '/console/purchasing/suppliers', label: 'Suppliers', keywords: ['vendors', 'costs'] },
+      { href: '/console/purchasing/reorder', label: 'Reorder', description: 'What is below its reorder point, grouped by the supplier to order from.', keywords: ['suggestions', 'low stock'] },
+      { href: '/console/purchasing/orders', label: 'Orders', description: 'Purchase orders from raised to received.', keywords: ['purchase order', 'po'] },
+      { href: '/console/purchasing/receipts', label: 'Deliveries', description: 'Deliveries received, what was short or rejected, and what they cost.', keywords: ['receipts', 'grn', 'goods received'] },
+      { href: '/console/purchasing/suppliers', label: 'Suppliers', description: 'Who supplies what, on what terms, and how their costs have moved.', keywords: ['vendors', 'costs'] },
     ],
   },
   {
@@ -98,9 +100,9 @@ export const WORKSPACES: readonly NavWorkspace[] = [
     description: 'The products, categories and modifiers the floor sells.',
     group: 'menu',
     pages: [
-      { href: '/console/catalogue/products', label: 'Products', keywords: ['items', 'menu'] },
-      { href: '/console/catalogue/categories', label: 'Categories' },
-      { href: '/console/catalogue/modifiers', label: 'Modifiers', keywords: ['mixers', 'options'] },
+      { href: '/console/catalogue/products', label: 'Products', description: 'Everything the floor sells, how it is sold, and where its stock comes from.', keywords: ['items', 'menu'] },
+      { href: '/console/catalogue/categories', label: 'Categories', description: 'How the menu is grouped on the floor and in reports.' },
+      { href: '/console/catalogue/modifiers', label: 'Modifiers', description: 'Mixers, sizes and options a waiter adds to a line.', keywords: ['mixers', 'options'] },
     ],
   },
   {
@@ -110,8 +112,8 @@ export const WORKSPACES: readonly NavWorkspace[] = [
     description: 'Price lists and time rules. Prices include VAT.',
     group: 'menu',
     pages: [
-      { href: '/console/pricing/lists', label: 'Price lists' },
-      { href: '/console/pricing/rules', label: 'Time rules', keywords: ['happy hour'] },
+      { href: '/console/pricing/lists', label: 'Price lists', description: 'What each item costs a guest, list by list.' },
+      { href: '/console/pricing/rules', label: 'Time rules', description: 'When a price list takes over: happy hours and special nights.', keywords: ['happy hour'] },
     ],
   },
   {
@@ -121,12 +123,12 @@ export const WORKSPACES: readonly NavWorkspace[] = [
     description: 'Sales, margin and stock performance, by business day.',
     group: 'business',
     pages: [
-      { href: '/console/reports/performance', label: 'Performance', keywords: ['profit', 'margin', 'p&l'] },
-      { href: '/console/reports/sales', label: 'Sales', keywords: ['revenue', 'hourly'] },
-      { href: '/console/reports/pour-variance', label: 'Pour variance', keywords: ['shrinkage', 'loss'] },
-      { href: '/console/reports/voids', label: 'Voids and discounts' },
-      { href: '/console/reports/seats', label: 'Seats', keywords: ['guests', 'covers'] },
-      { href: '/console/reports/dead-stock', label: 'Dead stock', keywords: ['slow moving'] },
+      { href: '/console/reports/performance', label: 'Performance', description: 'Sales, margin and cost for a range of business days.', keywords: ['profit', 'margin', 'p&l'] },
+      { href: '/console/reports/sales', label: 'Sales', description: 'Takings by day and hour, by tender, and against the week before.', keywords: ['revenue', 'hourly'] },
+      { href: '/console/reports/pour-variance', label: 'Pour variance', description: 'What the counts found against what the floor sold.', keywords: ['shrinkage', 'loss'] },
+      { href: '/console/reports/voids', label: 'Voids and discounts', description: 'Lines voided and discounts given, by person and by reason.' },
+      { href: '/console/reports/seats', label: 'Seats', description: 'How many guests came, how they sat, and what each spent.', keywords: ['guests', 'covers'] },
+      { href: '/console/reports/dead-stock', label: 'Dead stock', description: 'Stock that has not sold, and the cash it holds.', keywords: ['slow moving'] },
     ],
   },
   {
@@ -136,9 +138,9 @@ export const WORKSPACES: readonly NavWorkspace[] = [
     description: 'Staff, roles and permissions, and the zones and tables on the floor.',
     group: 'business',
     pages: [
-      { href: '/console/people/staff', label: 'Staff', keywords: ['team', 'pin', 'waiters'] },
-      { href: '/console/people/roles', label: 'Roles', keywords: ['permissions', 'access'] },
-      { href: '/console/people/zoning', label: 'Zones and tables', keywords: ['floor plan', 'zoning'] },
+      { href: '/console/people/staff', label: 'Staff', description: 'Everyone who works here, their role, and whether they can sign in.', keywords: ['team', 'pin', 'waiters'] },
+      { href: '/console/people/roles', label: 'Roles', description: 'What each role can see and do.', keywords: ['permissions', 'access'] },
+      { href: '/console/people/zoning', label: 'Zones and tables', description: 'The floor\'s zones and tables, and the price list each zone uses.', keywords: ['floor plan', 'zoning'] },
     ],
   },
   {
@@ -148,10 +150,10 @@ export const WORKSPACES: readonly NavWorkspace[] = [
     description: 'The outlet, its devices, what did not sync, and the audit trail.',
     group: 'system',
     pages: [
-      { href: '/console/settings/outlet', label: 'Outlet', keywords: ['venue', 'vat', 'cutover'] },
-      { href: '/console/settings/devices', label: 'Devices', keywords: ['tablets', 'stations'] },
-      { href: '/console/settings/sync', label: 'Sync', keywords: ['unsent', 'dead letters'] },
-      { href: '/console/settings/audit', label: 'Audit trail', keywords: ['log', 'history'] },
+      { href: '/console/settings/outlet', label: 'Outlet', description: 'The outlet\'s name, tax details and when the business day ends.', keywords: ['venue', 'vat', 'cutover'] },
+      { href: '/console/settings/devices', label: 'Devices', description: 'The tablets and counters signed in to this outlet.', keywords: ['tablets', 'stations'] },
+      { href: '/console/settings/sync', label: 'Sync', description: 'Orders a station sent that the server could not accept.', keywords: ['unsent', 'dead letters'] },
+      { href: '/console/settings/audit', label: 'Audit trail', description: 'Every change made in the Console, who made it, and what it was before.', keywords: ['log', 'history'] },
     ],
   },
 ];
@@ -199,6 +201,15 @@ export function crumbsFor(pathname: string, record?: string | null): Crumb[] {
   // The last crumb is where you are: not a link.
   crumbs[crumbs.length - 1] = { ...crumbs[crumbs.length - 1]!, href: null };
   return crumbs;
+}
+
+/** A list page's own entry, for its header. */
+export function pageByHref(href: string): { workspace: NavWorkspace; page: NavPage } {
+  for (const w of WORKSPACES) {
+    const page = w.pages.find((p) => p.href === href);
+    if (page) return { workspace: w, page };
+  }
+  throw new Error(`No nav entry for ${href}`);
 }
 
 /** Every destination, for the command menu. */

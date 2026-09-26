@@ -169,6 +169,9 @@
   --spacing-rail-ticket: 340px;
   --spacing-rail-console: 240px;
   --spacing-rail-collapsed: 64px;
+  --spacing-desk-nav: 232px;
+  --spacing-desk-nav-collapsed: 60px;
+  --spacing-sheet-inset: 8px;
   --spacing-bar: 56px;
   --spacing-page-max: 1440px;
   --spacing-frame-min: 1024px;
@@ -199,6 +202,7 @@
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-control: 12px;
+  --radius-sheet: 14px;
   --radius-lg: 16px;
   --radius-card: 16px;
   --radius-overlay: 20px;
@@ -298,6 +302,11 @@
   --color-rail: var(--bliss-rail);
   --color-rail-hover: var(--bliss-rail-hover);
   --color-rail-active: var(--bliss-rail-active);
+  --color-desk: var(--bliss-desk);
+  --color-sheet: var(--bliss-sheet);
+  --color-desk-hover: var(--bliss-desk-hover);
+  --color-desk-active: var(--bliss-desk-active);
+  --color-desk-well: var(--bliss-desk-well);
   --color-on-scrim: var(--bliss-on-scrim);
   --color-thumb: var(--bliss-thumb);
   --color-scrim: var(--bliss-scrim);
@@ -308,6 +317,9 @@
   --shadow-card-hover: var(--bliss-shadow-card-hover);
   --shadow-control: var(--bliss-shadow-control);
   --shadow-control-primary: var(--bliss-shadow-control-primary);
+  --shadow-sheet: var(--bliss-shadow-sheet);
+  --shadow-chip: var(--bliss-shadow-chip);
+  --shadow-well: var(--bliss-shadow-well);
   --shadow-popover: var(--bliss-shadow-popover);
 }
 
@@ -381,6 +393,11 @@
   --bliss-rail: #F4F7F9;
   --bliss-rail-hover: color-mix(in oklab, #D4DCE3 45%, transparent);
   --bliss-rail-active: color-mix(in oklab, #D4DCE3 70%, transparent);
+  --bliss-desk: #E7ECF0;
+  --bliss-sheet: #FBFCFD;
+  --bliss-desk-hover: color-mix(in oklab, #D4DCE3 70%, transparent);
+  --bliss-desk-active: #FBFCFD;
+  --bliss-desk-well: color-mix(in oklab, #FBFCFD 55%, transparent);
   --bliss-on-scrim: #FBFCFD;
   --bliss-thumb: #FBFCFD;
   --bliss-scrim: rgba(11, 16, 21, 0.55);
@@ -391,6 +408,9 @@
   --bliss-shadow-card-hover: 0 1px 2px color-mix(in oklab, #0B1015 5%, transparent), 0 10px 28px -6px color-mix(in oklab, #0B1015 10%, transparent);
   --bliss-shadow-control: inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 8%, transparent);
   --bliss-shadow-control-primary: inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 22%, transparent), 0 6px 18px -8px color-mix(in oklab, var(--bliss-accent) 55%, transparent);
+  --bliss-shadow-sheet: 0 0 0 1px color-mix(in oklab, #0B1015 6%, transparent), 0 1px 2px color-mix(in oklab, #0B1015 4%, transparent), 0 12px 32px -16px color-mix(in oklab, #0B1015 16%, transparent);
+  --bliss-shadow-chip: 0 0 0 1px color-mix(in oklab, #0B1015 6%, transparent), 0 1px 2px color-mix(in oklab, #0B1015 6%, transparent);
+  --bliss-shadow-well: inset 0 0 0 1px color-mix(in oklab, #0B1015 6%, transparent), inset 0 1px 2px color-mix(in oklab, #0B1015 4%, transparent);
   --bliss-shadow-popover: 0 12px 32px -8px color-mix(in oklab, #0B1015 18%, transparent), 0 2px 6px color-mix(in oklab, #0B1015 6%, transparent);
 }
 
@@ -462,6 +482,11 @@
   --bliss-rail: #151B20;
   --bliss-rail-hover: color-mix(in oklab, #232B32 70%, transparent);
   --bliss-rail-active: #232B32;
+  --bliss-desk: #06090C;
+  --bliss-sheet: #0F151A;
+  --bliss-desk-hover: color-mix(in oklab, #232B32 55%, transparent);
+  --bliss-desk-active: #151B20;
+  --bliss-desk-well: color-mix(in oklab, #151B20 70%, transparent);
   --bliss-on-scrim: #FBFCFD;
   --bliss-thumb: #38424B;
   --bliss-scrim: rgba(11, 16, 21, 0.55);
@@ -472,6 +497,9 @@
   --bliss-shadow-card-hover: 0 12px 28px -12px color-mix(in oklab, #000000 60%, transparent);
   --bliss-shadow-control: inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 8%, transparent);
   --bliss-shadow-control-primary: inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 22%, transparent), 0 6px 18px -8px color-mix(in oklab, var(--bliss-accent) 55%, transparent);
+  --bliss-shadow-sheet: 0 0 0 1px #232B32, 0 16px 40px -20px color-mix(in oklab, #000000 80%, transparent);
+  --bliss-shadow-chip: 0 0 0 1px #232B32;
+  --bliss-shadow-well: inset 0 0 0 1px #232B32;
   --bliss-shadow-popover: 0 16px 40px -8px color-mix(in oklab, #000000 70%, transparent), 0 0 0 1px #38424B;
 }
 
@@ -544,6 +572,11 @@
     --bliss-rail: #151B20;
     --bliss-rail-hover: color-mix(in oklab, #232B32 70%, transparent);
     --bliss-rail-active: #232B32;
+    --bliss-desk: #06090C;
+    --bliss-sheet: #0F151A;
+    --bliss-desk-hover: color-mix(in oklab, #232B32 55%, transparent);
+    --bliss-desk-active: #151B20;
+    --bliss-desk-well: color-mix(in oklab, #151B20 70%, transparent);
     --bliss-on-scrim: #FBFCFD;
     --bliss-thumb: #38424B;
     --bliss-scrim: rgba(11, 16, 21, 0.55);
@@ -554,6 +587,9 @@
     --bliss-shadow-card-hover: 0 12px 28px -12px color-mix(in oklab, #000000 60%, transparent);
     --bliss-shadow-control: inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 8%, transparent);
     --bliss-shadow-control-primary: inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 22%, transparent), 0 6px 18px -8px color-mix(in oklab, var(--bliss-accent) 55%, transparent);
+    --bliss-shadow-sheet: 0 0 0 1px #232B32, 0 16px 40px -20px color-mix(in oklab, #000000 80%, transparent);
+    --bliss-shadow-chip: 0 0 0 1px #232B32;
+    --bliss-shadow-well: inset 0 0 0 1px #232B32;
     --bliss-shadow-popover: 0 16px 40px -8px color-mix(in oklab, #000000 70%, transparent), 0 0 0 1px #38424B;
   }
 }

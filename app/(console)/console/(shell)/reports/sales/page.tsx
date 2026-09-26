@@ -6,6 +6,7 @@ import * as settlement from '@/modules/settlement/service';
 import { TENDER_LABEL } from '../../_lib/labels';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { SalesReport } from './sales-report';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Sales' };
 
@@ -20,6 +21,9 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
   const single = range.from === range.to;
 
   return (
+    <>
+      <ViewHeader page="/console/reports/sales" />
+
     <SalesReport
       rangeKey={range.key}
       rangeOptions={rangeOptions(false)}
@@ -39,5 +43,6 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
       tenders={settlement.tenderMix(range.from, range.to).map((t) => ({ key: t.kind, label: TENDER_LABEL[t.kind], value: t.amount, detail: plural(t.count, 'tender') }))}
       exportDate={range.to}
     />
+    </>
   );
 }

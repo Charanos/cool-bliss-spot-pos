@@ -82,7 +82,10 @@ export function AccountMenu({ name, role, photo, theme: initialTheme, compact }:
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         title={`${name}, ${role}`}
-        className="flex h-control-md w-full items-center gap-12 rounded-md px-4 text-left transition-hover hover:bg-rail-hover aria-expanded:bg-rail-hover"
+        className={cx(
+          'flex h-control-md w-full items-center gap-12 rounded-md text-left transition-hover hover:bg-desk-hover aria-expanded:bg-desk-hover',
+          compact ? 'justify-center px-0' : 'justify-center px-0 desktop:justify-start desktop:px-4',
+        )}
       >
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element -- a staff photo, sized by CSS

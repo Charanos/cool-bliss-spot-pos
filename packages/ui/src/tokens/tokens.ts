@@ -23,6 +23,10 @@ export const colour = {
     800: '#232B32',
     900: '#151B20',
     950: '#0B1015',
+    /** The dark Console sheet: lifted one half step off the page so it floats on the desk. */
+    925: '#0F151A',
+    /** The dark desk under the Console sheet: the one step below the page. */
+    975: '#06090C',
   },
   glacier: {
     200: '#A8DCE6',
@@ -154,6 +158,14 @@ export const themes = {
     rail: f[900],
     'rail-hover': alpha(f[800], 70),
     'rail-active': f[800],
+    /* The Console desk, docs/19 section 4: the sunken ground the navigation sits on, under the one
+     * floating sheet that holds the page. The active item is a chip of the sheet's own surface. */
+    desk: f[975],
+    /* The sheet the page sits on. Inside it, `page` becomes this. */
+    sheet: f[925],
+    'desk-hover': alpha(f[800], 55),
+    'desk-active': f[900],
+    'desk-well': alpha(f[900], 70),
     'on-scrim': f[0],
     /* The selected segment of a segmented control: a thumb, not a nested pane. */
     thumb: f[700],
@@ -229,6 +241,11 @@ export const themes = {
     rail: f[50],
     'rail-hover': alpha(f[200], 45),
     'rail-active': alpha(f[200], 70),
+    desk: f[100],
+    sheet: f[0],
+    'desk-hover': alpha(f[200], 70),
+    'desk-active': f[0],
+    'desk-well': alpha(f[0], 55),
     'on-scrim': f[0],
     thumb: f[0],
   },
@@ -295,7 +312,7 @@ export const space = [2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 56, 72, 96] as const;
  * value as `lg`), `overlay` for dialogs, and `pill`, which only a count badge or a segmented control
  * uses. Status chips stay `sm`.
  */
-export const radius = { sm: 6, md: 10, control: 12, lg: 16, card: 16, overlay: 20, pill: 9999, dot: 9999 } as const;
+export const radius = { sm: 6, md: 10, control: 12, sheet: 14, lg: 16, card: 16, overlay: 20, pill: 9999, dot: 9999 } as const;
 
 /**
  * Component dimensions. Not space: these size things, they do not separate them.
@@ -323,6 +340,10 @@ export const size = {
   'rail-ticket': 340,
   'rail-console': 240,
   'rail-collapsed': 64,
+  /** The Console desk navigation, open and folded, and the gap the sheet floats in. */
+  'desk-nav': 232,
+  'desk-nav-collapsed': 60,
+  'sheet-inset': 8,
   /** The Console top bar and the rail's venue block, aligned. */
   bar: 56,
   /** The Console content column. */
@@ -381,6 +402,15 @@ export const consoleElevation = {
     light: `inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 22%, transparent), 0 6px 18px -8px color-mix(in oklab, var(--bliss-accent) 55%, transparent)`,
     dark: `inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 22%, transparent), 0 6px 18px -8px color-mix(in oklab, var(--bliss-accent) 55%, transparent)`,
   },
+  /* The floating sheet: a hairline, a contact shadow and a long soft fall onto the desk. */
+  sheet: {
+    light: `0 0 0 1px ${ink(6)}, 0 1px 2px ${ink(4)}, 0 12px 32px -16px ${ink(16)}`,
+    dark: `0 0 0 1px ${f[800]}, 0 16px 40px -20px ${alpha('#000000', 80)}`,
+  },
+  /* The active desk item: a chip of the sheet's surface, raised by a hair. */
+  chip: { light: `0 0 0 1px ${ink(6)}, 0 1px 2px ${ink(6)}`, dark: `0 0 0 1px ${f[800]}` },
+  /* A well sunk into the desk: the search field and the tonight card. */
+  well: { light: `inset 0 0 0 1px ${ink(6)}, inset 0 1px 2px ${ink(4)}`, dark: `inset 0 0 0 1px ${f[800]}` },
   popover: { light: `0 12px 32px -8px ${ink(18)}, 0 2px 6px ${ink(6)}`, dark: `0 16px 40px -8px ${alpha('#000000', 70)}, 0 0 0 1px ${f[700]}` },
 } as const;
 
@@ -508,6 +538,19 @@ export const contrastPairs: ContrastPair[] = [
   { name: 'dark ink-subtle on rail and card', fg: f[400], bg: f[900], use: 'body', measured: 6.03 }, // 6.03:1
   { name: 'dark ink on rail active', fg: f[50], bg: f[800], use: 'body', measured: 13.34 }, // 13.34:1
   { name: 'dark accent text on rail active', fg: g[300], bg: f[800], use: 'body', measured: 7.33 }, // 7.33:1
+
+  // The Console desk and its active chip, docs/19 section 4.
+  { name: 'light ink on desk', fg: f[900], bg: f[100], use: 'body', measured: 14.6 }, // 14.60:1
+  { name: 'light ink-muted on desk', fg: f[700], bg: f[100], use: 'body', measured: 8.62 }, // 8.62:1
+  { name: 'light ink-subtle on desk', fg: f[600], bg: f[100], use: 'body', measured: 5.94 }, // 5.94:1
+  { name: 'light accent text on desk', fg: g[600], bg: f[100], use: 'body', measured: 4.89 }, // 4.89:1
+  { name: 'dark ink on desk', fg: f[50], bg: f[975], use: 'body', measured: 18.55 }, // 18.55:1
+  { name: 'dark ink-muted on desk', fg: f[300], bg: f[975], use: 'body', measured: 10.66 }, // 10.66:1
+  { name: 'dark ink on sheet', fg: f[50], bg: f[925], use: 'body', measured: 17.08 }, // 17.08:1
+  { name: 'dark ink-muted on sheet', fg: f[300], bg: f[925], use: 'body', measured: 9.81 }, // 9.81:1
+  { name: 'dark ink-subtle on sheet', fg: f[400], bg: f[925], use: 'body', measured: 6.38 }, // 6.38:1
+  { name: 'dark accent text on sheet', fg: g[300], bg: f[925], use: 'body', measured: 9.39 }, // 9.39:1
+  { name: 'dark ink-subtle on desk', fg: f[400], bg: f[975], use: 'body', measured: 6.93 }, // 6.93:1
 
   // Seat chips carry frost-950 numbers on every palette colour, on both themes.
   { name: 'seat 1 glacier', fg: colour.seatText, bg: colour.seat[0], use: 'body', measured: 9.76 }, // 9.76:1

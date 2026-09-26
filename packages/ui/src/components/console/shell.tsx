@@ -5,35 +5,59 @@ import { type ReactNode, useEffect, useRef } from 'react';
 import { cx } from '../../lib/cx';
 import { initMotion } from '../../motion/engine';
 import { pageEnter, refreshScrollTriggers } from '../../motion/console';
-import { LenisProvider } from '../../motion/lenis-provider';
+import { LenisProvider, useLenis } from '../../motion/lenis-provider';
 
 export { RouteTabs, type TabLink } from './tabs';
 
-/** Motion defaults once, Lenis for wheel scrolling, and page.enter on every route change. */
-export function ConsoleMotionRoot({ children }: { children: ReactNode }) {
+/** Motion defaults once, Lenis for wheel scrolling inside the sheet, and page.enter on every route change. */
+export function ConsoleMotionRoot({ children, scrollerId }: { children: ReactNode; scrollerId?: string }) {
   useEffect(() => {
     initMotion();
   }, []);
-  return <LenisProvider>{children}</LenisProvider>;
+  return <LenisProvider wrapperId={scrollerId}>{children}</LenisProvider>;
+}
+
+/**
+ * The floating sheet, docs/19 section 4: one raised surface on the sunken desk that holds the page.
+ * It scrolls on its own, so the desk and its navigation stay put, and its header rides at its top.
+ * The scroller's first child is what Lenis measures, so the header and the page share it.
+ */
+export function ConsoleSheet({ scrollerId, header, children }: { scrollerId: string; header: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-1 py-sheet-inset pr-sheet-inset">
+      <div className="sheet-scope relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-sheet bg-page shadow-sheet">
+        <div id={scrollerId} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="flex min-h-full flex-col">
+            {header}
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
  * The page column: one width, one gutter, one rhythm, on every Console page. docs/19 section 4.
  * page.enter runs on each route change.
  */
-export function ConsolePage({ children }: { children: ReactNode }) {
+export function ConsolePage({ children, scrollerId }: { children: ReactNode; scrollerId?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const lenis = useLenis();
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // A new page starts at its top. The sheet is the scroller, so the router's own reset (which
+    // moves the window) does not reach it.
+    if (scrollerId) lenis?.scrollTo(0, { immediate: true });
     pageEnter(el);
     refreshScrollTriggers();
-  }, [pathname]);
+  }, [pathname, scrollerId, lenis]);
 
   return (
-    <div ref={ref} className="mx-auto w-full min-w-0 max-w-page-max px-32 pb-72 pt-24">
+    <div ref={ref} className="mx-auto w-full min-w-0 max-w-page-max px-32 pb-72 pt-32">
       {children}
     </div>
   );
@@ -45,6 +69,8 @@ export interface PageHeaderProps {
   description?: ReactNode;
   /** A status beside the title. */
   badge?: ReactNode;
+  /** The one figure the page is about, set beside the title: stock at cost, tonight's takings. */
+  aside?: ReactNode;
   actions?: ReactNode;
   className?: string;
 }
@@ -53,9 +79,9 @@ export interface PageHeaderProps {
  * A page's header: the title, one sentence of purpose, and the page's actions. No eyebrow and no
  * ornament; the breadcrumb above already says where you are. docs/19 section 4.
  */
-export function PageHeader({ title, description, badge, actions, className }: PageHeaderProps) {
+export function PageHeader({ title, description, badge, aside, actions, className }: PageHeaderProps) {
   return (
-    <header className={cx('flex flex-wrap items-end justify-between gap-x-24 gap-y-16 pb-20', className)}>
+    <header className={cx('flex flex-wrap items-end justify-between gap-x-32 gap-y-16 pb-24', className)}>
       <div className="flex min-w-0 flex-col gap-6">
         <div className="flex min-w-0 flex-wrap items-center gap-12">
           <h1 className="text-title-page text-balance text-ink">{title}</h1>
@@ -63,7 +89,22 @@ export function PageHeader({ title, description, badge, actions, className }: Pa
         </div>
         {description ? <p className="measure text-ui text-pretty text-ink-muted">{description}</p> : null}
       </div>
-      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-8">{actions}</div> : null}
+      {aside || actions ? (
+        <div className="flex shrink-0 flex-wrap items-end gap-24">
+          {aside ? <div className={cx('flex items-end gap-24', actions ? 'border-r border-rule pr-24' : null)}>{aside}</div> : null}
+          {actions ? <div className="flex flex-wrap items-center gap-8">{actions}</div> : null}
+        </div>
+      ) : null}
     </header>
+  );
+}
+
+/** A figure beside a page title: a label in capitals over the value. Two at most. */
+export function HeaderFigure({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col items-end gap-4">
+      <span className="label-caps text-ink-subtle">{label}</span>
+      <span className="text-ink">{children}</span>
+    </div>
   );
 }
