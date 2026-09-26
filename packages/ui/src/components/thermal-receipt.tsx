@@ -121,8 +121,102 @@ export function ReceiptTotalRow({
 
 export function ReceiptFooter({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-col items-center text-center mt-8 mb-4 gap-2">
+    <div className="flex flex-col items-center text-center mt-6 mb-2 gap-2">
       {children}
+    </div>
+  );
+}
+
+export function ReceiptTaxBreakdown({
+  taxableAmount,
+  taxAmount,
+  rateLabel = '16% VAT',
+}: {
+  taxableAmount: string;
+  taxAmount: string;
+  rateLabel?: string;
+}) {
+  return (
+    <div className="flex flex-col w-full text-[11px] mb-2 text-black/85">
+      <div className="flex justify-between w-full">
+        <span>Tax Base (Excl. VAT):</span>
+        <span>{taxableAmount}</span>
+      </div>
+      <div className="flex justify-between w-full">
+        <span>{rateLabel}:</span>
+        <span>{taxAmount}</span>
+      </div>
+    </div>
+  );
+}
+
+export function ReceiptTenderRow({
+  kind,
+  reference,
+  amount,
+  tendered,
+  change,
+}: {
+  kind: string;
+  reference?: string | null;
+  amount: string;
+  tendered?: string | null;
+  change?: string | null;
+}) {
+  return (
+    <div className="flex flex-col w-full text-[12px] mb-2">
+      <div className="flex justify-between w-full font-semibold">
+        <span className="uppercase">{kind} PAID:</span>
+        <span>{amount}</span>
+      </div>
+      {reference ? (
+        <div className="flex justify-between w-full text-[11px] text-black/80">
+          <span>Ref / Auth:</span>
+          <span className="font-mono font-medium">{reference}</span>
+        </div>
+      ) : null}
+      {tendered && change ? (
+        <div className="flex justify-between w-full text-[11px] text-black/80">
+          <span>Cash Tendered: {tendered}</span>
+          <span>Change: {change}</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function ReceiptFiscalFooter({
+  kraPin,
+  cuNumber,
+  invoiceNumber,
+  controlCode,
+  notice = 'OFFICIAL KRA eTIMS FISCAL RECEIPT',
+}: {
+  kraPin: string;
+  cuNumber: string;
+  invoiceNumber: string;
+  controlCode: string;
+  notice?: string;
+}) {
+  return (
+    <div className="flex flex-col items-center text-center mt-4 w-full border-t border-dashed border-black pt-3 text-[11px]">
+      <div className="font-bold uppercase tracking-wider mb-2">{notice}</div>
+      <div className="flex justify-between w-full">
+        <span>KRA PIN:</span>
+        <span className="font-mono font-bold">{kraPin}</span>
+      </div>
+      <div className="flex justify-between w-full">
+        <span>CU SERIAL NO:</span>
+        <span className="font-mono">{cuNumber}</span>
+      </div>
+      <div className="flex justify-between w-full">
+        <span>CU INVOICE NO:</span>
+        <span className="font-mono font-bold">{invoiceNumber}</span>
+      </div>
+      <div className="flex justify-between w-full mt-1">
+        <span>CONTROL CODE:</span>
+        <span className="font-mono text-[10px] break-all">{controlCode}</span>
+      </div>
     </div>
   );
 }

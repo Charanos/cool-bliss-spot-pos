@@ -28,6 +28,8 @@ import Link from 'next/link';
 
 export function HeadlineMetrics(props: {
   netSales: Cents;
+  cogs: Cents;
+  grossProfit: Cents;
   delta: { bps: number; against: string } | null;
   marginBps: number;
   seats: number;
@@ -51,7 +53,7 @@ export function HeadlineMetrics(props: {
         icon={IconScale}
         tone="default"
         value={<CountUp value={props.marginBps} format={(n) => formatBps(Math.round(n))} delayMs={60} />}
-        detail="At cost, excluding VAT"
+        detail={`COGS: ${formatKes(props.cogs, { decimals: 'whole' })} · Profit: ${formatKes(props.grossProfit, { decimals: 'whole' })}`}
       />
       <Metric
         label="Seats served"

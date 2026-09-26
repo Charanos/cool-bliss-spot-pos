@@ -71,6 +71,9 @@ export function afterCommit() {
 
 export async function openTab(input: { tableId: string | null; zoneId: string; guestCount: number; name: string | null }): Promise<string> {
   const ctx = await context();
+  if (!input.tableId && !input.name?.trim()) {
+    throw new Error('No ghost service: A tab requires a table or walk-up customer ID.');
+  }
   const db = posDb();
   const now = Date.now();
   const tabId = newId(ctx.device.id);
@@ -427,6 +430,7 @@ export async function voidLine(input: { lineId: string; reason: string; approval
  */
 export async function fireOrder(tabId: string): Promise<number> {
   const ctx = await context();
+  if (!tabId) throw new Error('No ghost service: Tab ID is required to fire drinks.');
   const db = posDb();
   const index = await pricingIndex();
   let fired = 0;

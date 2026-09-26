@@ -7,6 +7,7 @@ import { CountUp, Metric } from '@bliss/ui/components/console/metric';
 import { Dot, StatusChip } from '@bliss/ui/components/status';
 import { useHydrated, useNow } from '@bliss/ui/hooks';
 import { IconCheck, IconCloudOff, IconDeviceTablet, IconDeviceTabletOff } from '@tabler/icons-react';
+import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { useState } from 'react';
 import { WithdrawDeviceDialog } from '../../_components/dialogs';
 
@@ -84,6 +85,25 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
 
   return (
     <div className="flex flex-col gap-20">
+      <div className="flex flex-col tablet:flex-row items-start tablet:items-center justify-between gap-16 rounded-xl bg-control/30 border border-hairline/60 p-16 shadow-[0_2px_8px_rgba(0,0,0,0.02)] backdrop-blur-sm">
+        <div className="flex items-center gap-14">
+          <div className="flex size-[36px] items-center justify-center rounded-lg bg-accent/15 text-accent-text shrink-0">
+            <IconDeviceTablet size={20} stroke={ICON_STROKE} aria-hidden="true" />
+          </div>
+          <div>
+            <div className="flex items-center gap-8">
+              <span className="text-body font-semibold text-ink">OFFLINE-FIRST ARCHITECTURE & POWER TOPOLOGY</span>
+              <span className="rounded-full bg-poured-wash border border-poured/30 px-8 py-[1px] text-micro font-bold text-poured uppercase tracking-wider">
+                Resilient Ledger
+              </span>
+            </div>
+            <p className="mt-2 text-body-sm text-ink-muted">
+              Local ledger on device (Dexie IndexedDB), synchronizing seamlessly when 4G/Wi-Fi returns. Power topology: Dedicated UPS on counter till + thermal printer + router. Battery-powered mobile tablets for floor servers.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-16 tablet:grid-cols-2 desktop:grid-cols-4">
         <Metric
           label="Active fleet"

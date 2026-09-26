@@ -5,7 +5,7 @@ import { RevealSection } from '@bliss/ui/components/console/shell';
 import { Money } from '@bliss/ui/components/money';
 import { SeatChip } from '@bliss/ui/components/seat-chip';
 import { type StatusKey, StatusChip } from '@bliss/ui/components/status';
-import { IconArrowLeft } from '@tabler/icons-react';
+import { IconArrowLeft, IconMapPin, IconCalendar, IconClock, IconUser, IconReceipt2, IconHistory, IconNote } from '@tabler/icons-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -67,85 +67,123 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
   const isOpen = tab.status === 'open' || tab.status === 'part_settled' || tab.status === 'settling';
 
   return (
-    <>
-      <div className="mb-16">
-        <ButtonLink href={isOpen ? '/console/trade/open' : '/console/trade/bills'} variant="ghost" icon={IconArrowLeft} className="-ml-12">
+    <div className="flex flex-col gap-24 max-w-[1400px] mx-auto w-full pb-32">
+      <div className="flex items-center justify-end">
+        <ButtonLink href={isOpen ? '/console/trade/open' : '/console/trade/bills'} variant="ghost" icon={IconArrowLeft} className="-mr-12 text-ink-subtle hover:text-ink transition-colors">
           {isOpen ? 'Open tabs' : 'Bills'}
         </ButtonLink>
       </div>
 
-      <div className="flex flex-wrap items-start justify-between gap-24 border-b border-hairline pb-20">
-        <div className="min-w-0">
-          <h2 className="flex flex-wrap items-center gap-12 text-title text-ink">
-            {tableLabel}
-            {tab.tabNumber ? <span className="font-mono tabular text-num-lg text-ink-subtle">tab {tab.tabNumber}</span> : null}
+      {/* ── PAGE HEADER ── */}
+      <div className="flex flex-col desktop:flex-row items-start desktop:items-center justify-between gap-24 pb-12">
+        <div className="flex flex-col gap-12 min-w-0">
+          <div className="flex items-center gap-12 flex-wrap">
+            <h2 className="text-[28px] font-medium text-ink tracking-tight flex flex-wrap items-center gap-10">
+              {tableLabel}
+              {tab.tabNumber ? <span className="font-mono tabular text-[22px] text-ink-subtle mt-1">· tab {tab.tabNumber}</span> : null}
+            </h2>
             <StatusChip status={tabStatus(tab.status)} label={tab.status === 'part_settled' ? 'Part settled' : undefined} />
-          </h2>
-          <p className="mt-4 text-body text-ink-muted">
-            {summary.zoneName} · business date <span className="font-mono tabular text-num-sm">{formatIsoDate(tab.businessDate)}</span> · opened {formatTime(tab.openedAt, tz)} · with {identity.displayName(tab.assignedTo)}
-            {tab.closedAt ? ` · open for ${formatElapsed(tab.closedAt - tab.openedAt)}` : ''}
-          </p>
+          </div>
+          
+          <div className="flex items-center gap-12 flex-wrap text-body-sm text-ink-subtle">
+            <span className="flex items-center gap-6"><IconMapPin size={15} className="text-ink-muted" /> {summary.zoneName}</span>
+            <span className="text-hairline/80">•</span>
+            <span className="flex items-center gap-6"><IconCalendar size={15} className="text-ink-muted" /> <span className="font-mono tabular">{formatIsoDate(tab.businessDate)}</span></span>
+            <span className="text-hairline/80">•</span>
+            <span className="flex items-center gap-6"><IconClock size={15} className="text-ink-muted" /> <span className="font-mono tabular">{formatTime(tab.openedAt, tz)}</span></span>
+            <span className="text-hairline/80">•</span>
+            <span className="flex items-center gap-6"><IconUser size={15} className="text-ink-muted" /> {identity.displayName(tab.assignedTo)}</span>
+            {tab.closedAt ? <><span className="text-hairline/80">•</span><span className="flex items-center gap-6">Duration: {formatElapsed(tab.closedAt - tab.openedAt)}</span></> : null}
+          </div>
         </div>
-        <dl className="flex gap-32">
-          <Figure label="Total">
-            <Money value={summary.total} size="num-lg" />
-          </Figure>
-          <Figure label="Settled">
-            <Money value={settled} size="num-lg" tone={isPositive(settled) ? 'default' : 'subtle'} />
-          </Figure>
-          <Figure label="Voided">
-            <Money value={sum(voided.map((l) => l.lineTotalCents))} size="num-lg" tone={voided.length > 0 ? 'attention' : 'subtle'} />
-          </Figure>
-        </dl>
+
+        <div className="flex items-stretch gap-16 shrink-0 bg-page px-20 py-12 rounded-[16px] border border-hairline/60 shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
+          <div className="flex flex-col items-end gap-2 pr-4">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-ink-muted">Total</span>
+            <div className="font-mono text-title-md font-medium text-ink">
+              <Money value={summary.total} />
+            </div>
+          </div>
+          <div className="w-[1px] bg-hairline/60 my-2" />
+          <div className="flex flex-col items-end gap-2 px-4">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-ink-muted">Settled</span>
+            <div className={`font-mono text-title-md font-medium ${isPositive(settled) ? 'text-poured' : 'text-ink-muted'}`}>
+              <Money value={settled} tone={isPositive(settled) ? 'poured' : 'subtle'} />
+            </div>
+          </div>
+          <div className="w-[1px] bg-hairline/60 my-2" />
+          <div className="flex flex-col items-end gap-2 pl-4">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-ink-muted">Voided</span>
+            <div className={`font-mono text-title-md font-medium ${voided.length > 0 ? 'text-stop' : 'text-ink-muted'}`}>
+              <Money value={sum(voided.map((l) => l.lineTotalCents))} tone={voided.length > 0 ? 'attention' : 'subtle'} />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-24 grid grid-cols-1 gap-40 desktop:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
-        <RevealSection aria-label="Lines">
-          {groups.length === 0 ? <p className="py-24 text-body text-ink-muted">Nothing has been ordered on this tab yet.</p> : null}
+      <div className="grid grid-cols-1 gap-32 desktop:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        
+        {/* ── LEFT COLUMN: LINES BY SEAT ── */}
+        <div className="flex flex-col gap-24">
+          {groups.length === 0 ? (
+            <div className="p-32 rounded-[16px] bg-page border border-hairline/60 text-center text-ink-subtle shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+              Nothing has been ordered on this tab yet.
+            </div>
+          ) : null}
+          
           {groups.map((group) => {
             const own = group.lines.filter((l) => l.status !== 'voided');
             return (
-              <div key={group.key} className="mb-24">
-                <div className="flex items-center justify-between gap-16 border-b border-hairline pb-8">
-                  <span className="flex items-center gap-8">
+              <div key={group.key} className="overflow-hidden rounded-[16px] bg-page border border-hairline/60 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+                <div className="flex items-center justify-between gap-16 border-b border-hairline/60 bg-control/20 px-20 py-16">
+                  <span className="flex items-center gap-12">
                     {showSeats ? <SeatChip seat={group.seat ? group.seat.seatNo : 'shared'} label={group.seat?.label} settled={group.seat?.status === 'settled'} size="row" /> : null}
-                    <span className="text-subtitle text-ink">
+                    <span className="text-subtitle font-medium text-ink">
                       {group.seat ? (showSeats ? `Seat ${group.seat.seatNo}${group.seat.label ? `, ${group.seat.label}` : ''}` : 'Lines') : showSeats ? 'Shared' : 'Lines'}
                     </span>
                     {group.seat?.status === 'settled' ? <StatusChip status="settled" /> : null}
                   </span>
-                  <Money value={sum(own.map((l) => l.lineTotalCents))} tone="muted" />
+                  <div className="flex items-center gap-12 bg-page px-16 py-6 rounded-full border border-hairline/40 shadow-sm">
+                    <span className="text-micro font-medium uppercase tracking-wider text-ink-subtle">Seat Total</span>
+                    <span className="font-mono text-title-sm font-medium text-ink"><Money value={sum(own.map((l) => l.lineTotalCents))} /></span>
+                  </div>
                 </div>
-                <ul>
+                <ul className="divide-y divide-hairline/60">
                   {group.lines.map((line) => {
                     const variant = catalogue.variantById(line.productVariantId);
                     const mods = trade.modifiersFor(line.id);
                     const state = LINE_STATUS[line.status];
                     const firedAt = trade.orderFiredAt(line.orderId);
                     return (
-                      <li key={line.id} className="border-b border-rule py-12">
-                        <div className="grid grid-cols-[48px_minmax(0,1fr)_auto_120px] items-baseline gap-16">
-                          <span className="font-mono tabular text-num text-ink-muted">{line.qty} ×</span>
-                          <span className="min-w-0">
-                            <span className={line.status === 'voided' ? 'text-body text-ink-subtle line-through' : 'text-body text-ink'}>{variant?.name ?? 'Unknown item'}</span>
-                            {mods.length > 0 ? <span className="block text-body-sm text-ink-muted">{mods.map((m) => m.name).join(', ')}</span> : null}
-                            {line.note ? <span className="block text-body-sm text-ink-muted">Note: {line.note}</span> : null}
+                      <li key={line.id} className="p-20 hover:bg-control/5 transition-colors">
+                        <div className="grid grid-cols-[48px_minmax(0,1fr)_auto_90px] items-baseline gap-16">
+                          <span className="font-mono tabular text-body font-medium text-ink-subtle bg-control/30 px-6 py-2 rounded border border-hairline/40 text-center shadow-xs">
+                            {line.qty} ×
+                          </span>
+                          <span className="min-w-0 flex flex-col gap-4">
+                            <span className={line.status === 'voided' ? 'text-body font-medium text-ink-subtle line-through' : 'text-body font-medium text-ink'}>{variant?.name ?? 'Unknown item'}</span>
+                            {mods.length > 0 ? <span className="text-body-sm text-ink-subtle">{mods.map((m) => m.name).join(', ')}</span> : null}
+                            {line.note ? <span className="text-body-sm text-ink-subtle flex items-center gap-4"><IconNote size={14} className="text-ink-muted"/> {line.note}</span> : null}
                             {line.status === 'voided' ? (
-                              <span className="block text-body-sm text-stop">
+                              <span className="text-body-sm text-stop bg-stop/10 px-8 py-4 rounded-md border border-red-500/20 inline-block mt-4 w-fit">
                                 Voided by {identity.displayName(line.voidedBy)}
                                 {line.voidedAt ? ` at ${formatTime(line.voidedAt, tz)}` : ''}: {line.voidReason}
                               </span>
                             ) : null}
-                            <span className="block font-mono tabular text-num-sm text-ink-subtle">
+                            <span className="font-mono tabular text-[11px] text-ink-muted mt-2">
                               {firedAt ? `Fired ${formatTime(firedAt, tz)}` : 'Not fired'} by {identity.displayName(line.createdBy)}
                             </span>
                           </span>
                           <StatusChip status={state.status} label={state.label} />
                           <span className="text-right">
-                            <Money value={line.lineTotalCents} tone={line.status === 'voided' ? 'subtle' : 'default'} currency={false} />
+                            <span className={`font-mono text-body font-medium ${line.status === 'voided' ? 'text-ink-muted line-through' : 'text-ink'}`}>
+                               <Money value={line.lineTotalCents} currency={false} />
+                            </span>
                           </span>
                         </div>
-                        <LineDerivation steps={line.priceDerivation} unit={line.unitPriceCents} />
+                        <div className="mt-12 pl-[64px]">
+                          <LineDerivation steps={line.priceDerivation} unit={line.unitPriceCents} />
+                        </div>
                       </li>
                     );
                   })}
@@ -153,67 +191,70 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
               </div>
             );
           })}
-        </RevealSection>
+        </div>
 
-        <div className="flex flex-col gap-32">
-          <RevealSection aria-labelledby="tab-bills">
-            <h3 id="tab-bills" className="border-b border-hairline pb-8 text-subtitle text-ink">
-              Bills
-            </h3>
+        {/* ── RIGHT COLUMN: BILLS & ACTIVITY ── */}
+        <div className="flex flex-col gap-24">
+          <div className="overflow-hidden rounded-[16px] bg-page border border-hairline/60 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+            <div className="px-20 py-16 border-b border-hairline/60 bg-control/20 flex items-center justify-between">
+              <div className="flex items-center gap-10">
+                <IconReceipt2 size={18} className="text-ink-subtle" />
+                <h3 id="tab-bills" className="text-subtitle font-medium text-ink">Bills</h3>
+              </div>
+              <span className="font-mono text-[11px] font-medium text-ink-subtle uppercase tracking-wider">{bills.length} {bills.length === 1 ? 'Bill' : 'Bills'}</span>
+            </div>
             {bills.length === 0 ? (
-              <p className="py-16 text-body text-ink-muted">{isOpen ? 'Nothing settled yet. Bills are closed at the counter.' : 'No bills on this tab.'}</p>
+              <p className="p-20 text-body text-ink-muted text-center">{isOpen ? 'Nothing settled yet. Bills are closed at the counter.' : 'No bills on this tab.'}</p>
             ) : (
-              <ul>
+              <ul className="divide-y divide-hairline/60">
                 {bills.map((b) => {
                   const tenders = settlement.tendersFor(b.id);
                   const seat = seats.find((s) => s.id === b.tabSeatId);
                   return (
-                    <li key={b.id} className="border-b border-rule py-12">
-                      <Link href={`/console/trade/bills/${b.id}`} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-16 gap-y-4 rounded-sm hover:text-accent-text">
-                        <span className="flex items-center gap-8 text-body text-ink">
-                          {seat && showSeats ? <SeatChip seat={seat.seatNo} size="dense" /> : null}
-                          Bill <span className="font-mono tabular text-num">{b.billNumber}</span>
-                          <span className="text-ink-subtle">{SCOPE_LABEL[b.scope].toLowerCase()}</span>
-                        </span>
-                        <Money value={b.totalCents} />
-                        <span className="col-span-2 text-body-sm text-ink-muted">
-                          {tenders.map((t) => `${TENDER_LABEL[t.kind]}${t.reference ? ` ref ${t.reference}` : ''}`).join(', ')}
-                          {b.settledAt ? ` · ${formatTime(b.settledAt, tz)}` : ''}
-                        </span>
+                    <li key={b.id} className="p-16 hover:bg-control/5 transition-colors">
+                      <Link href={`/console/trade/bills/${b.id}`} className="flex flex-col gap-8 rounded-sm group">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-8 text-body font-medium text-ink group-hover:text-accent transition-colors">
+                            {seat && showSeats ? <SeatChip seat={seat.seatNo} size="dense" /> : null}
+                            Bill <span className="font-mono tabular">{b.billNumber}</span>
+                          </span>
+                          <span className="font-mono font-medium text-ink group-hover:text-accent transition-colors"><Money value={b.totalCents} /></span>
+                        </div>
+                        <div className="flex items-center justify-between text-body-sm">
+                           <span className="text-ink-muted bg-control/40 px-6 py-2 rounded text-[11px] uppercase tracking-wider border border-hairline/40">{SCOPE_LABEL[b.scope].toLowerCase()}</span>
+                           <span className="text-ink-subtle text-right">
+                             {tenders.map((t) => `${TENDER_LABEL[t.kind]}${t.reference ? ` ref ${t.reference}` : ''}`).join(', ')}
+                             {b.settledAt ? ` · ${formatTime(b.settledAt, tz)}` : ''}
+                           </span>
+                        </div>
                       </Link>
                     </li>
                   );
                 })}
               </ul>
             )}
-          </RevealSection>
+          </div>
 
-          <RevealSection aria-labelledby="tab-activity">
-            <h3 id="tab-activity" className="border-b border-hairline pb-8 text-subtitle text-ink">
-              What happened
-            </h3>
-            <ol className="relative mt-12 flex flex-col gap-12 border-l border-hairline pl-16">
-              {events.map((e, i) => (
-                <li key={`${e.at}-${i}`} className="relative">
-                  <span aria-hidden="true" className="absolute -left-[20px] top-[7px] size-dot rounded-dot bg-ink-subtle" />
-                  <span className="block font-mono tabular text-num-sm text-ink-subtle">{formatTime(e.at, tz)}</span>
-                  <span className="block text-body text-ink">{e.text}</span>
-                  {e.reason ? <span className="block text-body-sm text-ink-muted">{e.reason}</span> : null}
-                </li>
-              ))}
-            </ol>
-          </RevealSection>
+          <div className="overflow-hidden rounded-[16px] bg-page border border-hairline/60 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+            <div className="px-20 py-16 border-b border-hairline/60 bg-control/20 flex items-center gap-10">
+              <IconHistory size={18} className="text-ink-subtle" />
+              <h3 id="tab-activity" className="text-subtitle font-medium text-ink">What happened</h3>
+            </div>
+            <div className="p-24 pl-32">
+              <ol className="relative flex flex-col gap-24 border-l-[2px] border-hairline/60 pl-24 ml-4">
+                {events.map((e, i) => (
+                  <li key={`${e.at}-${i}`} className="relative">
+                    <span aria-hidden="true" className="absolute -left-[32px] top-[4px] size-[14px] rounded-full bg-page border-[2px] border-hairline/80 ring-4 ring-page shadow-sm" />
+                    <span className="block font-mono tabular text-[11px] font-medium uppercase tracking-wider text-ink-subtle">{formatTime(e.at, tz)}</span>
+                    <span className="block text-body-sm font-medium text-ink mt-2">{e.text}</span>
+                    {e.reason ? <span className="block text-micro text-ink-muted mt-2 p-8 bg-control/20 rounded border border-hairline/40">{e.reason}</span> : null}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
         </div>
       </div>
-    </>
-  );
-}
-
-function Figure({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col items-end gap-4">
-      <dt className="text-label text-ink-subtle">{label}</dt>
-      <dd>{children}</dd>
     </div>
   );
 }

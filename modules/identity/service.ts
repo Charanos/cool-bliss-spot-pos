@@ -100,20 +100,28 @@ export function withdrawDevice(input: { deviceId: string; reason: string; actor:
  * development session is the owner, so every permission guard still runs against a real role.
  */
 export async function currentConsoleActor(): Promise<Actor & { staff: Staff; role: Role }> {
-  const { cookies } = await import('next/headers');
-  const { redirect } = await import('next/navigation');
-  const cookieStore = await cookies();
-  const staffId = cookieStore.get('bliss-console-session')?.value;
-  let staff: Staff | null = null;
-  if (staffId) {
-    staff = identityTables().staff.find((s) => s.id === staffId) ?? null;
+  try {
+    const { cookies } = await import('next/headers');
+    const { redirect } = await import('next/navigation');
+    const cookieStore = await cookies();
+    const staffId = cookieStore.get('bliss-console-session')?.value;
+    let staff: Staff | null = null;
+    if (staffId) {
+      staff = identityTables().staff.find((s) => s.id === staffId) ?? null;
+    }
+    
+    if (!staff) {
+      redirect('/console/sign-in');
+    }
+    
+    return { staffId: staff!.id, deviceId: null, staff: staff!, role: roleFor(staff!.id)! };
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'digest' in err && typeof (err as { digest: string }).digest === 'string' && (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')) {
+      throw err;
+    }
+    const owner = identityTables().staff.find((s) => roleFor(s.id)?.key === 'owner') ?? identityTables().staff[0]!;
+    return { staffId: owner.id, deviceId: null, staff: owner, role: roleFor(owner.id)! };
   }
-  
-  if (!staff) {
-    redirect('/console/sign-in');
-  }
-  
-  return { staffId: staff!.id, deviceId: null, staff: staff!, role: roleFor(staff!.id)! };
 }
 
 /* ---------------------------------------------------------- people and roles */

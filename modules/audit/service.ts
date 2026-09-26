@@ -19,9 +19,9 @@ export interface RecordInput {
   severity: AuditSeverity;
 }
 
-/** One record() interface for every state change. docs/09 Phase 1, AUDIT. */
+/** One record() interface for every state change. docs/09 Phase 1, AUDIT. Immutable audit trail. */
 export function record(input: RecordInput): AuditEvent {
-  const event: AuditEvent = {
+  const event: AuditEvent = Object.freeze({
     id: nextId(),
     outletId: input.outletId,
     occurredAt: Date.now(),
@@ -31,12 +31,12 @@ export function record(input: RecordInput): AuditEvent {
     action: input.action,
     entityType: input.entityType,
     entityId: input.entityId,
-    before: input.before,
-    after: input.after,
+    before: Object.freeze(input.before ? JSON.parse(JSON.stringify(input.before)) : null),
+    after: Object.freeze(input.after ? JSON.parse(JSON.stringify(input.after)) : null),
     reason: input.reason,
     severity: input.severity,
-  };
-  // Append only: newest first, never edited, never removed.
+  });
+  // Immutable append-only log: newest first, never edited, never removed.
   auditTables().events.unshift(event);
   return event;
 }

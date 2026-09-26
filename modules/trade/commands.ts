@@ -49,6 +49,9 @@ function activeSeatOrThrow(tabId: string, seatId: string): TabSeat {
 }
 
 export function openTab(p: OutboxPayload<'tab.open'>, actor: Actor): void {
+  if (!actor?.staffId) throw new CommandRejected('APPROVAL_REQUIRED', 'No ghost service: A logged-in server is required to open a tab.');
+  if (!p.tabId) throw new CommandRejected('VALIDATION_FAILED', 'No ghost service: Tab ID is required.');
+  if (!p.serviceTableId && !p.name) throw new CommandRejected('VALIDATION_FAILED', 'No ghost service: A tab requires a table or walk-up customer ID.');
   const t = tradeTables();
   if (t.tabs.some((x) => x.id === p.tabId)) return;
   if (!t.zones.some((z) => z.id === p.zoneId)) throw new CommandRejected('VALIDATION_FAILED', 'That zone does not exist.');
@@ -144,6 +147,8 @@ export function removeSeat(p: OutboxPayload<'seat.remove'>): void {
  * already be poured. docs/02 section 6, the stock conflict rule.
  */
 export function fireOrder(p: OutboxPayload<'order.fire'>, actor: Actor): { stockConflictLineIds: string[] } {
+  if (!actor?.staffId) throw new CommandRejected('APPROVAL_REQUIRED', 'No ghost service: A logged-in server is required to fire drinks.');
+  if (!p.tabId) throw new CommandRejected('VALIDATION_FAILED', 'No ghost service: Tab ID is required.');
   const t = tradeTables();
   if (t.orders.some((o) => o.id === p.orderId)) return { stockConflictLineIds: [] };
   const tab = openTabOrThrow(p.tabId);
@@ -270,7 +275,7 @@ export function voidLine(p: OutboxPayload<'line.void'>, actor: Actor): void {
     entityType: 'order_line',
     entityId: line.id,
     before: { status: before },
-    after: { status: 'voided' },
+    after: { status: 'voided', approverId: p.approvalToken ?? actor.staffId, voidedBy: actor.staffId, voidedAt: line.voidedAt },
     reason: p.reason,
     severity: 'sensitive',
   });

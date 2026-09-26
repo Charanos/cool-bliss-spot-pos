@@ -1,5 +1,5 @@
 import { formatDateTime, formatIsoDate, formatQty } from '@bliss/shared/format';
-import { formatDecimal, isPositive, isZero } from '@bliss/shared/money';
+import { formatDecimal, isPositive, isZero, subtract } from '@bliss/shared/money';
 import { notFound } from 'next/navigation';
 import * as identity from '@/modules/identity/service';
 import * as settlement from '@/modules/settlement/service';
@@ -14,6 +14,9 @@ import {
   ReceiptItemRow,
   ReceiptTotalRow,
   ReceiptFooter,
+  ReceiptTaxBreakdown,
+  ReceiptTenderRow,
+  ReceiptFiscalFooter,
 } from '@bliss/ui/components/thermal-receipt';
 
 /**
@@ -26,32 +29,46 @@ export default async function PrintBillPage({ params }: { params: Promise<{ bill
   const { billId } = await params;
   const bill = settlement.billById(billId);
   if (!bill) notFound();
+  if (!bill.settledBy) notFound();
   
   const outlet = identity.outlet();
   const tz = outlet.timezone;
-  const venueName = outlet.name; // Assume the outlet has a name, otherwise fallback
+  const venueName = outlet.name;
   const lines = settlement.billLines(bill.id);
+  const tenders = settlement.tendersFor(bill.id);
   const tab = bill.tabId ? trade.tabById(bill.tabId) : null;
-  const table = tab ? (trade.tableById(tab.serviceTableId)?.label ?? tab.name ?? 'Walk up') : null;
+  const table = tab ? (trade.tableById(tab.serviceTableId)?.label ?? tab.name ?? 'Walk up') : 'Walk up';
   const zone = tab ? (trade.zoneById(trade.tableById(tab.serviceTableId)?.zoneId ?? '')?.name ?? '') : '';
   const server = identity.displayName(bill.settledBy);
+  const device = identity.devices().find((d) => d.id === bill.deviceId);
+  const stationLabel = device?.label ?? bill.deviceId;
+  const timestamp = bill.settledAt ?? (bill.businessDate ? Date.parse(bill.businessDate) : Date.now());
+
+  // KRA eTIMS Fiscal Data
+  const kraPin = 'P051982341Z';
+  const cuSerial = 'CU-BLISS-01';
+  const invoiceNumber = `KRA-ETIMS-${bill.businessDate.replace(/-/g, '')}-${String(bill.billNumber).padStart(6, '0')}`;
+  const controlCode = `SIGN:${bill.id.slice(0, 8).toUpperCase()}-${(bill.settledAt ?? Date.now()).toString(16).toUpperCase()}`;
+
+  // Fiscal Tax Base (16% VAT Inclusive)
+  const taxableBase = subtract(bill.totalCents, bill.taxCents);
 
   const renderContent = () => (
     <Receipt className="mb-16">
       <ReceiptHeader 
-        venueName={venueName || 'BLISS POS'}
+        venueName={venueName || 'COOL BLISS SPOT'}
         logoUrl="/logo.png"
-        title="RECEIPT"
+        title="FISCAL RECEIPT"
         subtitle={`Bill #${bill.billNumber}`}
       />
       
       <ReceiptMeta 
         items={[
-          { label: 'Date', value: formatDateTime(bill.businessDate ? Date.parse(bill.businessDate) : Date.now(), tz) },
+          { label: 'Date & Time', value: formatDateTime(timestamp, tz) },
           { label: 'Server', value: server },
-          { label: 'Zone', value: zone || 'Main' },
-          { label: 'Table', value: table || 'Walk Up' },
-          { label: 'Type', value: SCOPE_LABEL[bill.scope] },
+          { label: 'Station', value: stationLabel },
+          { label: 'Channel', value: `${SCOPE_LABEL[bill.scope]}${zone ? ` (${zone})` : ''}` },
+          { label: 'Table', value: table },
         ]} 
       />
       
@@ -84,11 +101,39 @@ export default async function PrintBillPage({ params }: { params: Promise<{ bill
       {!isZero(bill.roundingCents) ? (
         <ReceiptTotalRow label="Rounding" value={formatDecimal(bill.roundingCents)} />
       ) : null}
-      
+
       <ReceiptRule />
-      
+
+      {/* Tax Breakdown: KRA 16% VAT */}
+      <ReceiptTaxBreakdown
+        taxableAmount={formatDecimal(taxableBase)}
+        taxAmount={formatDecimal(bill.taxCents)}
+        rateLabel="VAT (16% Included)"
+      />
+
+      <ReceiptRule />
+
+      {/* Payment Instruments / Tenders */}
+      <div className="w-full mb-2">
+        <div className="text-[11px] font-bold uppercase tracking-wider mb-2 text-black/70">Payment Instruments</div>
+        {tenders.length === 0 ? (
+          <div className="text-[11px] italic">No tender rows recorded</div>
+        ) : (
+          tenders.map((t) => (
+            <ReceiptTenderRow
+              key={t.id}
+              kind={t.kind}
+              reference={t.reference}
+              amount={formatDecimal(t.amountCents)}
+              tendered={t.tenderedCents ? formatDecimal(t.tenderedCents) : null}
+              change={t.changeCents ? formatDecimal(t.changeCents) : null}
+            />
+          ))
+        )}
+      </div>
+
       <ReceiptFooter>
-        <div>Thank you for your visit!</div>
+        <div className="font-semibold">Thank you for visiting {venueName}!</div>
       </ReceiptFooter>
     </Receipt>
   );

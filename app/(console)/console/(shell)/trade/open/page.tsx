@@ -19,6 +19,7 @@ export default function OpenTabsPage() {
     waiter: identity.displayName(s.tab.assignedTo),
     waiterId: s.tab.assignedTo,
     openedAt: s.tab.openedAt,
+    businessDate: s.tab.businessDate,
     guests: s.tab.guestCount,
     seats: s.seats.filter((x) => x.status !== 'removed').map((x) => ({ seatNo: x.seatNo, label: x.label, settled: x.status === 'settled' })),
     lines: s.lineCount,
@@ -32,6 +33,7 @@ export default function OpenTabsPage() {
     <OpenTabsTable
       rows={rows}
       now={clock.now}
+      currentBusinessDate={clock.current}
       timezone={outlet.timezone}
       zones={trade.zones().map((z) => ({ value: z.id, label: z.name }))}
       waiters={[...new Map(rows.map((r) => [r.waiterId, r.waiter])).entries()].map(([value, label]) => ({ value, label }))}

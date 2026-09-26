@@ -24,6 +24,9 @@ export default async function PrintTabPage({ params }: { params: Promise<{ tabId
   const { tabId } = await params;
   const tab = trade.tabById(tabId);
   if (!tab) notFound();
+  const serverId = tab.assignedTo ?? tab.openedBy;
+  if (!serverId) notFound();
+  if (!tab.serviceTableId && !tab.name && !tab.tabNumber) notFound();
   
   const outlet = identity.outlet();
   const tz = outlet.timezone;
@@ -85,7 +88,7 @@ export default async function PrintTabPage({ params }: { params: Promise<{ tabId
       <ReceiptRule />
       
       <ReceiptFooter>
-        <div>Thank you for your visit!</div>
+        <div className="font-semibold">PROFORMA BILL · NOT A FISCAL RECEIPT</div>
       </ReceiptFooter>
     </Receipt>
   );

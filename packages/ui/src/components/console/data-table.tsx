@@ -72,6 +72,8 @@ export interface DataTableProps<Row> {
   /** Render as a full card with border and shadow, or flush without structural background. */
   variant?: 'card' | 'naked';
   pageSize?: number;
+  /** Completely override the grid card rendering for maximum creative control over the layout. */
+  renderGridCard?: (row: Row) => ReactNode;
 }
 
 const VIRTUAL_THRESHOLD = 50;
@@ -305,6 +307,7 @@ export function DataTable<Row>({
   rowTone,
   variant = 'card',
   pageSize: explicitPageSize,
+  renderGridCard,
 }: DataTableProps<Row>) {
   const url = useUrlState();
   const router = useRouter();
@@ -725,14 +728,22 @@ export function DataTable<Row>({
 
       {isGridView && paginated.length > 0 && (
         <>
-          {paginated.map((row, i) => {
+          {paginated.map((row) => {
+            if (renderGridCard) {
+              return (
+                <div key={rowKey(row)} className="h-full">
+                  {renderGridCard(row)}
+                </div>
+              );
+            }
+
             const primaryColumn = visibleColumns[0];
             const detailColumns = visibleColumns.slice(1);
             
             return (
             <div
               key={rowKey(row)}
-              className="group flex flex-col overflow-hidden rounded-[16px] bg-page ring-1 ring-hairline/40 shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all hover:ring-hairline/70 hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)]"
+              className="group flex flex-col overflow-hidden rounded-[20px] bg-page border border-hairline/60 shadow-sm transition-all duration-300 hover:border-hairline/80 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-[2px]"
               onClick={rowHref ? () => {
                 const href = rowHref(row);
                 router.push(href);
@@ -742,13 +753,13 @@ export function DataTable<Row>({
             >
               {/* Card Header (Primary Column) */}
               {primaryColumn && (
-                <div className="flex items-start justify-between gap-12 bg-control/20 px-16 py-12 border-b border-hairline/40">
-                  <div className="flex flex-col min-w-0">
-                     <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle mb-[2px]">{primaryColumn.header}</span>
-                     <div className="text-body font-medium text-ink truncate">{primaryColumn.cell(row, { grid: true })}</div>
+                <div className="flex items-start justify-between gap-12 bg-gradient-to-b from-control/40 to-control/10 px-20 py-16 border-b border-hairline/60 relative overflow-hidden">
+                  <div className="flex flex-col min-w-0 relative z-10">
+                     <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle mb-[4px]">{primaryColumn.header}</span>
+                     <div className="text-[15px] font-medium text-ink truncate group-hover:text-accent-text transition-colors duration-300">{primaryColumn.cell(row, { grid: true })}</div>
                   </div>
                   {rowActions ? (
-                    <div className="shrink-0 -mr-4 -mt-4 opacity-100 focus-within:opacity-100 desktop:opacity-0 desktop:group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+                    <div className="shrink-0 -mr-4 -mt-4 opacity-100 focus-within:opacity-100 desktop:opacity-0 desktop:group-hover:opacity-100 relative z-10" onClick={(e) => e.stopPropagation()}>
                       <OverflowMenu label="Row actions" size="sm" items={rowActions(row)} />
                     </div>
                   ) : null}
@@ -756,11 +767,11 @@ export function DataTable<Row>({
               )}
               
               {/* Card Body (Detail Columns) */}
-              <div className="flex flex-col gap-8 px-16 py-12 flex-1 min-h-0">
+              <div className="flex flex-col gap-14 px-20 py-20 flex-1 min-h-0 bg-page/50">
                 {detailColumns.map((c) => (
-                  <div key={c.key} className="flex items-start justify-between gap-16 min-w-0">
-                    <span className="text-[10px] font-medium uppercase tracking-[0.05em] text-ink-subtle shrink-0 mt-[2px]">{c.header}</span>
-                    <div className="text-body-sm text-ink text-right flex-1 flex justify-end min-w-0">
+                  <div key={c.key} className="flex items-start justify-between gap-16 min-w-0 group/row">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-ink-subtle shrink-0 mt-[2px] transition-colors group-hover/row:text-ink-muted">{c.header}</span>
+                    <div className="text-[13px] text-ink font-medium text-right flex-1 flex justify-end min-w-0 transition-colors group-hover/row:text-ink">
                       {c.cell(row, { grid: true })}
                     </div>
                   </div>

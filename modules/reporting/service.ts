@@ -46,6 +46,8 @@ function linesOn(date: IsoDate) {
 
 export interface Headline {
   netSales: Cents;
+  cogs: Cents;
+  grossProfit: Cents;
   salesDeltaBps: number | null;
   comparedWith: string;
   grossMarginBps: number;
@@ -68,6 +70,8 @@ export function headline(date: IsoDate): Headline {
   const variance = latestCommittedVariance();
   return {
     netSales,
+    cogs: cost,
+    grossProfit: subtract(revenue, cost),
     salesDeltaBps: baseline ? percentChangeBps(baseline, netSales) : null,
     comparedWith: `${formatWeekday(date).slice(0, 3)} avg`,
     grossMarginBps: shareBps(subtract(revenue, cost), revenue),
@@ -161,7 +165,21 @@ export interface AttentionItem {
 export function needsAttention(): AttentionItem[] {
   const items: (AttentionItem & { rank: number })[] = [];
   const outlet = identity.outlet();
-  const { lastNight } = clock();
+  const { current, lastNight } = clock();
+
+  // First principle: Time is: open tab ≠ closed sale. Tabs sleeping past close are unclosed sales — alert, not a report.
+  const openTabs = trade.openTabs();
+  const sleepingTabs = openTabs.filter((t) => t.tab.businessDate < current);
+  if (sleepingTabs.length > 0) {
+    const sleepingExposure = sum(sleepingTabs.map((t) => t.total));
+    items.push({
+      rank: -1,
+      tone: 'stop',
+      text: `${plural(sleepingTabs.length, 'sleeping tab')} from earlier shifts unclosed (${formatKes(sleepingExposure, { decimals: 'whole' })} unclosed sales risk)`,
+      href: '/console/trade/open',
+      cta: 'Audit & settle',
+    });
+  }
 
   const deadLetters = sync.deadLetters({ resolved: false });
   if (deadLetters.length > 0) {

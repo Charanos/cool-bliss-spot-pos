@@ -10,6 +10,7 @@ import {
   IconClock,
   IconPackage,
   IconReceipt2,
+  IconScale,
 } from '@tabler/icons-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -74,6 +75,14 @@ export default function OverviewPage() {
               <span>{openTabs.length} open {openTabs.length === 1 ? 'tab' : 'tabs'}</span>
             </ButtonLink>
             <ButtonLink
+              href="/console/reports/dynamics"
+              variant="secondary"
+              size="md"
+              icon={IconScale}
+            >
+              <span>Dynamics P&L</span>
+            </ButtonLink>
+            <ButtonLink
               href="/console/reports/sales"
               variant="secondary"
               size="md"
@@ -88,6 +97,8 @@ export default function OverviewPage() {
       {/* ── Top Bento Row: Executive Financials & Exposure ───────────── */}
       <HeadlineMetrics
         netSales={headline.netSales}
+        cogs={headline.cogs}
+        grossProfit={headline.grossProfit}
         delta={headline.salesDeltaBps === null ? null : { bps: headline.salesDeltaBps, against: headline.comparedWith }}
         marginBps={headline.grossMarginBps}
         seats={headline.seatsServed}

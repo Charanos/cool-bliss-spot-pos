@@ -81,7 +81,7 @@ export function setPrice(input: { listId: string; variantId: string; priceCents:
     entityType: 'price_list_item',
     entityId: next?.id ?? current!.id,
     before: current ? { list: list.name, variant: variant.name, priceCents: current.priceCents.toString() } : null,
-    after: next ? { list: list.name, variant: variant.name, priceCents: next.priceCents.toString() } : null,
+    after: next ? { list: list.name, variant: variant.name, priceCents: next.priceCents.toString(), approverId: actor.staffId, who: actor.staffId } : null,
     reason,
     severity: 'notable',
   });

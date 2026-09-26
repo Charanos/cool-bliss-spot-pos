@@ -573,3 +573,51 @@ export function recordGoodsReceipt(input: RecordGoodsReceiptInput): GoodsReceipt
   return receipt;
 }
 
+/** Cancel or amend a Goods Receipt. Stock is reversed to supplier and action audited with who, when, why, approver. */
+export function voidGoodsReceipt(input: { receiptId: string; reason: string; actor: Actor }) {
+  const { reason, actor } = requireReasoned(input);
+  identity.assertCan(actor.staffId, 'stock.writeoff', 'cancelling or amending goods receipts');
+  const t = procurementTables();
+  const receipt = t.receipts.find((r) => r.id === input.receiptId);
+  if (!receipt) throw new Error('That goods receipt does not exist.');
+  if (receipt.status === 'cancelled') throw new Error('That goods receipt is already cancelled.');
+
+  const before = receipt.status;
+  receipt.status = 'cancelled';
+
+  // Reverse stock batches and write-off ledger
+  const lines = t.receiptLines.filter((l) => l.goodsReceiptId === receipt.id);
+  const outlet = identity.outlet();
+  for (const line of lines) {
+    const qty = Math.max(0, line.qtyReceived - line.qtyRejected);
+    if (qty > 0) {
+      inventory.recordMovement({
+        variantId: line.productVariantId,
+        locationId: receipt.stockLocationId,
+        stockBatchId: null,
+        qtyDelta: -qty,
+        type: 'return_to_supplier',
+        sourceType: 'goods_receipt',
+        sourceId: receipt.id,
+        reason: `GRN #${receipt.grnNumber} cancelled: ${reason}`,
+        actor,
+        unitCostCents: line.unitCostCents,
+      });
+    }
+  }
+
+  audit.record({
+    outletId: outlet.id,
+    actorStaffId: actor.staffId,
+    action: 'goods_receipt.cancelled',
+    entityType: 'goods_receipt',
+    entityId: receipt.id,
+    before: { status: before, grnNumber: receipt.grnNumber },
+    after: { status: 'cancelled', approverId: actor.staffId, who: actor.staffId },
+    reason,
+    severity: 'sensitive',
+  });
+
+  return receipt;
+}
+

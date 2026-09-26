@@ -8,6 +8,7 @@ export default function ReportsLayout({ children }: { children: ReactNode }) {
       title="Reports"
       description="Every figure is keyed on the business day, cutover to cutover, never the calendar date."
       tabs={[
+        { href: '/console/reports/dynamics', label: 'Dynamics P&L' },
         { href: '/console/reports/sales', label: 'Sales' },
         { href: '/console/reports/pour-variance', label: 'Pour variance' },
         { href: '/console/reports/voids', label: 'Voids and discounts' },

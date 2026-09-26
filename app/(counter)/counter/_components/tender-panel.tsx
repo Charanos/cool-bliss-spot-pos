@@ -82,7 +82,21 @@ export function TenderPanel({
       onChange([...tenders, draftTender('cash', min(figure, still), figure, null)]);
     } else {
       if (compare(figure, still) > 0) return setError(`${TENDER_WORD[kind]} cannot be more than the ${formatKes(still, { decimals: 'whole' })} still due.`);
-      onChange([...tenders, draftTender(kind, figure, null, reference)]);
+      if (kind === 'mpesa') {
+        const cleanRef = reference.trim().toUpperCase();
+        if (!cleanRef || cleanRef.length < 8) {
+          return setError('M-Pesa code required (min 8 chars). Verify on Till / Statement — NEVER the message on the customer\'s phone.');
+        }
+        onChange([...tenders, draftTender(kind, figure, null, cleanRef)]);
+      } else if (kind === 'card') {
+        const cleanRef = reference.trim();
+        if (!cleanRef) {
+          return setError('Card acquirer auth code or last four digits required.');
+        }
+        onChange([...tenders, draftTender(kind, figure, null, cleanRef)]);
+      } else {
+        onChange([...tenders, draftTender(kind, figure, null, reference.trim() || null)]);
+      }
     }
     setEntry('');
     setReference('');
@@ -248,14 +262,18 @@ export function TenderPanel({
             </div>
           ) : (
             <TextField
-              label="Reference"
-              helper="Bliss records this. It does not check it."
+              label={kind === 'mpesa' ? 'M-Pesa Transaction Ref (e.g. SJK4H2X9PQ)' : 'Acquirer Batch / Auth Code'}
+              helper={
+                kind === 'mpesa'
+                  ? 'Verify on Till / API statement. NEVER trust the message on the customer\'s phone.'
+                  : 'Card acquirer batch sequence or approval auth code.'
+              }
               value={reference}
-              onChange={(e) => setReference(e.target.value.slice(0, 40))}
+              onChange={(e) => setReference(e.target.value.toUpperCase().slice(0, 40))}
               mono
               size="md"
               autoComplete="off"
-              placeholder={kind === 'mpesa' ? 'SJK4H2X9PQ' : 'Last four digits'}
+              placeholder={kind === 'mpesa' ? 'SJK4H2X9PQ' : 'Auth / Last 4'}
             />
           )}
 
