@@ -14,7 +14,7 @@ import { IconHistory, IconLock, IconPencil, IconPercentage, IconReceipt, IconTag
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { setPrice } from '../../_actions/catalogue';
-import { UrlSelect } from '../../_components/url-select';
+import { EntityLink } from '../../_components/entity-link';
 
 export interface PriceRow {
   variantId: string;
@@ -46,7 +46,6 @@ function marginOf(price: Cents, cost: Cents, taxRateBps: number): number {
 
 /** One price list at a time: every item against the base price, with its margin for roles that see cost. */
 export function PriceListView({
-  lists,
   list,
   baseName,
   rules,
@@ -58,7 +57,6 @@ export function PriceListView({
   timezone,
   taxRateBps,
 }: {
-  lists: { value: string; label: string }[];
   list: { id: string; name: string; kind: 'base' | 'overlay' };
   baseName: string;
   rules: string[];
@@ -78,7 +76,7 @@ export function PriceListView({
   const avgMarginBps = itemsWithMargin.length > 0 ? Math.round(itemsWithMargin.reduce((acc, r) => acc + marginBps(r.price, r.cost), 0) / itemsWithMargin.length) : null;
 
   const columns: Column<PriceRow>[] = [
-    { key: 'name', header: 'Item', width: 'minmax(220px,2fr)', fixed: true, sortValue: (r) => r.name, csv: (r) => r.name, cell: (r) => <StackCell primary={r.name} secondary={r.category} /> },
+    { key: 'name', header: 'Item', width: 'minmax(220px,2fr)', fixed: true, sortValue: (r) => r.name, csv: (r) => r.name, cell: (r) => <StackCell primary={<EntityLink kind="product" id={r.productId}>{r.name}</EntityLink>} secondary={r.category} /> },
     ...(overlay
       ? [
           {
@@ -176,7 +174,6 @@ export function PriceListView({
         columns={columns}
         rowKey={(r) => r.variantId}
         defaultSort={{ key: 'name', dir: 'asc' }}
-        leading={<UrlSelect param="list" label="Price list" options={lists} allLabel={null} fallback={lists[0]?.value ?? ''} />}
         search={{ placeholder: 'Search items', test: (r, q) => r.name.toLowerCase().includes(q) }}
         filters={[
           { kind: 'select', key: 'category', label: 'Category', options: categories, test: (r, v) => r.categoryId === v },

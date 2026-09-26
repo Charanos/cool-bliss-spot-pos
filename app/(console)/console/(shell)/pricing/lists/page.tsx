@@ -1,92 +1,86 @@
 import { describeRuleWindow } from '@bliss/shared/pricing';
+import { ButtonLink } from '@bliss/ui/components/button-link';
+import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { InlineBar } from '@bliss/ui/components/console/inline-bar';
+import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
+import { StatusChip } from '@bliss/ui/components/status';
+import { IconClock, IconListDetails, IconPlus, IconTag } from '@tabler/icons-react';
 import type { Metadata } from 'next';
-import * as audit from '@/modules/audit/service';
+import { redirect } from 'next/navigation';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
-import * as inventory from '@/modules/inventory/service';
+import * as pricingManage from '@/modules/pricing/manage';
 import * as pricing from '@/modules/pricing/service';
-import { type PriceRow, PriceListView } from './price-list-view';
+import * as trade from '@/modules/trade/service';
 import { ViewHeader } from '../../_components/workspace';
+import { ListsCreate } from './lists-create';
 
 export const metadata: Metadata = { title: 'Price lists' };
 
-/**
- * N-03. One list at a time, every item against the base price, with the margin at average cost for
- * roles that may read cost. The cost column is left out of the rows entirely otherwise. docs/01 R10.
- */
+/** Every price list as a card: when it applies, how much of the menu it prices, and who uses it. */
 export default async function PriceListsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
+  // The old address named a list in the query; each list now has its own page.
+  if (params.list) redirect(`/console/pricing/lists/${encodeURIComponent(params.list)}`);
   const actor = await identity.currentConsoleActor();
-  const lists = pricing
-    .priceLists()
-    .filter((l) => l.status === 'active')
-    .sort((a, b) => a.priority - b.priority);
-  const base = lists.find((l) => l.kind === 'base') ?? lists[0]!;
-  const list = lists.find((l) => l.id === params.list) ?? base;
-  const baseItems = pricing.itemsFor(base.id);
-  const listItems = pricing.itemsFor(list.id);
-  const canSeeCost = identity.can(actor.staffId, 'cost.read');
-  const rules = pricing.rules().filter((r) => r.priceListId === list.id && r.status === 'active');
-
-  const rows: PriceRow[] = catalogue
-    .variants()
-    .filter((v) => v.status === 'active')
-    .map((v) => {
-      const product = catalogue.productById(v.productId)!;
-      const baseItem = baseItems.find((i) => i.productVariantId === v.id) ?? null;
-      const item = listItems.find((i) => i.productVariantId === v.id) ?? null;
-      const stock = catalogue.stockVariantFor(v.id);
-      const recipe = inventory.recipeFor(v.id);
-      const unitCost = !canSeeCost
-        ? null
-        : recipe
-          ? null
-          : stock
-            ? inventory.valueAtCost(stock.stockVariantId, stock.factor)
-            : null;
-      return {
-        variantId: v.id,
-        name: v.name,
-        productId: product.id,
-        categoryId: product.categoryId,
-        category: catalogue.categoryById(product.categoryId)?.name ?? '',
-        base: baseItem?.priceCents ?? null,
-        price: item?.priceCents ?? null,
-        cost: unitCost,
-      };
-    })
-    .filter((r) => list.kind === 'base' || r.price !== null || r.base !== null);
-
-  const changes = audit
-    .list({ action: 'price.changed' })
-    .slice(0, 6)
-    .map((e) => ({
-      id: e.id,
-      at: e.occurredAt,
-      by: identity.displayName(e.actorStaffId),
-      reason: e.reason,
-      before: (e.before as { priceCents?: string; variant?: string } | null)?.priceCents ?? null,
-      after: (e.after as { priceCents?: string; variant?: string } | null)?.priceCents ?? null,
-      variant: (e.after as { variant?: string } | null)?.variant ?? (e.before as { variant?: string } | null)?.variant ?? null,
-    }));
+  const canEdit = identity.can(actor.staffId, 'price.write');
+  const base = pricingManage.defaultList();
+  const onSale = catalogue.variants().filter((v) => v.status === 'active' && catalogue.productById(v.productId)?.status === 'active').length;
+  const lists = [...pricing.priceLists()].sort((a, b) => (a.status === b.status ? (a.kind === b.kind ? b.priority - a.priority : a.kind === 'base' ? -1 : 1) : a.status === 'active' ? -1 : 1));
+  const rules = pricing.rules().filter((r) => r.status === 'active');
+  const zones = trade.zones().filter((z) => z.status === 'active');
 
   return (
     <>
-      <ViewHeader page="/console/pricing/lists" />
+      <ViewHeader
+        page="/console/pricing/lists"
+        actions={
+          canEdit ? (
+            <ButtonLink href="/console/pricing/lists?new=1" variant="create" icon={IconPlus}>
+              Add a price list
+            </ButtonLink>
+          ) : null
+        }
+      />
+      <div className="flex flex-col gap-32">
+        <MetricGrid columns={3}>
+          <Metric label="Lists in use" icon={IconListDetails} value={String(lists.filter((l) => l.status === 'active').length)} detail={base ? `${base.name} is the base` : 'No base list'} />
+          <Metric label="Time rules" icon={IconClock} href="/console/pricing/rules" value={String(rules.length)} detail="Switching overlays on in their hours" />
+          <Metric label="Items on sale" icon={IconTag} value={String(onSale)} detail="Each needs a base price" />
+        </MetricGrid>
 
-    <PriceListView
-      lists={lists.map((l) => ({ value: l.id, label: l.name }))}
-      list={{ id: list.id, name: list.name, kind: list.kind }}
-      baseName={base.name}
-      rules={rules.map((r) => `${r.name}: ${describeRuleWindow(r)}`)}
-      rows={rows}
-      canSeeCost={canSeeCost}
-      canEdit={identity.can(actor.staffId, 'price.write')}
-      categories={catalogue.categories().map((c) => ({ value: c.id, label: c.name }))}
-      changes={changes}
-      timezone={identity.outlet().timezone}
-      taxRateBps={identity.outlet().taxRateBps}
-    />
+        <div className="grid grid-cols-1 gap-16 pad:grid-cols-2 desktop:grid-cols-3">
+          {lists.map((l) => {
+            const priced = pricing.itemsFor(l.id).length;
+            const mine = rules.filter((r) => r.priceListId === l.id);
+            const usedBy = zones.filter((z) => z.defaultPriceListId === l.id);
+            return (
+              <Card key={l.id} as="article" interactive className="group h-full" tone={l.id === base?.id ? 'accent' : undefined}>
+                <CardHeader
+                  band
+                  title={l.name}
+                  href={`/console/pricing/lists/${l.id}`}
+                  subtitle={l.kind === 'base' ? (l.id === base?.id ? 'The base price, all day' : 'A base list') : mine.length > 0 ? mine.map((r) => describeRuleWindow(r)).join('; ') : 'No rule switches it on'}
+                  meta={l.status === 'archived' ? <StatusChip status="retired" label="Archived" /> : null}
+                />
+                <CardStats columns={3}>
+                  <Stat label="Prices">{priced}</Stat>
+                  <Stat label="Priority">{l.priority}</Stat>
+                  <Stat label="Zones">{usedBy.length > 0 ? usedBy.map((z) => z.name).join(', ') : 'None'}</Stat>
+                </CardStats>
+                <CardFooter>
+                  <span className="inline-flex items-center gap-8 text-body-sm text-ink-muted">
+                    <InlineBar value={onSale > 0 ? Math.min(1, priced / onSale) : 0} tone={l.kind === 'base' && priced < onSale ? 'attention' : 'accent'} />
+                    {l.kind === 'base' ? `${priced} of ${onSale} priced` : `${priced} on offer`}
+                  </span>
+                  <span className="text-body-sm text-ink-subtle">{l.kind === 'base' ? 'Base' : 'Overlay'}</span>
+                </CardFooter>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+      <ListsCreate canEdit={canEdit} />
     </>
   );
 }
