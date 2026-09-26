@@ -63,13 +63,15 @@ export function BarChart({
   }, []);
 
   const hovered = data.find((d) => d.key === hover);
+  // Past fourteen bars, label every second or third so the axis stays legible; the tooltip names each.
+  const labelEvery = Math.max(1, Math.ceil(data.length / 14));
 
   return (
     <figure aria-labelledby={titleId} className="relative">
       <figcaption id={titleId} className="sr-only">
         {caption}
       </figcaption>
-      <div ref={ref} className="relative grid grid-cols-[36px_1fr] gap-8 pt-6">
+      <div ref={ref} className="relative grid grid-cols-[36px_minmax(0,1fr)] gap-8 pt-6">
         <div aria-hidden="true" className="relative" style={{ height }}>
           {ticks.map((t, i) => (
             <span key={i} className="absolute right-0 -translate-y-1/2 font-mono tabular text-num-sm text-ink-subtle" style={{ top: `${(i / 3) * 100}%` }}>
@@ -116,9 +118,9 @@ export function BarChart({
         </div>
         <span aria-hidden="true" />
         <div aria-hidden="true" className="flex gap-2">
-          {data.map((d) => (
-            <span key={d.key} className="min-w-0 flex-1 truncate text-center font-mono tabular text-micro text-ink-subtle">
-              {d.label}
+          {data.map((d, i) => (
+            <span key={d.key} className="min-w-0 flex-1 truncate text-center font-mono tabular text-num-sm text-ink-subtle">
+              {i % labelEvery === 0 ? d.label : ''}
             </span>
           ))}
         </div>

@@ -45,7 +45,7 @@ export default function OverviewPage() {
             <ButtonLink href="/console/reports/sales" variant="secondary" icon={IconChartBar}>
               Sales report
             </ButtonLink>
-            <ButtonLink href="/console/reports/dynamics" variant="secondary" icon={IconScale}>
+            <ButtonLink href="/console/reports/performance" variant="secondary" icon={IconScale}>
               Performance
             </ButtonLink>
           </>

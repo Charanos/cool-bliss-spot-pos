@@ -1,39 +1,12 @@
-'use client';
-
 import { formatBps } from '@bliss/shared/format';
 import { IconArrowDownRight, IconArrowUpRight } from '@tabler/icons-react';
-import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { cx } from '../../lib/cx';
-import { gsap, isInstant, isReduced, play, vars } from '../../motion/engine';
 import type { TablerIcon } from '../icon';
 import type { Tone } from '../status';
 import { Card, CardBody, CardHeader, IconTile } from './card';
 
-/** A whole number that counts up from zero on first paint only. metric.count. */
-export function CountUp({ value, format = (n) => Math.round(n).toLocaleString('en-KE'), delayMs = 0 }: { value: number; format?: (n: number) => string; delayMs?: number }) {
-  const [shown, setShown] = useState(() => (isInstant() || isReduced() ? value : 0));
-  const started = useRef(false);
-  useEffect(() => {
-    if (started.current || isInstant() || isReduced()) {
-      setShown(value);
-      return undefined;
-    }
-    started.current = true;
-    const proxy = { n: 0 };
-    const animation = play('metric.count', () => gsap.to(proxy, { ...vars('metric.count', { n: value, onUpdate: () => setShown(proxy.n) }), delay: delayMs / 1000 }));
-    if (!animation) setShown(value);
-    return () => {
-      animation?.progress(1).kill();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- first paint only
-  }, [value]);
-  return (
-    <>
-      <span aria-hidden="true">{format(shown)}</span>
-      <span className="sr-only">{format(value)}</span>
-    </>
-  );
-}
+export { CountUp } from './count-up';
 
 export type MetricTone = 'default' | 'attention' | 'poured' | 'stop' | 'info';
 
@@ -55,15 +28,15 @@ export interface MetricProps {
 }
 
 /**
- * A headline figure: a label, the figure in mono, and a line of context. One card of the Card
+ * A headline figure: a label, the figure in mono, and a line of context. Renders on the server or
+ * the client, so a server page can pass it an icon component; only CountUp inside it is client. One card of the Card
  * family; a row of them sits in a MetricGrid so their figures share a baseline.
  */
 export function Metric({ label, value, detail, delta, tone = 'default', icon, badge, href, className }: MetricProps) {
-  const id = useId();
   const good = delta ? (delta.bps >= 0) !== Boolean(delta.invert) : false;
   return (
-    <Card as="article" aria-labelledby={id} interactive={Boolean(href)} className={cx('min-h-kpi-min', className)}>
-      <CardHeader title={<span className="text-body-sm font-medium text-ink-muted">{label}</span>} titleId={id} level="h3" href={href} actions={badge ?? (icon ? <IconTile icon={icon} tone={iconTone[tone]} /> : null)} className="pb-8" />
+    <Card as="article" aria-label={label} interactive={Boolean(href)} className={cx('min-h-kpi-min', className)}>
+      <CardHeader title={<span className="text-body-sm font-medium text-ink-muted">{label}</span>} level="h3" href={href} actions={badge ?? (icon ? <IconTile icon={icon} tone={iconTone[tone]} /> : null)} className="pb-8" />
       <CardBody className="flex flex-col justify-between gap-12">
         <p className={cx('font-mono tabular text-num-kpi', valueTone[tone])}>{value}</p>
         {delta || detail ? (

@@ -21,10 +21,11 @@ interface VoidRow {
 /** Above two per cent of value is worth a conversation; it is a prompt to look, not a verdict. */
 const RATE_ATTENTION_BPS = 200;
 
+/** Void and discount rates by person, with the reasons they gave, so a pattern is visible. */
 export function VoidsView({ rows, rangeKey, rangeOptions, timezone, exportDate }: { rows: VoidRow[]; rangeKey: string; rangeOptions: { value: string; label: string }[]; timezone: string; exportDate: string }) {
   const columns: Column<VoidRow>[] = [
     { key: 'name', header: 'Person', width: '140px', fixed: true, sortValue: (r) => r.name, csv: (r) => r.name, cell: (r) => <StackCell primary={r.name} secondary={`${r.lines.toLocaleString('en-KE')} lines`} /> },
-    { key: 'sales', header: 'Sold', width: '120px', align: 'right', sortValue: (r) => r.sales, csv: (r) => formatDecimal(r.sales), cell: (r) => <Money value={r.sales} currency={false} decimals="whole" tone="muted" /> },
+    { key: 'sales', header: 'Sold', width: '120px', align: 'right', sortValue: (r) => r.sales, csv: (r) => formatDecimal(r.sales), cell: (r) => <Money value={r.sales} currency={false} size="num-md" decimals="whole" tone="muted" /> },
     {
       key: 'voids',
       header: 'Voided',
@@ -33,14 +34,14 @@ export function VoidsView({ rows, rangeKey, rangeOptions, timezone, exportDate }
       sortValue: (r) => r.voidValue,
       csv: (r) => formatDecimal(r.voidValue),
       cell: (r) => (
-        <span className="flex flex-col items-end ">
-          <Money value={r.voidValue} currency={false} decimals="whole" tone={isPositive(r.voidValue) ? 'default' : 'subtle'} />
-          <span className="text-body-sm text-ink-subtle">{r.voids} lines</span>
+        <span className="flex flex-col items-end">
+          <Money value={r.voidValue} currency={false} size="num-md" decimals="whole" tone={isPositive(r.voidValue) ? 'default' : 'subtle'} />
+          <span className="text-body-sm text-ink-subtle">{r.voids === 1 ? '1 line' : `${r.voids} lines`}</span>
         </span>
       ),
     },
     { key: 'rate', header: 'Void rate', width: '100px', align: 'right', sortValue: (r) => r.voidRateBps, csv: (r) => (r.voidRateBps / 100).toFixed(2), cell: (r) => <NumCell tone={r.voidRateBps > RATE_ATTENTION_BPS ? 'low' : 'default'}>{formatBps(r.voidRateBps)}</NumCell> },
-    { key: 'discounts', header: 'Discounted', width: '110px', align: 'right', sortValue: (r) => r.discounts, csv: (r) => formatDecimal(r.discounts), cell: (r) => (isPositive(r.discounts) ? <Money value={r.discounts} currency={false} decimals="whole" /> : <NumCell tone="muted">··</NumCell>) },
+    { key: 'discounts', header: 'Discounted', width: '110px', align: 'right', sortValue: (r) => r.discounts, csv: (r) => formatDecimal(r.discounts), cell: (r) => (isPositive(r.discounts) ? <Money value={r.discounts} currency={false} size="num-md" decimals="whole" /> : <NumCell tone="muted">None</NumCell>) },
     {
       key: 'reasons',
       header: 'Reasons given, most recent',
@@ -66,6 +67,7 @@ export function VoidsView({ rows, rangeKey, rangeOptions, timezone, exportDate }
     <DataTable
       id="report-voids"
       caption="Voids and discounts by person"
+      noun={['person', 'people']}
       rows={rows}
       columns={columns}
       rowKey={(r) => r.staffId}
@@ -76,6 +78,7 @@ export function VoidsView({ rows, rangeKey, rangeOptions, timezone, exportDate }
       exportName="voids-by-person"
       exportDate={exportDate}
       empty={{ title: 'Nobody worked a shift in this range', body: 'Choose a longer range.' }}
+      emptyFiltered={{ title: 'Nobody is above 2%', body: 'Turn off the toggle to see everyone.' }}
     />
   );
 }

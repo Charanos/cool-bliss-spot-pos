@@ -19,6 +19,7 @@ interface DeadRow {
   idleDays: number | null;
 }
 
+/** Stock with no sale in the window, largest value first: money sitting on a shelf. */
 export function DeadStockTable({ rows, days, total, canSeeCost, timezone, windows }: { rows: DeadRow[]; days: number; total: Cents; canSeeCost: boolean; timezone: string; windows: { value: string; label: string }[] }) {
   const router = useRouter();
   const columns: Column<DeadRow>[] = [
@@ -31,10 +32,10 @@ export function DeadStockTable({ rows, days, total, canSeeCost, timezone, window
       align: 'right',
       sortValue: (r) => r.lastSaleAt,
       csv: (r) => (r.lastSaleAt ? new Date(r.lastSaleAt).toISOString() : 'never'),
-      cell: (r) => (r.lastSaleAt ? <StackCell primary={<span className="font-mono tabular text-num">{formatDate(r.lastSaleAt, timezone)}</span>} secondary={`${r.idleDays} days ago`} /> : <span className="text-body text-ink-subtle">Not in the record</span>),
+      cell: (r) => (r.lastSaleAt ? <StackCell primary={<span className="font-mono tabular text-num-md">{formatDate(r.lastSaleAt, timezone)}</span>} secondary={`${r.idleDays} days ago`} /> : <span className="text-body-sm text-ink-subtle">Never, in the record</span>),
     },
     ...(canSeeCost
-      ? [{ key: 'value', header: 'Tied up at cost', width: '130px', align: 'right' as const, sortValue: (r: DeadRow) => r.value, csv: (r: DeadRow) => formatDecimal(r.value), cell: (r: DeadRow) => <Money value={r.value} currency={false} decimals="whole" /> }]
+      ? [{ key: 'value', header: 'Tied up at cost', width: '130px', align: 'right' as const, sortValue: (r: DeadRow) => r.value, csv: (r: DeadRow) => formatDecimal(r.value), cell: (r: DeadRow) => <Money value={r.value} currency={false} size="num-md" decimals="whole" /> }]
       : []),
   ];
 
@@ -42,17 +43,18 @@ export function DeadStockTable({ rows, days, total, canSeeCost, timezone, window
     <DataTable
       id="report-dead-stock"
       caption={`Stock with no sale in ${days} days`}
+      noun={['item', 'items']}
       rows={rows}
       columns={columns}
       rowKey={(r) => r.variantId}
       defaultSort={{ key: canSeeCost ? 'value' : 'onHand', dir: 'desc' }}
       leading={<UrlSelect param="days" label="Window" options={windows} allLabel={null} fallback={String(days)} />}
-      rowActions={(r) => [{ key: 'movements', label: 'View movements', icon: IconHistory, onSelect: () => router.push(`/console/inventory/movements?variant=${r.variantId}&range=28`) }]}
+      rowActions={(r) => [{ key: 'movements', label: 'Stock movements', icon: IconHistory, onSelect: () => router.push(`/console/inventory/movements?variant=${r.variantId}&range=28`) }]}
       exportName="dead-stock"
       footer={
         rows.length > 0 && canSeeCost ? (
           <div className="flex items-baseline justify-between gap-16">
-            <span className="text-body text-ink-muted">Tied up in items that have not sold in {days} days</span>
+            <span className="text-body-sm text-ink-muted">Tied up in items that have not sold in {days} days</span>
             <Money value={total} size="num-lg" decimals="whole" />
           </div>
         ) : undefined

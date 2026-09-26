@@ -1,4 +1,4 @@
-import { formatDayShort, plural } from '@bliss/shared/format';
+import { plural } from '@bliss/shared/format';
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
@@ -9,6 +9,7 @@ import { SalesReport } from './sales-report';
 
 export const metadata: Metadata = { title: 'Sales' };
 
+/** Sales, for a range of business days against the same number before it. Margin needs report.margin. */
 export default async function SalesPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
   const range = businessRange(params.range, '28');
@@ -27,7 +28,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
       chart={
         single
           ? reporting.salesByHour(range.to).map((h) => ({ key: h.hour, label: h.hour.slice(0, 2), value: h.value }))
-          : days.map((d) => ({ key: d.date, label: formatDayShort(d.date), value: d.value }))
+          : days.map((d) => ({ key: d.date, label: String(Number(d.date.slice(8))), value: d.value }))
       }
       chartCaption={single ? `Sales by hour, ${range.label}` : `Sales by business day, ${range.label}`}
       categories={reporting

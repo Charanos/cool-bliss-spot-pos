@@ -24,20 +24,31 @@ export function clock() {
   return { now: d.now, lastNight: d.lastNight, current: d.currentBusinessDate, first: d.firstBusinessDate, tradingInProgress: d.tradingInProgress };
 }
 
-function exVat(amount: Cents): Cents {
+/** An amount with VAT taken out, when the outlet's prices include it. */
+export function exVat(amount: Cents): Cents {
   const outlet = identity.outlet();
   if (!outlet.pricesTaxInclusive) return amount;
   return scale(amount, 10_000n, BigInt(10_000 + outlet.taxRateBps));
 }
 
-/** Cost of goods for lines, from the sale movements they wrote, at the cost stored on each movement. */
-function costOfLines(lines: readonly OrderLine[]): Cents {
+/**
+ * Cost of goods per line, from the sale movements each line wrote, at the cost stored on each
+ * movement. A line that wrote no movement (food, an untracked category) is absent: it has no
+ * recorded cost, which is not the same as costing nothing.
+ */
+export function lineCosts(lines: readonly OrderLine[]): Map<string, Cents> {
   const ids = new Set(lines.map((l) => l.id));
-  let total = ZERO;
+  const out = new Map<string, Cents>();
   for (const m of inventory.movements({ type: 'sale' })) {
-    if (m.sourceId && ids.has(m.sourceId)) total = add(total, multiplyByQuantity(m.unitCostCents, -m.qtyDelta));
+    if (!m.sourceId || !ids.has(m.sourceId)) continue;
+    out.set(m.sourceId, add(out.get(m.sourceId) ?? ZERO, multiplyByQuantity(m.unitCostCents, -m.qtyDelta)));
   }
-  return total;
+  return out;
+}
+
+/** Cost of goods for lines, from the sale movements they wrote, at the cost stored on each movement. */
+export function costOfLines(lines: readonly OrderLine[]): Cents {
+  return sum([...lineCosts(lines).values()]);
 }
 
 function linesOn(date: IsoDate) {
@@ -127,7 +138,8 @@ export interface MoverRow {
   name: string;
   units: number;
   value: Cents;
-  marginBps: number;
+  /** Null when none of its sales carry a recorded cost: the margin is unknown, not 100%. */
+  marginBps: number | null;
 }
 
 export function topMovers(from: IsoDate, to: IsoDate, limit = 6): MoverRow[] {
@@ -142,12 +154,13 @@ export function topMovers(from: IsoDate, to: IsoDate, limit = 6): MoverRow[] {
     .map(([productId, own]) => {
       const value = sum(own.map((l) => l.lineTotalCents));
       const revenue = exVat(value);
+      const costs = lineCosts(own);
       return {
         productId,
         name: catalogue.productById(productId)?.name ?? '',
         units: own.reduce((a, l) => a + l.qty, 0),
         value,
-        marginBps: shareBps(subtract(revenue, costOfLines(own)), revenue),
+        marginBps: costs.size === 0 ? null : shareBps(subtract(revenue, costOfLines(own)), revenue),
       };
     })
     .sort((a, b) => compare(b.value, a.value))
@@ -406,7 +419,8 @@ export function salesByCategory(from: IsoDate, to: IsoDate) {
       units: own.reduce((a, l) => a + l.qty, 0),
       value,
       shareBps: shareBps(value, total),
-      marginBps: shareBps(subtract(revenue, costOfLines(own)), revenue),
+      // Null when none of its sales carry a recorded cost: the margin is unknown, not 100%.
+      marginBps: own.length > 0 && lineCosts(own).size === 0 ? null : shareBps(subtract(revenue, costOfLines(own)), revenue),
     };
   });
 }

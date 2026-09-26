@@ -39,7 +39,7 @@ export function HeadlineMetrics(props: {
       <Metric
         label="Gross margin"
         icon={IconScale}
-        href="/console/reports/dynamics"
+        href="/console/reports/performance"
         value={<CountUp value={props.marginBps} format={(n) => formatBps(Math.round(n))} delayMs={60} />}
         detail={`${formatKes(props.grossProfit, { decimals: 'whole' })} after ${formatKes(props.cogs, { decimals: 'whole' })} cost`}
       />
@@ -125,7 +125,7 @@ interface MoverRow {
   name: string;
   units: number;
   value: Cents;
-  marginBps: number;
+  marginBps: number | null;
 }
 
 export function TopMovers({ rows }: { rows: MoverRow[] }) {
@@ -133,7 +133,7 @@ export function TopMovers({ rows }: { rows: MoverRow[] }) {
     { key: 'name', header: 'Product', width: 'minmax(140px,2fr)', cell: (r) => <span className="truncate text-ui text-ink">{r.name}</span> },
     { key: 'units', header: 'Sold', width: '72px', align: 'right', cell: (r) => <NumCell>{r.units}</NumCell> },
     { key: 'value', header: 'Sales', width: '112px', align: 'right', cell: (r) => <Money value={r.value} currency={false} size="num-md" decimals="whole" /> },
-    { key: 'margin', header: 'Margin', width: '80px', align: 'right', cell: (r) => <NumCell tone={r.marginBps < 3500 ? 'low' : 'default'}>{formatBps(r.marginBps)}</NumCell> },
+    { key: 'margin', header: 'Margin', width: '80px', align: 'right', cell: (r) => (r.marginBps === null ? <NumCell tone="muted">No cost</NumCell> : <NumCell tone={r.marginBps < 3500 ? 'low' : 'default'}>{formatBps(r.marginBps)}</NumCell>) },
   ];
   return (
     <DataTable

@@ -121,7 +121,7 @@ export const WORKSPACES: readonly NavWorkspace[] = [
     description: 'Sales, margin and stock performance, by business day.',
     group: 'business',
     pages: [
-      { href: '/console/reports/dynamics', label: 'Performance', keywords: ['profit', 'margin', 'p&l'] },
+      { href: '/console/reports/performance', label: 'Performance', keywords: ['profit', 'margin', 'p&l'] },
       { href: '/console/reports/sales', label: 'Sales', keywords: ['revenue', 'hourly'] },
       { href: '/console/reports/pour-variance', label: 'Pour variance', keywords: ['shrinkage', 'loss'] },
       { href: '/console/reports/voids', label: 'Voids and discounts' },
