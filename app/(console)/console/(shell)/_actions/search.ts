@@ -1,6 +1,7 @@
 'use server';
 
 import { formatIsoDate } from '@bliss/shared/format';
+import { placeLabel } from '@bliss/shared/trade';
 import { tabLabel } from '@bliss/shared/trade';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
@@ -29,7 +30,7 @@ export async function searchConsole(query: string): Promise<SearchHit[]> {
   const number = /^#?\d+$/.test(q) ? Number(q.replace('#', '')) : null;
   const hits: SearchHit[] = [];
 
-  const tables = new Map(trade.tables().map((t) => [t.id, t.label]));
+  const tables = new Map(trade.tables().map((t) => [t.id, placeLabel(t.label)]));
   const tabs = trade.readTables().tabs;
   const tabHits = tabs
     .filter((t) => (number !== null && t.tabNumber === number) || tabLabel({ tableLabel: t.serviceTableId ? tables.get(t.serviceTableId) : null, name: t.name }).toLowerCase().includes(q))

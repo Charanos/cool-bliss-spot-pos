@@ -202,7 +202,8 @@ export type RejectionCode =
   | 'DRAWER_ALREADY_OPEN'
   | 'WRONG_SURFACE'
   | 'TAB_NOT_SETTLED'
-  | 'TABLE_TAKEN';
+  | 'TABLE_TAKEN'
+  | 'TABLE_HAS_TAB';
 
 /** Plain sentences for rejection codes, for the device that has to explain one. docs/08 section 6. */
 export const REJECTION_COPY: Record<RejectionCode, string> = {
@@ -224,4 +225,5 @@ export const REJECTION_COPY: Record<RejectionCode, string> = {
   WRONG_SURFACE: 'This change belongs to another kind of device.',
   TAB_NOT_SETTLED: 'That table still has something to pay, so it cannot be cleared yet.',
   TABLE_TAKEN: 'New guests are already at that table, so the old tab stays cleared.',
+  TABLE_HAS_TAB: 'Another tab is already open on that table. Add to that tab, or open this one on another table.',
 };

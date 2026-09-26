@@ -277,7 +277,9 @@ export function TenderPanel({
             />
           )}
 
-          <div className="grid grid-cols-3 gap-8" role="group" aria-label="Amount keypad">
+          {/* With a keyboard, digits type straight in; the keypad is for a touch counter. */}
+          <p className="hidden text-body-sm text-ink-muted mouse:block">Type the amount, then Enter to record it.</p>
+          <div className="grid grid-cols-3 gap-8 mouse:hidden" role="group" aria-label="Amount keypad">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', 'back'].map((key) => (
               <button
                 key={key}

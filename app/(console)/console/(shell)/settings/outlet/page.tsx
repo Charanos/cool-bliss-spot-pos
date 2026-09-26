@@ -1,4 +1,5 @@
 import { formatBps, plural } from '@bliss/shared/format';
+import { placeLabel } from '@bliss/shared/trade';
 import { formatFigure, formatKes } from '@bliss/shared/money';
 import { Card, CardBody, CardHeader } from '@bliss/ui/components/console/card';
 import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
@@ -143,7 +144,7 @@ export default async function OutletPage() {
                   const own = tables.filter((t) => t.zoneId === z.id);
                   return {
                     label: z.name,
-                    value: own.map((t) => t.label).join(', ') || 'No tables',
+                    value: own.map((t) => placeLabel(t.label)).join(', ') || 'No tables',
                     hint: plural(
                       own.reduce((n, t) => n + t.seats, 0),
                       'seat',

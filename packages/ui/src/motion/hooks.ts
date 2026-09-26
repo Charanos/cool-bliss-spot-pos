@@ -44,7 +44,10 @@ export function useCountTo(value: Cents, name: AnimationName, options: { fromZer
       setShown(value);
     };
 
-    if (from === value || (firstRun && !options.fromZeroOnMount) || isInstant() || isReduced()) {
+    // Nothing to nothing, a first render, or a first figure arriving after data loaded (from zero):
+    // none of those is a change the eye should follow, so the figure simply appears.
+    const arriving = from === 0n && !options.fromZeroOnMount;
+    if (from === value || (firstRun && !options.fromZeroOnMount) || arriving || isInstant() || isReduced()) {
       settle();
       return undefined;
     }

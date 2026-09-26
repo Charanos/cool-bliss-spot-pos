@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { tabLabel } from '@bliss/shared/trade';
 import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
 import * as settlement from '@/modules/settlement/service';
@@ -29,7 +30,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
         number: b.billNumber,
         businessDate: b.businessDate,
         settledAt: b.settledAt,
-        table: tab ? (trade.tableById(tab.serviceTableId)?.label ?? tab.name ?? 'Walk up') : 'Quick sale',
+        table: tab ? tabLabel({ tableLabel: trade.tableById(tab.serviceTableId)?.label, name: tab.name }) : 'Quick sale',
         tabId: tab?.id ?? null,
         scope: b.scope,
         seatNo: seat?.seatNo ?? null,

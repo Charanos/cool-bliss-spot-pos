@@ -58,6 +58,12 @@ export function openTab(p: OutboxPayload<'tab.open'>, actor: Actor): void {
   const outlet = identity.outlet();
   const date = businessDate(p.openedAt, outlet.timezone, outlet.businessDayCutover);
   const tabNumber = t.tabs.filter((x) => x.businessDate === date).reduce((max, x) => Math.max(max, x.tabNumber ?? 0), 0) + 1;
+  // One open tab to a table. Two devices can each believe a table is free (a tablet that has not
+  // pulled yet, or two waiters at once); the server is the one place that knows, so the second is refused.
+  if (p.serviceTableId) {
+    const holding = t.tabs.find((x) => x.serviceTableId === p.serviceTableId && (x.status === 'open' || x.status === 'part_settled' || x.status === 'settling'));
+    if (holding) throw new CommandRejected('TABLE_HAS_TAB', holding.tabNumber ? `That table already has tab ${holding.tabNumber} open on it.` : 'That table already has a tab open on it.');
+  }
   // New guests at a table whose last party paid and nobody cleared: the table is plainly free, so
   // the old tab is cleared on their behalf rather than blocking the new one.
   if (p.serviceTableId) {

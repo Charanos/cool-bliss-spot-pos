@@ -1,10 +1,11 @@
 'use client';
 
 import type { ServiceTable, Zone } from '@bliss/shared/domain';
+import { placeLabel } from '@bliss/shared/trade';
 import { plural } from '@bliss/shared/format';
 import { Button } from '@bliss/ui/components/button';
 import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
-import { type Column, DataTable, NumCell } from '@bliss/ui/components/console/data-table';
+import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Section } from '@bliss/ui/components/console/section';
 import { OverflowMenu } from '@bliss/ui/components/menu';
@@ -113,7 +114,7 @@ export function ZoningManager({ zones, tables, used, priceLists, canManage }: { 
       fixed: true,
       sortValue: (t) => t.label,
       csv: (t) => t.label,
-      cell: (t) => <span className="truncate text-ui font-medium text-ink">{t.label}</span>,
+      cell: (t) => <StackCell primary={placeLabel(t.label)} secondary={placeLabel(t.label) === t.label ? undefined : `Code ${t.label}`} />,
     },
     {
       key: 'zone',

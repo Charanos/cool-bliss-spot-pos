@@ -1,4 +1,5 @@
 import { formatDateTime, formatIsoDate, formatQty, formatTime, plural } from '@bliss/shared/format';
+import { tabLabel } from '@bliss/shared/trade';
 import { compare, isNegative, isPositive, isZero } from '@bliss/shared/money';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { Card, CardBody, CardHeader } from '@bliss/ui/components/console/card';
@@ -41,7 +42,7 @@ export default async function BillPage({ params }: { params: Promise<{ billId: s
   const tab = bill.tabId ? trade.tabById(bill.tabId) : null;
   const serviceTable = tab ? trade.tableById(tab.serviceTableId) : null;
   const zone = tab ? trade.zoneById(tab.zoneId) : null;
-  const table = tab ? (serviceTable?.label ?? tab.name ?? 'Walk up') : 'Quick sale';
+  const table = tab ? tabLabel({ tableLabel: serviceTable?.label, name: tab.name }) : 'Quick sale';
   const drawer = settlement.drawerForBill(bill);
   const drawerDevice = drawer ? identity.devices().find((d) => d.id === drawer.deviceId) : null;
   const canCorrect = identity.can(actor.staffId, 'refund.approve');
