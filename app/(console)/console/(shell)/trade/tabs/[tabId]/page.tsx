@@ -1,5 +1,6 @@
 import { formatElapsed, formatIsoDate, formatTime, plural } from '@bliss/shared/format';
 import { isPositive, sum } from '@bliss/shared/money';
+import { canSignInOn } from '@bliss/shared/identity';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { Card, CardBody, CardHeader } from '@bliss/ui/components/console/card';
 import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
@@ -16,9 +17,11 @@ import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as settlement from '@/modules/settlement/service';
 import * as trade from '@/modules/trade/service';
+import { EntityLink } from '../../../_components/entity-link';
 import { RecordCrumb } from '../../../_components/shell/crumbs';
 import { SCOPE_LABEL, TENDER_LABEL, actionLabel } from '../../../_lib/labels';
 import { LineDerivation } from './line-derivation';
+import { LineVoid, TabActions } from './tab-actions';
 
 export async function generateMetadata({ params }: { params: Promise<{ tabId: string }> }): Promise<Metadata> {
   const tab = trade.tabById((await params).tabId);
@@ -50,12 +53,30 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
   const seats = trade.seatsFor(tab.id).filter((s) => s.status !== 'removed');
   const lines = trade.linesFor(tab.id).sort((a, b) => a.clientCreatedAt - b.clientCreatedAt);
   const orders = trade.ordersFor(tab.id);
-  const bills = settlement.billsForTab(tab.id);
+  const actor = await identity.currentConsoleActor();
+  const allBills = settlement.allBillsForTab(tab.id).sort((a, b) => (a.settledAt ?? 0) - (b.settledAt ?? 0));
+  const bills = allBills.filter((b) => b.status !== 'voided');
   const voided = lines.filter((l) => l.status === 'voided');
-  const settled = sum(bills.filter((b) => b.status === 'settled').map((b) => b.totalCents));
+  const settled = sum(bills.filter((b) => b.status !== 'open').map(settlement.billNet));
   const showSeats = seats.length > 1;
   const title = tabTitle(summary.tableLabel, tab.tabNumber);
   const isOpen = tab.status === 'open' || tab.status === 'part_settled' || tab.status === 'settling';
+  const canManage = isOpen && identity.can(actor.staffId, 'void.approve');
+  const billed = settlement.billedLineIds();
+  const unbilled = lines.filter((l) => l.status !== 'voided' && !billed.has(l.id));
+  const busy = new Set(trade.openTabs().map((x) => x.tab.serviceTableId));
+  const freeTables = canManage
+    ? trade
+        .tables()
+        .filter((t) => t.status !== 'out_of_service' && t.id !== tab.serviceTableId && !busy.has(t.id))
+        .map((t) => ({ value: t.id, label: `${t.label}, ${trade.zoneById(t.zoneId)?.name ?? ''}`.replace(/, $/, '') }))
+    : [];
+  const waiters = canManage
+    ? identity
+        .staffList()
+        .filter((m) => m.employmentStatus === 'active' && canSignInOn('floor', identity.roleFor(m.id)?.key))
+        .map((m) => ({ value: m.id, label: m.displayName }))
+    : [];
   const orderName = (id: string) => {
     const n = orders.find((o) => o.id === id)?.orderNumber;
     return n ? `order ${n}` : 'an order';
@@ -89,7 +110,8 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
     ...[...poured.values()].map((p) => ({ at: p.at, text: `${plural(p.count, 'line')} on ${orderName(p.orderId)} poured by ${identity.displayName(p.by)}`, tone: 'poured' as const })),
     ...orders.filter((o) => o.deliveredAt).map((o) => ({ at: o.deliveredAt!, text: `${o.orderNumber ? `Order ${o.orderNumber}` : 'An order'} taken to the table by ${identity.displayName(o.deliveredBy)}` })),
     ...(tab.billAskedAt ? [{ at: tab.billAskedAt, text: `Bill asked for by ${identity.displayName(tab.billAskedBy)}` }] : []),
-    ...bills.filter((b) => b.settledAt).map((b) => ({ at: b.settledAt!, text: `Bill ${b.billNumber} settled by ${identity.displayName(b.settledBy)}`, tone: 'poured' as const })),
+    ...allBills.filter((b) => b.settledAt).map((b) => ({ at: b.settledAt!, text: `Bill ${b.billNumber} settled by ${identity.displayName(b.settledBy)}`, tone: 'poured' as const })),
+    ...allBills.filter((b) => b.voidedAt).map((b) => ({ at: b.voidedAt!, text: `Bill ${b.billNumber} voided by ${identity.displayName(b.voidedBy)}, its lines back on the tab`, reason: b.voidReason ?? null, tone: 'stop' as const })),
     ...(tab.closedAt ? [{ at: tab.closedAt, text: 'Tab closed' }] : []),
   ].sort((a, b) => a.at - b.at);
 
@@ -103,19 +125,22 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
         meta={
           <MetaRow
             items={[
-              { icon: IconMapPin, value: summary.zoneName },
+              { icon: IconMapPin, value: <EntityLink kind="zone" id={tab.zoneId} muted>{summary.zoneName}</EntityLink> },
               { icon: IconCalendar, value: formatIsoDate(tab.businessDate) },
               { icon: IconClock, value: `Opened ${formatTime(tab.openedAt, tz)}` },
-              { icon: IconUser, value: identity.displayName(tab.assignedTo) },
+              { icon: IconUser, value: <EntityLink kind="staff" id={tab.assignedTo} muted>{identity.displayName(tab.assignedTo)}</EntityLink> },
               tab.closedAt ? { icon: IconHourglass, value: `Open for ${formatElapsed(tab.closedAt - tab.openedAt)}` } : null,
             ]}
           />
         }
         actions={
           isOpen ? (
-            <ButtonLink href={`/print/tab/${tab.id}`} target="_blank" variant="secondary" icon={IconPrinter}>
-              Print the bill
-            </ButtonLink>
+            <>
+              <ButtonLink href={`/print/tab/${tab.id}`} target="_blank" variant="secondary" icon={IconPrinter}>
+                Print the bill
+              </ButtonLink>
+              {canManage ? <TabActions tabId={tab.id} title={title} freeTables={freeTables} waiters={waiters} assignedTo={tab.assignedTo} unbilled={unbilled.length} /> : null}
+            </>
           ) : null
         }
       />
@@ -165,7 +190,7 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
                     const gone = line.status === 'voided';
                     return (
                       <li key={line.id} className="flex flex-col gap-8 border-b border-rule px-20 py-16 last:border-b-0">
-                        <div className="grid grid-cols-[40px_minmax(0,1fr)_auto_112px] items-baseline gap-16">
+                        <div className="grid grid-cols-[40px_minmax(0,1fr)_auto_112px_32px] items-baseline gap-16">
                           <span className="font-mono tabular text-num-md text-ink-muted">{line.qty} ×</span>
                           <span className="flex min-w-0 flex-col gap-2">
                             <span className={gone ? 'text-ui text-ink-subtle line-through' : 'text-ui font-medium text-ink'}>{variant?.name ?? 'Item no longer on the menu'}</span>
@@ -186,6 +211,7 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
                           <span className="text-right">
                             <Money value={line.lineTotalCents} currency={false} size="num-md" tone={gone ? 'subtle' : 'default'} className={gone ? 'line-through' : undefined} />
                           </span>
+                          <span className="self-center">{canManage && !gone && !billed.has(line.id) ? <LineVoid lineId={line.id} name={variant?.name ?? 'this line'} /> : null}</span>
                         </div>
                         <div className="pl-56">
                           <LineDerivation steps={line.priceDerivation} unit={line.unitPriceCents} />
@@ -201,15 +227,15 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
 
         <div className="flex min-w-0 flex-col gap-24">
           <Card aria-labelledby="tab-bills">
-            <CardHeader band level="h2" titleId="tab-bills" title="Bills" subtitle={bills.length > 0 ? plural(bills.length, 'bill') : undefined} />
-            {bills.length === 0 ? (
+            <CardHeader band level="h2" titleId="tab-bills" title="Bills" subtitle={allBills.length > 0 ? plural(bills.length, 'bill') + (allBills.length > bills.length ? `, ${allBills.length - bills.length} voided` : '') : undefined} />
+            {allBills.length === 0 ? (
               <CardBody className="pt-16">
                 <p className="text-body-sm text-ink-muted">{isOpen ? 'Nothing settled yet. Bills are settled at the counter.' : 'No bill was settled on this tab.'}</p>
               </CardBody>
             ) : (
               <ul className="flex flex-col">
-                {bills.map((b) => {
-                  const tenders = settlement.tendersFor(b.id);
+                {allBills.map((b) => {
+                  const tenders = settlement.tendersFor(b.id).filter((t) => isPositive(t.amountCents));
                   const seat = seats.find((s) => s.id === b.tabSeatId);
                   return (
                     <li key={b.id} className="relative flex flex-col gap-4 border-b border-rule px-20 py-12 transition-hover last:border-b-0 hover:bg-band">
@@ -218,10 +244,10 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
                           {seat && showSeats ? <SeatChip seat={seat.seatNo} size="dense" /> : null}
                           Bill <span className="font-mono tabular">{b.billNumber}</span>
                         </Link>
-                        <Money value={b.totalCents} size="num-md" />
+                        <Money value={b.totalCents} size="num-md" tone={b.status === 'voided' ? 'subtle' : 'default'} className={b.status === 'voided' ? 'line-through' : undefined} />
                       </div>
                       <p className="flex items-baseline justify-between gap-12 text-body-sm text-ink-muted">
-                        <span>{SCOPE_LABEL[b.scope]}</span>
+                        <span>{b.status === 'voided' ? 'Voided' : b.status === 'refunded' ? 'Refunded' : b.status === 'partially_refunded' ? 'Part refunded' : SCOPE_LABEL[b.scope]}</span>
                         <span className="truncate text-right">
                           {tenders.map((t) => TENDER_LABEL[t.kind]).join(' and ') || 'No tender'}
                           {b.settledAt ? `, ${formatTime(b.settledAt, tz)}` : ''}

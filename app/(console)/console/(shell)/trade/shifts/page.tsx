@@ -30,21 +30,22 @@ export default async function ShiftsPage({ searchParams }: { searchParams: Promi
       voids: s.voidsCents,
       discounts: s.discountsCents,
       open: s.status === 'open',
+      avatarUrl: identity.staffById(s.staffId)?.avatarUrl ?? null,
+      colourIndex: identity.staffById(s.staffId)?.colourIndex ?? 0,
     }));
 
   return (
     <>
       <ViewHeader page="/console/trade/shifts" />
-
-    <ShiftsTable
+      <ShiftsTable
       rows={rows}
       timezone={outlet.timezone}
       rangeOptions={rangeOptions(true)}
       rangeKey={range.key}
       rangeLabel={range.label}
       staff={[...new Map(rows.map((r) => [r.staffId, r.staff])).entries()].map(([value, label]) => ({ value, label }))}
-      exportDate={range.to}
-    />
+        exportDate={range.to}
+      />
     </>
   );
 }

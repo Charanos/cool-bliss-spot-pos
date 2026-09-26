@@ -19,7 +19,7 @@ export default async function DrawersPage({ searchParams }: { searchParams: Prom
 
   const rows: DrawerRow[] = settlement
     .drawerSessionsBetween(range.from, range.to)
-    .map((s) => settlement.drawerFor(s.businessDate))
+    .map((s) => settlement.drawerView(s.id))
     .filter((d): d is NonNullable<typeof d> => d !== null)
     .map((d) => ({
       id: d.id,
@@ -36,6 +36,8 @@ export default async function DrawersPage({ searchParams }: { searchParams: Prom
       reason: d.varianceReason,
       stage: d.stage,
       status: d.status,
+      reviewed: Boolean(d.reviewedAt),
+      bills: settlement.billsInDrawer(d.id).filter((b) => b.status !== 'voided').length,
     }));
 
   return (

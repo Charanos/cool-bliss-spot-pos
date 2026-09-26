@@ -164,6 +164,13 @@ function sessionWindow(sessionId: string) {
   return { session, until: session.closedAt ?? Number.POSITIVE_INFINITY };
 }
 
+/** The drawer session that was open on the bill's device when it was settled, if any. */
+export function drawerForBill(bill: Pick<Bill, 'deviceId' | 'settledAt'>) {
+  if (!bill.settledAt) return null;
+  const at = bill.settledAt;
+  return settlementTables().drawerSessions.find((s) => s.deviceId === bill.deviceId && s.openedAt <= at && (s.closedAt ?? Number.POSITIVE_INFINITY) >= at) ?? null;
+}
+
 /** Cash tender amounts on bills settled on the session's device while it was open. */
 export function cashTakenIn(sessionId: string): Cents[] {
   const w = sessionWindow(sessionId);
@@ -180,4 +187,32 @@ function cashBillCount(sessionId: string): number {
   const t = settlementTables();
   const bills = new Set(t.bills.filter((b) => b.deviceId === w.session.deviceId && b.status !== 'voided' && b.status !== 'open' && (b.settledAt ?? 0) >= w.session.openedAt && (b.settledAt ?? 0) <= w.until).map((b) => b.id));
   return new Set(t.tenders.filter((x) => x.kind === 'cash' && isPositive(x.amountCents) && bills.has(x.billId)).map((x) => x.billId)).size;
+}
+
+/**
+ * One drawer session as the Console may read it: blind until it is closed, like drawerFor, but for
+ * the session itself, so two counters trading the same night each show as their own drawer.
+ */
+export function drawerView(sessionId: string) {
+  const session = settlementTables().drawerSessions.find((s) => s.id === sessionId);
+  if (!session) return null;
+  if (session.status !== 'closed') {
+    const { expectedCashCents: _withheld, countedCashCents: _notYet, varianceCents: _none, ...blind } = session;
+    return { ...blind, stage: 'blind' as const };
+  }
+  return { ...session, stage: 'closed' as const };
+}
+
+/** Bills settled on a drawer's device while it was open: the ones whose cash went into it. */
+export function billsInDrawer(sessionId: string): Bill[] {
+  const w = sessionWindow(sessionId);
+  if (!w) return [];
+  return settlementTables().bills.filter((b) => b.deviceId === w.session.deviceId && b.status !== 'open' && (b.settledAt ?? 0) >= w.session.openedAt && (b.settledAt ?? 0) <= w.until);
+}
+
+/** Cash in and out of a drawer that is not a sale: its float, drops to the safe, refunds paid out. */
+export function cashMovementsFor(sessionId: string) {
+  return settlementTables()
+    .cashMovements.filter((m) => m.drawerSessionId === sessionId)
+    .sort((a, b) => a.occurredAt - b.occurredAt);
 }

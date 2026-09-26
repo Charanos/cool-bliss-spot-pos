@@ -3,6 +3,7 @@
 import { formatIsoDate, formatTime, plural } from '@bliss/shared/format';
 import { type Cents, abs, compare, formatDecimal, formatFigure, formatKes, isNegative, isPositive, isZero, sum } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
+import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
@@ -24,6 +25,8 @@ export interface DrawerRow {
   reason: string | null;
   stage: 'blind' | 'closed';
   status: 'open' | 'counting' | 'closed';
+  reviewed: boolean;
+  bills: number;
 }
 
 /**
@@ -173,7 +176,32 @@ export function DrawersTable({
         defaultSort={{ key: 'date', dir: 'desc' }}
         filters={[{ kind: 'toggle', key: 'outside', label: `Over ${formatKes(threshold, { decimals: 'whole' })} out`, test: outside }]}
         leading={rangeOptions && rangeKey ? <UrlSelect param="range" label="Range" options={rangeOptions} allLabel={null} fallback={rangeKey} /> : undefined}
-        rowTone={(r) => (outside(r) ? 'attention' : 'default')}
+        rowTone={(r) => (outside(r) && !r.reviewed ? 'attention' : 'default')}
+        rowHref={(r) => `/console/trade/drawers/${r.id}`}
+        renderGridCard={(r) => (
+          <Card as="article" interactive className="group h-full" tone={outside(r) && !r.reviewed ? 'stop' : r.status !== 'closed' ? 'accent' : undefined}>
+            <CardHeader
+              band
+              title={`${r.device}, ${formatIsoDate(r.businessDate)}`}
+              subtitle={`Opened by ${r.openedBy} at ${formatTime(r.openedAt, timezone)}`}
+              href={`/console/trade/drawers/${r.id}`}
+              meta={r.status !== 'closed' ? <StatusChip status={r.status === 'counting' ? 'counting' : 'open'} /> : r.reviewed ? <StatusChip status="resolved" label="Reviewed" /> : outside(r) ? <StatusChip status="unresolved" label="To review" /> : <StatusChip status="settled" label="Closed" />}
+            />
+            <CardStats columns={3}>
+              <Stat label="Float">
+                <Money value={r.float} currency={false} size="num-md" decimals="whole" />
+              </Stat>
+              <Stat label="Counted">{r.counted === null ? 'Not yet' : <Money value={r.counted} currency={false} size="num-md" decimals="whole" />}</Stat>
+              <Stat label="Variance" tone={outside(r) ? 'stop' : undefined}>
+                {r.variance === null ? (r.stage === 'blind' ? 'Withheld' : 'None') : isZero(r.variance) ? 'Balanced' : `${isNegative(r.variance) ? '−' : '+'}${formatFigure(abs(r.variance))}`}
+              </Stat>
+            </CardStats>
+            <CardFooter>
+              <span className="text-body-sm text-ink-muted">{plural(r.bills, 'bill')}</span>
+              <span className="truncate text-body-sm text-ink-subtle">{r.reason ?? (r.closedBy ? `Closed by ${r.closedBy}` : 'Still open')}</span>
+            </CardFooter>
+          </Card>
+        )}
         exportName="drawers"
         exportDate={exportDate}
         empty={{ title: 'No drawer sessions in this range', body: 'A session starts when a cashier counts the float into the drawer at the counter.' }}

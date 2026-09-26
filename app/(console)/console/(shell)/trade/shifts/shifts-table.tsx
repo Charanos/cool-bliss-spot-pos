@@ -2,12 +2,14 @@
 
 import { formatElapsed, formatIsoDate, formatTime, plural } from '@bliss/shared/format';
 import { type Cents, add, formatDecimal, isPositive, sum } from '@bliss/shared/money';
+import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
 import { IconClock, IconDiscount2, IconReceipt, IconUsers } from '@tabler/icons-react';
 import { UrlSelect } from '../../_components/url-select';
+import { StaffAvatar } from '../../people/staff/avatar';
 
 export interface ShiftRow {
   id: string;
@@ -24,6 +26,8 @@ export interface ShiftRow {
   voids: Cents;
   discounts: Cents;
   open: boolean;
+  avatarUrl: string | null;
+  colourIndex: number;
 }
 
 /** Shifts in a range: who worked, for how long, and what went through their hands. */
@@ -45,7 +49,13 @@ export function ShiftsTable({
   exportDate: string;
 }) {
   const columns: Column<ShiftRow>[] = [
-    { key: 'staff', header: 'Person', width: 'minmax(160px,1fr)', fixed: true, sortValue: (r) => r.staff, csv: (r) => r.staff, cell: (r) => <StackCell primary={r.staff} secondary={r.role} /> },
+    { key: 'staff', header: 'Person', width: 'minmax(160px,1fr)', fixed: true, sortValue: (r) => r.staff, csv: (r) => r.staff, cell: (r) => (
+        <span className="flex min-w-0 items-center gap-12">
+          <StaffAvatar name={r.staff} avatarUrl={r.avatarUrl} colourIndex={r.colourIndex} />
+          <StackCell primary={r.staff} secondary={r.role} />
+        </span>
+      ),
+    },
     { key: 'date', header: 'Business day', width: '128px', sortValue: (r) => r.businessDate, csv: (r) => r.businessDate, cell: (r) => <NumCell tone="muted">{formatIsoDate(r.businessDate)}</NumCell> },
     {
       key: 'hours',
@@ -134,7 +144,35 @@ export function ShiftsTable({
         rows={rows}
         columns={columns}
         rowKey={(r) => r.id}
+        rowHref={(r) => `/console/trade/shifts/${r.id}`}
         defaultSort={{ key: 'hours', dir: 'desc' }}
+        renderGridCard={(r) => (
+          <Card as="article" interactive className="group h-full" tone={r.open ? 'accent' : undefined}>
+            <CardHeader
+              band
+              icon={<StaffAvatar name={r.staff} avatarUrl={r.avatarUrl} colourIndex={r.colourIndex} size="md" />}
+              title={r.staff}
+              subtitle={`${r.role}, ${formatIsoDate(r.businessDate)}`}
+              href={`/console/trade/shifts/${r.id}`}
+              meta={r.open ? <StatusChip status="open" label="On shift" /> : null}
+            />
+            <CardStats columns={3}>
+              <Stat label="Sales">
+                <Money value={r.sales} currency={false} size="num-md" decimals="whole" />
+              </Stat>
+              <Stat label="Tabs">{r.tabsOpened}</Stat>
+              <Stat label="Voids" tone={isPositive(r.voids) ? 'low' : undefined}>
+                {isPositive(r.voids) ? <Money value={r.voids} currency={false} size="num-md" decimals="whole" /> : 'None'}
+              </Stat>
+            </CardStats>
+            <CardFooter>
+              <span className="font-mono tabular text-num-sm text-ink-muted">
+                {formatTime(r.startedAt, timezone)} to {r.endedAt ? formatTime(r.endedAt, timezone) : 'now'}
+              </span>
+              <span className="truncate text-body-sm text-ink-subtle">{r.endedAt ? formatElapsed(r.endedAt - r.startedAt) : 'Still signed in'}</span>
+            </CardFooter>
+          </Card>
+        )}
         leading={<UrlSelect param="range" label="Range" options={rangeOptions} allLabel={null} fallback={rangeKey} />}
         filters={[{ kind: 'select', key: 'person', label: 'Person', options: staff, test: (r, v) => r.staffId === v }]}
         exportName="shifts"

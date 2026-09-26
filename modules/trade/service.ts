@@ -197,6 +197,10 @@ export function shiftsOn(date: IsoDate) {
   return tradeTables().shifts.filter((s) => s.businessDate === date);
 }
 
+export function shiftById(id: string) {
+  return tradeTables().shifts.find((s) => s.id === id) ?? null;
+}
+
 export function shiftsBetween(from: IsoDate, to: IsoDate) {
   return tradeTables().shifts.filter((s) => s.businessDate >= from && s.businessDate <= to);
 }
