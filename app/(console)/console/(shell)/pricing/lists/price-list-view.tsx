@@ -4,7 +4,9 @@ import { formatBps, formatDateTime, plural } from '@bliss/shared/format';
 import { type Cents, cents, formatDecimal, formatFigure, formatKes, isPositive, parseKes, scale, shareBps, subtract } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
-import { ConsoleBentoCard, Metric } from '@bliss/ui/components/console/metric';
+import { Card, CardHeader } from '@bliss/ui/components/console/card';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
+import { Callout } from '@bliss/ui/components/console/section';
 import { TextField } from '@bliss/ui/components/fields';
 import { Money } from '@bliss/ui/components/money';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
@@ -42,6 +44,7 @@ function marginOf(price: Cents, cost: Cents, taxRateBps: number): number {
   return isPositive(exVat) ? shareBps(subtract(exVat, cost), exVat) : 0;
 }
 
+/** One price list at a time: every item against the base price, with its margin for roles that see cost. */
 export function PriceListView({
   lists,
   list,
@@ -85,7 +88,7 @@ export function PriceListView({
             align: 'right' as const,
             sortValue: (r: PriceRow) => r.base,
             csv: (r: PriceRow) => (r.base === null ? '' : formatDecimal(r.base)),
-            cell: (r: PriceRow) => (r.base === null ? <NumCell tone="muted">··</NumCell> : <Money value={r.base} currency={false} tone="muted" />),
+            cell: (r: PriceRow) => (r.base === null ? <NumCell tone="muted">None</NumCell> : <Money value={r.base} currency={false} size="num-md" tone="muted" />),
           },
         ]
       : []),
@@ -96,7 +99,7 @@ export function PriceListView({
       align: 'right',
       sortValue: (r) => r.price,
       csv: (r) => (r.price === null ? '' : formatDecimal(r.price)),
-      cell: (r) => (r.price === null ? <span className="text-body-sm text-ink-subtle">{overlay ? 'Not on this list' : '··'}</span> : <Money value={r.price} currency={false} tone={overlay ? 'accent' : 'default'} />),
+      cell: (r) => (r.price === null ? <span className="text-body-sm text-ink-subtle">{overlay ? 'Not on this list' : 'No price'}</span> : <Money value={r.price} currency={false} size="num-md" tone={overlay ? 'accent' : 'default'} />),
     },
     ...(overlay
       ? [
@@ -107,7 +110,7 @@ export function PriceListView({
             align: 'right' as const,
             sortValue: (r: PriceRow) => (r.price !== null && r.base !== null ? subtract(r.base, r.price) : null),
             csv: (r: PriceRow) => (r.price !== null && r.base !== null ? formatDecimal(subtract(r.base, r.price)) : ''),
-            cell: (r: PriceRow) => (r.price !== null && r.base !== null ? <Money value={subtract(r.base, r.price)} currency={false} tone="muted" /> : <NumCell tone="muted">··</NumCell>),
+            cell: (r: PriceRow) => (r.price !== null && r.base !== null ? <Money value={subtract(r.base, r.price)} currency={false} size="num-md" tone="muted" /> : <NumCell tone="muted">None</NumCell>),
           },
         ]
       : []),
@@ -120,7 +123,7 @@ export function PriceListView({
             align: 'right' as const,
             sortValue: (r: PriceRow) => r.cost,
             csv: (r: PriceRow) => (r.cost === null ? '' : formatDecimal(r.cost)),
-            cell: (r: PriceRow) => (r.cost === null ? <NumCell tone="muted">··</NumCell> : <Money value={r.cost} currency={false} tone="muted" />),
+            cell: (r: PriceRow) => (r.cost === null ? <NumCell tone="muted">None</NumCell> : <Money value={r.cost} currency={false} size="num-md" tone="muted" />),
           },
           {
             key: 'margin',
@@ -130,7 +133,7 @@ export function PriceListView({
             sortValue: (r: PriceRow) => (r.cost !== null && r.price !== null ? marginBps(r.price, r.cost) : null),
             csv: (r: PriceRow) => (r.cost !== null && r.price !== null ? (marginBps(r.price, r.cost) / 100).toFixed(1) : ''),
             cell: (r: PriceRow) => {
-              if (r.cost === null || r.price === null) return <NumCell tone="muted">··</NumCell>;
+              if (r.cost === null || r.price === null) return <NumCell tone="muted">None</NumCell>;
               const bps = marginBps(r.price, r.cost);
               return <NumCell tone={bps < 3000 ? 'low' : 'default'}>{formatBps(bps)}</NumCell>;
             },
@@ -140,48 +143,35 @@ export function PriceListView({
   ];
 
   return (
-    <div className="flex flex-col gap-24">
-      {/* Executive Tariff Performance Metrics */}
-      <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
+    <div className="flex flex-col gap-32">
+      <MetricGrid>
+        <Metric label={`Priced on ${list.name}`} icon={IconTag} value={<CountUp value={pricedItems} />} detail={`Of ${plural(rows.length, 'item')} on sale`} />
         <Metric
-          label={`Active on ${list.name}`}
-          value={pricedItems}
-          detail={`${rows.length} catalogue variants`}
-          icon={IconTag}
-          tone="default"
-        />
-        <Metric
-          label="Tariff Class"
-          value={list.kind === 'base' ? 'Master Base' : 'Overlay Tariff'}
-          detail={list.kind === 'base' ? 'Default floor pricing' : `${plural(rules.length, 'schedule rule')} active`}
+          label="How it applies"
           icon={IconReceipt}
-          tone={list.kind === 'base' ? 'default' : 'poured'}
+          value={<span className="font-sans text-title-section">{list.kind === 'base' ? 'All day' : rules.length > 0 ? 'In its hours' : 'Not scheduled'}</span>}
+          detail={list.kind === 'base' ? 'The price when no rule is on' : rules.length > 0 ? plural(rules.length, 'time rule') : 'No time rule switches it on'}
         />
         <Metric
-          label="Average Margin"
-          value={canSeeCost && avgMarginBps !== null ? formatBps(avgMarginBps) : 'Protected'}
-          detail={canSeeCost ? `Net of ${(taxRateBps / 100).toFixed(0)}% VAT` : 'Cost access restricted'}
+          label="Average margin"
           icon={canSeeCost ? IconPercentage : IconLock}
           tone={canSeeCost && avgMarginBps !== null && avgMarginBps < 3000 ? 'attention' : 'default'}
+          value={canSeeCost && avgMarginBps !== null ? formatBps(avgMarginBps) : <span className="font-sans text-title-section text-ink-muted">Hidden</span>}
+          detail={canSeeCost ? `After ${(taxRateBps / 100).toFixed(0)}% VAT, at average cost` : 'Your role does not see costs'}
         />
-        <Metric
-          label="Price Log Revisions"
-          value={changes.length}
-          detail="Recent audit adjustments"
-          icon={IconHistory}
-          tone="default"
-        />
-      </div>
+        <Metric label="Recent changes" icon={IconHistory} value={<CountUp value={changes.length} delayMs={120} />} detail={changes.length > 0 ? 'Listed below the prices' : 'No price has changed yet'} />
+      </MetricGrid>
 
       {rules.length > 0 ? (
-        <div className="rounded-md border border-hairline bg-raised/30 px-16 py-10 text-body text-ink-muted">
-          Applies {rules.join('; ')}. Outside those hours the floor charges {baseName}.
-        </div>
+        <Callout tone="info" title={`${list.name} is on ${rules.join('; ')}`}>
+          Outside those hours the floor charges {baseName}. A line keeps the price it was fired at.
+        </Callout>
       ) : null}
 
       <DataTable
         id="pricing-list"
         caption={`Prices on ${list.name}`}
+        noun={['item', 'items']}
         rows={rows}
         columns={columns}
         rowKey={(r) => r.variantId}
@@ -202,31 +192,29 @@ export function PriceListView({
         }
         exportName={`prices-${list.name.toLowerCase().replace(/\s+/g, '-')}`}
         empty={{ title: 'Nothing is priced on this list', body: 'Add a price to an item and it appears here.' }}
+        emptyFiltered={{ title: 'No items match', body: 'Clear the category, the toggle or the search to see every item.' }}
       />
 
       {changes.length > 0 ? (
-        <ConsoleBentoCard
-          title="Recent Tariff Adjustments"
-          subtitle="Audit log of authorized price revisions and removals"
-          icon={IconHistory}
-          tone="default"
-        >
-          <ul className="divide-y divide-rule">
+        <Card aria-labelledby="price-changes">
+          <CardHeader band level="h2" titleId="price-changes" icon={IconHistory} title="Recent price changes" subtitle="Who changed what, and why" />
+          <ul className="flex flex-col">
             {changes.map((c) => (
-              <li key={c.id} className="grid grid-cols-[150px_minmax(0,1fr)_auto] items-baseline gap-16 py-10 transition-colors hover:bg-raised/20">
+              <li key={c.id} className="grid grid-cols-[152px_minmax(0,1fr)_auto] items-baseline gap-16 border-b border-rule px-20 py-12 last:border-b-0">
                 <span className="font-mono tabular text-num-sm text-ink-subtle">{formatDateTime(c.at, timezone)}</span>
-                <span className="min-w-0 text-body text-ink">
+                <span className="min-w-0 text-body-sm text-ink-muted">
                   {c.variant ? <span className="font-medium text-ink">{c.variant}: </span> : null}
-                  <span className="text-ink-muted">{c.reason}</span>
-                  <span className="text-ink-subtle"> · {c.by}</span>
+                  {c.reason ?? 'No reason recorded'}
+                  <span className="text-ink-subtle">, {c.by}</span>
                 </span>
-                <span className="whitespace-nowrap font-mono tabular text-num-sm text-ink">
-                  {c.before ? formatFigure(cents(c.before)) : 'none'} → {c.after ? formatFigure(cents(c.after)) : 'removed'}
+                <span className="whitespace-nowrap font-mono tabular text-num-md text-ink">
+                  {c.before ? formatFigure(cents(c.before)) : 'None'} <span aria-hidden="true">→</span>
+                  <span className="sr-only">to</span> {c.after ? formatFigure(cents(c.after)) : 'removed'}
                 </span>
               </li>
             ))}
           </ul>
-        </ConsoleBentoCard>
+        </Card>
       ) : null}
 
       <PriceDialog target={editing} list={list} onClose={() => setEditing(null)} />
@@ -281,7 +269,7 @@ function PriceDialog({ target, list, onClose }: { target: { row: PriceRow; remov
         >
           {!target.remove ? (
             <div className="pb-16">
-              <TextField label="New price, including VAT" size="md" mono inputMode="decimal" placeholder={row.price ? formatFigure(row.price, { decimals: 'whole' }) : '350'} value={value} onChange={(e) => setValue(e.target.value)} leading={<span className="text-body text-ink-subtle">KES</span>} />
+              <TextField label="New price, including VAT" size="md" inputMode="decimal" placeholder={row.price ? formatFigure(row.price, { decimals: 'whole' }) : '350'} value={value} onChange={(e) => setValue(e.target.value)} leading={<span className="text-body text-ink-subtle">KES</span>} />
             </div>
           ) : null}
         </ReasonForm>
