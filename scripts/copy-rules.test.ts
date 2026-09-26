@@ -21,7 +21,7 @@ describe('copy rules', () => {
 
   it('keep KRA eTIMS out, and em dashes out', () => {
     expect(why('<p>eTIMS reference</p>')).toHaveLength(1);
-    expect(why('<p>Settled — thanks</p>')).toHaveLength(1);
+    expect(why(`<p>Settled ${'\u2014'} thanks</p>`)).toHaveLength(1);
   });
 
   it('refuse shouted capitals and Title Case labels, but not names or sentences', () => {
