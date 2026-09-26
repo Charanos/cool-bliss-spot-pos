@@ -296,3 +296,20 @@ Applied to every string before merge.
 - [ ] Readable at 200% zoom without truncating
 - [ ] Money as `KES 12,450.00`, time in 24-hour, dates as `6 Sep 2026`
 - [ ] No em dashes
+
+
+---
+
+## Console
+
+The Console is read at a desk, not on a tray, but the voice is the same: plain, specific, calm, and exact about money. `scripts/check-copy.mjs` checks these in `pnpm lint`; the rewrite table is in `19-console-system.md` section 5.
+
+- **Titles are the nouns people use at the bar.** Overview, Bills, Open tabs, Stock, Deliveries, Staff. Not "Executive Overview", not "Tender Settlement Mix", not "Operational Intelligence".
+- **One sentence of purpose under a title**: what the page answers or lets you do. Never how the system works; mechanics go in a "How this is worked out" note or in the docs.
+- **Sentence case everywhere.** Capitals are presentation (`label-caps`), so the source string is always sentence case and a screen reader reads words.
+- **The terminology lock holds.** Tab, seat, line, bill, tender, variance, write-off, void, drawer session, business day. A delivery is received; a line is voided, never deleted.
+- **Buttons name their outcome**, with the count or amount where there is one: "Receive 12 lines", "Commit count", "Add a person", "Export".
+- **Every table has its own empty and filtered copy.** "No bills yet tonight." "No bills match these filters. Clear the filters to see them all."
+- **Errors say what happened, then what to do**, and never show an internal message. Services refuse with a `DomainError` written in this voice.
+- **No invented figures or placeholders.** A number on screen is real, or the line says it is not tracked yet. No stock photos of staff; initials until a photo is uploaded.
+- **Out of scope stays out of the interface.** No KRA, eTIMS or fiscal wording anywhere; a Bliss bill says it is not a tax invoice.

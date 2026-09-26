@@ -67,7 +67,9 @@ This is not a rename. Roughly a third of the previous system is gone and one sig
 14. `15-floor-orders-revamp.md`: floor orders, live ticket queue, distinct tokens (`served`/`poured`), action modal, and shift handoff.
 15. `16-responsive-and-offline.md`: the device ladder, the dead class checker, the service worker, what offline honestly covers, notices and undo, the table lifecycle, history and the refinement pass.
 16. `17-persistence.md`: Postgres as the outlet's store, how a change becomes permanent across instances, seeding and configuration.
-17. `18-console-plan.md`: the Console hardening and refinement plan: security and data integrity, the token and primitive system, the shell redesign, copy, and page-by-page migration.
+17. `11-design-drift.md`: where the build departs from the design documents, and why, by number.
+18. `18-console-plan.md`: the Console hardening and refinement plan: security and data integrity, the token and primitive system, the shell redesign, copy, and page-by-page migration.
+19. `19-console-system.md`: the Console's working reference: the Pane and Card families, the type ramp, tokens and primitives, the shell, copy, and a page's definition of done.
 
 ---
 
