@@ -25,7 +25,7 @@ interface MovementRow {
 }
 
 export const MOVEMENT_LABEL: Record<MovementType, string> = {
-  receipt: 'Receipt',
+  receipt: 'Delivery',
   sale: 'Sale',
   sale_reversal: 'Sale reversal',
   transfer_out: 'Transfer out',
@@ -40,16 +40,17 @@ export const MOVEMENT_LABEL: Record<MovementType, string> = {
   opening_balance: 'Opening balance',
 };
 
+/** The stock ledger, newest first: every delivery, sale, write-off and adjustment, with who and why. */
 export function MovementsTable({ rows, timezone, locations, variantName }: { rows: MovementRow[]; timezone: string; locations: { value: string; label: string }[]; variantName: string | null }) {
   const columns: Column<MovementRow>[] = [
     { key: 'at', header: 'When', width: '150px', fixed: true, sortValue: (r) => r.at, csv: (r) => new Date(r.at).toISOString(), cell: (r) => <NumCell tone="muted">{formatDateTime(r.at, timezone)}</NumCell> },
     { key: 'variant', header: 'Product', width: 'minmax(160px,1.4fr)', sortValue: (r) => r.variant, csv: (r) => r.variant, cell: (r) => <StackCell primary={r.variant} secondary={r.location} /> },
-    { key: 'type', header: 'Type', width: '150px', sortValue: (r) => r.type, csv: (r) => MOVEMENT_LABEL[r.type], cell: (r) => <span className="text-body text-ink">{MOVEMENT_LABEL[r.type]}</span> },
+    { key: 'type', header: 'Type', width: '150px', sortValue: (r) => r.type, csv: (r) => MOVEMENT_LABEL[r.type], cell: (r) => <span className="text-ui text-ink">{MOVEMENT_LABEL[r.type]}</span> },
     { key: 'qty', header: 'Quantity', width: '96px', align: 'right', sortValue: (r) => r.qty, csv: (r) => r.qty, cell: (r) => <NumCell tone={r.qty < 0 ? 'default' : 'poured'}>{r.qty > 0 ? '+' : ''}{formatQty(r.qty, 3)}</NumCell> },
     { key: 'cost', header: 'Unit cost', width: '0px', exportOnly: true, align: 'right', csv: (r) => formatDecimal(r.unitCost), cell: (r) => <Money value={r.unitCost} currency={false} tone="muted" /> },
-    { key: 'value', header: 'Value', width: '100px', align: 'right', sortValue: (r) => multiplyByQuantity(r.unitCost, r.qty), csv: (r) => formatDecimal(multiplyByQuantity(r.unitCost, r.qty)), cell: (r) => <Money value={multiplyByQuantity(r.unitCost, r.qty)} currency={false} decimals="whole" /> },
-    { key: 'by', header: 'By', width: '100px', sortValue: (r) => r.by, csv: (r) => r.by, cell: (r) => <span className="text-body text-ink-muted">{r.by}</span> },
-    { key: 'reason', header: 'Reason', width: 'minmax(160px,1.4fr)', csv: (r) => r.reason ?? '', cell: (r) => <span className="text-body text-ink-muted" title={r.reason ?? undefined}>{r.reason ?? ''}</span> },
+    { key: 'value', header: 'Value', width: '100px', align: 'right', sortValue: (r) => multiplyByQuantity(r.unitCost, r.qty), csv: (r) => formatDecimal(multiplyByQuantity(r.unitCost, r.qty)), cell: (r) => <Money value={multiplyByQuantity(r.unitCost, r.qty)} currency={false} size="num-md" decimals="whole" /> },
+    { key: 'by', header: 'By', width: '100px', sortValue: (r) => r.by, csv: (r) => r.by, cell: (r) => <span className="text-ui text-ink-muted">{r.by}</span> },
+    { key: 'reason', header: 'Reason', width: 'minmax(160px,1.4fr)', csv: (r) => r.reason ?? '', cell: (r) => <span className="truncate text-body-sm text-ink-muted" title={r.reason ?? undefined}>{r.reason ?? ''}</span> },
   ];
 
   const types = (Object.keys(MOVEMENT_LABEL) as MovementType[]).map((t) => ({ value: t, label: MOVEMENT_LABEL[t] }));
@@ -62,9 +63,10 @@ export function MovementsTable({ rows, timezone, locations, variantName }: { row
             param="range"
             label="Range"
             allLabel={null}
+            fallback="3"
             options={[
-              { value: '3', label: 'Last 3 business days' },
               { value: '1', label: 'This business day' },
+              { value: '3', label: 'Last 3 business days' },
               { value: '7', label: 'Last 7 business days' },
               { value: '28', label: 'Last 28 business days' },
             ]}
@@ -78,6 +80,7 @@ export function MovementsTable({ rows, timezone, locations, variantName }: { row
       }
       id="inventory-movements"
       caption="Stock movements"
+      noun={['movement', 'movements']}
       rows={rows}
       columns={columns}
       rowKey={(r) => r.id}
@@ -88,7 +91,8 @@ export function MovementsTable({ rows, timezone, locations, variantName }: { row
         { kind: 'select', key: 'location', label: 'Location', options: locations, test: (r, v) => r.locationId === v },
       ]}
       exportName="movements"
-      empty={{ title: 'No movements in this range', body: 'Widen the date range to see earlier movements.' }}
+      empty={{ title: 'No movements in this range', body: 'Choose a longer range to see earlier movements.' }}
+      emptyFiltered={{ title: 'No movements match', body: 'Clear the type, location or search to see every movement in the range.' }}
     />
   );
 }

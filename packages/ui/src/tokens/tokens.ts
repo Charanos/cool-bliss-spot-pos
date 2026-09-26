@@ -331,6 +331,8 @@ export const size = {
   'kpi-min': 136,
   /** The totals block at the foot of a bill, an order or a delivery. */
   totals: 320,
+  /** A single-column Console form: a count, a zone, a person. */
+  form: 720,
   'panel-tender': 420,
   strip: 56,
   /** The top bar on a phone, and on any screen shorter than the `short` variant's ceiling. */

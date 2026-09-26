@@ -1,5 +1,6 @@
 import { formatQty } from '@bliss/shared/format';
-import { RevealSection } from '@bliss/ui/components/console/shell';
+import { Card } from '@bliss/ui/components/console/card';
+import { Section } from '@bliss/ui/components/console/section';
 import type { Metadata } from 'next';
 import * as catalogue from '@/modules/catalogue/service';
 import * as inventory from '@/modules/inventory/service';
@@ -16,65 +17,81 @@ export default function RecipesPage() {
   const recipes = inventory.recipes();
   const serves = catalogue.variants().filter((v) => v.kind === 'serve' && v.serveVolumeMl);
 
+  const head = 'px-12 py-12 text-label text-ink-subtle';
   return (
     <>
-      <TabIntro>Theoretical depletion is sold serves times the depletion factor. Pour variance compares it with counted depletion.</TabIntro>
-
-      <RevealSection>
-        <h2 className="text-subtitle text-ink">Recipes</h2>
-        <ul className="mt-12 border-t border-rule">
-          {recipes.map((r) => (
-            <li key={r.id} className="grid grid-cols-[minmax(200px,1fr)_2fr] gap-24 border-b border-rule py-16">
-              <span className="text-body text-ink">{r.name}</span>
-              <ul className="flex flex-col gap-8">
-                {r.components.map((c) => (
-                  <li key={c.componentVariantId} className="flex items-baseline justify-between gap-16">
-                    <span className="text-body text-ink-muted">{catalogue.variantById(c.componentVariantId)?.name}</span>
-                    <span className="font-mono tabular text-num text-ink">
-                      {formatQty(c.qty, 3)} {c.volumeMl ? <span className="text-ink-subtle">· {c.volumeMl}ml</span> : null}
-                    </span>
+      <TabIntro>How a sold serve comes out of stock. A Smirnoff and Coke takes a measure of the spirit and a bottle of the mixer.</TabIntro>
+      <div className="flex flex-col gap-40">
+        <Section id="recipes" title="Recipes" description="Drinks made from more than one stocked item.">
+          <Card>
+            {recipes.length === 0 ? (
+              <p className="px-20 py-16 text-body-sm text-ink-muted">No recipes yet. A single spirit or beer needs none; its pour spec below does the work.</p>
+            ) : (
+              <ul className="flex flex-col">
+                {recipes.map((r) => (
+                  <li key={r.id} className="grid grid-cols-[minmax(200px,1fr)_2fr] gap-24 border-b border-rule px-20 py-16 last:border-b-0">
+                    <span className="text-ui font-medium text-ink">{r.name}</span>
+                    <ul className="flex flex-col gap-8">
+                      {r.components.map((c) => (
+                        <li key={c.componentVariantId} className="flex items-baseline justify-between gap-16">
+                          <span className="text-body-sm text-ink-muted">{catalogue.variantById(c.componentVariantId)?.name ?? 'Item no longer stocked'}</span>
+                          <span className="font-mono tabular text-num-md text-ink">
+                            {formatQty(c.qty, 3)}
+                            {c.volumeMl ? <span className="text-ink-subtle">, {c.volumeMl}ml</span> : null}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </li>
                 ))}
               </ul>
-            </li>
-          ))}
-        </ul>
-      </RevealSection>
+            )}
+          </Card>
+        </Section>
 
-      <RevealSection className="mt-40">
-        <h2 className="text-subtitle text-ink">Pour specs</h2>
-        <div role="table" aria-label="Pour specs" className="mt-12">
-          <div role="row" className="grid grid-cols-[minmax(200px,1.5fr)_100px_110px_140px_120px] gap-16 border-b border-hairline pb-8">
-            {['Serve', 'Pour', 'Tolerance', 'Per stock unit', 'Serves a bottle'].map((h, i) => (
-              <span key={h} role="columnheader" className={i > 0 ? 'text-right text-label text-ink-subtle' : 'text-label text-ink-subtle'}>
-                {h}
-              </span>
-            ))}
-          </div>
-          {serves.map((v) => {
-            const spec = specs.find((s) => s.productVariantId === v.id);
-            return (
-              <div key={v.id} role="row" className="grid min-h-row grid-cols-[minmax(200px,1.5fr)_100px_110px_140px_120px] items-center gap-16 border-b border-rule">
-                <span role="cell" className="text-body text-ink">
-                  {v.name}
-                </span>
-                <span role="cell" className="text-right font-mono tabular text-num text-ink">
-                  {v.serveVolumeMl}ml
-                </span>
-                <span role="cell" className="text-right font-mono tabular text-num text-ink-muted">
-                  {spec ? `${spec.tolerancePct}%` : '··'}
-                </span>
-                <span role="cell" className="text-right font-mono tabular text-num text-ink-muted">
-                  {formatQty(v.depletionFactor, 4)}
-                </span>
-                <span role="cell" className="text-right font-mono tabular text-num text-ink">
-                  {v.depletionFactor > 0 ? Math.floor(1 / v.depletionFactor + 1e-9) : '··'}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </RevealSection>
+        <Section id="pour-specs" title="Pour specs" description="The measure each serve pours, and how much of a bottle that is.">
+          <Card>
+            <div className="scroll-x">
+              <table className="w-full border-collapse">
+                <caption className="sr-only">Pour specs</caption>
+                <thead>
+                  <tr className="border-b border-edge card-band">
+                    <th scope="col" className={`${head} pl-20 text-left`}>
+                      Serve
+                    </th>
+                    <th scope="col" className={`${head} text-right`}>
+                      Pour
+                    </th>
+                    <th scope="col" className={`${head} text-right`}>
+                      Tolerance
+                    </th>
+                    <th scope="col" className={`${head} text-right`}>
+                      Of a bottle
+                    </th>
+                    <th scope="col" className={`${head} pr-20 text-right`}>
+                      Serves a bottle
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {serves.map((v) => {
+                    const spec = specs.find((s) => s.productVariantId === v.id);
+                    return (
+                      <tr key={v.id} className="border-b border-rule last:border-b-0">
+                        <td className="py-12 pl-20 pr-12 text-ui text-ink">{v.name}</td>
+                        <td className="px-12 py-12 text-right font-mono tabular text-num-md text-ink">{v.serveVolumeMl}ml</td>
+                        <td className="px-12 py-12 text-right font-mono tabular text-num-md text-ink-muted">{spec ? `${spec.tolerancePct}%` : 'Default'}</td>
+                        <td className="px-12 py-12 text-right font-mono tabular text-num-md text-ink-muted">{formatQty(v.depletionFactor, 4)}</td>
+                        <td className="py-12 pl-12 pr-20 text-right font-mono tabular text-num-md text-ink">{v.depletionFactor > 0 ? Math.floor(1 / v.depletionFactor + 1e-9) : 'None'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </Section>
+      </div>
     </>
   );
 }

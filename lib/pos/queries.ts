@@ -10,6 +10,7 @@ import type { TicketLineState } from '@bliss/ui/components/floor/ticket';
 import type { TileGlyph } from '@bliss/ui/components/floor/product-tile';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
+import { assetUrl } from '../assets';
 import { META, type StaffDirectoryEntry, posDb, getMeta } from './db';
 import type { SeatSelection } from './mutations';
 import { usePricingIndex } from './pricing';
@@ -25,11 +26,7 @@ export function useOutlet(): OutletMeta | undefined {
   return useLiveQuery(() => getMeta<OutletMeta>(META.outlet), []);
 }
 
-/** Catalogue photographs resolve through the asset store; the tablet caches them for offline use. */
-export function assetUrl(key: string | null, width = 320, height = 176): string | null {
-  if (!key) return null;
-  return `https://images.unsplash.com/photo-${key}?auto=format&fit=crop&w=${width}&h=${height}&q=70`;
-}
+export { assetUrl };
 
 const GLYPH_BY_CATEGORY: Record<string, TileGlyph> = { Beer: 'beer', Spirits: 'spirit', Wine: 'wine', 'Soft drinks': 'soft', Food: 'food' };
 

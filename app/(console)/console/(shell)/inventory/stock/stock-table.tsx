@@ -3,15 +3,15 @@
 import { formatQty } from '@bliss/shared/format';
 import { formatDecimal, sum } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
-import { CountUp, Metric } from '@bliss/ui/components/console/metric';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { AnimatedMoney, Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
 import { IconAlertTriangle, IconBan, IconHistory, IconLock, IconLockOpen, IconScale, IconShoppingCart } from '@tabler/icons-react';
 import { ButtonLink } from '@bliss/ui/components/button-link';
-import { cx } from '@bliss/ui/lib/cx';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { HoldDialog, ReleaseHoldDialog, WriteOffDialog } from '../../_components/dialogs';
+import { ProductThumb } from '../../_components/product-thumb';
 import { UrlSelect } from '../../_components/url-select';
 import type { StockRow } from './page';
 
@@ -23,6 +23,7 @@ function stateChip(row: StockRow) {
   return <span className="sr-only">Available</span>;
 }
 
+/** Stock on hand with the actions a manager takes on it: hold, write off, reorder, trace. */
 export function StockTable({
   rows,
   locations,
@@ -47,30 +48,10 @@ export function StockTable({
       fixed: true,
       sortValue: (r) => r.variant,
       csv: (r) => r.variant,
-      cell: (r, ctx) => (
-        <span className="flex min-w-0 items-center gap-12 group/item cursor-pointer">
-          {r.imageKey ? (
-            // eslint-disable-next-line @next/next/no-img-element -- a 32px catalogue thumbnail from the asset store
-            <img 
-              src={`https://images.unsplash.com/photo-${r.imageKey}?auto=format&fit=crop&w=128&h=128&q=70`} 
-              alt="" 
-              className={cx(
-                "shrink-0 rounded-[10px] object-cover shadow-sm transition-transform duration-300 group-hover/item:scale-105 group-hover/item:shadow-lg",
-                ctx?.grid ? "size-[80px]" : "size-[40px]"
-              )} 
-              loading="lazy" 
-            />
-          ) : (
-            <span 
-              className={cx(
-                "shrink-0 rounded-[8px] bg-control/20 ring-1 ring-inset ring-hairline/30 flex items-center justify-center transition-colors duration-200 group-hover/item:bg-control/40",
-                ctx?.grid ? "size-[64px]" : "size-[36px]"
-              )}
-            >
-               <span className={cx("font-medium text-ink-subtle/40", ctx?.grid ? "text-title" : "text-micro")}>{r.variant.slice(0, 1).toUpperCase()}</span>
-            </span>
-          )}
-          <StackCell primary={r.variant} secondary={r.categoryName} />
+      cell: (r) => (
+        <span className="flex min-w-0 items-center gap-12">
+          <ProductThumb name={r.variant} imageKey={r.imageKey} colour={r.colour} />
+          <StackCell primary={r.variant} secondary={r.location === 'All locations' ? r.categoryName : `${r.categoryName}, ${r.location}`} />
         </span>
       ),
     },
@@ -85,21 +66,21 @@ export function StockTable({
       cell: (r) => (
         <span className="inline-flex items-baseline gap-4">
           <NumCell tone={r.onHand <= 0 ? 'stop' : 'default'}>{formatQty(r.onHand, r.unit === 'bottles' ? 2 : 0)}</NumCell>
-          <span className="text-body-sm text-ink-subtle">{r.unit === 'bottles' ? 'btl' : ''}</span>
+          {r.unit === 'bottles' ? <span className="text-body-sm text-ink-subtle">btl</span> : null}
         </span>
       ),
     },
-    { key: 'unitCost', header: 'Unit cost', width: '96px', align: 'right', sortValue: (r) => r.unitCost, csv: (r) => formatDecimal(r.unitCost), cell: (r) => <Money value={r.unitCost} currency={false} tone="muted" /> },
-    { key: 'value', header: 'Value', width: '110px', align: 'right', sortValue: (r) => r.value, csv: (r) => formatDecimal(r.value), cell: (r) => <Money value={r.value} currency={false} decimals="whole" /> },
-    { key: 'velocity', header: '28d velocity', width: '100px', align: 'right', sortValue: (r) => r.velocity, csv: (r) => r.velocity.toFixed(2), cell: (r) => <NumCell tone="muted">{r.velocity.toFixed(r.velocity < 10 ? 1 : 0)}/day</NumCell> },
+    { key: 'unitCost', header: 'Unit cost', width: '96px', align: 'right', sortValue: (r) => r.unitCost, csv: (r) => formatDecimal(r.unitCost), cell: (r) => <Money value={r.unitCost} currency={false} size="num-md" tone="muted" /> },
+    { key: 'value', header: 'Value', width: '110px', align: 'right', sortValue: (r) => r.value, csv: (r) => formatDecimal(r.value), cell: (r) => <Money value={r.value} currency={false} size="num-md" decimals="whole" /> },
+    { key: 'velocity', header: 'Sells a day', width: '100px', align: 'right', sortValue: (r) => r.velocity, csv: (r) => r.velocity.toFixed(2), cell: (r) => <NumCell tone="muted">{r.velocity.toFixed(r.velocity < 10 ? 1 : 0)}</NumCell> },
     {
       key: 'cover',
-      header: 'Days cover',
+      header: 'Lasts, days',
       width: '92px',
       align: 'right',
       sortValue: (r) => r.daysCover,
       csv: (r) => (r.daysCover === null ? '' : r.daysCover.toFixed(1)),
-      cell: (r) => (r.daysCover === null ? <NumCell tone="muted">··</NumCell> : <NumCell tone={r.daysCover < 2 ? 'low' : 'default'}>{r.daysCover.toFixed(1)}</NumCell>),
+      cell: (r) => (r.daysCover === null ? <NumCell tone="muted">No sales</NumCell> : <NumCell tone={r.daysCover < 2 ? 'low' : 'default'}>{r.daysCover.toFixed(1)}</NumCell>),
     },
     {
       key: 'state',
@@ -118,11 +99,10 @@ export function StockTable({
       csv: (r) => (r.variancePct === null ? '' : r.variancePct.toFixed(1)),
       cell: (r) =>
         r.variancePct === null ? (
-          <NumCell tone="muted">··</NumCell>
+          <NumCell tone="muted">Not counted</NumCell>
         ) : (
           <NumCell tone={Math.abs(r.variancePct) > 2 ? (r.variancePct < 0 ? 'stop' : 'low') : 'muted'}>
-            {r.variancePct > 0 ? '+' : ''}
-            {r.variancePct.toFixed(1)}%
+            {Math.abs(r.variancePct) < 0.05 ? '0.0%' : `${r.variancePct > 0 ? '+' : ''}${r.variancePct.toFixed(1)}%`}
           </NumCell>
         ),
     },
@@ -134,46 +114,42 @@ export function StockTable({
   const varianceCount = rows.filter((r) => r.variancePct !== null && Math.abs(r.variancePct) > 2).length;
 
   return (
-    <div className="flex flex-col gap-20">
-      <div className="grid grid-cols-1 gap-16 tablet:grid-cols-2 desktop:grid-cols-4">
+    <div className="flex flex-col gap-32">
+      <MetricGrid>
+        <Metric label="Stock at cost" icon={IconScale} value={<AnimatedMoney value={totalValuation} animation="metric.count" size="num-kpi" fromZeroOnMount decimals="whole" />} detail={`${rows.length} tracked items`} />
         <Metric
-          label="Stock valuation"
-          icon={IconScale}
-          tone="default"
-          value={<AnimatedMoney value={totalValuation} animation="metric.count" size="title-lg" fromZeroOnMount decimals="whole" />}
-          detail={`${rows.length} tracked items at cost`}
-        />
-        <Metric
-          label="Active holds"
+          label="On hold"
           icon={IconLock}
-          tone={activeHoldsCount > 0 ? 'attention' : 'poured'}
+          href="/console/inventory/holds"
+          tone={activeHoldsCount > 0 ? 'attention' : 'default'}
           value={<CountUp value={activeHoldsCount} delayMs={60} />}
-          detail={activeHoldsCount > 0 ? 'Quarantined from the floor' : 'No active stock holds'}
+          detail={activeHoldsCount > 0 ? 'The floor cannot sell these' : 'Nothing is on hold'}
         />
         <Metric
-          label="Low or depleted"
+          label="Low or finished"
           icon={IconAlertTriangle}
-          tone={lowStockCount > 0 ? 'attention' : 'poured'}
+          href="/console/purchasing/reorder"
+          tone={lowStockCount > 0 ? 'attention' : 'default'}
           value={<CountUp value={lowStockCount} delayMs={120} />}
-          detail={lowStockCount > 0 ? 'Lines at or below threshold' : 'All lines above reorder point'}
+          detail={lowStockCount > 0 ? 'At or below the low-stock line' : 'Everything is above its low-stock line'}
         />
         <Metric
-          label="Audit variance"
+          label="Counted out of line"
           icon={IconHistory}
+          href="/console/inventory/counts"
           tone={varianceCount > 0 ? 'stop' : 'default'}
           value={<CountUp value={varianceCount} delayMs={180} />}
-          detail={varianceCount > 0 ? 'Lines outside 2% tolerance' : 'Within count tolerance'}
+          detail={varianceCount > 0 ? 'More than 2% off at the last count' : 'Every count within 2%'}
         />
-      </div>
-
-      {/* Elegant visual separator */}
-      <div className="h-[1px] mt-8 w-full mt-32 bg-gradient-to-r from-transparent via-hairline/60 to-transparent opacity-80" aria-hidden="true" />
+      </MetricGrid>
 
       <DataTable
         leading={<UrlSelect param="location" label="Location" options={locations} allLabel="All locations" />}
         id="inventory-stock"
         caption="Stock on hand"
+        noun={['item', 'items']}
         rows={rows}
+        rowTone={(r) => (r.reason === 'hold' || r.state === 'finished' ? 'attention' : 'default')}
         columns={columns}
         rowKey={(r) => r.id}
         defaultSort={{ key: 'state', dir: 'asc' }}
@@ -183,15 +159,16 @@ export function StockTable({
           { kind: 'toggle', key: 'attention', label: 'Needs attention', test: (r) => r.attention },
         ]}
         exportName="stock"
+        emptyFiltered={{ title: 'No items match', body: 'Clear the category, the toggle or the search to see all stock.' }}
         exportDate={exportDate}
         empty={{
-          title: 'Your catalogue is empty',
-          body: 'Import a CSV, or add your first product by hand.',
-          action: <ButtonLink href="/console/catalogue/products">Import catalogue</ButtonLink>,
+          title: 'Nothing is tracked yet',
+          body: 'Stock is tracked for products in categories that count stock. Add products to the catalogue first.',
+          action: <ButtonLink href="/console/catalogue/products">Open the catalogue</ButtonLink>,
         }}
         rowActions={(r) => [
           { key: 'movements', label: 'View movements', icon: IconHistory, onSelect: () => router.push(`/console/inventory/movements?variant=${r.variantId}`) },
-          { key: 'order', label: 'Add to order', icon: IconShoppingCart, onSelect: () => router.push('/console/purchasing/reorder') },
+          { key: 'order', label: 'See reorder suggestions', icon: IconShoppingCart, onSelect: () => router.push('/console/purchasing/reorder') },
           r.holdId
             ? { key: 'release', label: 'Take off hold', icon: IconLockOpen, onSelect: () => setRelease({ holdId: r.holdId!, name: r.variant }) }
             : { key: 'hold', label: 'Put on hold', icon: IconLock, onSelect: () => setHold({ variantId: r.variantId, name: r.variant }) },

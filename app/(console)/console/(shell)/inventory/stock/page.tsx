@@ -1,4 +1,4 @@
-import type { AvailabilityReason, AvailabilityState } from '@bliss/shared/domain';
+import type { AvailabilityReason, AvailabilityState, CategoryColourToken } from '@bliss/shared/domain';
 import type { Cents } from '@bliss/shared/money';
 import type { Metadata } from 'next';
 import * as availability from '@/modules/availability/service';
@@ -17,6 +17,7 @@ export interface StockRow {
   variant: string;
   categoryId: string;
   categoryName: string;
+  colour: CategoryColourToken;
   imageKey: string | null;
   location: string;
   locationId: string;
@@ -35,8 +36,8 @@ export interface StockRow {
 }
 
 /**
- * Stock, docs/10 N2. The state column carries the same status the Floor tile shows, so the two
- * surfaces agree visually, and a hold outranks any stock figure.
+ * Stock, docs/10 N2: what is in the building, what it is worth, how long it lasts. The state column
+ * carries the status the Floor tile shows, so the two surfaces agree, and a hold outranks any figure.
  */
 export default async function StockPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
@@ -70,6 +71,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         variant: variant.name,
         categoryId: category.id,
         categoryName: category.name,
+        colour: category.colourToken,
         imageKey: product.imageKey,
         location: location?.name ?? 'All locations',
         locationId: location?.id ?? locations.find((l) => l.kind === 'service')!.id,
