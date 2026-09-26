@@ -4,13 +4,13 @@ import { formatBps, formatQty } from '@bliss/shared/format';
 import { type Cents, formatKes, sum } from '@bliss/shared/money';
 import { type BarDatum, BarChart } from '@bliss/ui/components/console/bar-chart';
 import { IconTile } from '@bliss/ui/components/console/card';
+import { ChartCaption } from '@bliss/ui/components/console/chart-caption';
 import { type Column, DataTable, NumCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
-import { SummaryStrip } from '@bliss/ui/components/console/section';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { AnimatedMoney, Money } from '@bliss/ui/components/money';
 import { Dot } from '@bliss/ui/components/status';
-import { IconAlertTriangle, IconArrowRight, IconCheck, IconReceipt2, IconScale, IconUsers } from '@tabler/icons-react';
+import { IconAlertTriangle, IconArrowRight, IconCheck, IconFlame, IconReceipt2, IconScale, IconUsers } from '@tabler/icons-react';
 import Link from 'next/link';
 
 /** Last night's four figures: what came in, what it made, who was served, and what went missing. */
@@ -69,12 +69,15 @@ export function SalesByHour({ data }: { data: BarDatum[] }) {
   return (
     <div className="flex flex-col gap-20 px-20 py-16">
       {data.length > 0 ? (
-        <SummaryStrip
-          items={[
-            { label: 'Busiest hour', value: <span className="font-mono">{peak.label}:00</span> },
-            { label: 'Fired in that hour', value: <Money value={peak.value} size="num-md" decimals="whole" /> },
-            { label: 'Fired all night', value: <Money value={total} size="num-md" decimals="whole" /> },
-          ]}
+        <ChartCaption
+          icon={<IconFlame size={16} stroke={1.5} />}
+          label="Busiest hour"
+          figures={[`${peak.label}:00`, <Money key="peak" value={peak.value} size="num-md" decimals="whole" />]}
+          note={
+            <>
+              <Money value={total} size="num-sm" decimals="whole" tone="subtle" /> fired all night
+            </>
+          }
         />
       ) : null}
       <BarChart data={data} highlightKey={peak.key} caption="Sales by hour, last night" height={220} tooltipLabel={(d) => `${d.label}:00 to ${d.label}:59`} />

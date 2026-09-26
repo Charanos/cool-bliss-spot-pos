@@ -11,6 +11,7 @@ import { Money } from '@bliss/ui/components/money';
 import { SeatChip } from '@bliss/ui/components/seat-chip';
 import { StatusChip, ToneChip } from '@bliss/ui/components/status';
 import { IconCreditCard, IconDiscount2, IconReceipt, IconReceiptOff, IconReceiptTax } from '@tabler/icons-react';
+import { EntityLink } from '../../_components/entity-link';
 import { UrlSelect } from '../../_components/url-select';
 import { SCOPE_LABEL, TENDER_LABEL } from '../../_lib/labels';
 
@@ -106,7 +107,12 @@ export function BillsView({
       csv: (r) => r.tenders.map((t) => `${TENDER_LABEL[t.kind]} ${formatDecimal(t.amount)}${t.reference ? ` ${t.reference}` : ''}`).join('; '),
       cell: (r) => <StackCell primary={paidBy(r)} secondary={references(r) ? <span className="font-mono tabular">{references(r)}</span> : undefined} />,
     },
-    { key: 'by', header: 'Cashier', width: '96px', sortValue: (r) => r.settledBy, csv: (r) => r.settledBy, cell: (r) => <span className="text-ui text-ink-muted">{r.settledBy}</span> },
+    { key: 'by', header: 'Cashier', width: '96px', sortValue: (r) => r.settledBy, csv: (r) => r.settledBy, cell: (r) => (
+        <EntityLink kind="staff" id={r.settledById} muted className="truncate text-ui">
+          {r.settledBy}
+        </EntityLink>
+      ),
+    },
     {
       key: 'discount',
       header: 'Discount',

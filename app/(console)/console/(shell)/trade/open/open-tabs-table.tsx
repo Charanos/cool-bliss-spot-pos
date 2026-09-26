@@ -13,6 +13,7 @@ import { SeatChipStack } from '@bliss/ui/components/working';
 import { useHydrated, useNow } from '@bliss/ui/hooks';
 import { IconBeer, IconClock, IconPrinter, IconReceipt, IconUsers } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
+import { EntityLink } from '../../_components/entity-link';
 
 export interface OpenTabRow {
   id: string;
@@ -75,7 +76,12 @@ export function OpenTabsTable({
       csv: (r) => r.table,
       cell: (r) => <StackCell primary={title(r)} secondary={r.zone} />,
     },
-    { key: 'waiter', header: 'Waiter', width: '112px', sortValue: (r) => r.waiter, csv: (r) => r.waiter, cell: (r) => <span className="text-ui text-ink">{r.waiter}</span> },
+    { key: 'waiter', header: 'Waiter', width: '112px', sortValue: (r) => r.waiter, csv: (r) => r.waiter, cell: (r) => (
+        <EntityLink kind="staff" id={r.waiterId} className="truncate text-ui">
+          {r.waiter}
+        </EntityLink>
+      ),
+    },
     {
       key: 'opened',
       header: 'Open for',

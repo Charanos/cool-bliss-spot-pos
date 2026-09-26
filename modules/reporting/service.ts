@@ -189,8 +189,9 @@ export function needsAttention(): AttentionItem[] {
       rank: -1,
       tone: 'stop',
       text: `${plural(sleepingTabs.length, 'tab')} still open from an earlier business day, ${formatKes(sleepingExposure, { decimals: 'whole' })} not settled`,
-      href: '/console/trade/open',
-      cta: 'See the tabs',
+      // One tab: straight to it, where it can be closed. More: the list of open tabs.
+      href: sleepingTabs.length === 1 ? `/console/trade/tabs/${sleepingTabs[0]!.tab.id}` : '/console/trade/open',
+      cta: sleepingTabs.length === 1 ? 'Open the tab' : 'See the tabs',
     });
   }
 
@@ -201,20 +202,21 @@ export function needsAttention(): AttentionItem[] {
   }
 
   const drawer = settlement.drawerFor(lastNight);
-  if (drawer?.stage === 'closed' && drawer.varianceCents && compare(abs(drawer.varianceCents), outlet.drawerVarianceThresholdCents) > 0) {
+  if (drawer?.stage === 'closed' && !drawer.reviewedAt && drawer.varianceCents && compare(abs(drawer.varianceCents), outlet.drawerVarianceThresholdCents) > 0) {
     const under = isNegative(drawer.varianceCents);
     items.push({
       rank: 1,
       tone: 'low',
       text: `Drawer closed ${formatKes(abs(drawer.varianceCents), { decimals: 'whole' })} ${under ? 'under' : 'over'} at ${drawer.closedAt ? formatTime(drawer.closedAt, outlet.timezone) : 'close'}`,
-      href: '/console/trade/drawers',
-      cta: 'Read the reason',
+      href: `/console/trade/drawers/${drawer.id}`,
+      cta: 'Review the drawer',
     });
   }
 
   for (const hold of inventory.activeHolds()) {
     const name = catalogue.productOfVariant(hold.productVariantId)?.name ?? 'An item';
-    items.push({ rank: 2, tone: 'low', text: `${name} has been on hold since ${formatWeekday(isoOf(hold.placedAt))}`, href: '/console/inventory/holds', cta: 'Review hold' });
+    const productId = catalogue.productOfVariant(hold.productVariantId)?.id;
+    items.push({ rank: 2, tone: 'low', text: `${name} has been on hold since ${formatWeekday(isoOf(hold.placedAt))}`, href: productId ? `/console/catalogue/products/${productId}` : '/console/inventory/holds', cta: 'Review hold' });
   }
 
   const finished = availability
@@ -231,7 +233,7 @@ export function needsAttention(): AttentionItem[] {
   const variance = latestCommittedVariance();
   const worst = variance?.rows.find((r) => r.outside && isNegative(r.value));
   if (worst) {
-    items.push({ rank: 5, tone: 'low', text: `${worst.name} counted ${Math.abs(worst.variance).toFixed(1)} bottles short, ${formatKes(abs(worst.value), { decimals: 'whole' })} at cost`, href: '/console/reports/pour-variance', cta: 'See variance' });
+    items.push({ rank: 5, tone: 'low', text: `${worst.name} counted ${Math.abs(worst.variance).toFixed(1)} bottles short, ${formatKes(abs(worst.value), { decimals: 'whole' })} at cost`, href: `/console/inventory/counts/${variance!.count.id}`, cta: 'See the count' });
   }
 
   return items.sort((a, b) => a.rank - b.rank).slice(0, 5);
