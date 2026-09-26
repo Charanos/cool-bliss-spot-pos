@@ -8,6 +8,7 @@ import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import { RecordCrumb } from '../../../_components/shell/crumbs';
+import { CountActions } from './count-actions';
 import { CountBlind, CountReview } from './count-stages';
 
 const KIND = { full: 'Full count', cycle: 'Cycle count', spot: 'Spot check' } as const;
@@ -44,6 +45,7 @@ export default async function CountPage({ params }: { params: Promise<{ countId:
         back={{ href: '/console/inventory/counts', label: 'Counts' }}
         title={title}
         status={<StatusChip status={count.status} />}
+        actions={<CountActions countId={count.id} label={KIND[count.kind]} cancellable={count.status === 'open' || count.status === 'counting' || count.status === 'review'} />}
         meta={
           <MetaRow
             items={[

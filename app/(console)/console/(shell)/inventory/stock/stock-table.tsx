@@ -2,7 +2,12 @@
 
 import { formatQty } from '@bliss/shared/format';
 import { formatDecimal, sum } from '@bliss/shared/money';
+import { ActionPill } from '@bliss/ui/components/console/action-pill';
+import { Card, CardFooter, CardMedia, CardStats, Stat } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
+import { InlineBar } from '@bliss/ui/components/console/inline-bar';
+import { Callout } from '@bliss/ui/components/console/section';
+import { assetUrl } from '@/lib/assets';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { AnimatedMoney, Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
@@ -76,11 +81,19 @@ export function StockTable({
     {
       key: 'cover',
       header: 'Lasts, days',
-      width: '92px',
+      width: '132px',
       align: 'right',
       sortValue: (r) => r.daysCover,
       csv: (r) => (r.daysCover === null ? '' : r.daysCover.toFixed(1)),
-      cell: (r) => (r.daysCover === null ? <NumCell tone="muted">No sales</NumCell> : <NumCell tone={r.daysCover < 2 ? 'low' : 'default'}>{r.daysCover.toFixed(1)}</NumCell>),
+      cell: (r) =>
+        r.daysCover === null ? (
+          <NumCell tone="muted">No sales</NumCell>
+        ) : (
+          <span className="inline-flex items-center justify-end gap-8">
+            <InlineBar value={r.daysCover / 14} tone={r.daysCover < 2 ? 'stop' : r.daysCover < 5 ? 'attention' : 'accent'} />
+            <NumCell tone={r.daysCover < 2 ? 'low' : 'default'}>{r.daysCover.toFixed(1)}</NumCell>
+          </span>
+        ),
     },
     {
       key: 'state',
@@ -113,8 +126,25 @@ export function StockTable({
   const lowStockCount = rows.filter((r) => r.state === 'low' || r.state === 'last_few' || r.state === 'finished').length;
   const varianceCount = rows.filter((r) => r.variancePct !== null && Math.abs(r.variancePct) > 2).length;
 
+  const finished = rows.filter((r) => r.state === 'finished' && r.reason !== 'hold');
+
   return (
     <div className="flex flex-col gap-32">
+      {finished.length > 0 ? (
+        <Callout
+          size="hero"
+          tone="stop"
+          icon={<IconAlertTriangle size={22} stroke={1.5} />}
+          title={finished.length === 1 ? `${finished[0]!.variant} is finished on the floor` : `${finished.length} items are finished on the floor`}
+          action={<ActionPill href="/console/purchasing/reorder">Reorder</ActionPill>}
+        >
+          {finished
+            .slice(0, 4)
+            .map((r) => r.variant)
+            .join(', ')}
+          {finished.length > 4 ? ` and ${finished.length - 4} more` : ''}. The floor shows them as finished until a delivery arrives or a count finds some.
+        </Callout>
+      ) : null}
       <MetricGrid>
         <Metric label="Stock at cost" icon={IconScale} value={<AnimatedMoney value={totalValuation} animation="metric.count" size="num-kpi" fromZeroOnMount decimals="whole" />} detail={`${rows.length} tracked items`} />
         <Metric
@@ -166,9 +196,35 @@ export function StockTable({
           body: 'Stock is tracked for products in categories that count stock. Add products to the catalogue first.',
           action: <ButtonLink href="/console/catalogue/products">Open the catalogue</ButtonLink>,
         }}
+        rowHref={(r) => `/console/catalogue/products/${r.productId}`}
+        renderGridCard={(r) => (
+          <Card as="article" interactive className="group h-full" tone={r.reason === 'hold' || r.state === 'finished' ? 'stop' : r.state === 'low' || r.state === 'last_few' ? 'low' : undefined}>
+            <CardMedia src={assetUrl(r.imageKey, 640, 320)} title={r.variant} subtitle={r.location === 'All locations' ? r.categoryName : `${r.categoryName}, ${r.location}`} href={`/console/catalogue/products/${r.productId}`} meta={r.state !== 'available' || r.reason === 'hold' ? stateChip(r) : null} />
+            <CardStats columns={3}>
+              <Stat label="On hand" tone={r.onHand <= 0 ? 'stop' : undefined}>
+                {formatQty(r.onHand, r.unit === 'bottles' ? 2 : 0)} {r.unit === 'bottles' ? 'btl' : ''}
+              </Stat>
+              <Stat label="Lasts" tone={r.daysCover !== null && r.daysCover < 2 ? 'low' : undefined}>
+                {r.daysCover === null ? 'No sales' : `${r.daysCover.toFixed(1)} days`}
+              </Stat>
+              <Stat label="Value">
+                <Money value={r.value} currency={false} size="num-md" decimals="whole" />
+              </Stat>
+            </CardStats>
+            <CardFooter>
+              <span className="inline-flex items-center gap-8 text-body-sm text-ink-muted">
+                <InlineBar value={r.daysCover === null ? 0 : r.daysCover / 14} tone={r.daysCover !== null && r.daysCover < 2 ? 'stop' : 'accent'} />
+                Sells {r.velocity.toFixed(r.velocity < 10 ? 1 : 0)} a day
+              </span>
+              {r.variancePct !== null && Math.abs(r.variancePct) > 2 ? <span className="text-body-sm text-stop">{r.variancePct.toFixed(1)}% at count</span> : null}
+            </CardFooter>
+          </Card>
+        )}
         rowActions={(r) => [
           { key: 'movements', label: 'View movements', icon: IconHistory, onSelect: () => router.push(`/console/inventory/movements?variant=${r.variantId}`) },
-          { key: 'order', label: 'See reorder suggestions', icon: IconShoppingCart, onSelect: () => router.push('/console/purchasing/reorder') },
+          r.supplierId
+            ? { key: 'order', label: 'Order it', icon: IconShoppingCart, onSelect: () => router.push(`/console/purchasing/orders/new?supplier=${r.supplierId}&item=${r.variantId}`) }
+            : { key: 'order', label: 'See reorder suggestions', icon: IconShoppingCart, onSelect: () => router.push('/console/purchasing/reorder') },
           r.holdId
             ? { key: 'release', label: 'Take off hold', icon: IconLockOpen, onSelect: () => setRelease({ holdId: r.holdId!, name: r.variant }) }
             : { key: 'hold', label: 'Put on hold', icon: IconLock, onSelect: () => setHold({ variantId: r.variantId, name: r.variant }) },

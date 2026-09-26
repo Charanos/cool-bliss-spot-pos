@@ -5,6 +5,8 @@ import * as availability from '@/modules/availability/service';
 import * as catalogue from '@/modules/catalogue/service';
 import * as inventory from '@/modules/inventory/service';
 import * as identity from '@/modules/identity/service';
+import { ButtonLink } from '@bliss/ui/components/button-link';
+import { IconClipboardList } from '@tabler/icons-react';
 import { StockTable } from './stock-table';
 import { ViewHeader } from '../../_components/workspace';
 
@@ -14,6 +16,8 @@ export interface StockRow {
   id: string;
   variantId: string;
   sellableVariantId: string;
+  productId: string;
+  supplierId: string | null;
   product: string;
   variant: string;
   categoryId: string;
@@ -68,6 +72,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         id: `${variant.id}:${location?.id ?? 'all'}`,
         variantId: variant.id,
         sellableVariantId: sellable.id,
+        productId: product.id,
+        supplierId: product.defaultSupplierId,
         product: product.name,
         variant: variant.name,
         categoryId: category.id,
@@ -94,7 +100,14 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <ViewHeader page="/console/inventory/stock" />
+      <ViewHeader
+        page="/console/inventory/stock"
+        actions={
+          <ButtonLink href="/console/inventory/counts/new" variant="outline" icon={IconClipboardList}>
+            Start a count
+          </ButtonLink>
+        }
+      />
 
     <StockTable
       rows={rows}
