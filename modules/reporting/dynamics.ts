@@ -24,7 +24,6 @@ import * as catalogue from '../catalogue/service';
 import * as identity from '../identity/service';
 import * as inventory from '../inventory/service';
 import * as settlement from '../settlement/service';
-import { settlementTables } from '../settlement/schema';
 import * as trade from '../trade/service';
 import * as reporting from './service';
 
@@ -229,7 +228,7 @@ export function dynamicsPnl(
   const voidedLines = lines.filter((l) => l.status === 'voided');
   const bills = settlement.billsBetween(from, to).filter((b) => b.status === 'settled');
   const billsSet = new Set(bills.map((b) => b.id));
-  const allTenders = settlementTables().tenders.filter((t) => billsSet.has(t.billId));
+  const allTenders = settlement.readTables().tenders.filter((t) => billsSet.has(t.billId));
 
   // 1. Sales Calculation
   const grossSalesCents = sum(liveLines.map((l) => l.lineTotalCents));
@@ -323,7 +322,7 @@ export function dynamicsPnl(
   const gasCents = cents(BigInt(daysCount) * 120000n); // KES 1,200/day
 
   // Supplier COD payouts from cashMovements
-  const dMovements = settlementTables().cashMovements.filter((m) => m.kind === 'payout');
+  const dMovements = settlement.readTables().cashMovements.filter((m) => m.kind === 'payout');
   const supplierCodCents = dMovements.length > 0
     ? sum(dMovements.map((m) => abs(m.amountCents)))
     : cents(BigInt(daysCount) * 150000n);

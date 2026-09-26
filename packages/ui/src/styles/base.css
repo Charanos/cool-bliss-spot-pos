@@ -569,3 +569,132 @@
     transform: scale(var(--bliss-scale-press));
   }
 }
+
+/*
+ * ---------------------------------------------------------------------------------------------
+ * Console system, docs/19-console-system.md.
+ *
+ * `dark:` follows the product's theme, not the operating system: the Console chooses light, dark
+ * or system, and the Floor and Counter are dark by design. Without this, Tailwind's default `dark:`
+ * would follow the OS and disagree with the page it sits on.
+ * ---------------------------------------------------------------------------------------------
+ */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-theme='system'], [data-theme='system'] *) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * The Card family's surface: one step off the page, an edge, and a shadow in light only. A card
+ * never sits inside a card; bands head and foot it instead (card-band, card-band-strong).
+ */
+@utility card-surface {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* A card that is a link or a control: the edge firms, the shadow deepens and the card lifts 2px. */
+@utility card-interactive {
+  transition:
+    transform var(--bliss-duration-card) var(--bliss-ease-out),
+    box-shadow var(--bliss-duration-card) var(--bliss-ease-out),
+    border-color var(--bliss-duration-card) var(--bliss-ease-out);
+  @media (hover: hover) {
+    &:hover {
+      border-color: var(--color-edge-strong);
+      box-shadow: var(--shadow-card-hover);
+      transform: translateY(-2px);
+    }
+  }
+  &:active {
+    transform: translateY(0) scale(var(--bliss-scale-press));
+  }
+}
+
+/* The header and footer strips of a card: a tint and one rule, not a nested box. */
+@utility card-band {
+  background-color: var(--color-band);
+}
+
+@utility card-band-strong {
+  background-color: var(--color-band-strong);
+}
+
+/*
+ * Capitals over a value, and rail group names. The source string stays sentence case, per docs/08;
+ * the capitals are presentation, so a screen reader reads words, not letters.
+ */
+@utility overline {
+  font-family: var(--font-sans);
+  font-size: var(--text-overline);
+  line-height: var(--text-overline--line-height);
+  letter-spacing: var(--text-overline--letter-spacing);
+  font-weight: var(--text-overline--font-weight);
+  text-transform: uppercase;
+}
+
+/* A readable line: descriptions and help text stop at about 68 characters. */
+@utility measure {
+  max-width: 68ch;
+}
+
+/* The two Console transitions: colour on hover, and the heavier card move. */
+@utility transition-hover {
+  transition-property: color, background-color, border-color, opacity, box-shadow;
+  transition-duration: var(--bliss-duration-hover);
+  transition-timing-function: var(--bliss-ease-out);
+}
+
+@utility transition-card {
+  transition-property: transform, box-shadow, border-color, background-color, width, opacity;
+  transition-duration: var(--bliss-duration-card);
+  transition-timing-function: var(--bliss-ease-out);
+}
+
+/* Stacking, named, so a popover never loses to a sticky bar by accident. */
+@utility z-base {
+  z-index: 0;
+}
+@utility z-raised {
+  z-index: 10;
+}
+@utility z-sticky {
+  z-index: 20;
+}
+@utility z-bar {
+  z-index: 30;
+}
+@utility z-rail {
+  z-index: 40;
+}
+@utility z-popover {
+  z-index: 50;
+}
+@utility z-overlay {
+  z-index: 60;
+}
+@utility z-toast {
+  z-index: 70;
+}
+
+/* A scroll container for a wide table: scrolls sideways, never clips, keeps its own scrollbar thin. */
+@utility scroll-x {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-interactive:hover,
+  .card-interactive:active {
+    transform: none;
+  }
+}

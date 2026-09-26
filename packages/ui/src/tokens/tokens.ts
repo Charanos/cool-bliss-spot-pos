@@ -134,6 +134,18 @@ export const themes = {
     'stop-wash': alpha(s.stop.dark, 10),
     'poured-wash': alpha(s.poured.dark, 10),
     'served-wash': alpha(s.served.dark, 10),
+    'attention-wash': alpha(e[400], 12),
+    /* Console, docs/19-console-system.md. The Card family: one surface a step off the page, its edge,
+     * and the bands that head and foot it. The rail sits one tonal step off the page. */
+    card: f[900],
+    edge: alpha(f[700], 75),
+    'edge-strong': f[700],
+    band: alpha(f[800], 45),
+    'band-strong': alpha(f[800], 75),
+    rail: f[900],
+    'rail-hover': alpha(f[800], 70),
+    'rail-active': f[800],
+    'on-scrim': f[0],
   },
   light: {
     page: f[0],
@@ -157,7 +169,8 @@ export const themes = {
     'accent-text': g[600],
     'accent-subtle': g[200],
     attention: e[600],
-    'attention-subtle': e[600],
+    // A border or glow in the attention hue, never text: text in attention uses `attention` itself.
+    'attention-subtle': e[300],
     money: f[900],
     poured: s.poured.light,
     served: s.served.light,
@@ -189,6 +202,16 @@ export const themes = {
     'stop-wash': alpha(s.stop.light, 8),
     'poured-wash': alpha(s.poured.light, 8),
     'served-wash': alpha(s.served.light, 8),
+    'attention-wash': alpha(e[600], 9),
+    card: f[0],
+    edge: alpha(f[200], 80),
+    'edge-strong': f[200],
+    band: alpha(f[100], 45),
+    'band-strong': alpha(f[100], 80),
+    rail: f[50],
+    'rail-hover': alpha(f[200], 45),
+    'rail-active': alpha(f[200], 70),
+    'on-scrim': f[0],
   },
 } as const;
 
@@ -223,6 +246,19 @@ export const type = {
   'num-lg': { size: 24, lineHeight: 30, tracking: '-0.02em', weight: 400 },
   num: { size: 15, lineHeight: 22, tracking: '-0.01em', weight: 400 },
   'num-sm': { size: 12, lineHeight: 17, tracking: '0em', weight: 400 },
+  /*
+   * The Console ramp, docs/19-console-system.md section 2. A dense desktop tool reads at 14px, and a
+   * page has exactly three heading levels: the page, a section, and a card. Floor and Counter keep
+   * the scale above; nothing here changes them.
+   */
+  'title-page': { size: 26, lineHeight: 32, tracking: '-0.022em', weight: 500 },
+  'title-section': { size: 17, lineHeight: 24, tracking: '-0.012em', weight: 500 },
+  'title-card': { size: 15, lineHeight: 20, tracking: '-0.006em', weight: 500 },
+  ui: { size: 14, lineHeight: 20, tracking: '0em', weight: 400 },
+  /* Capitals over a value in a card, and rail group names. Never a sentence. */
+  overline: { size: 11, lineHeight: 14, tracking: '0.06em', weight: 500 },
+  'num-kpi': { size: 30, lineHeight: 36, tracking: '-0.03em', weight: 500 },
+  'num-md': { size: 14, lineHeight: 20, tracking: '-0.01em', weight: 400 },
 } as const;
 
 export type TypeToken = keyof typeof type;
@@ -235,8 +271,12 @@ export const fontFamily = {
 /** 4px base. Nothing in between. */
 export const space = [2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 56, 72, 96] as const;
 
-/** Three values. No pills, no circles except the connection dot and status dots. */
-export const radius = { sm: 6, md: 10, lg: 16, dot: 9999 } as const;
+/**
+ * Controls `sm`, rows and tiles `md`, sheets `lg`. The Console adds `card` (the Card family, the same
+ * value as `lg`), `overlay` for dialogs, and `pill`, which only a count badge or a segmented control
+ * uses. Status chips stay `sm`.
+ */
+export const radius = { sm: 6, md: 10, lg: 16, card: 16, overlay: 20, pill: 9999, dot: 9999 } as const;
 
 /**
  * Component dimensions. Not space: these size things, they do not separate them.
@@ -262,7 +302,18 @@ export const size = {
   'rail-nav': 72,
   'rail-tables': 180,
   'rail-ticket': 340,
-  'rail-console': 220,
+  'rail-console': 240,
+  'rail-collapsed': 64,
+  /** The Console top bar and the rail's venue block, aligned. */
+  bar: 56,
+  /** The Console content column. */
+  'page-max': 1440,
+  /** Below this the Console scrolls sideways rather than crushing its columns. */
+  'frame-min': 1024,
+  /** A nav item in the Console rail. */
+  'rail-item': 32,
+  /** A KPI card's figure row, so a row of metrics shares one baseline. */
+  'kpi-min': 136,
   'panel-tender': 420,
   strip: 56,
   /** The top bar on a phone, and on any screen shorter than the `short` variant's ceiling. */
@@ -284,6 +335,18 @@ export const size = {
   count: 18,
   /** A Floor nav rail item and a tables rail tab row. */
   'nav-item': 64,
+} as const;
+
+/**
+ * The Console's Card family, docs/19-console-system.md section 1. A card is one surface on the page;
+ * its shadow says so in light, and in dark (where shadows vanish) its edge does. Hover deepens the
+ * shadow a step; it never adds a second level. `popover` is for menus and the command menu.
+ */
+const ink = (percent: number) => alpha(f[950], percent);
+export const consoleElevation = {
+  card: { light: `0 1px 2px ${ink(4)}, 0 2px 8px ${ink(3)}`, dark: 'none' },
+  'card-hover': { light: `0 1px 2px ${ink(5)}, 0 10px 28px -6px ${ink(10)}`, dark: `0 12px 28px -12px ${alpha('#000000', 60)}` },
+  popover: { light: `0 12px 32px -8px ${ink(18)}, 0 2px 6px ${ink(6)}`, dark: `0 16px 40px -8px ${alpha('#000000', 70)}, 0 0 0 1px ${f[700]}` },
 } as const;
 
 /** One level of elevation. There is no level two, deliberately. */
@@ -317,6 +380,8 @@ export const motion = {
   },
   ceilingMs: { floor: 140, bar: 160, counter: 240, console: 400 },
   hoverMs: 160,
+  /** A card lifting under the pointer, and the rail folding. */
+  cardMs: 240,
   pressMs: 100,
   longPressMs: 450,
   feedbackMs: 100,
@@ -399,6 +464,16 @@ export const contrastPairs: ContrastPair[] = [
   { name: 'light shared outline on page', fg: f[600], bg: f[0], use: 'ui', measured: 6.87 }, // 6.87:1
   { name: 'light seat ring on page', fg: f[950], bg: f[0], use: 'ui', measured: 18.6 }, // 18.60:1
 
+  // Console rail and cards, docs/19. The active rail item tints the rail in light; its text is on rail.
+  { name: 'light ink on rail', fg: f[900], bg: f[50], use: 'body', measured: 16.14 }, // 16.14:1
+  { name: 'light ink-muted on rail', fg: f[700], bg: f[50], use: 'body', measured: 9.53 }, // 9.53:1
+  { name: 'light ink-subtle on rail', fg: f[600], bg: f[50], use: 'body', measured: 6.56 }, // 6.56:1
+  { name: 'light accent text on rail', fg: g[600], bg: f[50], use: 'body', measured: 5.41 }, // 5.41:1
+  { name: 'dark ink-muted on rail and card', fg: f[300], bg: f[900], use: 'body', measured: 9.27 }, // 9.27:1
+  { name: 'dark ink-subtle on rail and card', fg: f[400], bg: f[900], use: 'body', measured: 6.03 }, // 6.03:1
+  { name: 'dark ink on rail active', fg: f[50], bg: f[800], use: 'body', measured: 13.34 }, // 13.34:1
+  { name: 'dark accent text on rail active', fg: g[300], bg: f[800], use: 'body', measured: 7.33 }, // 7.33:1
+
   // Seat chips carry frost-950 numbers on every palette colour, on both themes.
   { name: 'seat 1 glacier', fg: colour.seatText, bg: colour.seat[0], use: 'body', measured: 9.76 }, // 9.76:1
   { name: 'seat 2 ember', fg: colour.seatText, bg: colour.seat[1], use: 'body', measured: 8.69 }, // 8.69:1
@@ -420,6 +495,7 @@ export const tokens = {
   radius,
   size,
   elevation,
+  consoleElevation,
   atmosphere,
   motion,
   breakpoints,

@@ -104,6 +104,34 @@
   --text-num-sm--line-height: 17px;
   --text-num-sm--letter-spacing: 0em;
   --text-num-sm--font-weight: 400;
+  --text-title-page: 26px;
+  --text-title-page--line-height: 32px;
+  --text-title-page--letter-spacing: -0.022em;
+  --text-title-page--font-weight: 500;
+  --text-title-section: 17px;
+  --text-title-section--line-height: 24px;
+  --text-title-section--letter-spacing: -0.012em;
+  --text-title-section--font-weight: 500;
+  --text-title-card: 15px;
+  --text-title-card--line-height: 20px;
+  --text-title-card--letter-spacing: -0.006em;
+  --text-title-card--font-weight: 500;
+  --text-ui: 14px;
+  --text-ui--line-height: 20px;
+  --text-ui--letter-spacing: 0em;
+  --text-ui--font-weight: 400;
+  --text-overline: 11px;
+  --text-overline--line-height: 14px;
+  --text-overline--letter-spacing: 0.06em;
+  --text-overline--font-weight: 500;
+  --text-num-kpi: 30px;
+  --text-num-kpi--line-height: 36px;
+  --text-num-kpi--letter-spacing: -0.03em;
+  --text-num-kpi--font-weight: 500;
+  --text-num-md: 14px;
+  --text-num-md--line-height: 20px;
+  --text-num-md--letter-spacing: -0.01em;
+  --text-num-md--font-weight: 400;
 
   --spacing-0: 0px;
   --spacing-px: 1px;
@@ -139,7 +167,13 @@
   --spacing-rail-nav: 72px;
   --spacing-rail-tables: 180px;
   --spacing-rail-ticket: 340px;
-  --spacing-rail-console: 220px;
+  --spacing-rail-console: 240px;
+  --spacing-rail-collapsed: 64px;
+  --spacing-bar: 56px;
+  --spacing-page-max: 1440px;
+  --spacing-frame-min: 1024px;
+  --spacing-rail-item: 32px;
+  --spacing-kpi-min: 136px;
   --spacing-panel-tender: 420px;
   --spacing-strip: 56px;
   --spacing-strip-compact: 48px;
@@ -159,6 +193,9 @@
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
+  --radius-card: 16px;
+  --radius-overlay: 20px;
+  --radius-pill: 9999px;
   --radius-dot: 9999px;
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -239,14 +276,28 @@
   --color-stop-wash: var(--bliss-stop-wash);
   --color-poured-wash: var(--bliss-poured-wash);
   --color-served-wash: var(--bliss-served-wash);
+  --color-attention-wash: var(--bliss-attention-wash);
+  --color-card: var(--bliss-card);
+  --color-edge: var(--bliss-edge);
+  --color-edge-strong: var(--bliss-edge-strong);
+  --color-band: var(--bliss-band);
+  --color-band-strong: var(--bliss-band-strong);
+  --color-rail: var(--bliss-rail);
+  --color-rail-hover: var(--bliss-rail-hover);
+  --color-rail-active: var(--bliss-rail-active);
+  --color-on-scrim: var(--bliss-on-scrim);
   --color-scrim: var(--bliss-scrim);
   --shadow-raised: var(--bliss-shadow-raised);
   --shadow-lift: var(--bliss-shadow-lift);
   --shadow-key: var(--bliss-shadow-key);
+  --shadow-card: var(--bliss-shadow-card);
+  --shadow-card-hover: var(--bliss-shadow-card-hover);
+  --shadow-popover: var(--bliss-shadow-popover);
 }
 
 :root,
-[data-theme='light'] {
+[data-theme='light'],
+[data-theme='system'] {
   color-scheme: light;
   --bliss-page: #FBFCFD;
   --bliss-raised: #F4F7F9;
@@ -269,7 +320,7 @@
   --bliss-accent-text: #1F6E82;
   --bliss-accent-subtle: #A8DCE6;
   --bliss-attention: #97591A;
-  --bliss-attention-subtle: #97591A;
+  --bliss-attention-subtle: #E9BE86;
   --bliss-money: #151B20;
   --bliss-poured: #2E7D52;
   --bliss-served: #235896;
@@ -299,10 +350,23 @@
   --bliss-stop-wash: color-mix(in oklab, #A33232 8%, transparent);
   --bliss-poured-wash: color-mix(in oklab, #2E7D52 8%, transparent);
   --bliss-served-wash: color-mix(in oklab, #235896 8%, transparent);
+  --bliss-attention-wash: color-mix(in oklab, #97591A 9%, transparent);
+  --bliss-card: #FBFCFD;
+  --bliss-edge: color-mix(in oklab, #D4DCE3 80%, transparent);
+  --bliss-edge-strong: #D4DCE3;
+  --bliss-band: color-mix(in oklab, #E7ECF0 45%, transparent);
+  --bliss-band-strong: color-mix(in oklab, #E7ECF0 80%, transparent);
+  --bliss-rail: #F4F7F9;
+  --bliss-rail-hover: color-mix(in oklab, #D4DCE3 45%, transparent);
+  --bliss-rail-active: color-mix(in oklab, #D4DCE3 70%, transparent);
+  --bliss-on-scrim: #FBFCFD;
   --bliss-scrim: rgba(11, 16, 21, 0.55);
   --bliss-shadow-raised: 0 1px 2px rgba(11, 16, 21, 0.05);
   --bliss-shadow-lift: 0 12px 32px -12px rgba(11, 16, 21, 0.12);
   --bliss-shadow-key: 0 2px 8px rgba(11, 16, 21, 0.12);
+  --bliss-shadow-card: 0 1px 2px color-mix(in oklab, #0B1015 4%, transparent), 0 2px 8px color-mix(in oklab, #0B1015 3%, transparent);
+  --bliss-shadow-card-hover: 0 1px 2px color-mix(in oklab, #0B1015 5%, transparent), 0 10px 28px -6px color-mix(in oklab, #0B1015 10%, transparent);
+  --bliss-shadow-popover: 0 12px 32px -8px color-mix(in oklab, #0B1015 18%, transparent), 0 2px 6px color-mix(in oklab, #0B1015 6%, transparent);
 }
 
 [data-theme='dark'] {
@@ -358,14 +422,102 @@
   --bliss-stop-wash: color-mix(in oklab, #E08585 10%, transparent);
   --bliss-poured-wash: color-mix(in oklab, #63B98A 10%, transparent);
   --bliss-served-wash: color-mix(in oklab, #7FA8E0 10%, transparent);
+  --bliss-attention-wash: color-mix(in oklab, #E0A35A 12%, transparent);
+  --bliss-card: #151B20;
+  --bliss-edge: color-mix(in oklab, #38424B 75%, transparent);
+  --bliss-edge-strong: #38424B;
+  --bliss-band: color-mix(in oklab, #232B32 45%, transparent);
+  --bliss-band-strong: color-mix(in oklab, #232B32 75%, transparent);
+  --bliss-rail: #151B20;
+  --bliss-rail-hover: color-mix(in oklab, #232B32 70%, transparent);
+  --bliss-rail-active: #232B32;
+  --bliss-on-scrim: #FBFCFD;
   --bliss-scrim: rgba(11, 16, 21, 0.55);
   --bliss-shadow-raised: none;
   --bliss-shadow-lift: 0 12px 32px -8px rgba(0, 0, 0, 0.5);
   --bliss-shadow-key: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --bliss-shadow-card: none;
+  --bliss-shadow-card-hover: 0 12px 28px -12px color-mix(in oklab, #000000 60%, transparent);
+  --bliss-shadow-popover: 0 16px 40px -8px color-mix(in oklab, #000000 70%, transparent), 0 0 0 1px #38424B;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme='system'] {
+    color-scheme: dark;
+    --bliss-page: #0B1015;
+    --bliss-raised: #232B32;
+    --bliss-sunken: #151B20;
+    --bliss-overlay: #232B32;
+    --bliss-hairline: #38424B;
+    --bliss-rule: #232B32;
+    --bliss-rule-raised: #38424B;
+    --bliss-ink: #F4F7F9;
+    --bliss-ink-muted: #B3BFC9;
+    --bliss-ink-subtle: #8C9AA6;
+    --bliss-ink-disabled: #4E5A65;
+    --bliss-control: #232B32;
+    --bliss-control-hover: #38424B;
+    --bliss-control-pressed: #4E5A65;
+    --bliss-accent: #6FC6D6;
+    --bliss-accent-hover: #3FAAC0;
+    --bliss-accent-pressed: #2A8CA3;
+    --bliss-accent-ink: #0B1015;
+    --bliss-accent-text: #6FC6D6;
+    --bliss-accent-subtle: #17545F;
+    --bliss-attention: #E0A35A;
+    --bliss-attention-subtle: #E9BE86;
+    --bliss-money: #E9BE86;
+    --bliss-poured: #63B98A;
+    --bliss-served: #7FA8E0;
+    --bliss-low: #E0A35A;
+    --bliss-stop: #E08585;
+    --bliss-stop-ink: #0B1015;
+    --bliss-info: #6FC6D6;
+    --bliss-focus: #3FAAC0;
+    --bliss-seat-ring: #FBFCFD;
+    --bliss-shared: #B3BFC9;
+    --bliss-skeleton: #232B32;
+    --bliss-chart: #6FC6D6;
+    --bliss-chart-muted: #1F6E82;
+    --bliss-grid: #232B32;
+    --bliss-glass: color-mix(in oklab, #232B32 40%, transparent);
+    --bliss-glass-hover: color-mix(in oklab, #232B32 65%, transparent);
+    --bliss-glass-strong: color-mix(in oklab, #232B32 65%, transparent);
+    --bliss-glass-strong-hover: color-mix(in oklab, #232B32 80%, transparent);
+    --bliss-glass-edge: color-mix(in oklab, #38424B 30%, transparent);
+    --bliss-glass-edge-hover: color-mix(in oklab, #38424B 70%, transparent);
+    --bliss-veil: color-mix(in oklab, #F4F7F9 3%, transparent);
+    --bliss-veil-hover: color-mix(in oklab, #F4F7F9 8%, transparent);
+    --bliss-veil-edge: color-mix(in oklab, #38424B 20%, transparent);
+    --bliss-veil-edge-hover: color-mix(in oklab, #38424B 40%, transparent);
+    --bliss-glint: #FBFCFD;
+    --bliss-accent-wash: color-mix(in oklab, #6FC6D6 10%, transparent);
+    --bliss-stop-wash: color-mix(in oklab, #E08585 10%, transparent);
+    --bliss-poured-wash: color-mix(in oklab, #63B98A 10%, transparent);
+    --bliss-served-wash: color-mix(in oklab, #7FA8E0 10%, transparent);
+    --bliss-attention-wash: color-mix(in oklab, #E0A35A 12%, transparent);
+    --bliss-card: #151B20;
+    --bliss-edge: color-mix(in oklab, #38424B 75%, transparent);
+    --bliss-edge-strong: #38424B;
+    --bliss-band: color-mix(in oklab, #232B32 45%, transparent);
+    --bliss-band-strong: color-mix(in oklab, #232B32 75%, transparent);
+    --bliss-rail: #151B20;
+    --bliss-rail-hover: color-mix(in oklab, #232B32 70%, transparent);
+    --bliss-rail-active: #232B32;
+    --bliss-on-scrim: #FBFCFD;
+    --bliss-scrim: rgba(11, 16, 21, 0.55);
+    --bliss-shadow-raised: none;
+    --bliss-shadow-lift: 0 12px 32px -8px rgba(0, 0, 0, 0.5);
+    --bliss-shadow-key: 0 4px 16px rgba(0, 0, 0, 0.2);
+    --bliss-shadow-card: none;
+    --bliss-shadow-card-hover: 0 12px 28px -12px color-mix(in oklab, #000000 60%, transparent);
+    --bliss-shadow-popover: 0 16px 40px -8px color-mix(in oklab, #000000 70%, transparent), 0 0 0 1px #38424B;
+  }
 }
 
 :root {
   --bliss-duration-hover: 160ms;
+  --bliss-duration-card: 240ms;
   --bliss-duration-press: 100ms;
   --bliss-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --bliss-ease-snap: cubic-bezier(0.34, 1.3, 0.64, 1);

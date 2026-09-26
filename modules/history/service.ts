@@ -8,8 +8,7 @@ import { dataset } from '../_data/source';
 import * as catalogue from '../catalogue/service';
 import * as identity from '../identity/service';
 import * as settlement from '../settlement/service';
-import { settlementTables } from '../settlement/schema';
-import { tradeTables } from '../trade/schema';
+import * as tradeService from '../trade/service';
 
 /**
  * The night's record, and every night before it. docs/16 section 9.
@@ -67,8 +66,8 @@ export function clampRange(from: string, to: string): { from: IsoDate; to: IsoDa
 
 export function history(query: HistoryQuery): HistoryResult {
   const { from, to } = clampRange(query.from, query.to);
-  const trade = tradeTables();
-  const money = settlementTables();
+  const trade = tradeService.readTables();
+  const money = settlement.readTables();
   const current = dataset().currentBusinessDate;
   // The blind count: a device with its drawer open is not told what tonight's bills took in each
   // tender, bill by bill any more than in total. docs/14 section 7.

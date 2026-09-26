@@ -16,6 +16,23 @@ import { tradeTables } from './schema';
 
 const createId = createUuidV7();
 
+/**
+ * Read-only views of trade's tables, for another module's report (history, reporting). Reads go
+ * through the service, so no other module depends on how trade stores its rows.
+ */
+export function readTables() {
+  const t = tradeTables();
+  return {
+    zones: t.zones as readonly (typeof t.zones)[number][],
+    tables: t.tables as readonly (typeof t.tables)[number][],
+    tabs: t.tabs as readonly (typeof t.tabs)[number][],
+    seats: t.seats as readonly (typeof t.seats)[number][],
+    orders: t.orders as readonly (typeof t.orders)[number][],
+    lines: t.lines as readonly (typeof t.lines)[number][],
+    lineModifiers: t.lineModifiers as readonly (typeof t.lineModifiers)[number][],
+  };
+}
+
 export function zones() {
   return [...tradeTables().zones].sort((a, b) => a.sortOrder - b.sortOrder);
 }

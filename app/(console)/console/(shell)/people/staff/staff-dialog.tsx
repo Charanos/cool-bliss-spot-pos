@@ -89,7 +89,7 @@ export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRo
         {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}
 
         <div className="flex items-center gap-16">
-          <label className="group relative flex size-avatar-lg shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-dot bg-control text-title-card text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus">
+          <label className="group relative flex size-avatar shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-dot bg-control text-title-card text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus">
             <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={choosePhoto} disabled={uploading} aria-label="Choose a photo" />
             {photo ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -97,7 +97,7 @@ export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRo
             ) : (
               <span aria-hidden="true">{initials || '?'}</span>
             )}
-            <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center bg-scrim text-ink-inverse opacity-0 transition-hover group-hover:opacity-100">
+            <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center bg-scrim text-on-scrim opacity-0 transition-hover group-hover:opacity-100">
               <IconCamera size={20} stroke={1.5} />
             </span>
           </label>
@@ -108,14 +108,14 @@ export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRo
         </div>
 
         <fieldset className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
-          <legend className="mb-8 text-overline text-ink-subtle">Details</legend>
+          <legend className="mb-8 overline text-ink-subtle">Details</legend>
           <TextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Wanjiru" autoComplete="off" required />
           <TextField label="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Jane" helper="What the floor and the bills show." autoComplete="off" required />
           <TextField label="Contact number" type="tel" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="+254 712 345 678" autoComplete="off" />
         </fieldset>
 
         <fieldset className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
-          <legend className="mb-8 text-overline text-ink-subtle">Access</legend>
+          <legend className="mb-8 overline text-ink-subtle">Access</legend>
           <SelectField label="Role" value={roleId} onChange={(e) => setRoleId(e.target.value)} options={roles} required disabled={target?.isSelf} helper={target?.isSelf ? 'Another manager changes your role.' : undefined} />
           <TextField
             label={editing ? 'New PIN' : 'PIN'}

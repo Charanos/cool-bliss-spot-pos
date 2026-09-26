@@ -6,6 +6,17 @@ import type { IsoDate } from '@bliss/shared/time';
 import type { DrawerSession } from '@bliss/db/seed/types';
 import { settlementTables } from './schema';
 
+/** Read-only views of settlement's tables, for another module's report. Reads go through the service. */
+export function readTables() {
+  const t = settlementTables();
+  return {
+    bills: t.bills as readonly (typeof t.bills)[number][],
+    tenders: t.tenders as readonly (typeof t.tenders)[number][],
+    billLines: t.billLines as readonly (typeof t.billLines)[number][],
+    cashMovements: t.cashMovements as readonly (typeof t.cashMovements)[number][],
+  };
+}
+
 export function billsBetween(from: IsoDate, to: IsoDate): Bill[] {
   return settlementTables().bills.filter((b) => b.businessDate >= from && b.businessDate <= to && b.status !== 'voided');
 }
