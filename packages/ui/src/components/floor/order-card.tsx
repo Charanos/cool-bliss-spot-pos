@@ -143,10 +143,10 @@ export function OrderCard({
                 {label}
               </span>
               {zoneName ? (
-                <span className="shrink-0 rounded-dot bg-sunken/60 px-8 py-2 text-micro text-ink-subtle">{zoneName}</span>
+                <span className="shrink-0 rounded-dot bg-neutral-wash px-8 py-2 text-micro text-ink-subtle">{zoneName}</span>
               ) : null}
               {!mine && waiter ? (
-                <span className="max-w-[112px] shrink-0 truncate rounded-dot bg-sunken/60 px-8 py-2 text-micro text-ink-subtle">
+                <span className="max-w-[112px] shrink-0 truncate rounded-dot bg-neutral-wash px-8 py-2 text-micro text-ink-subtle">
                   {waiter}
                 </span>
               ) : null}
@@ -199,7 +199,7 @@ export function OrderCard({
                   e.stopPropagation();
                   onActionMenu();
                 }}
-                className="size-32 rounded-full flex items-center justify-center text-ink-subtle hover:text-ink hover:bg-sunken/80 transition-colors focus:outline-none focus:ring-1 focus:ring-accent"
+                className="size-32 rounded-full flex items-center justify-center text-ink-subtle hover:text-ink hover:bg-control-hover transition-colors focus:outline-none focus:ring-1 focus:ring-accent"
               >
                 <IconDots size={16} stroke={ICON_STROKE} />
               </button>
@@ -217,7 +217,7 @@ export function OrderCard({
               key={l.id}
               className={cx(
                 'flex min-h-[36px] tablet:min-h-[38px] items-center justify-between gap-8 tablet:gap-12 rounded-md px-6 py-4 tablet:px-8 tablet:py-6 transition-colors border-t border-rule-raised/20 first:border-t-0',
-                l.state === 'ran_out' ? 'bg-stop/10' : 'hover:bg-sunken/40',
+                l.state === 'ran_out' ? 'bg-stop/10' : 'hover:bg-control',
               )}
             >
               {/* Left group: Seat chip, Qty multiplier, Item name & modifiers */}

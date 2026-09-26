@@ -809,7 +809,8 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
           splitGroupId,
           subtotalCents: amount,
           discountCents: ZERO,
-          taxCents: ZERO,
+          // The VAT inside a tax-inclusive price, as the counter records it when it settles.
+          taxCents: OUTLET.pricesTaxInclusive ? scale(amount, BigInt(OUTLET.taxRateBps), BigInt(10_000 + OUTLET.taxRateBps)) : ZERO,
           totalCents: amount,
           roundingCents: rounding,
           status: 'settled',

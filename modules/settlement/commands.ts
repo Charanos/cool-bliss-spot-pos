@@ -3,7 +3,7 @@ import 'server-only';
 import type { CashMovement } from '@bliss/db/seed/types';
 import type { Bill, BillScope, OrderLine, Tender } from '@bliss/shared/domain';
 import { type Cents, ZERO, abs, add, cents, compare, formatKes, isPositive, multiplyByQty, scale, subtract, sum } from '@bliss/shared/money';
-import { type Actor, checkReason, requireReasoned } from '@bliss/shared/reason';
+import { type Actor, checkReason } from '@bliss/shared/reason';
 import { amountDue, billableLines, checkTenders, evenShares, expectedCash, linesTotal } from '@bliss/shared/settlement';
 import type { OutboxPayload } from '@bliss/shared/sync';
 import { businessDate } from '@bliss/shared/time';
@@ -251,44 +251,6 @@ export function settleBill(p: OutboxPayload<'bill.settle'>, actor: Actor): void 
   }
 }
 
-/** Refund a settled bill. Requires refund.approve permission and is audited as sensitive with who, when, why, approver. */
-export function refundBill(input: { billId: string; reason: string; actor: Actor }) {
-  const { reason, actor } = requireReasoned(input);
-  identity.assertCan(actor.staffId, 'refund.approve', 'approving refunds');
-  const t = settlementTables();
-  const bill = t.bills.find((b) => b.id === input.billId);
-  if (!bill) throw new CommandRejected('NOT_FOUND', 'That bill does not exist.');
-  if (bill.status === 'refunded') throw new CommandRejected('VALIDATION_FAILED', 'That bill was already refunded.');
-  if (bill.status !== 'settled') throw new CommandRejected('VALIDATION_FAILED', 'Only settled bills can be refunded.');
-
-  const before = bill.status;
-  bill.status = 'refunded';
-  touch('bills', bill.id);
-
-  // Return stock for the refunded bill lines
-  const lines = t.billLines.filter((l) => l.billId === bill.id);
-  for (const l of lines) {
-    if (l.orderLineId) {
-      inventory.reverseSale({ lineId: l.orderLineId, actor });
-    }
-  }
-
-  audit.record({
-    outletId: bill.outletId,
-    actorStaffId: actor.staffId,
-    actorDeviceId: actor.deviceId,
-    action: 'bill.refunded',
-    entityType: 'bill',
-    entityId: bill.id,
-    before: { status: before },
-    after: { status: 'refunded', approverId: actor.staffId, totalCents: bill.totalCents.toString() },
-    reason,
-    severity: 'sensitive',
-  });
-
-  return bill;
-}
-
 /* ------------------------------------------------------------------ drawer */
 
 export function openDrawer(p: OutboxPayload<'drawer.open'>, actor: Actor): void {
@@ -352,7 +314,8 @@ export function countDrawer(input: { sessionId: string; countedCents: Cents; act
     const open = closePreflight();
     if (open.length > 0) throw new CommandRejected('VALIDATION_FAILED', `${open.length} ${open.length === 1 ? 'tab is' : 'tabs are'} still open. They must be settled or voided first.`);
     if (compare(input.countedCents, ZERO) < 0) throw new CommandRejected('VALIDATION_FAILED', 'A count cannot be below zero.');
-    const drops = t.cashMovements.filter((m) => m.drawerSessionId === session.id && m.kind === 'drop_to_safe').map((m) => m.amountCents);
+    // Drops to the safe and refunds paid out both left the drawer.
+    const drops = t.cashMovements.filter((m) => m.drawerSessionId === session.id && (m.kind === 'drop_to_safe' || m.kind === 'payout')).map((m) => m.amountCents);
     const expected = expectedCash({ float: session.openingFloatCents, cashTaken: cashTakenIn(session.id), drops });
     session.status = 'counting';
     session.countedCashCents = input.countedCents;

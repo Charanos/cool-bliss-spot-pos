@@ -1,20 +1,18 @@
 'use client';
 
 import type { EmploymentStatus } from '@bliss/shared/domain';
+import type { PinStatus } from '@/modules/identity/pins';
 import { formatDate, plural } from '@bliss/shared/format';
+import { Button } from '@bliss/ui/components/button';
+import { Card, CardBand, CardMedia, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
-import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
-import { Metric } from '@bliss/ui/components/console/metric';
-import { SelectField } from '@bliss/ui/components/fields';
-import { ReasonForm } from '@bliss/ui/components/reason-form';
-import { StatusChip } from '@bliss/ui/components/status';
-import { seatBgClass } from '@bliss/ui/lib/seat';
-import { IconDeviceTablet, IconDoorExit, IconLock, IconPlayerPause, IconPlayerPlay, IconUserCheck, IconUserCog, IconUsers, IconPlus } from '@tabler/icons-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { setEmploymentStatus, setStaffRole } from '../../_actions';
-import { StaffDialog } from './staff-dialog';
-import { staffPhoto } from '@/lib/pos/staff-photos';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
+import { OverflowMenu } from '@bliss/ui/components/menu';
+import { StatusChip, ToneChip } from '@bliss/ui/components/status';
+import { IconDeviceTablet, IconLock, IconPlus, IconUserCheck, IconUsers } from '@tabler/icons-react';
+import { StaffAvatar } from './avatar';
+import type { PinPolicyView } from './pin-dialog';
+import { useStaffManager } from './staff-manager';
 
 export interface StaffRow {
   id: string;
@@ -24,25 +22,66 @@ export interface StaffRow {
   roleId: string;
   role: string;
   status: EmploymentStatus;
-  pinHash: string | null;
+  pinState: 'set' | 'needs_reset' | 'development' | 'none';
   avatarUrl: string | null;
   contactNumber: string | null;
   pinLocked: boolean;
+  pin: { status: PinStatus; length: number; setAt: number | null; expiresAt: number | null };
+  /** Whether the viewer may set, reset or clear this PIN: rank decides. */
+  canSetPin: boolean;
   lastShiftAt: number | null;
   shifts: number;
   signedInOn: string[];
   isSelf: boolean;
 }
 
-type Pending = { kind: 'role'; row: StaffRow } | { kind: 'status'; row: StaffRow; status: EmploymentStatus };
+export function Access({ row }: { row: StaffRow }) {
+  if (row.status === 'active') return row.pinLocked ? <StatusChip status="suspended" label="PIN locked" /> : <StatusChip status="active" />;
+  return <StatusChip status={row.status === 'suspended' ? 'suspended' : 'retired'} label={row.status === 'left' ? 'Left' : undefined} />;
+}
 
-export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRow[]; roles: { value: string; label: string }[]; canManage: boolean; timezone: string }) {
-  const [pending, setPending] = useState<Pending | null>(null);
-  const [pendingEdit, setPendingEdit] = useState<StaffRow | 'new' | null>(null);
-  const totalStaff = rows.length;
-  const activeStaff = rows.filter((r) => r.status === 'active' && !r.pinLocked).length;
-  const signedInCount = rows.filter((r) => r.signedInOn.length > 0).length;
-  const lockedOrSuspended = rows.filter((r) => r.pinLocked || r.status === 'suspended').length;
+const DAY = 24 * 60 * 60_000;
+
+/** Where a PIN stands, in a few words, or null when it is simply set and nothing is near. */
+export function PinChip({ row, now }: { row: StaffRow; now: number }) {
+  if (row.status !== 'active') return null;
+  const { status, expiresAt } = row.pin;
+  if (status === 'none') return <ToneChip tone="stop">No PIN</ToneChip>;
+  if (status === 'must_change') return <ToneChip tone="info">Chooses own PIN</ToneChip>;
+  if (status === 'expired') return <ToneChip tone="stop">PIN ran out</ToneChip>;
+  if (status === 'expiring' && expiresAt) {
+    const days = Math.max(0, Math.ceil((expiresAt - now) / DAY));
+    return <ToneChip tone="low">{days === 0 ? 'PIN runs out today' : `PIN runs out in ${plural(days, 'day')}`}</ToneChip>;
+  }
+  return null;
+}
+
+/**
+ * Everyone who can sign in to Bliss: their role, whether they can get in, and when they last worked.
+ * A person without staff.manage sees the list and changes nothing.
+ */
+export function StaffTable({
+  rows,
+  roles,
+  canManage,
+  timezone,
+  policy,
+  now,
+}: {
+  rows: StaffRow[];
+  roles: { value: string; label: string }[];
+  canManage: boolean;
+  timezone: string;
+  policy: PinPolicyView;
+  now: number;
+}) {
+  const manager = useStaffManager({ roles, canManage, createParam: true, policy, timezone });
+  const actions = manager.actions;
+
+  const active = rows.filter((r) => r.status === 'active');
+  const ready = active.filter((r) => !r.pinLocked && r.pinState !== 'none').length;
+  const signedIn = rows.filter((r) => r.signedInOn.length > 0).length;
+  const blocked = rows.filter((r) => r.pinLocked || r.status === 'suspended').length;
 
   const columns: Column<StaffRow>[] = [
     {
@@ -54,39 +93,48 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
       csv: (r) => r.name,
       cell: (r) => (
         <span className="flex min-w-0 items-center gap-12">
-          <span aria-hidden="true" className={`flex size-control-sm shrink-0 items-center justify-center rounded-sm font-mono text-num-sm text-seat-ink ${seatBgClass(r.colourIndex + 1)} overflow-hidden`}>
-            {(r.avatarUrl || staffPhoto(r.displayName)) ? <img src={r.avatarUrl || staffPhoto(r.displayName)!} alt="" className="w-full h-full object-cover" /> : r.displayName.slice(0, 2).toUpperCase()}
-          </span>
+          <StaffAvatar name={r.name} avatarUrl={r.avatarUrl} colourIndex={r.colourIndex} />
           <StackCell primary={`${r.name}${r.isSelf ? ' (you)' : ''}`} secondary={`Shows as ${r.displayName}`} />
         </span>
       ),
     },
-    { key: 'role', header: 'Role', width: '150px', sortValue: (r) => r.role, csv: (r) => r.role, cell: (r) => <span className="text-body text-ink">{r.role}</span> },
+    {
+      key: 'role',
+      header: 'Role',
+      width: '152px',
+      sortValue: (r) => r.role,
+      csv: (r) => r.role,
+      cell: (r) => <span className="text-ui text-ink">{r.role}</span>,
+    },
     {
       key: 'status',
       header: 'Access',
-      width: '150px',
+      width: '136px',
       sortValue: (r) => r.status,
-      csv: (r) => r.status,
-      cell: (r) =>
-        r.status === 'active' ? (
-          r.pinLocked ? (
-            <StatusChip status="suspended" label="PIN locked" />
-          ) : (
-            <StatusChip status="active" />
-          )
-        ) : (
-          <StatusChip status={r.status === 'suspended' ? 'suspended' : 'retired'} label={r.status === 'left' ? 'Left' : undefined} />
-        ),
+      csv: (r) => (r.pinLocked ? 'PIN locked' : r.status),
+      cell: (r) => (
+        <span className="flex flex-col items-start gap-4">
+          <Access row={r} />
+          <PinChip row={r} now={now} />
+        </span>
+      ),
     },
     {
       key: 'on',
       header: 'Signed in on',
-      width: 'minmax(120px,1fr)',
+      width: 'minmax(128px,1fr)',
       csv: (r) => r.signedInOn.join('; '),
-      cell: (r) => <span className="text-body text-ink-muted">{r.signedInOn.length > 0 ? r.signedInOn.join(', ') : '··'}</span>,
+      cell: (r) => <span className="truncate text-ui text-ink-muted">{r.signedInOn.length > 0 ? r.signedInOn.join(', ') : 'Not signed in'}</span>,
     },
-    { key: 'shifts', header: 'Shifts, 28 days', width: '120px', align: 'right', sortValue: (r) => r.shifts, csv: (r) => r.shifts, cell: (r) => <NumCell>{r.shifts}</NumCell> },
+    {
+      key: 'shifts',
+      header: 'Shifts, 28 days',
+      width: '120px',
+      align: 'right',
+      sortValue: (r) => r.shifts,
+      csv: (r) => r.shifts,
+      cell: (r) => <NumCell>{r.shifts}</NumCell>,
+    },
     {
       key: 'last',
       header: 'Last shift',
@@ -94,120 +142,59 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
       align: 'right',
       sortValue: (r) => r.lastShiftAt,
       csv: (r) => (r.lastShiftAt ? new Date(r.lastShiftAt).toISOString() : ''),
-      cell: (r) => <NumCell tone="muted">{r.lastShiftAt ? formatDate(r.lastShiftAt, timezone) : '··'}</NumCell>,
+      cell: (r) => <NumCell tone="muted">{r.lastShiftAt ? formatDate(r.lastShiftAt, timezone) : 'None yet'}</NumCell>,
     },
   ];
 
   return (
-    <div className="flex flex-col gap-24">
-      {/* Executive Staff Roster Metrics */}
-      <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
+    <div className="flex flex-col gap-32">
+      <MetricGrid>
+        <Metric label="People" icon={IconUsers} value={<CountUp value={rows.length} />} detail={`${active.length} active, ${plural(roles.length, 'role')}`} />
+        <Metric label="Ready to work" icon={IconUserCheck} tone="poured" value={<CountUp value={ready} delayMs={60} />} detail="Active, with a PIN that works" />
         <Metric
-          label="Team Members"
-          value={totalStaff}
-          detail={`${activeStaff} active · ${plural(roles.length, 'role')}`}
-          icon={IconUsers}
-          tone="default"
-        />
-        <Metric
-          label="Shift Ready"
-          value={activeStaff}
-          detail="Credentials clear for service"
-          icon={IconUserCheck}
-          tone="poured"
-        />
-        <Metric
-          label="Signed In Now"
-          value={signedInCount}
-          detail="Active terminal sessions"
+          label="Signed in now"
           icon={IconDeviceTablet}
-          tone={signedInCount > 0 ? 'poured' : 'default'}
+          tone={signedIn > 0 ? 'info' : 'default'}
+          value={<CountUp value={signedIn} delayMs={120} />}
+          detail={signedIn > 0 ? 'On a floor tablet or the counter' : 'Nobody is signed in'}
         />
         <Metric
-          label="PIN Locks & Holds"
-          value={lockedOrSuspended}
-          detail="Requires manager clearance"
+          label="Locked out"
           icon={IconLock}
-          tone={lockedOrSuspended > 0 ? 'attention' : 'default'}
+          tone={blocked > 0 ? 'attention' : 'default'}
+          value={<CountUp value={blocked} delayMs={180} />}
+          detail={blocked > 0 ? 'Suspended, or a PIN locked after wrong tries' : 'Nobody is locked out'}
         />
-      </div>
-
-      {/* Elegant visual separator */}
-      <div className="h-[1px] mt-20 mb-8 w-full bg-gradient-to-r from-transparent via-hairline/60 to-transparent opacity-80" aria-hidden="true" />
+      </MetricGrid>
 
       <DataTable
         id="people-staff"
         caption="Staff"
+        noun={['person', 'people']}
         rows={rows}
         columns={columns}
+        rowKey={(r) => r.id}
+        rowHref={(r) => `/console/people/staff/${r.id}`}
+        defaultSort={{ key: 'name', dir: 'asc' }}
         leading={
           canManage ? (
-            <button
-              onClick={() => setPendingEdit('new')}
-              className="group relative inline-flex h-[32px] items-center gap-6 rounded-full bg-accent text-accent-ink px-16 text-[13px] font-medium shadow-[inset_0_1px_0_color-mix(in_oklab,white_20%,transparent),0_1px_3px_color-mix(in_oklab,var(--color-accent)_30%,transparent)] transition-all hover:-translate-y-[1px] hover:shadow-[inset_0_1px_0_color-mix(in_oklab,white_20%,transparent),0_3px_6px_color-mix(in_oklab,var(--color-accent)_40%,transparent)] active:scale-[0.98] active:translate-y-0"
-            >
-              <IconPlus size={14} stroke={2.5} className="transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
-              <span>Add person</span>
-            </button>
+            <Button variant="create" size="sm" icon={IconPlus} onClick={manager.add}>
+              Add a person
+            </Button>
           ) : undefined
         }
-        renderGridCard={(r) => (
-          <button onClick={() => canManage && setPendingEdit(r)} className="text-left w-full h-[380px] bg-page rounded-[20px] border border-hairline/60 shadow-[0_4px_16px_rgba(0,0,0,0.02)] hover:border-hairline hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all flex flex-col group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2">
-            
-            {/* Full Bleed Image Header */}
-            <div className={`relative h-[170px] w-full bg-seat-ink ${seatBgClass(r.colourIndex + 1)} shrink-0 overflow-hidden`}>
-              {(r.avatarUrl || staffPhoto(r.displayName)) ? (
-                <img src={r.avatarUrl || staffPhoto(r.displayName)!} alt="" className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
-              ) : (
-                <div className="flex items-center justify-center w-full h-full text-[64px] font-mono text-white/40">
-                  {r.displayName.slice(0, 2).toUpperCase()}
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-16 left-20 right-20 flex flex-col">
-                <span className="text-title font-medium text-[#fff] drop-shadow-md truncate">{r.name}{r.isSelf ? ' (you)' : ''}</span>
-                <span className="text-body-sm text-[#fff]/80 drop-shadow-md truncate">Shows as {r.displayName}</span>
-              </div>
-            </div>
-
-            {/* Tight Details Area */}
-            <div className="flex flex-col flex-1 p-20 text-body-sm bg-page w-full">
-              <div className="flex flex-col mt-auto">
-                <div className="flex justify-between items-center pb-8 border-b border-hairline/40">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Role</span>
-                  <span className="text-ink font-medium">{r.role}</span>
-                </div>
-                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Access</span>
-                  <span>
-                    {r.status === 'active' ? (
-                      r.pinLocked ? <StatusChip status="suspended" label="PIN locked" /> : <StatusChip status="active" />
-                    ) : (
-                      <StatusChip status={r.status === 'suspended' ? 'suspended' : 'retired'} label={r.status === 'left' ? 'Left' : undefined} />
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Signed in on</span>
-                  <span className="text-ink-muted">{r.signedInOn.length > 0 ? r.signedInOn.join(', ') : '··'}</span>
-                </div>
-                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Shifts, 28 days</span>
-                  <span className="font-mono tabular">{r.shifts}</span>
-                </div>
-                <div className="flex justify-between items-center pt-8">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Last shift</span>
-                  <span className="font-mono tabular text-ink-muted">{r.lastShiftAt ? formatDate(r.lastShiftAt, timezone) : '··'}</span>
-                </div>
-              </div>
-            </div>
-          </button>
-        )}
-        rowKey={(r) => r.id}
-        defaultSort={{ key: 'name', dir: 'asc' }}
-        search={{ placeholder: 'Search people', test: (r, q) => r.name.toLowerCase().includes(q) || r.displayName.toLowerCase().includes(q) }}
+        search={{
+          placeholder: 'Search people',
+          test: (r, q) => r.name.toLowerCase().includes(q) || r.displayName.toLowerCase().includes(q),
+        }}
         filters={[
-          { kind: 'select', key: 'role', label: 'Role', options: roles, test: (r, v) => r.roleId === v },
+          {
+            kind: 'select',
+            key: 'role',
+            label: 'Role',
+            options: roles,
+            test: (r, v) => r.roleId === v,
+          },
           {
             kind: 'chips',
             key: 'access',
@@ -219,109 +206,73 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
             ],
             test: (r, v) => r.status === v,
           },
+          {
+            kind: 'chips',
+            key: 'pin',
+            label: 'PIN',
+            options: [
+              { value: 'attention', label: 'Needs a look' },
+              { value: 'expiring', label: 'Running out soon' },
+              { value: 'none', label: 'No PIN' },
+            ],
+            test: (r, v) =>
+              r.status === 'active' &&
+              (v === 'attention'
+                ? r.pinLocked || ['none', 'expired', 'expiring', 'must_change'].includes(r.pin.status)
+                : v === 'expiring'
+                  ? r.pin.status === 'expiring' || r.pin.status === 'expired'
+                  : r.pin.status === 'none'),
+          },
         ]}
         rowTone={(r) => (r.status === 'active' ? 'default' : 'muted')}
-        rowActions={
-          canManage
-            ? (r) =>
-                r.isSelf || r.status === 'left'
-                  ? []
-                  : [
-                      { key: 'role', label: 'Change role', icon: IconUserCog, onSelect: () => setPending({ kind: 'role', row: r }) },
-                      r.status === 'active'
-                        ? { key: 'suspend', label: 'Suspend access', icon: IconPlayerPause, onSelect: () => setPending({ kind: 'status', row: r, status: 'suspended' }) }
-                        : { key: 'reinstate', label: 'Reinstate access', icon: IconPlayerPlay, onSelect: () => setPending({ kind: 'status', row: r, status: 'active' }) },
-                      { key: 'left', label: 'Mark as left', icon: IconDoorExit, destructive: true, onSelect: () => setPending({ kind: 'status', row: r, status: 'left' }) },
-                    ]
-            : undefined
-        }
+        rowActions={canManage ? actions : undefined}
         exportName="staff"
-        empty={{ title: 'Nobody here yet', body: 'Add the first person, then give them a role and a PIN.' }}
+        empty={{
+          title: 'Nobody here yet',
+          body: canManage ? 'Add the first person, then give them a role and a PIN.' : 'A manager adds people here.',
+        }}
+        emptyFiltered={{
+          title: 'Nobody matches',
+          body: 'Clear the role, access or search to see everyone.',
+        }}
+        renderGridCard={(r) => {
+          const own = actions(r);
+          return (
+            <Card as="article" interactive tone={r.pinLocked || r.status === 'suspended' ? 'low' : undefined} className="group h-full">
+              {r.avatarUrl ? (
+                <CardMedia
+                  src={r.avatarUrl}
+                  title={`${r.name}${r.isSelf ? ' (you)' : ''}`}
+                  subtitle={`${r.role}, shows as ${r.displayName}`}
+                  href={`/console/people/staff/${r.id}`}
+                  meta={<Access row={r} />}
+                  actions={own.length > 0 ? <OverflowMenu label={`Actions for ${r.name}`} size="sm" items={own} /> : null}
+                />
+              ) : (
+                <CardBand
+                  eyebrow={r.role}
+                  status={<Access row={r} />}
+                  actions={own.length > 0 ? <OverflowMenu label={`Actions for ${r.name}`} size="sm" items={own} /> : undefined}
+                  leading={<StaffAvatar name={r.name} avatarUrl={r.avatarUrl} colourIndex={r.colourIndex} size="md" />}
+                  title={`${r.name}${r.isSelf ? ' (you)' : ''}`}
+                  subtitle={`Shows as ${r.displayName}`}
+                  href={`/console/people/staff/${r.id}`}
+                />
+              )}
+              <KeyRows>
+                <KeyRow label="Signed in on">{r.signedInOn.length > 0 ? r.signedInOn.join(', ') : 'Not signed in'}</KeyRow>
+                <KeyRow label="Shifts, 28 days">{r.shifts}</KeyRow>
+                <KeyRow label="Last shift">{r.lastShiftAt ? formatDate(r.lastShiftAt, timezone) : 'None yet'}</KeyRow>
+                <KeyRow label="PIN">
+                  <PinChip row={r} now={now} /> {r.pin.status === 'set' || r.pin.status === 'locked' ? `${r.pin.length} digits` : null}
+                </KeyRow>
+                <KeyRow label="Contact">{r.contactNumber ?? 'Not given'}</KeyRow>
+              </KeyRows>
+            </Card>
+          );
+        }}
       />
-      <StaffDialog 
-        target={pendingEdit === 'new' ? null : pendingEdit} 
-        roles={roles} 
-        open={pendingEdit !== null} 
-        onClose={() => setPendingEdit(null)} 
-      />
-      <RoleDialog target={pending?.kind === 'role' ? pending.row : null} roles={roles} onClose={() => setPending(null)} />
-      <StatusDialog target={pending?.kind === 'status' ? pending : null} onClose={() => setPending(null)} />
+      {manager.dialogs}
     </div>
-  );
-}
-
-function RoleDialog({ target, roles, onClose }: { target: StaffRow | null; roles: { value: string; label: string }[]; onClose: () => void }) {
-  const router = useRouter();
-  const [roleId, setRoleId] = useState('');
-  const chosen = roleId || target?.roleId || '';
-  return (
-    <ConsoleOverlay open={Boolean(target)} onClose={onClose} title={target ? `Change ${target.displayName}'s role?` : ''} description="Their permissions change from their next action on any device." width="md">
-      {target ? (
-        <ReasonForm
-          key={target.id}
-          destructive={false}
-          quickReasons={['Promoted', 'Covering a manager', 'Moved to the counter']}
-          confirmLabel={`Make ${target.displayName} ${roles.find((r) => r.value === chosen)?.label.toLowerCase() ?? ''}`.trim()}
-          onCancel={onClose}
-          onConfirm={async ({ reason }) => {
-            if (chosen === target.roleId) throw new Error('Choose a different role.');
-            const r = await setStaffRole({ staffId: target.id, roleId: chosen, reason });
-            if (!r.ok) throw new Error(r.message);
-            setRoleId('');
-            onClose();
-            router.refresh();
-          }}
-        >
-          <div className="pb-16">
-            <SelectField label="New role" value={chosen} onChange={(e) => setRoleId(e.target.value)} options={roles} />
-          </div>
-        </ReasonForm>
-      ) : null}
-    </ConsoleOverlay>
-  );
-}
-
-const STATUS_COPY: Record<EmploymentStatus, { title: (name: string) => string; description: string; confirm: (name: string) => string; chips: string[] }> = {
-  suspended: {
-    title: (n) => `Suspend ${n}'s access?`,
-    description: 'Their PIN stops working on every device. Tabs they hold stay open and can be handed over.',
-    confirm: (n) => `Suspend ${n}`,
-    chips: ['On leave', 'Under investigation', 'Shared their PIN'],
-  },
-  active: {
-    title: (n) => `Reinstate ${n}'s access?`,
-    description: 'Their PIN works again straight away.',
-    confirm: (n) => `Reinstate ${n}`,
-    chips: ['Back from leave', 'Investigation closed'],
-  },
-  left: {
-    title: (n) => `Mark ${n} as left?`,
-    description: 'Their PIN stops working for good. Their history stays in every report.',
-    confirm: (n) => `Mark ${n} as left`,
-    chips: ['Resigned', 'Contract ended'],
-  },
-};
-
-function StatusDialog({ target, onClose }: { target: { row: StaffRow; status: EmploymentStatus } | null; onClose: () => void }) {
-  const router = useRouter();
-  const copy = target ? STATUS_COPY[target.status] : null;
-  return (
-    <ConsoleOverlay open={Boolean(target)} onClose={onClose} title={target && copy ? copy.title(target.row.displayName) : ''} description={copy?.description} width="md">
-      {target && copy ? (
-        <ReasonForm
-          key={`${target.row.id}-${target.status}`}
-          destructive={target.status !== 'active'}
-          quickReasons={copy.chips}
-          confirmLabel={copy.confirm(target.row.displayName)}
-          onCancel={onClose}
-          onConfirm={async ({ reason }) => {
-            const r = await setEmploymentStatus({ staffId: target.row.id, status: target.status, reason });
-            if (!r.ok) throw new Error(r.message);
-            onClose();
-            router.refresh();
-          }}
-        />
-      ) : null}
-    </ConsoleOverlay>
   );
 }

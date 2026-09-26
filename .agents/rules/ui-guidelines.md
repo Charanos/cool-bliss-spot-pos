@@ -1,33 +1,55 @@
 ---
-name: "Bliss OS UI Engineering Guidelines"
-description: "Core principles for designing and refactoring production-grade, Apple-quality UI components in the POS system."
+name: "Bliss Console UI guidelines"
+description: "How to build and refine Console screens: the Pane and Card families, the tokens and primitives, the type ramp, copy, and the definition of done. Read docs/19-console-system.md first."
 ---
 
-# Bliss OS UI Engineering Guidelines
+# Bliss Console UI guidelines
 
-When building or refactoring UI elements for Bliss OS, you **MUST** adhere to the following principles. The user expects *production-grade, Apple-quality* precision—never settle for generic, basic, or unrefined layouts.
+The Console is precise, quiet and dense. It gets its polish from alignment, a disciplined type ramp
+and restraint, not from effects. Everything below is enforced by lint where it can be; the full
+reference is `docs/19-console-system.md`.
 
-## 1. Structural Architecture & Bento Layouts
-- **No Generic Lists**: Do not rely on simplistic `map` loops that generate a 1D column of `LABEL -> VALUE`. 
-- **Bento Style**: Evolve lists and grid cards into structured Bento layouts (e.g., `grid grid-cols-2 gap-16`). Group related secondary data into highly legible sub-grids.
-- **Uncard Elements**: Avoid "double carded" containers (a card inside a card). If rendering a list of items inside a larger panel (e.g., Tenders on a Bill detail page), use an unboxed ledger-style layout with elegant hairline border indicators (`border-l-2 border-hairline/60`), not nested gray boxes.
-- **Hero & Footer Positioning**: Ground the primary identifier (e.g., Bill number) in a prominent header strip (`bg-control/20`). Isolate the most critical financial value (e.g., Total Exposure) in a dedicated footer strip (`bg-control/40`).
+## 1. Choose the family first
+- **Pane** for tables, forms, settings and lists: flat on the page, grouped by space and one rule.
+  A table goes in `DataTable`, which puts it on one card surface with a header band.
+- **Card** for dashboards, grid views of records and a record's detail page: `Card` with
+  `CardHeader`, `CardBody`, `CardStats`/`Stat`, `CardFooter`. Bands head and foot a card; **a card
+  never contains a card**, and nothing inside a card has its own border box.
+- A card that leads somewhere is one link (`CardHeader href`): one tab stop, middle click works.
+  Never `onClick` on a `div`.
 
-## 2. Spatial Utilization (Horizontal over Vertical)
-- Do not lazily stack data vertically (e.g., `flex-col`) if there is ample horizontal space. 
-- Use `flex items-baseline gap-6` to combine related data points onto a single baseline.
-- **Example**: `33h12 at 17:55` is vastly superior to stacking `33h12` over `17:55`.
-- **Eliminate Redundancy**: If two pieces of data are identical (e.g., Table is "Quick sale" and Scope is "Quick sale"), use conditional rendering to suppress the duplicate label. Keep the UI dense and intentional.
+## 2. Use the primitives, not class recipes
+- Page: `PageHeader` (title, one sentence, actions), `Section`, `SectionHeader`, `DetailHeader` on a
+  record page with `<RecordCrumb>`.
+- Figures: `Metric` in a `MetricGrid`; money always through `Money`; numbers in `NumCell` or mono.
+- Parts: `KeyValueList`, `MetaRow`, `SummaryStrip`, `LedgerList`, `Overline`, `Separator`.
+- Controls: `Button`, `ButtonLink`, `IconButton` (label required), `FilterSelect`, `Toolbar`,
+  `SearchInput`, `ToggleChip`, `Segmented`, `Tabs`, `ConsoleOverlay`, `ImageLightbox`.
+- States: `StatusChip`, `ToneChip`, `Badge`, `EmptyState`, `InlineNotice`, the skeletons.
 
-## 3. Typographical Scale & Hierarchy
-- **Avoid Obnoxious Sizing**: Do not use massive fonts (e.g., `text-[22px]`) for list cards. Scale headers proportionally (e.g., `text-[17px] font-medium tracking-tight`).
-- **Contrast over Weight**: Avoid using `font-bold` for micro-labels. Use `text-[10px] uppercase tracking-wider font-medium text-ink-subtle`. Achieve hierarchy through color/contrast (ink vs ink-subtle) rather than blunt font weight.
-- **Tabular Nums**: Any number, duration, or time must use `tabular-nums` so the layout remains stable as digits change.
+## 3. Tokens only
+- No value in brackets for type, colour, radius, shadow, space or motion (`text-[13px]`,
+  `shadow-[...]`, `rounded-[12px]`, `px-[6px]`, `duration-[160ms]`): `bliss/no-arbitrary-design-values`
+  fails the build. Grid track lists and widths are fine.
+- No opacity on text (`text-ink-subtle/60`). Hierarchy is `ink`, `ink-muted`, `ink-subtle`.
+- No Tailwind defaults outside the theme (`tracking-wider`, `rounded-xl`, `shadow-sm`, `sm:`,
+  `font-semibold`): they compile to nothing, and `check-classes` says so.
+- Surfaces: `card`, `edge`, `band`, `band-strong`, the washes. Shadows: `shadow-card`,
+  `shadow-popover`. Motion: `transition-hover`, `transition-card`, `card-interactive`.
 
-## 4. Micro-Interactions & Borders
-- **Hard Borders are Banned**: Never use harsh borders. Soften all borders to `border-hairline/60` or `border-hairline/40`.
-- **Hover Physics**: Interactive grid cards MUST have a physical hover state:
-  ```css
-  transition-all duration-300 hover:border-hairline/80 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-[2px]
-  ```
-- **Badges**: Status chips and badges should be tightly integrated (`rounded-md` or `rounded-full`, `px-[6px] py-[3px]`, `leading-none`) rather than bulky blocks that break padding.
+## 4. Type
+- One `h1` (`text-title-page`), then `h2` (`text-title-section`), then `h3` (`text-title-card`).
+- Body is `text-ui` (14px); secondary is `text-body-sm`; a label over a value is `label-caps`.
+- Numbers: `font-mono tabular` with `text-num-kpi`, `text-num-md` or `text-num-sm`.
+- Weights are 400 and 500 only.
+
+## 5. Copy (docs/08, Console section)
+- Titles are the nouns people use at the bar; one sentence of purpose under them.
+- Sentence case everywhere; capitals only through `label-caps`.
+- The terminology lock: tab, seat, line, bill, tender, variance, write-off, void, business day.
+- Buttons name their outcome. Empty, filtered and error states are specific to the table.
+- No invented figures, no stock photos, no fiscal or eTIMS wording. `check-copy` runs in lint.
+
+## 6. Done means
+Light and dark, 1440 and 1280, usable at 1024, keyboard operable with visible focus, lint clean,
+and every write through `runAction`. The checklist is `docs/19-console-system.md` section 6.

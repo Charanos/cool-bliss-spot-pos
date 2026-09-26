@@ -1,70 +1,78 @@
-import { z } from 'zod';
+import * as z from 'zod/mini';
 
 /**
  * Outbox payloads, versioned and validated on both sides. docs/02-system-architecture.md section 6.
  *
  * Money travels as a string of integer cents. Ids are client generated UUIDv7 and double as the
  * idempotency key. A payload shape change bumps its version rather than mutating in place.
+ *
+ * Written with zod/mini, the tree-shakable build: the tablets validate before they queue, and the
+ * full build would put 55KB of schema library in the Floor and Counter bundles. Same schemas, same
+ * messages, a functional form.
  */
 
-const uuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/, 'UUIDv7');
-const id = z.string().min(1);
-const centsString = z.string().regex(/^-?\d+$/, 'integer cents as a string');
-const reason = z.string().trim().min(10, 'Reason needs at least 10 characters.');
+const uuid = z.string().check(z.regex(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/, 'UUIDv7'));
+const id = z.string().check(z.minLength(1));
+const centsString = z.string().check(z.regex(/^-?\d+$/, 'integer cents as a string'));
+const reason = z.string().check(z.trim(), z.minLength(10, 'Reason needs at least 10 characters.'));
+const int = (min?: number, max?: number) =>
+  z.number().check(z.int(), ...(min === undefined ? [] : [z.gte(min)]), ...(max === undefined ? [] : [z.lte(max)]));
+const text = (max: number) => z.string().check(z.maxLength(max));
+const list = <T extends z.core.SomeType>(item: T, min?: number, max?: number) =>
+  z.array(item).check(...(min === undefined ? [] : [z.minLength(min)]), ...(max === undefined ? [] : [z.maxLength(max)]));
+const v1 = z.literal(1);
 
 export const derivationStep = z.object({ label: z.string(), input: z.string(), op: z.string(), output: z.string() });
 
 export const tabOpenPayload = z.object({
-  v: z.literal(1),
+  v: v1,
   tabId: uuid,
-  serviceTableId: id.nullable(),
+  serviceTableId: z.nullable(id),
   zoneId: id,
-  name: z.string().max(40).nullable(),
-  guestCount: z.number().int().min(1).max(40),
-  seats: z.array(z.object({ seatId: uuid, seatNo: z.number().int().min(1) })).min(1),
-  openedAt: z.number().int(),
+  name: z.nullable(text(40)),
+  guestCount: int(1, 40),
+  seats: list(z.object({ seatId: uuid, seatNo: int(1) }), 1),
+  openedAt: int(),
 });
 
-export const seatAddPayload = z.object({ v: z.literal(1), tabId: id, seatId: uuid, seatNo: z.number().int().min(1) });
-export const seatLabelPayload = z.object({ v: z.literal(1), tabId: id, seatId: id, label: z.string().max(24).nullable() });
-export const seatRemovePayload = z.object({ v: z.literal(1), tabId: id, seatId: id });
+export const seatAddPayload = z.object({ v: v1, tabId: id, seatId: uuid, seatNo: int(1) });
+export const seatLabelPayload = z.object({ v: v1, tabId: id, seatId: id, label: z.nullable(text(24)) });
+export const seatRemovePayload = z.object({ v: v1, tabId: id, seatId: id });
 
 export const firedLine = z.object({
   lineId: uuid,
-  tabSeatId: id.nullable(),
+  tabSeatId: z.nullable(id),
   productVariantId: id,
-  qty: z.number().int().min(1),
+  qty: int(1),
   unitPriceCents: centsString,
   lineTotalCents: centsString,
   priceDerivation: z.array(derivationStep),
-  note: z.string().max(140).nullable(),
-  modifiers: z.array(
-    z.object({ modifierId: id, qty: z.number().int().min(1), priceDeltaCents: centsString, linkedVariantId: id.nullable() }),
-  ),
-  clientCreatedAt: z.number().int(),
+  note: z.nullable(text(140)),
+  modifiers: z.array(z.object({ modifierId: id, qty: int(1), priceDeltaCents: centsString, linkedVariantId: z.nullable(id) })),
+  clientCreatedAt: int(),
 });
 
 export const orderFirePayload = z.object({
-  v: z.literal(1),
+  v: v1,
   orderId: uuid,
   tabId: id,
-  firedAt: z.number().int(),
-  catalogueVersion: z.number().int(),
-  availabilityVersion: z.number().int(),
-  lines: z.array(firedLine).min(1),
+  firedAt: int(),
+  catalogueVersion: int(),
+  availabilityVersion: int(),
+  lines: list(firedLine, 1),
 });
 
-export const lineMovePayload = z.object({ v: z.literal(1), lineId: id, tabId: id, fromSeatId: id.nullable(), toSeatId: id.nullable() });
-export const lineNotePayload = z.object({ v: z.literal(1), lineId: id, note: z.string().max(140).nullable() });
+export const lineMovePayload = z.object({ v: v1, lineId: id, tabId: id, fromSeatId: z.nullable(id), toSeatId: z.nullable(id) });
+export const lineNotePayload = z.object({ v: v1, lineId: id, note: z.nullable(text(140)) });
 export const lineVoidPayload = z.object({
-  v: z.literal(1),
+  v: v1,
   lineId: id,
   reason,
   /** Present when the line was already poured and a supervisor approved in the dialog. */
-  approvalToken: z.string().nullable(),
+  approvalToken: z.nullable(z.string()),
 });
-export const tabMovePayload = z.object({ v: z.literal(1), tabId: id, fromTableId: id.nullable(), toTableId: id });
-export const tabHandoverPayload = z.object({ v: z.literal(1), tabIds: z.array(id).min(1), toStaffId: id });
+export const tabMovePayload = z.object({ v: v1, tabId: id, fromTableId: z.nullable(id), toTableId: id });
+export const tabHandoverPayload = z.object({ v: v1, tabIds: list(id, 1), toStaffId: id });
 
 /**
  * The guests have left. docs/16 section 8. A settled tab lets go of its table; an open tab with
@@ -72,23 +80,23 @@ export const tabHandoverPayload = z.object({ v: z.literal(1), tabIds: z.array(id
  * sat down there since.
  */
 export const tabClearPayload = z.object({
-  v: z.literal(1),
+  v: v1,
   tabId: id,
-  at: z.number().int(),
-  undo: z.boolean().default(false),
-  reason: reason.nullable().default(null),
+  at: int(),
+  undo: z._default(z.boolean(), false),
+  reason: z._default(z.nullable(reason), null),
 });
 
 /** The guests want to pay: the Counter sees the tab first. `undo` takes the ask back. */
-export const tabBillPayload = z.object({ v: z.literal(1), tabId: id, at: z.number().int(), undo: z.boolean().default(false) });
+export const tabBillPayload = z.object({ v: v1, tabId: id, at: int(), undo: z._default(z.boolean(), false) });
 
 /** The waiter set the round down at the table. `undo` takes the mark back. */
-export const orderDeliverPayload = z.object({ v: z.literal(1), orderId: id, tabId: id, at: z.number().int(), undo: z.boolean().default(false) });
+export const orderDeliverPayload = z.object({ v: v1, orderId: id, tabId: id, at: int(), undo: z._default(z.boolean(), false) });
 
 /* ------------------------------------------------------------- the Counter, docs/14 */
 
 /** The counter pours lines. Idempotent: a line already poured stays as it was. */
-export const lineServePayload = z.object({ v: z.literal(1), tabId: id, lineIds: z.array(id).min(1), servedAt: z.number().int() });
+export const lineServePayload = z.object({ v: v1, tabId: id, lineIds: list(id, 1), servedAt: int() });
 
 export const tenderKind = z.enum(['cash', 'mpesa', 'card', 'account', 'comp']);
 
@@ -97,34 +105,34 @@ export const tenderPayload = z.object({
   kind: tenderKind,
   amountCents: centsString,
   /** Cash only: what the guest handed over. */
-  tenderedCents: centsString.nullable(),
-  changeCents: centsString.nullable(),
+  tenderedCents: z.nullable(centsString),
+  changeCents: z.nullable(centsString),
   /** Typed by the cashier. Bliss records it and does not check it. */
-  reference: z.string().trim().max(64).nullable(),
+  reference: z.nullable(z.string().check(z.trim(), z.maxLength(64))),
 });
 
 export const billSettlePayload = z.object({
-  v: z.literal(1),
+  v: v1,
   billId: uuid,
   scope: z.enum(['tab', 'seat', 'even_split', 'quick_sale']),
-  tabId: id.nullable(),
-  tabSeatId: id.nullable(),
+  tabId: z.nullable(id),
+  tabSeatId: z.nullable(id),
   /** Order lines this bill takes. Empty for a quick sale and for every even split share after the first. */
   lineIds: z.array(id),
   /** Quick sale only: sealed variants sold without a tab, priced by the device, repriced by the server. */
-  items: z.array(z.object({ productVariantId: id, qty: z.number().int().min(1).max(99), unitPriceCents: centsString })),
-  split: z.object({ groupId: uuid, index: z.number().int().min(0), count: z.number().int().min(2).max(40) }).nullable(),
+  items: z.array(z.object({ productVariantId: id, qty: int(1, 99), unitPriceCents: centsString })),
+  split: z.nullable(z.object({ groupId: uuid, index: int(0), count: int(2, 40) })),
   subtotalCents: centsString,
   roundingCents: centsString,
   dueCents: centsString,
-  tenders: z.array(tenderPayload).min(1).max(8),
-  drawerSessionId: id.nullable(),
-  settledAt: z.number().int(),
+  tenders: list(tenderPayload, 1, 8),
+  drawerSessionId: z.nullable(id),
+  settledAt: int(),
 });
 
-export const drawerOpenPayload = z.object({ v: z.literal(1), sessionId: uuid, floatCents: centsString, openedAt: z.number().int() });
+export const drawerOpenPayload = z.object({ v: v1, sessionId: uuid, floatCents: centsString, openedAt: int() });
 
-export const drawerDropPayload = z.object({ v: z.literal(1), movementId: uuid, sessionId: id, amountCents: centsString, reason, at: z.number().int() });
+export const drawerDropPayload = z.object({ v: v1, movementId: uuid, sessionId: id, amountCents: centsString, reason, at: int() });
 
 export const outboxPayloads = {
   'line.serve': lineServePayload,
@@ -147,7 +155,7 @@ export const outboxPayloads = {
 } as const;
 
 export type OutboxKind = keyof typeof outboxPayloads;
-export type OutboxPayload<K extends OutboxKind> = z.infer<(typeof outboxPayloads)[K]>;
+export type OutboxPayload<K extends OutboxKind> = z.output<(typeof outboxPayloads)[K]>;
 
 export type OutboxStatus = 'pending' | 'inflight' | 'acked' | 'rejected';
 

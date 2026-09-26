@@ -9,7 +9,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { atmosphere, breakpoints, colour, elevation, fontFamily, motion, radius, size, space, themes, type, weight } from '../packages/ui/src/tokens/tokens';
+import { atmosphere, breakpoints, colour, consoleElevation, elevation, fontFamily, motion, radius, size, space, themes, type, weight } from '../packages/ui/src/tokens/tokens';
 
 const OUT = resolve(import.meta.dirname, '../packages/ui/src/styles/tokens.css');
 
@@ -82,31 +82,38 @@ push();
 push('@theme inline {');
 for (const name of Object.keys(themes.dark)) push(`  --color-${name}: var(--bliss-${name});`);
 push('  --color-scrim: var(--bliss-scrim);');
-  for (const name of Object.keys(elevation)) push(`  --shadow-${name}: var(--bliss-shadow-${name});`);
-  push('  --shadow-lift: var(--bliss-shadow-lift);');
-  push('  --shadow-key: var(--bliss-shadow-key);');
-  push('}');
+push('  --shadow-raised: var(--bliss-shadow-raised);');
+push('  --shadow-lift: var(--bliss-shadow-lift);');
+push('  --shadow-key: var(--bliss-shadow-key);');
+for (const name of Object.keys(consoleElevation)) push(`  --shadow-${name}: var(--bliss-shadow-${name});`);
+push('}');
 push();
 
-function themeBlock(selector: string, name: keyof typeof themes, scheme: 'light' | 'dark') {
-  push(`${selector} {`);
-  push(`  color-scheme: ${scheme};`);
-  for (const [key, value] of Object.entries(themes[name])) push(`  --bliss-${key}: ${value};`);
-  push(`  --bliss-scrim: ${colour.scrim};`);
-  for (const [elevName, elevVal] of Object.entries(elevation)) {
-    push(`  --bliss-shadow-${elevName}: ${elevVal[name]};`);
-  }
-  push(`  --bliss-shadow-lift: ${atmosphere.lift[name]};`);
-  push(`  --bliss-shadow-key: ${atmosphere.key[name]};`);
-  push('}');
+function themeBlock(selector: string, name: keyof typeof themes, scheme: 'light' | 'dark', indent = '') {
+  push(`${indent}${selector} {`);
+  push(`${indent}  color-scheme: ${scheme};`);
+  for (const [key, value] of Object.entries(themes[name])) push(`${indent}  --bliss-${key}: ${value};`);
+  push(`${indent}  --bliss-scrim: ${colour.scrim};`);
+  push(`${indent}  --bliss-shadow-raised: ${elevation[name]};`);
+  push(`${indent}  --bliss-shadow-lift: ${atmosphere.lift[name]};`);
+  push(`${indent}  --bliss-shadow-key: ${atmosphere.key[name]};`);
+  for (const [key, value] of Object.entries(consoleElevation)) push(`${indent}  --bliss-shadow-${key}: ${value[name]};`);
+  push(`${indent}}`);
   push();
 }
 
-themeBlock(":root,\n[data-theme='light']", 'light', 'light');
+themeBlock(":root,\n[data-theme='light'],\n[data-theme='system']", 'light', 'light');
 themeBlock("[data-theme='dark']", 'dark', 'dark');
+// The Console's System choice follows the device.
+push('@media (prefers-color-scheme: dark) {');
+themeBlock("[data-theme='system']", 'dark', 'dark', '  ');
+lines.pop();
+push('}');
+push();
 
 push(':root {');
 push(`  --bliss-duration-hover: ${motion.hoverMs}ms;`);
+push(`  --bliss-duration-card: ${motion.cardMs}ms;`);
 push(`  --bliss-duration-press: ${motion.pressMs}ms;`);
 push(`  --bliss-ease-out: ${motion.ease.out};`);
 push(`  --bliss-ease-snap: ${motion.ease.snap};`);

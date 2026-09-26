@@ -67,7 +67,7 @@ async function fetchHistory(p: HistoryParams): Promise<HistoryResult> {
   if (p.staffId) search.set('staff', p.staffId);
   if (p.thisDevice && device?.id) search.set('only', device.id);
   if (p.q?.trim()) search.set('q', p.q.trim());
-  const { status, body } = await api.get<({ ok: true } & HistoryResult) | { ok: false; message: string }>(`/api/dev/history?${search}`);
+  const { status, body } = await api.get<({ ok: true } & HistoryResult) | { ok: false; message: string }>(`/api/station/history?${search}`);
   if (!body || !body.ok) throw new Error(body && !body.ok ? body.message : `History answered ${status}.`);
   return body;
 }

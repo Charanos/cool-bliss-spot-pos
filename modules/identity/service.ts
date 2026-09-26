@@ -1,12 +1,20 @@
 import 'server-only';
 
-import type { Device, EmploymentStatus, PermissionKey, Role, Staff } from '@bliss/shared/domain';
-import { type Actor, requireReasoned } from '@bliss/shared/reason';
+import { DomainError } from '../_data/errors';
+
+import { DEV_PINS } from '@bliss/db/seed/organisation';
+import type { Device, EmploymentStatus, PermissionKey, Role, RoleKey, Staff } from '@bliss/shared/domain';
+import { canSignInOn } from '@bliss/shared/identity';
 import { createUuidV7 } from '@bliss/shared/id';
+import { type Actor, requireReasoned } from '@bliss/shared/reason';
+import { bumpCatalogueVersion } from '../_data/source';
+import { UPLOAD_PATH } from '../_data/uploads';
 import * as audit from '../audit/service';
+import * as credentials from './credentials';
+import { applyPin, checkPin, policy as pinPolicy } from './pins';
+import { identityTables } from './schema';
 
 const createId = createUuidV7();
-import { identityTables } from './schema';
 
 export function outlet() {
   return identityTables().outlet;
@@ -26,7 +34,7 @@ export function displayName(id: string | null | undefined): string {
 }
 
 export function roles(): Role[] {
-  return identityTables().roles;
+  return identityTables().roles.filter((r) => !r.archived);
 }
 
 export function roleFor(staffId: string): Role | null {
@@ -43,11 +51,13 @@ export function can(staffId: string, permission: PermissionKey): boolean {
 
 export function assertCan(staffId: string, permission: PermissionKey, doing: string): void {
   if (!can(staffId, permission)) {
-    throw new Error(`Your role does not include ${doing}. A manager can do this, or change your permissions.`);
+    throw new DomainError(`Your role does not include ${doing}. A manager can do this, or change your permissions.`);
   }
 }
 
-export interface DeviceRow extends Device {
+export interface DeviceRow extends Omit<Device, 'pairingHash'> {
+  /** A pairing code has been issued and not yet used. */
+  pairingPending: boolean;
   online: boolean;
   lastSeenAt: number | null;
   signedInStaffId: string | null;
@@ -57,10 +67,13 @@ export interface DeviceRow extends Device {
 
 export function devices(): DeviceRow[] {
   const { devices: list, presence } = identityTables();
-  return list.map((d) => {
+  const now = Date.now();
+  return list.map(({ pairingHash, ...d }) => {
     const p = presence.find((x) => x.deviceId === d.id);
     return {
       ...d,
+      // The code itself never leaves the server; only whether one is waiting to be used.
+      pairingPending: Boolean(pairingHash) && (d.pairingExpiresAt ?? 0) > now,
       online: d.status === 'active' && Boolean(p?.online),
       lastSeenAt: p?.lastSeenAt ?? d.lastSeenAt,
       signedInStaffId: d.status === 'active' ? (p?.staffId ?? null) : null,
@@ -78,12 +91,13 @@ export function withdrawDevice(input: { deviceId: string; reason: string; actor:
   const { reason, actor } = requireReasoned(input);
   assertCan(actor.staffId, 'device.manage', 'withdrawing devices');
   const device = identityTables().devices.find((d) => d.id === input.deviceId);
-  if (!device) throw new Error('That device is not registered to this outlet.');
-  if (device.status === 'lost' || device.status === 'retired') throw new Error(`${device.label} was already withdrawn.`);
+  if (!device) throw new DomainError('That device is not registered to this outlet.');
+  if (device.status === 'lost' || device.status === 'retired') throw new DomainError(`${device.label} was already withdrawn.`);
   const before = { status: device.status };
   device.status = 'lost';
   device.revokedAt = Date.now();
   device.revokedReason = reason;
+  bumpCatalogueVersion();
   audit.record({
     outletId: device.outletId,
     actorStaffId: actor.staffId,
@@ -98,71 +112,295 @@ export function withdrawDevice(input: { deviceId: string; reason: string; actor:
   return device;
 }
 
+/* ------------------------------------------------------------ PINs and sessions */
+
+export const CONSOLE_COOKIE = 'bliss-console-session';
+/** A Console session lasts one working day, then asks for the PIN again. */
+export const CONSOLE_SESSION_MS = 12 * 60 * 60_000;
+/** A station token keeps a tablet trading for a month; every pull renews it. */
+export const STATION_TOKEN_MS = 30 * 24 * 60 * 60_000;
+/** An approval covers the void it was given for, even if the tablet sends it after a dropout. */
+export const APPROVAL_TOKEN_MS = 12 * 60 * 60_000;
+
+export type PinState = 'set' | 'needs_reset' | 'development' | 'none';
+
 /**
- * The Console session. Custom JWT with email, password and TOTP arrives in Phase 1; until then the
- * development session is the owner, so every permission guard still runs against a real role.
+ * Where a person's PIN stands. `development` means no PIN has been chosen and the seeded development
+ * PIN still works; `needs_reset` is a PIN stored before hashing existed.
+ */
+export function pinState(staff: Staff): PinState {
+  if (credentials.isHashedPin(staff.pinHash)) return 'set';
+  if (staff.pinHash) return 'needs_reset';
+  return DEV_PINS[staff.id] && !staff.pinClearedAt ? 'development' : 'none';
+}
+
+/** Whether this PIN is this person's. Constant time, and false for anyone who is not active. */
+export function verifyStaffPin(staffId: string, pin: string): boolean {
+  const staff = staffById(staffId);
+  if (!staff) return false;
+  if (staff.pinHash) return credentials.verifyPin(pin, staff.pinHash);
+  const development = staff.pinClearedAt ? undefined : DEV_PINS[staff.id];
+  return development ? credentials.verifyPin(pin, development) : false;
+}
+
+/**
+ * Replace a plaintext PIN left over from before hashing with its hash. Runs inside the caller's write
+ * after a successful check, so the plaintext is gone the first time the person signs in.
+ */
+export function upgradePinHash(staffId: string, pin: string): void {
+  const staff = staffById(staffId);
+  if (!staff || !staff.pinHash || credentials.isHashedPin(staff.pinHash)) return;
+  staff.pinHash = credentials.hashPin(pin);
+}
+
+/** The first active person whose PIN this is and who holds the permission, for in-dialog approval. */
+export function approverByPin(pin: string, permission: PermissionKey): Staff | null {
+  if (!credentials.PIN_PATTERN.test(pin)) return null;
+  for (const staff of staffList()) {
+    if (staff.employmentStatus !== 'active') continue;
+    if (!can(staff.id, permission)) continue;
+    if (verifyStaffPin(staff.id, pin)) return staff;
+  }
+  return null;
+}
+
+/** Issue the signed Console session token for a person who has just proved their PIN. */
+export function issueConsoleSession(staffId: string): string {
+  return credentials.signToken({ k: 'console', sid: staffId, pv: staffById(staffId)?.pinVersion ?? 0, ttlMs: CONSOLE_SESSION_MS });
+}
+
+export type ConsoleSessionCheck = { ok: true; staff: Staff; role: Role } | { ok: false; reason: 'missing' | 'invalid' | 'inactive' | 'wrong_surface' | 'pin_changed' };
+
+/**
+ * Check a Console session token. Every call re-reads the person, so a suspension, a departure or a
+ * role that no longer belongs in the Console ends the session on the next request.
+ */
+export function checkConsoleSession(token: string | null | undefined): ConsoleSessionCheck {
+  if (!token) return { ok: false, reason: 'missing' };
+  const claims = credentials.verifyToken(token, 'console');
+  if (!claims) return { ok: false, reason: 'invalid' };
+  const staff = staffById(claims.sid);
+  const role = staff ? roleFor(staff.id) : null;
+  if (!staff || !role) return { ok: false, reason: 'invalid' };
+  if (staff.employmentStatus !== 'active') return { ok: false, reason: 'inactive' };
+  if ((claims.pv ?? 0) !== (staff.pinVersion ?? 0)) return { ok: false, reason: 'pin_changed' };
+  if (!canSignInOn('console', role.key)) return { ok: false, reason: 'wrong_surface' };
+  return { ok: true, staff, role };
+}
+
+/**
+ * The Console session, for pages and server actions. With no valid session this redirects to the
+ * sign-in page. It never falls back to anyone: an error here is an error, not a quiet owner.
  */
 export async function currentConsoleActor(): Promise<Actor & { staff: Staff; role: Role }> {
-  try {
-    const { cookies } = await import('next/headers');
-    const { redirect } = await import('next/navigation');
-    const cookieStore = await cookies();
-    const staffId = cookieStore.get('bliss-console-session')?.value;
-    let staff: Staff | null = null;
-    if (staffId) {
-      staff = identityTables().staff.find((s) => s.id === staffId) ?? null;
-    }
-    
-    if (!staff) {
-      redirect('/console/sign-in');
-    }
-    
-    return { staffId: staff!.id, deviceId: null, staff: staff!, role: roleFor(staff!.id)! };
-  } catch (err: unknown) {
-    if (err && typeof err === 'object' && 'digest' in err && typeof (err as { digest: string }).digest === 'string' && (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')) {
-      throw err;
-    }
-    const owner = identityTables().staff.find((s) => roleFor(s.id)?.key === 'owner') ?? identityTables().staff[0]!;
-    return { staffId: owner.id, deviceId: null, staff: owner, role: roleFor(owner.id)! };
-  }
+  const { cookies } = await import('next/headers');
+  const { redirect } = await import('next/navigation');
+  const token = (await cookies()).get(CONSOLE_COOKIE)?.value;
+  const check = checkConsoleSession(token);
+  if (!check.ok) return redirect(check.reason === 'missing' ? '/console/sign-in' : `/console/sign-in?ended=${check.reason}`);
+  return { staffId: check.staff.id, deviceId: null, staff: check.staff, role: check.role };
+}
+
+/** Issue a station token after a PIN is proved on a registered device. */
+export function issueStationToken(staffId: string, deviceId: string): string {
+  return credentials.signToken({ k: 'station', sid: staffId, did: deviceId, pv: staffById(staffId)?.pinVersion ?? 0, ttlMs: STATION_TOKEN_MS });
+}
+
+export type StationCheck = { ok: true; staff: Staff; role: Role; device: DeviceRow; issuedAt: number } | { ok: false; status: 401 | 403; message: string };
+
+/**
+ * Check the station token a Floor or Counter device sends with every request. The token proves a
+ * person entered their PIN on this device; the device must still be registered and active, and the
+ * person still employed.
+ */
+export function checkStationToken(token: string | null | undefined, deviceId?: string | null): StationCheck {
+  const claims = credentials.verifyToken(token, 'station');
+  if (!claims || !claims.did) return { ok: false, status: 401, message: 'Sign in again on this device.' };
+  if (deviceId && deviceId !== claims.did) return { ok: false, status: 403, message: 'This sign-in belongs to another device. Sign in again here.' };
+  const device = devices().find((d) => d.id === claims.did);
+  if (!device || device.status !== 'active') return { ok: false, status: 403, message: 'This device was withdrawn. Orders held on it are safe and a manager can recover them.' };
+  const staff = staffById(claims.sid);
+  const role = staff ? roleFor(staff.id) : null;
+  if (!staff || !role || staff.employmentStatus !== 'active') return { ok: false, status: 401, message: 'This PIN no longer works. A manager can check your access in the Console.' };
+  if ((claims.pv ?? 0) !== (staff.pinVersion ?? 0)) return { ok: false, status: 401, message: 'Your PIN was changed. Sign in again with the new one.' };
+  return { ok: true, staff, role, device, issuedAt: claims.iat };
+}
+
+/** Sign an approval for one permission, given by a person who proved their PIN in the dialog. */
+export function issueApprovalToken(approverId: string, permission: PermissionKey): string {
+  return credentials.signToken({ k: 'approval', sid: approverId, perm: permission, ttlMs: APPROVAL_TOKEN_MS });
+}
+
+/**
+ * The approver behind an approval token, if it is genuine, unexpired, for this permission, and the
+ * approver can still give it. Anything else is no approval at all.
+ */
+export function approverFromToken(token: string | null | undefined, permission: PermissionKey): Staff | null {
+  const claims = credentials.verifyToken(token, 'approval');
+  if (!claims || claims.perm !== permission) return null;
+  return can(claims.sid, permission) ? staffById(claims.sid) : null;
+}
+
+/** What a sign-in screen may know about a person: never a PIN, a hash or a contact number. */
+export interface StaffSummary {
+  id: string;
+  displayName: string;
+  fullName: string;
+  roleKey: RoleKey;
+  roleName: string;
+  colourIndex: number;
+  employmentStatus: EmploymentStatus;
+  /** Digits in their PIN, so a keypad completes at the right length. */
+  pinLength: number;
+}
+
+export function staffSummaries(filter: (s: Staff) => boolean = () => true): StaffSummary[] {
+  return staffList()
+    .filter(filter)
+    .map((s) => {
+      const role = roleFor(s.id);
+      return {
+        id: s.id,
+        displayName: s.displayName,
+        fullName: s.fullName,
+        roleKey: role?.key ?? 'waiter',
+        roleName: role?.name ?? 'No role',
+        colourIndex: s.colourIndex,
+        employmentStatus: s.employmentStatus,
+        pinLength: s.pinLength ?? 6,
+      };
+    });
 }
 
 /* ---------------------------------------------------------- people and roles */
+
+/** Seniority, so nobody hands out more authority than they hold. */
+const RANK: Record<RoleKey, number> = { waiter: 1, cashier: 2, supervisor: 3, stock_controller: 3, manager: 4, owner: 5 };
+
+export function rankOf(role: Role | null | undefined): number {
+  return role ? RANK[role.key] : 0;
+}
 
 function activeOwners(): Staff[] {
   const owner = identityTables().roles.find((r) => r.key === 'owner');
   return identityTables().staff.filter((s) => s.roleId === owner?.id && s.employmentStatus === 'active');
 }
 
+/** The actor may manage this person: never themselves, and an owner only if the actor is one. */
+function assertMayManage(actor: Actor, person: Staff, doing: string) {
+  if (person.id === actor.staffId) throw new DomainError(`Ask another manager to ${doing} for you.`);
+  const actorRole = roleFor(actor.staffId);
+  if (rankOf(roleFor(person.id)) > rankOf(actorRole) || (roleFor(person.id)?.key === 'owner' && actorRole?.key !== 'owner')) {
+    throw new DomainError(`Only an owner can ${doing} for ${person.displayName}.`);
+  }
+}
+
+/** The actor may give out this role: never one above their own, and owner only by an owner. */
+function assertMayGrant(actor: Actor, role: Role) {
+  const actorRole = roleFor(actor.staffId);
+  if (rankOf(role) > rankOf(actorRole) || (role.key === 'owner' && actorRole?.key !== 'owner')) {
+    throw new DomainError(`Only an owner can make someone ${role.name.toLowerCase()}.`);
+  }
+}
+
+function roleById(roleId: string): Role {
+  const role = identityTables().roles.find((r) => r.id === roleId);
+  if (!role) throw new DomainError('That role is not part of this outlet.');
+  return role;
+}
+
+/** Names are trimmed, at least two characters, at most sixty, and display names are unique. */
+function cleanNames(input: { fullName: string; displayName: string }, exceptId: string | null) {
+  const fullName = input.fullName.trim().replace(/\s+/g, ' ');
+  const displayName = input.displayName.trim().replace(/\s+/g, ' ');
+  if (fullName.length < 2 || fullName.length > 60) throw new DomainError('A full name is 2 to 60 characters.');
+  if (displayName.length < 2 || displayName.length > 24) throw new DomainError('A display name is 2 to 24 characters. It is what the floor sees.');
+  const clash = identityTables().staff.find((s) => s.id !== exceptId && s.employmentStatus !== 'left' && s.displayName.toLowerCase() === displayName.toLowerCase());
+  if (clash) throw new DomainError(`${clash.fullName} already goes by ${displayName}. Choose another display name so the floor can tell them apart.`);
+  return { fullName, displayName };
+}
+
+function cleanContact(value: string | null | undefined): string | null {
+  const contact = value?.trim() ?? '';
+  if (!contact) return null;
+  if (!/^\+?[\d\s-]{7,20}$/.test(contact)) throw new DomainError('A contact number is digits, spaces and dashes, with an optional leading +.');
+  return contact;
+}
+
+/** A PIN typed while adding or editing someone: the outlet's length, and none of the easy ones. */
+function cleanPin(pin: string | null | undefined, person?: Staff | null): string | null {
+  if (pin === null || pin === undefined || pin === '') return null;
+  checkPin(pin, pinPolicy().length, person);
+  return pin;
+}
+
+/**
+ * Avatars are uploads the Console issued, never data URLs or links elsewhere. A photo that is already
+ * on the record (from before uploads existed) is kept as it is when it is not being changed.
+ */
+function cleanAvatar(url: string | null | undefined, current: string | null = null): string | null {
+  if (!url) return null;
+  if (url === current) return url;
+  const match = UPLOAD_PATH.exec(url);
+  if (!match || match[2] === 'pdf') throw new DomainError('A photo is added with the upload button.');
+  return url;
+}
+
 /** N-09: change a person's role. Audited as sensitive; nobody changes their own role. */
 export function setStaffRole(input: { staffId: string; roleId: string; reason: string; actor: Actor }) {
   const { reason, actor } = requireReasoned(input);
   assertCan(actor.staffId, 'staff.manage', 'managing staff');
-  if (input.staffId === actor.staffId) throw new Error('Ask another manager to change your own role.');
-  const person = identityTables().staff.find((s) => s.id === input.staffId);
-  const role = identityTables().roles.find((r) => r.id === input.roleId);
-  if (!person || !role) throw new Error('That person or role is not part of this outlet.');
-  if (person.roleId === role.id) throw new Error(`${person.displayName} is already ${role.name.toLowerCase()}.`);
+  const person = staffById(input.staffId);
+  if (!person) throw new DomainError('That person is not part of this outlet.');
+  assertMayManage(actor, person, 'change the role');
+  const role = roleById(input.roleId);
+  assertMayGrant(actor, role);
+  if (person.roleId === role.id) throw new DomainError(`${person.displayName} is already ${role.name.toLowerCase()}.`);
   const before = roleFor(person.id);
-  if (before?.key === 'owner' && activeOwners().length <= 1) throw new Error('The outlet needs at least one active owner. Make someone else owner first.');
+  if (before?.key === 'owner' && activeOwners().length <= 1) throw new DomainError('The outlet needs at least one active owner. Make someone else owner first.');
   person.roleId = role.id;
-  audit.record({ outletId: person.outletId, actorStaffId: actor.staffId, action: 'staff.role_changed', entityType: 'staff', entityId: person.id, before: { role: before?.name ?? null }, after: { role: role.name }, reason, severity: 'sensitive' });
+  bumpCatalogueVersion();
+  audit.record({
+    outletId: person.outletId,
+    actorStaffId: actor.staffId,
+    action: 'staff.role_changed',
+    entityType: 'staff',
+    entityId: person.id,
+    before: { role: before?.name ?? null },
+    after: { role: role.name },
+    reason,
+    severity: 'sensitive',
+  });
   return person;
 }
+
+export const EMPLOYMENT_STATUSES = ['active', 'suspended', 'left'] as const satisfies readonly EmploymentStatus[];
 
 /** Suspend, reinstate or mark as left. A status transition, never a delete. */
 export function setEmploymentStatus(input: { staffId: string; status: EmploymentStatus; reason: string; actor: Actor }) {
   const { reason, actor } = requireReasoned(input);
   assertCan(actor.staffId, 'staff.manage', 'managing staff');
-  if (input.staffId === actor.staffId) throw new Error('Ask another manager to change your own access.');
-  const person = identityTables().staff.find((s) => s.id === input.staffId);
-  if (!person) throw new Error('That person is not part of this outlet.');
-  if (person.employmentStatus === input.status) throw new Error(`${person.displayName} is already ${input.status}.`);
-  if (person.employmentStatus === 'left') throw new Error(`${person.displayName} has left. Add them again as a new person if they return.`);
-  if (input.status !== 'active' && roleFor(person.id)?.key === 'owner' && activeOwners().length <= 1) throw new Error('The outlet needs at least one active owner.');
+  if (!EMPLOYMENT_STATUSES.includes(input.status)) throw new DomainError('That is not an employment status.');
+  const person = staffById(input.staffId);
+  if (!person) throw new DomainError('That person is not part of this outlet.');
+  assertMayManage(actor, person, 'change access');
+  if (person.employmentStatus === input.status) throw new DomainError(`${person.displayName} is already ${input.status}.`);
+  if (person.employmentStatus === 'left') throw new DomainError(`${person.displayName} has left. Add them again as a new person if they return.`);
+  if (input.status !== 'active' && roleFor(person.id)?.key === 'owner' && activeOwners().length <= 1) throw new DomainError('The outlet needs at least one active owner.');
   const before = { employmentStatus: person.employmentStatus };
   person.employmentStatus = input.status;
-  audit.record({ outletId: person.outletId, actorStaffId: actor.staffId, action: `staff.${input.status === 'active' ? 'reinstated' : input.status}`, entityType: 'staff', entityId: person.id, before, after: { employmentStatus: input.status }, reason, severity: 'sensitive' });
+  bumpCatalogueVersion();
+  audit.record({
+    outletId: person.outletId,
+    actorStaffId: actor.staffId,
+    action: `staff.${input.status === 'active' ? 'reinstated' : input.status}`,
+    entityType: 'staff',
+    entityId: person.id,
+    before,
+    after: { employmentStatus: input.status },
+    reason,
+    severity: 'sensitive',
+  });
   return person;
 }
 
@@ -173,70 +411,160 @@ export function setEmploymentStatus(input: { staffId: string; status: Employment
 export function setRolePermission(input: { roleId: string; permission: PermissionKey; granted: boolean; reason: string; actor: Actor }) {
   const { reason, actor } = requireReasoned(input);
   assertCan(actor.staffId, 'staff.manage', 'changing permissions');
-  const role = identityTables().roles.find((r) => r.id === input.roleId);
-  if (!role) throw new Error('That role is not part of this outlet.');
-  if (role.key === 'owner') throw new Error('The owner role always holds every permission.');
-  if (roleFor(actor.staffId)?.id === role.id) throw new Error('Ask another manager to change the role you hold.');
+  const role = roleById(input.roleId);
+  if (role.key === 'owner') throw new DomainError('The owner role always holds every permission.');
+  if (roleFor(actor.staffId)?.id === role.id) throw new DomainError('Ask another manager to change the role you hold.');
+  if (rankOf(role) >= rankOf(roleFor(actor.staffId)) && roleFor(actor.staffId)?.key !== 'owner') throw new DomainError(`Only an owner can change what a ${role.name.toLowerCase()} can do.`);
+  if (input.granted && !can(actor.staffId, input.permission)) throw new DomainError('You can only give a permission you hold yourself.');
   const has = role.permissions.includes(input.permission);
   if (has === input.granted) return role;
   const before = [...role.permissions];
   role.permissions = input.granted ? [...role.permissions, input.permission] : role.permissions.filter((p) => p !== input.permission);
-  audit.record({ outletId: outlet().id, actorStaffId: actor.staffId, action: 'role.permission_changed', entityType: 'role', entityId: role.id, before: { permissions: before }, after: { permissions: role.permissions }, reason, severity: 'sensitive' });
+  bumpCatalogueVersion();
+  audit.record({
+    outletId: outlet().id,
+    actorStaffId: actor.staffId,
+    action: 'role.permission_changed',
+    entityType: 'role',
+    entityId: role.id,
+    before: { permissions: before },
+    after: { permissions: role.permissions },
+    reason,
+    severity: 'sensitive',
+  });
   return role;
 }
 
-export function createStaff(input: { fullName: string; displayName: string; roleId: string; pinHash: string | null; avatarUrl: string | null; contactNumber: string | null; actor: Actor }) {
-  assertCan(input.actor.staffId, 'staff.manage', 'add a new person');
+export interface StaffInput {
+  fullName: string;
+  displayName: string;
+  roleId: string;
+  /** Six digits to set a PIN; empty or null leaves it as it is (or unset, for a new person). */
+  pin: string | null;
+  avatarUrl: string | null;
+  contactNumber: string | null;
+}
+
+/** Add a person. Sensitive: they can sign in as soon as their PIN is set. */
+export function createStaff(input: StaffInput & { actor: Actor }) {
+  const { actor } = input;
+  assertCan(actor.staffId, 'staff.manage', 'adding people');
+  const role = roleById(input.roleId);
+  assertMayGrant(actor, role);
+  const names = cleanNames(input, null);
   const { staff } = identityTables();
-  const id = createId();
   const person: Staff = {
-    id,
-    outletId: staff[0]?.outletId ?? createId(),
-    fullName: input.fullName,
-    displayName: input.displayName,
-    roleId: input.roleId,
+    id: createId(),
+    outletId: outlet().id,
+    ...names,
+    roleId: role.id,
     employmentStatus: 'active',
     colourIndex: staff.length % 7,
-    pinHash: input.pinHash,
-    avatarUrl: input.avatarUrl,
-    contactNumber: input.contactNumber,
+    pinHash: null,
+    avatarUrl: cleanAvatar(input.avatarUrl),
+    contactNumber: cleanContact(input.contactNumber),
     pinLockedUntil: null,
   };
+  const pin = cleanPin(input.pin);
+  if (pin) applyPin(person, pin, pinPolicy().length, pinPolicy().expiryDays, pinPolicy().ownPinAfterReset);
   staff.push(person);
+  bumpCatalogueVersion();
   audit.record({
     outletId: person.outletId,
-    actorStaffId: input.actor.staffId,
+    actorStaffId: actor.staffId,
     action: 'staff.created',
     entityType: 'staff',
     entityId: person.id,
     before: null,
-    after: { fullName: input.fullName, displayName: input.displayName, roleId: input.roleId },
+    after: { fullName: person.fullName, displayName: person.displayName, role: role.name, pinSet: Boolean(person.pinHash) },
     reason: null,
     severity: 'sensitive',
   });
   return person;
 }
 
-export function updateStaff(input: { staffId: string; fullName: string; displayName: string; pinHash: string | null; avatarUrl: string | null; contactNumber: string | null; actor: Actor }) {
-  assertCan(input.actor.staffId, 'staff.manage', 'update a person');
+/**
+ * Update a person's details, role and, optionally, PIN. The role change follows the same rules as
+ * setStaffRole; a PIN is only replaced when a new one is typed.
+ */
+export function updateStaff(input: StaffInput & { staffId: string; actor: Actor }) {
+  const { actor } = input;
+  assertCan(actor.staffId, 'staff.manage', 'updating people');
   const person = staffById(input.staffId);
-  if (!person) throw new Error('Person not found.');
-  const before = { fullName: person.fullName, displayName: person.displayName, contactNumber: person.contactNumber, avatarUrl: person.avatarUrl };
-  person.fullName = input.fullName;
-  person.displayName = input.displayName;
-  if (input.pinHash !== undefined) person.pinHash = input.pinHash;
-  if (input.avatarUrl !== undefined) person.avatarUrl = input.avatarUrl;
-  if (input.contactNumber !== undefined) person.contactNumber = input.contactNumber;
+  if (!person) throw new DomainError('That person is not part of this outlet.');
+  const self = person.id === actor.staffId;
+  if (!self) assertMayManage(actor, person, 'update details');
+  const names = cleanNames(input, person.id);
+  const role = roleById(input.roleId);
+  const roleChanges = role.id !== person.roleId;
+  if (roleChanges) {
+    if (self) throw new DomainError('Ask another manager to change your own role.');
+    assertMayGrant(actor, role);
+    if (roleFor(person.id)?.key === 'owner' && activeOwners().length <= 1) throw new DomainError('The outlet needs at least one active owner. Make someone else owner first.');
+  }
+  const newPin = cleanPin(input.pin, person);
+  const pinHash = Boolean(newPin);
+  const before = { fullName: person.fullName, displayName: person.displayName, contactNumber: person.contactNumber, avatarUrl: person.avatarUrl, role: roleFor(person.id)?.name ?? null };
+  person.fullName = names.fullName;
+  person.displayName = names.displayName;
+  person.contactNumber = cleanContact(input.contactNumber);
+  person.avatarUrl = cleanAvatar(input.avatarUrl, person.avatarUrl);
+  if (roleChanges) person.roleId = role.id;
+  if (newPin) applyPin(person, newPin, pinPolicy().length, pinPolicy().expiryDays, !self && pinPolicy().ownPinAfterReset);
+  bumpCatalogueVersion();
   audit.record({
     outletId: person.outletId,
-    actorStaffId: input.actor.staffId,
+    actorStaffId: actor.staffId,
     action: 'staff.updated',
     entityType: 'staff',
     entityId: person.id,
     before,
-    after: { fullName: input.fullName, displayName: input.displayName, contactNumber: input.contactNumber, avatarUrl: input.avatarUrl },
+    after: { fullName: person.fullName, displayName: person.displayName, contactNumber: person.contactNumber, avatarUrl: person.avatarUrl, role: role.name, pinChanged: Boolean(pinHash) },
     reason: null,
     severity: 'sensitive',
   });
   return person;
+}
+
+/** Whether this person's PIN is locked after too many wrong attempts, on any surface. */
+export function pinLocked(staffId: string): boolean {
+  const staff = staffById(staffId);
+  return credentials.attemptStatus(`pin:${staffId}`).locked || (staff?.pinLockedUntil ?? 0) > Date.now();
+}
+
+/** Lift a PIN lock early, after five wrong attempts. */
+export function unlockPin(input: { staffId: string; actor: Actor }) {
+  assertCan(input.actor.staffId, 'staff.manage', 'unlocking PINs');
+  const person = staffById(input.staffId);
+  if (!person) throw new DomainError('That person is not part of this outlet.');
+  credentials.unlock(`pin:${person.id}`);
+  person.pinLockedUntil = null;
+  audit.record({
+    outletId: person.outletId,
+    actorStaffId: input.actor.staffId,
+    action: 'staff.pin_unlocked',
+    entityType: 'staff',
+    entityId: person.id,
+    before: null,
+    after: null,
+    reason: null,
+    severity: 'sensitive',
+  });
+  return person;
+}
+
+/** A short-lived pass to choose a new PIN, after a correct but expired or reset one. */
+export const PIN_CHANGE_MS = 10 * 60_000;
+
+export function issuePinChangeToken(staffId: string): string {
+  return credentials.signToken({ k: 'pin_change', sid: staffId, pv: staffById(staffId)?.pinVersion ?? 0, ttlMs: PIN_CHANGE_MS });
+}
+
+/** The person a PIN-change pass speaks for, if it is genuine, unexpired and their PIN has not moved since. */
+export function staffFromPinChangeToken(token: string | null | undefined): Staff | null {
+  const claims = credentials.verifyToken(token, 'pin_change');
+  if (!claims) return null;
+  const staff = staffById(claims.sid);
+  if (!staff || staff.employmentStatus !== 'active' || (claims.pv ?? 0) !== (staff.pinVersion ?? 0)) return null;
+  return staff;
 }

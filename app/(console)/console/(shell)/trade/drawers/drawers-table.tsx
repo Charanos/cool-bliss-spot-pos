@@ -1,10 +1,11 @@
 'use client';
 
-import { formatIsoDate, formatTime } from '@bliss/shared/format';
-import { type Cents, abs, compare, formatDecimal, formatKes, isNegative, isZero, sum } from '@bliss/shared/money';
+import { formatIsoDate, formatTime, plural } from '@bliss/shared/format';
+import { type Cents, abs, compare, formatDecimal, formatFigure, formatKes, isNegative, isPositive, isZero, sum } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
-import { Metric } from '@bliss/ui/components/console/metric';
-import { Money, Num } from '@bliss/ui/components/money';
+import { Card, CardBand, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
+import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
 import { IconAlertTriangle, IconCash, IconClock, IconScale } from '@tabler/icons-react';
 import { UrlSelect } from '../../_components/url-select';
@@ -24,19 +25,25 @@ export interface DrawerRow {
   reason: string | null;
   stage: 'blind' | 'closed';
   status: 'open' | 'counting' | 'closed';
+  reviewed: boolean;
+  bills: number;
 }
 
-export function DrawersTable({ 
-  rows, 
-  timezone, 
+/**
+ * Drawer sessions: the float in, the count out, and the variance between what was counted and what
+ * was expected. The expected figure stays withheld until the count is committed. docs/01 R7.
+ */
+export function DrawersTable({
+  rows,
+  timezone,
   threshold,
   rangeOptions,
   rangeKey,
   rangeLabel,
-  exportDate
-}: { 
-  rows: DrawerRow[]; 
-  timezone: string; 
+  exportDate,
+}: {
+  rows: DrawerRow[];
+  timezone: string;
   threshold: Cents;
   rangeOptions?: { value: string; label: string }[];
   rangeKey?: string;
@@ -49,7 +56,6 @@ export function DrawersTable({
   const flaggedCount = rows.filter(outside).length;
   const recordedVariances = rows.filter((r): r is DrawerRow & { variance: Cents } => r.variance !== null).map((r) => r.variance);
   const netVariance = sum(recordedVariances);
-  const netNeg = isNegative(netVariance);
   const outsideTotal = compare(abs(netVariance), threshold) > 0;
 
   const columns: Column<DrawerRow>[] = [
@@ -60,21 +66,21 @@ export function DrawersTable({
       fixed: true,
       sortValue: (r) => r.businessDate,
       csv: (r) => r.businessDate,
-      cell: (r) => <StackCell primary={<span className="font-mono tabular text-num">{formatIsoDate(r.businessDate)}</span>} secondary={r.device} />,
+      cell: (r) => <StackCell primary={<span className="font-mono tabular text-num-md">{formatIsoDate(r.businessDate)}</span>} secondary={r.device} />,
     },
     {
       key: 'opened',
       header: 'Opened',
-      width: '120px',
+      width: '104px',
       sortValue: (r) => r.openedAt,
       csv: (r) => `${r.openedBy} ${new Date(r.openedAt).toISOString()}`,
       cell: (r) => <StackCell primary={r.openedBy} secondary={<span className="font-mono tabular">{formatTime(r.openedAt, timezone)}</span>} />,
     },
-    { key: 'float', header: 'Float', width: '96px', align: 'right', sortValue: (r) => r.float, csv: (r) => formatDecimal(r.float), cell: (r) => <Money value={r.float} currency={false} tone="muted" decimals="whole" /> },
+    { key: 'float', header: 'Float', width: '96px', align: 'right', sortValue: (r) => r.float, csv: (r) => formatDecimal(r.float), cell: (r) => <Money value={r.float} currency={false} size="num-md" tone="muted" decimals="whole" /> },
     {
       key: 'closed',
       header: 'Closed',
-      width: '120px',
+      width: '104px',
       sortValue: (r) => r.closedAt,
       csv: (r) => (r.closedAt ? `${r.closedBy} ${new Date(r.closedAt).toISOString()}` : ''),
       cell: (r) => (r.closedAt ? <StackCell primary={r.closedBy} secondary={<span className="font-mono tabular">{formatTime(r.closedAt, timezone)}</span>} /> : <StatusChip status={r.status === 'counting' ? 'counting' : 'open'} />),
@@ -86,7 +92,7 @@ export function DrawersTable({
       align: 'right',
       sortValue: (r) => r.counted,
       csv: (r) => (r.counted === null ? '' : formatDecimal(r.counted)),
-      cell: (r) => (r.counted === null ? <NumCell tone="muted">··</NumCell> : <Money value={r.counted} currency={false} />),
+      cell: (r) => (r.counted === null ? <NumCell tone="muted">Not counted</NumCell> : <Money value={r.counted} currency={false} size="num-md" />),
     },
     {
       key: 'expected',
@@ -101,9 +107,9 @@ export function DrawersTable({
             Withheld
           </span>
         ) : r.expected === null ? (
-          <NumCell tone="muted">··</NumCell>
+          <NumCell tone="muted">None</NumCell>
         ) : (
-          <Money value={r.expected} currency={false} tone="muted" />
+          <Money value={r.expected} currency={false} size="num-md" tone="muted" />
         ),
     },
     {
@@ -115,78 +121,88 @@ export function DrawersTable({
       csv: (r) => (r.variance === null ? '' : formatDecimal(r.variance)),
       cell: (r) =>
         r.variance === null ? (
-          <NumCell tone="muted">··</NumCell>
+          <NumCell tone="muted">None</NumCell>
         ) : isZero(r.variance) ? (
-          <NumCell tone="poured">0.00</NumCell>
+          <NumCell tone="poured">Balanced</NumCell>
         ) : (
           <NumCell tone={outside(r) ? 'stop' : 'muted'}>
-            {isNegative(r.variance) ? '' : '+'}
-            {formatDecimal(r.variance)}
+            {isNegative(r.variance) ? '−' : '+'}
+            {formatFigure(abs(r.variance))}
           </NumCell>
         ),
     },
-    { key: 'reason', header: 'Reason given', width: 'minmax(200px,2fr)', wrap: true, csv: (r) => r.reason ?? '', cell: (r) => <span className="text-body text-ink-muted">{r.reason ?? ''}</span> },
+    { key: 'reason', header: 'Reason given', width: 'minmax(160px,2fr)', wrap: true, csv: (r) => r.reason ?? '', cell: (r) => <span className="text-body-sm text-ink-muted">{r.reason ?? ''}</span> },
   ];
 
   return (
-    <div className="flex flex-col gap-24">
-      {/* Executive Drawer Audit Metrics */}
-      <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
+    <div className="flex flex-col gap-32">
+      <MetricGrid>
+        <Metric label="Drawer sessions" icon={IconCash} value={<CountUp value={rows.length} />} detail={rangeLabel ? `${closedDrawers} closed, ${rangeLabel}` : `${closedDrawers} closed`} />
         <Metric
-          label={`Drawer Shifts${rangeLabel ? ` (${rangeLabel})` : ''}`}
-          value={<Num size="title-lg">{rows.length}</Num>}
-          detail={`${closedDrawers} closed · ${activeDrawers} open`}
-          icon={IconCash}
-          tone="default"
-        />
-        <Metric
-          label="Active at Counter"
-          value={<Num size="title-lg">{activeDrawers}</Num>}
-          detail="Floats currently in trade"
+          label="Open now"
           icon={IconClock}
-          tone={activeDrawers > 0 ? 'poured' : 'default'}
+          tone={activeDrawers > 0 ? 'info' : 'default'}
+          value={<CountUp value={activeDrawers} delayMs={60} />}
+          detail={activeDrawers > 0 ? 'A float is in the drawer' : 'Every drawer is counted and closed'}
         />
         <Metric
-          label="Net Cash Variance"
-          value={
-            recordedVariances.length > 0 ? (
-              <span className="font-mono tabular flex items-center">
-                {netNeg ? <span className="text-title-lg mr-2">-</span> : <span className="text-title-lg mr-2">+</span>}
-                <Money value={abs(netVariance)} currency={false} decimals="whole" size="title-lg" tone={outsideTotal ? 'attention' : 'default'} />
-              </span>
-            ) : (
-              <span className="font-mono tabular text-ink-muted text-title-lg">0</span>
-            )
-          }
-          detail="Audit discrepancy sum"
+          label="Net variance"
           icon={IconScale}
-          tone={flaggedCount > 0 ? 'attention' : 'default'}
+          tone={outsideTotal ? 'attention' : 'default'}
+          value={
+            <>
+              {isPositive(netVariance) ? '+' : null}
+              <Money value={netVariance} size="num-kpi" decimals="whole" />
+            </>
+          }
+          detail={recordedVariances.length > 0 ? `Across ${plural(recordedVariances.length, 'closed drawer')}` : 'No drawer has been closed'}
         />
         <Metric
-          label="Threshold Alerts"
-          value={<Num size="title-lg">{flaggedCount}</Num>}
-          detail={`Over ${formatKes(threshold, { decimals: 'whole' })} variance`}
+          label="Over the threshold"
           icon={IconAlertTriangle}
           tone={flaggedCount > 0 ? 'stop' : 'default'}
+          value={<CountUp value={flaggedCount} delayMs={120} />}
+          detail={`More than ${formatKes(threshold, { decimals: 'whole' })} out either way`}
         />
-      </div>
-
-      {/* Elegant visual separator */}
-      <div className="h-[1px] mt-20 w-full bg-gradient-to-r from-transparent via-hairline/60 to-transparent opacity-80" aria-hidden="true" />
+      </MetricGrid>
 
       <DataTable
         id="trade-drawers"
         caption="Drawer sessions"
+        noun={['drawer session', 'drawer sessions']}
         rows={rows}
         columns={columns}
         rowKey={(r) => r.id}
         defaultSort={{ key: 'date', dir: 'desc' }}
         filters={[{ kind: 'toggle', key: 'outside', label: `Over ${formatKes(threshold, { decimals: 'whole' })} out`, test: outside }]}
         leading={rangeOptions && rangeKey ? <UrlSelect param="range" label="Range" options={rangeOptions} allLabel={null} fallback={rangeKey} /> : undefined}
-        rowTone={(r) => (outside(r) ? 'attention' : 'default')}
+        rowTone={(r) => (outside(r) && !r.reviewed ? 'attention' : 'default')}
+        rowHref={(r) => `/console/trade/drawers/${r.id}`}
+        renderGridCard={(r) => (
+          <Card as="article" interactive className="group h-full" tone={outside(r) && !r.reviewed ? 'stop' : undefined}>
+            <CardBand
+              eyebrow={formatIsoDate(r.businessDate)}
+              status={r.status !== 'closed' ? <StatusChip status={r.status === 'counting' ? 'counting' : 'open'} /> : r.reviewed ? <StatusChip status="resolved" label="Reviewed" /> : outside(r) ? <StatusChip status="unresolved" label="To review" /> : <StatusChip status="settled" label="Closed" />}
+              title={r.device}
+              subtitle={`Opened by ${r.openedBy} at ${formatTime(r.openedAt, timezone)}`}
+              href={`/console/trade/drawers/${r.id}`}
+            />
+            <KeyRows>
+              <KeyRow label="Float">
+                <Money value={r.float} currency={false} size="num-md" decimals="whole" />
+              </KeyRow>
+              <KeyRow label="Counted">{r.counted === null ? 'Not yet' : <Money value={r.counted} currency={false} size="num-md" decimals="whole" />}</KeyRow>
+              <KeyRow label="Variance" tone={outside(r) ? 'stop' : undefined}>
+                {r.variance === null ? (r.stage === 'blind' ? 'Withheld' : 'None') : isZero(r.variance) ? 'Balanced' : `${isNegative(r.variance) ? '−' : '+'}${formatFigure(abs(r.variance))}`}
+              </KeyRow>
+              <KeyRow label="Bills">{r.bills}</KeyRow>
+            </KeyRows>
+          </Card>
+        )}
         exportName="drawers"
         exportDate={exportDate}
-        empty={{ title: 'No drawer sessions yet', body: 'A session starts when a cashier counts the float into the drawer at the counter.' }}
+        empty={{ title: 'No drawer sessions in this range', body: 'A session starts when a cashier counts the float into the drawer at the counter.' }}
+        emptyFiltered={{ title: 'No drawer was over the threshold', body: 'Every closed drawer in this range counted within the threshold.' }}
       />
     </div>
   );

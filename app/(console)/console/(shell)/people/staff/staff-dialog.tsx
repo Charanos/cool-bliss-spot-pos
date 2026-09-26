@@ -1,137 +1,172 @@
 'use client';
 
-import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
 import { Button } from '@bliss/ui/components/button';
-import { TextField, SelectField } from '@bliss/ui/components/fields';
+import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
+import { InlineNotice } from '@bliss/ui/components/feedback';
+import { SelectField, TextField } from '@bliss/ui/components/fields';
 import { IconCamera } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
-import { staffPhoto } from '@/lib/pos/staff-photos';
-import React, { useState, useTransition, useEffect } from 'react';
-import { createStaff, updateStaff, setStaffRole } from '../../_actions';
+import { type ChangeEvent, type FormEvent, useEffect, useState, useTransition } from 'react';
+import { createStaff, updateStaff } from '../../_actions/people';
+import { uploadFiles } from '../../_lib/upload';
 import type { StaffRow } from './staff-table';
+import { useToast } from '@bliss/ui/components/console/toast';
 
-export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRow | null; roles: { value: string; label: string }[]; open: boolean; onClose: () => void }) {
+/**
+ * Add or edit a person. A new person can be given a first PIN here, at the outlet's length; after
+ * that a PIN is set, reset or taken away from its own dialog, which keeps the reason on record.
+ */
+export function StaffDialog({
+  target,
+  roles,
+  open,
+  onClose,
+  pinLength,
+}: {
+  target?: StaffRow | null;
+  roles: { value: string; label: string }[];
+  open: boolean;
+  onClose: () => void;
+  pinLength: number;
+}) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const notify = useToast();
+  const [pending, startTransition] = useTransition();
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-
-  const [fullName, setFullName] = useState(target?.name ?? '');
-  const [displayName, setDisplayName] = useState(target?.displayName ?? '');
-  const [roleId, setRoleId] = useState(target?.roleId ?? roles[0]?.value ?? '');
-  const [contactNumber, setContactNumber] = useState(target?.contactNumber ?? '');
-  const [pinHash, setPinHash] = useState(target?.pinHash ?? '');
-  const [avatarUrl, setAvatarUrl] = useState(target?.avatarUrl ?? '');
-
-  const isEdit = Boolean(target);
+  const [fullName, setFullName] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [roleId, setRoleId] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
+  const [pin, setPin] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const editing = Boolean(target);
 
   useEffect(() => {
-    if (open) {
-      setFullName(target?.name ?? '');
-      setDisplayName(target?.displayName ?? '');
-      setRoleId(target?.roleId ?? roles[0]?.value ?? '');
-      setContactNumber(target?.contactNumber ?? '');
-      setPinHash(target?.pinHash ?? '');
-      setAvatarUrl(target?.avatarUrl ?? '');
-      setError('');
-    }
+    if (!open) return;
+    setFullName(target?.name ?? '');
+    setDisplayName(target?.displayName ?? '');
+    // A new person starts as a waiter, the role with the least reach, never as the first role listed.
+    setRoleId(target?.roleId ?? (roles.find((r) => r.label === 'Waiter') ?? roles[roles.length - 1])?.value ?? '');
+    setContactNumber(target?.contactNumber ?? '');
+    setPin('');
+    setAvatarUrl(target?.avatarUrl ?? '');
+    setError('');
   }, [open, target, roles]);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  async function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setUploading(true);
+    setError('');
+    const result = await uploadFiles([file]);
+    setUploading(false);
+    if (result.ok) setAvatarUrl(result.urls[0] ?? '');
+    else setError(result.message);
+  }
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
+  function save(event: FormEvent) {
+    event.preventDefault();
     setError('');
     startTransition(async () => {
-      const payload = {
-        fullName,
-        displayName,
-        roleId,
-        pinHash: pinHash || null,
-        avatarUrl: avatarUrl || null,
-        contactNumber: contactNumber || null,
-      };
-
-      const result = isEdit && target ? await updateStaff({ staffId: target.id, ...payload }) : await createStaff(payload);
-
+      const form = { fullName, displayName, roleId, pin: editing ? null : pin || null, avatarUrl: avatarUrl || null, contactNumber: contactNumber || null };
+      const result = editing && target ? await updateStaff({ staffId: target.id, ...form }) : await createStaff(form);
       if (!result.ok) {
         setError(result.message);
-      } else {
-        if (isEdit && target && target.roleId !== roleId) {
-          await setStaffRole({ staffId: target.id, roleId, reason: 'Updated via Console Edit' });
-        }
-        onClose();
-        router.refresh();
+        return;
       }
+      onClose();
+      notify({
+        title: target ? `${displayName || 'Their'} details saved` : `${displayName || 'The person'} added`,
+        body: target ? undefined : pin ? 'Hand them the PIN you set.' : 'They can sign in once their PIN is set.',
+      });
+      router.refresh();
     });
   }
 
-  const effectiveAvatar = avatarUrl || staffPhoto(displayName);
+  const photo = avatarUrl;
+  const initials = displayName.trim().slice(0, 2).toUpperCase();
 
   return (
-    <ConsoleOverlay open={open} onClose={onClose} title={isEdit ? 'Edit Person' : 'Add Person'} description={isEdit ? 'Update details, PIN, and role for this team member.' : 'Add a new member to the team.'} width="lg">
-      <form onSubmit={handleSave} className="flex flex-col gap-32 pb-16">
-        {error && <div className="text-attention-text bg-attention-wash p-12 rounded-sm text-body-sm">{error}</div>}
+    <ConsoleOverlay
+      open={open}
+      onClose={onClose}
+      title={editing ? `Edit ${target?.displayName ?? 'person'}` : 'Add a person'}
+      description={editing ? 'Details and role save together. Their PIN has its own dialog.' : 'They can sign in once their PIN is set.'}
+      width="lg"
+    >
+      <form onSubmit={save} className="flex flex-col gap-24">
+        {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}
 
-        <div className="flex items-center gap-16 mb-4">
-          <label className="group relative size-[64px] rounded-full overflow-hidden bg-seat-ink text-white flex items-center justify-center font-medium text-[24px] shadow-sm cursor-pointer transition-transform hover:scale-105 active:scale-95">
-            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-            {effectiveAvatar ? (
-              <>
-                <img src={effectiveAvatar} alt="" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-ink/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <IconCamera size={24} className="text-white" stroke={1.5} />
-                </div>
-              </>
+        <div className="flex items-center gap-16">
+          <label className="group relative flex size-avatar shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-dot bg-control text-title-card text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus">
+            <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={choosePhoto} disabled={uploading} aria-label="Choose a photo" />
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo} alt="" className="size-full object-cover" />
             ) : (
-              <>
-                <span>{displayName.slice(0, 2).toUpperCase() || '??'}</span>
-                <div className="absolute inset-0 bg-ink/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <IconCamera size={24} className="text-white" stroke={1.5} />
-                </div>
-              </>
+              <span aria-hidden="true">{initials || '?'}</span>
             )}
+            <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center bg-scrim text-on-scrim opacity-0 transition-hover group-hover:opacity-100">
+              <IconCamera size={20} stroke={1.5} />
+            </span>
           </label>
-          <div className="flex flex-col">
-            <span className="text-body font-medium text-ink">{fullName || 'New Person'}</span>
-            <span className="text-body-sm text-ink-subtle">Upload Profile Photo</span>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-title-card text-ink">{fullName || 'New person'}</span>
+            <span className="text-body-sm text-ink-muted">{uploading ? 'Uploading the photo' : 'Choose a photo, or keep their initials.'}</span>
           </div>
         </div>
 
-        <div className="flex flex-col gap-12">
-          <h3 className="text-label text-ink-subtle uppercase tracking-wider pl-4">Personal Information</h3>
-          <div className="flex flex-col bg-page rounded-[16px] border border-hairline/60 p-24 shadow-[0_2px_12px_rgba(0,0,0,0.02)] gap-24">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-24">
-              <TextField label="Full name" value={fullName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFullName(e.target.value)} placeholder="e.g. Jane Doe" required />
-              <TextField label="Display name" value={displayName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDisplayName(e.target.value)} placeholder="e.g. Jane" helper="Shown on receipts and tablets" required />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-24">
-              <TextField label="Contact number" type="tel" value={contactNumber} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContactNumber(e.target.value)} placeholder="e.g. +254..." />
-            </div>
-          </div>
-        </div>
+        <fieldset className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
+          <legend className="mb-8 label-caps text-ink-subtle">Details</legend>
+          <TextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Wanjiru" autoComplete="off" required />
+          <TextField
+            label="Display name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Jane"
+            helper="What the floor and the bills show."
+            autoComplete="off"
+            required
+          />
+          <TextField label="Contact number" type="tel" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="+254 712 345 678" autoComplete="off" />
+        </fieldset>
 
-        <div className="flex flex-col gap-12">
-          <h3 className="text-label text-ink-subtle uppercase tracking-wider pl-4">Security & Access</h3>
-          <div className="flex flex-col bg-page rounded-[16px] border border-hairline/60 p-24 shadow-[0_2px_12px_rgba(0,0,0,0.02)] gap-24">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-24">
-              <SelectField label="Role" value={roleId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRoleId(e.target.value)} options={roles} required />
-              <TextField label="PIN (for sign in)" type="password" value={pinHash} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPinHash(e.target.value)} placeholder="6 digits recommended" helper="Their secure sign-in code" />
-            </div>
-          </div>
-        </div>
+        <fieldset className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
+          <legend className="mb-8 label-caps text-ink-subtle">Access</legend>
+          <SelectField
+            label="Role"
+            value={roleId}
+            onChange={(e) => setRoleId(e.target.value)}
+            options={roles}
+            required
+            disabled={target?.isSelf}
+            helper={target?.isSelf ? 'Another manager changes your role.' : undefined}
+          />
+          {editing ? null : (
+            <TextField
+              label="First PIN"
+              type="password"
+              inputMode="numeric"
+              autoComplete="new-password"
+              pattern={`\\d{${pinLength}}`}
+              maxLength={pinLength}
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, pinLength))}
+              placeholder={`${pinLength} digits`}
+              helper="Optional. Not a run or a repeat. Or set one after, typed or made at random."
+            />
+          )}
+        </fieldset>
 
-        <div className="flex justify-end gap-12 mt-8 pt-16 border-t border-hairline/40">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>Cancel</Button>
-          <Button type="submit" variant="primary" loading={isPending}>Save changes</Button>
+        <div className="flex justify-end gap-12 border-t border-rule pt-16">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" loading={pending} disabled={uploading}>
+            {editing ? 'Save changes' : 'Add person'}
+          </Button>
         </div>
       </form>
     </ConsoleOverlay>

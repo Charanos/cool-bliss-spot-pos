@@ -5,16 +5,31 @@ import { useCountTo } from '../motion/hooks';
 import type { AnimationName } from '../motion/registry';
 import { cx } from '../lib/cx';
 
-export type NumSize = 'num-sm' | 'num' | 'num-lg' | 'num-xl' | 'display' | 'title-lg' | 'title';
+export type NumSize = 'num-sm' | 'num-md' | 'num' | 'num-lg' | 'num-kpi' | 'num-xl' | 'display' | 'title-lg' | 'title';
 
 const numSize: Record<NumSize, string> = {
   'num-sm': 'text-num-sm',
+  'num-md': 'text-num-md',
   num: 'text-num',
   'num-lg': 'text-num-lg',
+  'num-kpi': 'text-num-kpi',
   'num-xl': 'text-num-xl',
   display: 'text-display',
-  'title-lg': 'text-title-lg tracking-[-0.03em]',
+  'title-lg': 'text-title-lg',
   title: 'text-title',
+};
+
+/** The KES prefix scales with the figure: label type beside a large number, micro beside a small one. */
+const currencySize: Record<NumSize, string> = {
+  'num-sm': 'text-micro',
+  'num-md': 'text-micro',
+  num: 'text-micro',
+  'num-lg': 'text-label',
+  'num-kpi': 'text-label',
+  'num-xl': 'text-label',
+  display: 'text-label',
+  'title-lg': 'text-label',
+  title: 'text-label',
 };
 
 /** Every number in JetBrains Mono with tabular figures. */
@@ -51,18 +66,17 @@ export interface MoneyProps {
  */
 export function Money({ value, size = 'num', tone = 'default', currency = true, decimals = 'always', className }: MoneyProps) {
   const negative = isNegative(value);
-  const large = size === 'display' || size === 'title-lg' || size === 'title' || size === 'num-xl';
+  // The visible parts are hidden from assistive technology and the whole amount is read once, as
+  // words a screen reader pronounces: "KES 1,250.00", never "K E S" and a bare number.
   return (
-    <span className={cx('inline-flex items-baseline gap-[0.25em] whitespace-nowrap', className)} aria-label={formatKes(value, { decimals })}>
+    <span className={cx('inline-flex items-baseline gap-4 whitespace-nowrap', className)}>
+      <span className="sr-only">{formatKes(value, { decimals })}</span>
       {currency ? (
-        <span aria-hidden="true" className={cx(
-          'font-semibold tracking-[0.06em] text-ink-subtle uppercase',
-          large ? 'text-[12px]' : 'text-[10px]'
-        )}>
+        <span aria-hidden="true" className={cx('font-medium text-ink-subtle uppercase', currencySize[size])}>
           KES
         </span>
       ) : null}
-      <span aria-hidden="true" className={cx('font-mono tabular tracking-tight', numSize[size], negative ? 'text-stop font-medium' : toneClass[tone])}>
+      <span aria-hidden="true" className={cx('font-mono tabular', numSize[size], negative ? 'text-stop' : toneClass[tone])}>
         {formatFigure(value, { decimals })}
       </span>
     </span>
@@ -72,12 +86,13 @@ export function Money({ value, size = 'num', tone = 'default', currency = true, 
 /** Money that counts to its new value through a registered animation. */
 export function AnimatedMoney({ animation, fromZeroOnMount, ...props }: MoneyProps & { animation: AnimationName; fromZeroOnMount?: boolean }) {
   const shown = useCountTo(props.value, animation, { fromZeroOnMount });
+  // The counting figure is decoration; the settled value is what a screen reader hears.
   return (
     <span className="contents">
-      <Money {...props} value={shown} />
-      <span className="sr-only" aria-live="off">
-        {formatKes(props.value)}
+      <span aria-hidden="true" className="contents">
+        <Money {...props} value={shown} />
       </span>
+      <span className="sr-only">{formatKes(props.value, { decimals: props.decimals })}</span>
     </span>
   );
 }

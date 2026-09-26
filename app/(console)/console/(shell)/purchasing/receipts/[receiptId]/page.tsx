@@ -1,119 +1,144 @@
+import { formatDate, formatDateTime, plural } from '@bliss/shared/format';
+import { multiplyByQty, sum } from '@bliss/shared/money';
+import { ButtonLink } from '@bliss/ui/components/button-link';
+import { Card, CardBody, CardHeader } from '@bliss/ui/components/console/card';
+import { Callout, DetailHeader, KeyValueList, MetaRow } from '@bliss/ui/components/console/section';
+import { Money } from '@bliss/ui/components/money';
+import { StatusChip } from '@bliss/ui/components/status';
+import { IconBuildingWarehouse, IconClock, IconFileInvoice, IconTruckDelivery, IconUser } from '@tabler/icons-react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ButtonLink } from '@bliss/ui/components/button-link';
-import { StatusChip } from '@bliss/ui/components/status';
-import { formatDateTime, formatDate } from '@bliss/shared/format';
-import { multiplyByQty, sum } from '@bliss/shared/money';
-import { IconArrowLeft } from '@tabler/icons-react';
+import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import * as procurement from '@/modules/procurement/service';
-import * as catalogue from '@/modules/catalogue/service';
-import { ReceiptDetailView, type ReceiptDetailLine } from './receipt-detail';
+import { EntityLink } from '../../../_components/entity-link';
+import { RecordCrumb } from '../../../_components/shell/crumbs';
+import { ReceiptActions } from './receipt-actions';
+import { type ReceiptDetailLine, ReceiptLines, ReceiptPhotos } from './receipt-detail';
 
-export const metadata: Metadata = { title: 'Goods Received Note' };
+export async function generateMetadata({ params }: { params: Promise<{ receiptId: string }> }): Promise<Metadata> {
+  const receipt = procurement.receiptById((await params).receiptId);
+  return { title: receipt ? `Delivery ${receipt.grnNumber}` : 'Delivery' };
+}
 
-export default async function ReceiptDetailPage({ params }: { params: Promise<{ receiptId: string }> }) {
+/**
+ * One delivery as received: what came against what was expected, what went back and why, the
+ * batches FEFO draws on, and the photos of the paperwork. A short delivery waits for someone to
+ * accept the difference; a delivery can be reversed while its stock is untouched.
+ */
+export default async function ReceiptPage({ params }: { params: Promise<{ receiptId: string }> }) {
   const { receiptId } = await params;
   const receipt = procurement.receiptById(receiptId);
   if (!receipt) notFound();
+  const actor = await identity.currentConsoleActor();
 
   const tz = identity.outlet().timezone;
   const supplier = procurement.supplierById(receipt.supplierId);
   const location = inventory.locations().find((l) => l.id === receipt.stockLocationId);
   const order = receipt.purchaseOrderId ? procurement.purchaseOrders().find((p) => p.id === receipt.purchaseOrderId) : null;
   const note = procurement.noteForReceipt(receipt.id);
-  const lines = procurement.receiptLines(receipt.id);
-  const allBatches = inventory.batches();
+  const moves = inventory.movements({ type: 'receipt' }).filter((m) => m.sourceType === 'goods_receipt' && m.sourceId === receipt.id);
+  const batches = inventory.batches();
 
-  const formattedLines: ReceiptDetailLine[] = lines.map((l) => {
+  const lines: ReceiptDetailLine[] = procurement.receiptLines(receipt.id).map((l) => {
     const variant = catalogue.variantById(l.productVariantId);
     const product = variant ? catalogue.productById(variant.productId) : null;
-    const pName = product ? product.name.trim() : '';
-    const vName = variant ? variant.name.trim() : 'Unknown Product';
-    const name = pName && !vName.toLowerCase().startsWith(pName.toLowerCase())
-      ? `${pName} ${vName}`
-      : vName;
-
-    // Find associated stock batch for lot & expiry
-    const batch = allBatches.find(
-      (b) => b.productVariantId === l.productVariantId && Math.abs(b.receivedAt - receipt.receivedAt) < 30000
-    );
-
+    const productName = product?.name.trim() ?? '';
+    const variantName = variant?.name.trim() ?? 'Item no longer stocked';
+    const move = moves.find((m) => m.productVariantId === l.productVariantId && m.qtyDelta === l.qtyReceived);
+    const batch = move?.stockBatchId ? batches.find((b) => b.id === move.stockBatchId) : null;
     return {
       id: l.id,
-      variantId: l.productVariantId,
-      name,
+      productId: product?.id ?? null,
+      name: productName && !variantName.toLowerCase().startsWith(productName.toLowerCase()) ? `${productName} ${variantName}` : variantName,
       qtyExpected: l.qtyExpected,
       qtyReceived: l.qtyReceived,
       qtyRejected: l.qtyRejected,
       rejectionReason: l.rejectionReason,
       batchNumber: batch?.batchNumber ?? null,
-      expiryDate: batch?.expiryDate ? formatDate(batch.expiryDate, tz) : null,
+      expiry: batch?.expiryDate ? formatDate(batch.expiryDate, tz) : null,
       unitCostCents: l.unitCostCents,
       lineTotalCents: multiplyByQty(l.unitCostCents, l.qtyReceived),
     };
   });
 
-  const totalValue = sum(formattedLines.map((l) => l.lineTotalCents));
+  const reversed = receipt.status === 'cancelled';
+  const waiting = !reversed && note?.status === 'pending_variance_approval';
+  const accepted = lines.reduce((n, l) => n + l.qtyReceived, 0);
+  const rejected = lines.reduce((n, l) => n + l.qtyRejected, 0);
+  const title = `Delivery ${receipt.grnNumber}`;
 
   return (
-    <>
-      <div className="mb-16">
-        <ButtonLink href="/console/purchasing/receipts" variant="ghost" icon={IconArrowLeft} className="-ml-12">
-          Receipts
-        </ButtonLink>
-      </div>
-
-      <div className="border-b border-hairline pb-20 mb-24">
-        <div className="flex flex-wrap items-center justify-between gap-16">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-12">
-              <h2 className="text-title text-ink font-mono tabular">GRN #{receipt.grnNumber}</h2>
-              <span className="text-title text-ink-muted">·</span>
-              <span className="text-title text-ink font-medium">{supplier?.name ?? 'Unknown Supplier'}</span>
-              <StatusChip status="received" label="Posted" />
-            </div>
-            <p className="text-body text-ink-subtle">
-              Received on <strong className="text-ink font-medium">{formatDateTime(receipt.receivedAt, tz)}</strong> by{' '}
-              <strong className="text-ink font-medium">{identity.displayName(receipt.receivedBy)}</strong> into{' '}
-              <strong className="text-ink font-medium">{location?.name ?? 'Default Store'}</strong>
-            </p>
-          </div>
-
-          {order && (
-            <ButtonLink href={`/console/purchasing/orders/${order.id}`} variant="secondary">
-              View PO #{order.poNumber}
-            </ButtonLink>
-          )}
-        </div>
-
-        <div className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-16 pt-16 border-t border-hairline text-body-sm">
-          <div>
-            <span className="text-ink-subtle block text-body-xs uppercase tracking-wider">Delivery Note Ref</span>
-            <span className="font-mono font-medium text-ink mt-2 block">{receipt.deliveryNoteRef}</span>
-          </div>
-          <div>
-            <span className="text-ink-subtle block text-body-xs uppercase tracking-wider">Invoice Number</span>
-            <span className="font-mono text-ink mt-2 block">{note?.invoiceNumber || '—'}</span>
-          </div>
-          <div>
-            <span className="text-ink-subtle block text-body-xs uppercase tracking-wider">eTIMS KRA Ref</span>
-            <span className="font-mono text-ink mt-2 block">{note?.etimsInvoiceRef || '—'}</span>
-          </div>
-          <div>
-            <span className="text-ink-subtle block text-body-xs uppercase tracking-wider">PO Reference</span>
-            <span className="font-mono text-ink mt-2 block">{order ? `PO #${order.poNumber}` : 'Direct Intake'}</span>
-          </div>
-        </div>
-      </div>
-
-      <ReceiptDetailView
-        lines={formattedLines}
-        mediaUrls={note?.mediaUrls || []}
-        varianceNote={receipt.varianceNote}
-        totalValue={totalValue}
+    <div className="flex flex-col gap-24">
+      <RecordCrumb label={title} />
+      <DetailHeader
+        back={{ href: '/console/purchasing/receipts', label: 'Deliveries' }}
+        title={title}
+        status={reversed ? <StatusChip status="voided" label="Reversed" /> : waiting ? <StatusChip status="review" label="Short, to approve" /> : <StatusChip status="received" />}
+        meta={
+          <MetaRow
+            items={[
+              { icon: IconTruckDelivery, value: supplier ? <EntityLink kind="supplier" id={supplier.id} muted>{supplier.name}</EntityLink> : 'Supplier removed' },
+              { icon: IconClock, value: formatDateTime(receipt.receivedAt, tz) },
+              { icon: IconUser, value: identity.displayName(receipt.receivedBy) },
+              { icon: IconBuildingWarehouse, value: `Into ${location?.name ?? 'the store'}` },
+            ]}
+          />
+        }
+        actions={
+          <>
+            {order ? (
+              <ButtonLink href={`/console/purchasing/orders/${order.id}`} variant="secondary" icon={IconFileInvoice}>
+                Order {order.poNumber}
+              </ButtonLink>
+            ) : null}
+            <ReceiptActions
+              receiptId={receipt.id}
+              title={title}
+              canApprove={waiting && identity.can(actor.staffId, 'stock.count.commit')}
+              canReverse={!reversed && identity.can(actor.staffId, 'stock.writeoff')}
+            />
+          </>
+        }
       />
-    </>
+
+      {reversed ? (
+        <Callout tone="stop" title={`Reversed by ${identity.displayName(receipt.cancelledBy ?? null)}${receipt.cancelledAt ? `, ${formatDateTime(receipt.cancelledAt, tz)}` : ''}`}>
+          {receipt.cancelReason ?? 'No reason was recorded.'} The stock it brought in has been taken back out.
+        </Callout>
+      ) : waiting ? (
+        <Callout tone="low" title="Part of this delivery is short">
+          {receipt.varianceNote ?? 'No variance note.'} Accept the difference once someone has checked it with the supplier.
+        </Callout>
+      ) : receipt.varianceNote ? (
+        <Callout tone="info" title="Variance note">
+          {receipt.varianceNote}
+        </Callout>
+      ) : null}
+
+      <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
+        <ReceiptLines lines={lines} />
+        <div className="flex min-w-0 flex-col gap-24">
+          <Card aria-labelledby="receipt-facts">
+            <CardHeader band level="h2" titleId="receipt-facts" title="Paperwork" />
+            <CardBody className="pt-4">
+              <KeyValueList
+                layout="inline"
+                items={[
+                  { label: 'Delivery note', value: receipt.deliveryNoteRef, mono: true },
+                  { label: 'Invoice', value: note?.invoiceNumber ?? 'None given', mono: Boolean(note?.invoiceNumber) },
+                  { label: 'Order', value: order ? `Order ${order.poNumber}` : 'Received by hand' },
+                  { label: 'Accepted', value: plural(accepted, 'unit') },
+                  ...(rejected > 0 ? [{ label: 'Sent back', value: plural(rejected, 'unit') }] : []),
+                  { label: 'Value at cost', value: <Money value={sum(lines.map((l) => l.lineTotalCents))} size="num-md" /> },
+                ]}
+              />
+            </CardBody>
+          </Card>
+          <ReceiptPhotos urls={note?.mediaUrls ?? []} />
+        </div>
+      </div>
+    </div>
   );
 }

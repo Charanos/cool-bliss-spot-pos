@@ -1,10 +1,14 @@
+import { ButtonLink } from '@bliss/ui/components/button-link';
+import { IconListCheck, IconPlus } from '@tabler/icons-react';
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as procurement from '@/modules/procurement/service';
 import { type OrderRow, OrdersTable } from './orders-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Purchase orders' };
 
+/** Every purchase order, from draft to received. */
 export default function OrdersPage() {
   const outlet = identity.outlet();
   const rows: OrderRow[] = procurement.purchaseOrders().map((po) => {
@@ -27,5 +31,22 @@ export default function OrdersPage() {
       notes: po.notes,
     };
   });
-  return <OrdersTable rows={rows} timezone={outlet.timezone} suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} />;
+  return (
+    <>
+      <ViewHeader
+        page="/console/purchasing/orders"
+        actions={
+          <>
+            <ButtonLink href="/console/purchasing/reorder" variant="ghost" icon={IconListCheck}>
+              Reorder suggestions
+            </ButtonLink>
+            <ButtonLink href="/console/purchasing/orders/new" variant="create" icon={IconPlus}>
+              New order
+            </ButtonLink>
+          </>
+        }
+      />
+      <OrdersTable rows={rows} now={Date.now()} timezone={outlet.timezone} suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} />
+    </>
+  );
 }

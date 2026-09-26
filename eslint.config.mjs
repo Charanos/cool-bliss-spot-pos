@@ -6,6 +6,16 @@ import tseslint from 'typescript-eslint';
 import globals from 'globals';
 import bliss from './packages/config/eslint-plugin/index.js';
 
+/**
+ * The Console and the primitives it is built from hold to tokens only. docs/19 section 2. Floor and
+ * Counter keep their own surface language (docs/12, 13, 15) and are not held to this yet.
+ */
+const CONSOLE_FILES = [
+  'app/(console)/**/*.{ts,tsx}',
+  'packages/ui/src/components/console/**/*.{ts,tsx}',
+  'packages/ui/src/components/{button,button-link,badge,status,feedback,money,menu,choice}.tsx',
+];
+
 const FLOOR_FILES = ['app/(floor)/**/*.{ts,tsx}', 'packages/ui/src/components/floor/**/*.{ts,tsx}', 'packages/ui/src/motion/floor.ts'];
 
 export default tseslint.config(
@@ -96,10 +106,26 @@ export default tseslint.config(
     },
   },
   {
+    files: CONSOLE_FILES,
+    rules: {
+      'bliss/no-arbitrary-design-values': 'error',
+    },
+  },
+  {
     files: ['**/*.test.ts', 'scripts/**', 'packages/db/seed/**'],
     rules: {
       'bliss/no-cents-arithmetic': 'off',
+      // A test sets up state directly; the service boundary is what it tests, not how it arranges.
+      'bliss/no-cross-module-schema': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
+    },
+  },
+  {
+    // D-19: the sign-in artwork is a photographic illustration; its gradient stops are pigments of a
+    // bottle and a pipe, not interface colours. Scoped to that one file; every other surface uses tokens.
+    files: ['packages/ui/src/components/artwork/console-flow.tsx'],
+    rules: {
+      'bliss/no-raw-hex': 'off',
     },
   },
 );

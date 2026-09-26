@@ -41,6 +41,7 @@ import { FinishedSheet, LabelSeatSheet, LineSheet, ModifierSheet, MoveLineSheet,
 import { TablesRail } from './_parts/tables-rail';
 import { TicketColumn, type TicketColumnHandle } from './_parts/ticket-column';
 import type { RowAction } from './_parts/ticket-row';
+import { printUrl } from '@/lib/pos/api';
 
 type Overlay =
   | { kind: 'none' }
@@ -236,12 +237,12 @@ export default function TabScreen() {
                   ...(stage === 'bill'
                     ? [
                         { key: 'bill', label: 'Take back the bill request', icon: IconArrowBackUp, onSelect: () => void takeBackBill(tabId, label) },
-                        { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => window.open(`/print/tab/${tabId}`, '_blank') }
+                        { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => window.open(printUrl(`/print/tab/${tabId}`), '_blank') }
                       ]
                     : stage && stage !== 'empty'
                       ? [
                           { key: 'bill', label: 'Ask for the bill', icon: IconReceipt, onSelect: () => void askBill(tabId, label) },
-                          { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => window.open(`/print/tab/${tabId}`, '_blank') }
+                          { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => window.open(printUrl(`/print/tab/${tabId}`), '_blank') }
                         ]
                       : []),
                   // Only while nothing has been fired: a tab with something on it is paid, not closed.

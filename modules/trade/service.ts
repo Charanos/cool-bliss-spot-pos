@@ -1,24 +1,64 @@
 import 'server-only';
 
+import { DomainError } from '../_data/errors';
+
 import type { OrderLine, Tab, TabSeat, Zone, ServiceTable, CatalogueStatus, TableStatus } from '@bliss/shared/domain';
 import { type Cents, ZERO, add, sum } from '@bliss/shared/money';
 import type { IsoDate } from '@bliss/shared/time';
 import type { Actor } from '@bliss/shared/reason';
 import { createUuidV7 } from '@bliss/shared/id';
 import { isSeated, tabLabel } from '@bliss/shared/trade';
-import { dataset } from '../_data/source';
+import { bumpCatalogueVersion, dataset } from '../_data/source';
 import * as audit from '../audit/service';
-import { assertCan } from '../identity/service';
+import { assertCan, outlet } from '../identity/service';
+import * as pricing from '../pricing/service';
 import { tradeTables } from './schema';
 
 const createId = createUuidV7();
+
+/**
+ * Read-only views of trade's tables, for another module's report (history, reporting). Reads go
+ * through the service, so no other module depends on how trade stores its rows.
+ */
+export function readTables() {
+  const t = tradeTables();
+  return {
+    zones: t.zones as readonly (typeof t.zones)[number][],
+    tables: t.tables as readonly (typeof t.tables)[number][],
+    tabs: t.tabs as readonly (typeof t.tabs)[number][],
+    seats: t.seats as readonly (typeof t.seats)[number][],
+    orders: t.orders as readonly (typeof t.orders)[number][],
+    lines: t.lines as readonly (typeof t.lines)[number][],
+    lineModifiers: t.lineModifiers as readonly (typeof t.lineModifiers)[number][],
+  };
+}
 
 export function zones() {
   return [...tradeTables().zones].sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export function tables() {
-  return tradeTables().tables;
+  return tradeTables().tables.filter((t) => !t.archived);
+}
+
+/** Tables that have held at least one tab: these stay for the record. */
+export function usedTableIds(): Set<string> {
+  return new Set(tradeTables().tabs.map((x) => x.serviceTableId).filter((id): id is string => Boolean(id)));
+}
+
+/**
+ * Remove a table that has never held a tab: added by mistake, or never used. A table with history
+ * is taken out of service instead, so its nights still read back.
+ */
+export function removeServiceTable(input: { tableId: string; actor: Actor }): void {
+  assertCan(input.actor.staffId, 'staff.manage', 'changing tables');
+  const t = tradeTables();
+  const table = t.tables.find((x) => x.id === input.tableId && !x.archived);
+  if (!table) throw new DomainError('That table is no longer on the floor.');
+  if (t.tabs.some((x) => x.serviceTableId === table.id)) throw new DomainError(`${table.label} has held tabs, so it stays for the record. Take it out of service instead.`);
+  table.archived = true;
+  bumpCatalogueVersion();
+  audit.record({ outletId: table.outletId, actorStaffId: input.actor.staffId, action: 'table.removed', entityType: 'service_table', entityId: table.id, before: { label: table.label }, after: null, reason: null, severity: 'info' });
 }
 
 export function tableById(id: string | null) {
@@ -29,25 +69,46 @@ export function zoneById(id: string | null) {
   return id ? (tradeTables().zones.find((z) => z.id === id) ?? null) : null;
 }
 
-let lineIndex: { source: OrderLine[]; length: number; byTab: Map<string, OrderLine[]> } | null = null;
-let seatIndex: { source: TabSeat[]; length: number; byTab: Map<string, TabSeat[]> } | null = null;
+/**
+ * Indexes by tab, rebuilt when their table changes. A rolled-back write can shrink and regrow a table
+ * to the same length, so each index also checks the last row it saw.
+ */
+interface ByTab<T> {
+  source: T[];
+  length: number;
+  last: T | undefined;
+  byTab: Map<string, T[]>;
+}
+
+function indexByTab<T extends { tabId: string }>(cache: ByTab<T> | null, rows: T[]): ByTab<T> {
+  const last = rows[rows.length - 1];
+  if (cache && cache.source === rows && cache.length === rows.length && cache.last === last) return cache;
+  const byTab = new Map<string, T[]>();
+  for (const row of rows) {
+    const list = byTab.get(row.tabId);
+    if (list) list.push(row);
+    else byTab.set(row.tabId, [row]);
+  }
+  return { source: rows, length: rows.length, last, byTab };
+}
+
+let lineIndex: ByTab<OrderLine> | null = null;
+let seatIndex: ByTab<TabSeat> | null = null;
+let orderIndex: ByTab<ReturnType<typeof tradeTables>['orders'][number]> | null = null;
 
 function linesByTab() {
-  const { lines } = tradeTables();
-  if (lineIndex && lineIndex.source === lines && lineIndex.length === lines.length) return lineIndex.byTab;
-  const byTab = new Map<string, OrderLine[]>();
-  for (const l of lines) byTab.set(l.tabId, [...(byTab.get(l.tabId) ?? []), l]);
-  lineIndex = { source: lines, length: lines.length, byTab };
-  return byTab;
+  lineIndex = indexByTab(lineIndex, tradeTables().lines);
+  return lineIndex.byTab;
 }
 
 function seatsByTab() {
-  const { seats } = tradeTables();
-  if (seatIndex && seatIndex.source === seats && seatIndex.length === seats.length) return seatIndex.byTab;
-  const byTab = new Map<string, TabSeat[]>();
-  for (const s of seats) byTab.set(s.tabId, [...(byTab.get(s.tabId) ?? []), s]);
-  seatIndex = { source: seats, length: seats.length, byTab };
-  return byTab;
+  seatIndex = indexByTab(seatIndex, tradeTables().seats);
+  return seatIndex.byTab;
+}
+
+function ordersByTab() {
+  orderIndex = indexByTab(orderIndex, tradeTables().orders);
+  return orderIndex.byTab;
 }
 
 export function linesFor(tabId: string): OrderLine[] {
@@ -80,7 +141,7 @@ export function summarise(tab: Tab): TabSummary {
     const own = lines.filter((l) => l.tabSeatId === s.id);
     return { ...s, total: sum(own.map((l) => l.lineTotalCents)), lineCount: own.length };
   });
-  const orders = tradeTables().orders.filter((o) => o.tabId === tab.id);
+  const orders = ordersByTab().get(tab.id) ?? [];
   return {
     tab,
     tableLabel: tabLabel({ tableLabel: tableById(tab.serviceTableId)?.label, name: tab.name }),
@@ -126,7 +187,7 @@ export function linesBetween(from: IsoDate, to: IsoDate, options: { includeVoide
 }
 
 export function ordersFor(tabId: string) {
-  return tradeTables().orders.filter((o) => o.tabId === tabId).sort((a, b) => (a.firedAt ?? 0) - (b.firedAt ?? 0));
+  return [...(ordersByTab().get(tabId) ?? [])].sort((a, b) => (a.firedAt ?? 0) - (b.firedAt ?? 0));
 }
 
 export function modifiersFor(lineId: string) {
@@ -139,6 +200,10 @@ export function orderFiredAt(orderId: string): number | null {
 
 export function shiftsOn(date: IsoDate) {
   return tradeTables().shifts.filter((s) => s.businessDate === date);
+}
+
+export function shiftById(id: string) {
+  return tradeTables().shifts.find((s) => s.id === id) ?? null;
 }
 
 export function shiftsBetween(from: IsoDate, to: IsoDate) {
@@ -166,66 +231,131 @@ export function totalOf(lines: readonly OrderLine[]): Cents {
   return lines.reduce((a, l) => add(a, l.lineTotalCents), ZERO);
 }
 
+/* ------------------------------------------------------------ zones and tables */
+
+function cleanLabel(value: string, what: string, max: number): string {
+  const label = value.trim().replace(/\s+/g, ' ');
+  if (label.length < 1 || label.length > max) throw new DomainError(`A ${what} is 1 to ${max} characters.`);
+  return label;
+}
+
+function checkPriceList(id: string | null): string | null {
+  if (!id) return null;
+  if (!pricing.priceLists().some((l) => l.id === id)) throw new DomainError('That price list is not part of this outlet.');
+  return id;
+}
+
+function checkSortOrder(value: number): number {
+  if (!Number.isInteger(value) || value < 0 || value > 999) throw new DomainError('The order is a whole number from 0 to 999.');
+  return value;
+}
+
+/** Whether a tab is still open on a table. A table with a guest on it cannot be taken out of service. */
+function openTabOn(tableId: string): Tab | null {
+  return tradeTables().tabs.find((t) => t.serviceTableId === tableId && (t.status === 'open' || t.status === 'part_settled' || t.status === 'settling')) ?? null;
+}
+
 export function createZone(input: { name: string; sortOrder: number; defaultPriceListId: string | null; actor: Actor }) {
-  assertCan(input.actor.staffId, 'staff.manage', 'add a new zone');
+  assertCan(input.actor.staffId, 'staff.manage', 'adding zones');
   const { zones } = tradeTables();
-  const id = createId();
+  const name = cleanLabel(input.name, 'zone name', 40);
+  if (zones.some((z) => z.status === 'active' && z.name.toLowerCase() === name.toLowerCase())) throw new DomainError(`There is already a zone called ${name}.`);
   const zone: Zone = {
-    id,
-    outletId: zones[0]?.outletId ?? createId(),
-    name: input.name,
-    sortOrder: input.sortOrder,
-    defaultPriceListId: input.defaultPriceListId,
+    id: createId(),
+    outletId: outlet().id,
+    name,
+    sortOrder: checkSortOrder(input.sortOrder),
+    defaultPriceListId: checkPriceList(input.defaultPriceListId),
     status: 'active',
   };
   zones.push(zone);
-  audit.record({ outletId: zone.outletId, actorStaffId: input.actor.staffId, action: 'zone.created', entityType: 'zone', entityId: zone.id, before: null, after: { name: input.name }, reason: null, severity: 'info' });
+  bumpCatalogueVersion();
+  audit.record({ outletId: zone.outletId, actorStaffId: input.actor.staffId, action: 'zone.created', entityType: 'zone', entityId: zone.id, before: null, after: { name }, reason: null, severity: 'info' });
   return zone;
 }
 
 export function updateZone(input: { zoneId: string; name: string; sortOrder: number; defaultPriceListId: string | null; status: CatalogueStatus; actor: Actor }) {
-  assertCan(input.actor.staffId, 'staff.manage', 'update a zone');
+  assertCan(input.actor.staffId, 'staff.manage', 'updating zones');
   const zone = zoneById(input.zoneId);
-  if (!zone) throw new Error('Zone not found.');
-  const before = { name: zone.name, status: zone.status };
-  zone.name = input.name;
-  zone.sortOrder = input.sortOrder;
-  zone.defaultPriceListId = input.defaultPriceListId;
+  if (!zone) throw new DomainError('That zone is not part of this outlet.');
+  if (input.status !== 'active' && input.status !== 'archived') throw new DomainError('A zone is active or archived.');
+  const name = cleanLabel(input.name, 'zone name', 40);
+  if (tradeTables().zones.some((z) => z.id !== zone.id && z.status === 'active' && z.name.toLowerCase() === name.toLowerCase())) throw new DomainError(`There is already a zone called ${name}.`);
+  if (input.status === 'archived' && zone.status === 'active') {
+    const busy = tradeTables().tables.filter((t) => t.zoneId === zone.id).find((t) => openTabOn(t.id));
+    if (busy) throw new DomainError(`Table ${busy.label} in ${zone.name} has an open tab. Archive the zone once it is settled.`);
+  }
+  const before = { name: zone.name, sortOrder: zone.sortOrder, defaultPriceListId: zone.defaultPriceListId, status: zone.status };
+  zone.name = name;
+  zone.sortOrder = checkSortOrder(input.sortOrder);
+  zone.defaultPriceListId = checkPriceList(input.defaultPriceListId);
   zone.status = input.status;
-  audit.record({ outletId: zone.outletId, actorStaffId: input.actor.staffId, action: 'zone.updated', entityType: 'zone', entityId: zone.id, before, after: { name: input.name, status: input.status }, reason: null, severity: 'info' });
+  bumpCatalogueVersion();
+  audit.record({ outletId: zone.outletId, actorStaffId: input.actor.staffId, action: 'zone.updated', entityType: 'zone', entityId: zone.id, before, after: { name, sortOrder: zone.sortOrder, defaultPriceListId: zone.defaultPriceListId, status: zone.status }, reason: null, severity: 'info' });
+  return zone;
+}
+
+function checkSeats(seats: number): number {
+  if (!Number.isInteger(seats) || seats < 1 || seats > 40) throw new DomainError('A table seats 1 to 40 people.');
+  return seats;
+}
+
+function checkPosition(value: number): number {
+  if (!Number.isFinite(value) || value < 0 || value > 10_000) throw new DomainError('A table position is on the floor plan.');
+  return Math.round(value);
+}
+
+function activeZone(zoneId: string): Zone {
+  const zone = zoneById(zoneId);
+  if (!zone || zone.status !== 'active') throw new DomainError('Choose an active zone for this table.');
   return zone;
 }
 
 export function createServiceTable(input: { zoneId: string; label: string; seats: number; positionX: number; positionY: number; actor: Actor }) {
-  assertCan(input.actor.staffId, 'staff.manage', 'add a new table');
-  const { tables } = tradeTables();
-  const id = createId();
+  assertCan(input.actor.staffId, 'staff.manage', 'adding tables');
+  const zone = activeZone(input.zoneId);
+  const label = cleanLabel(input.label, 'table label', 12);
+  if (tradeTables().tables.some((t) => !t.archived && t.status !== 'out_of_service' && t.label.toLowerCase() === label.toLowerCase())) throw new DomainError(`There is already a table ${label}.`);
   const table: ServiceTable = {
-    id,
-    outletId: tables[0]?.outletId ?? createId(),
-    zoneId: input.zoneId,
-    label: input.label,
-    seats: input.seats,
-    positionX: input.positionX,
-    positionY: input.positionY,
+    id: createId(),
+    outletId: outlet().id,
+    zoneId: zone.id,
+    label,
+    seats: checkSeats(input.seats),
+    positionX: checkPosition(input.positionX),
+    positionY: checkPosition(input.positionY),
     status: 'available',
   };
-  tables.push(table);
-  audit.record({ outletId: table.outletId, actorStaffId: input.actor.staffId, action: 'table.created', entityType: 'table', entityId: table.id, before: null, after: { label: input.label, zoneId: input.zoneId }, reason: null, severity: 'info' });
+  tradeTables().tables.push(table);
+  bumpCatalogueVersion();
+  audit.record({ outletId: table.outletId, actorStaffId: input.actor.staffId, action: 'table.created', entityType: 'table', entityId: table.id, before: null, after: { label, zone: zone.name, seats: table.seats }, reason: null, severity: 'info' });
   return table;
 }
 
+/**
+ * Update a table. Occupancy is not the Console's to set: a table is occupied because a tab is open on
+ * it. The Console chooses between in service and out of service, and a table with a guest stays in.
+ */
 export function updateServiceTable(input: { tableId: string; zoneId: string; label: string; seats: number; positionX: number; positionY: number; status: TableStatus; actor: Actor }) {
-  assertCan(input.actor.staffId, 'staff.manage', 'update a table');
+  assertCan(input.actor.staffId, 'staff.manage', 'updating tables');
   const table = tableById(input.tableId);
-  if (!table) throw new Error('Table not found.');
-  const before = { label: table.label, zoneId: table.zoneId, status: table.status };
-  table.zoneId = input.zoneId;
-  table.label = input.label;
-  table.seats = input.seats;
-  table.positionX = input.positionX;
-  table.positionY = input.positionY;
-  table.status = input.status;
-  audit.record({ outletId: table.outletId, actorStaffId: input.actor.staffId, action: 'table.updated', entityType: 'table', entityId: table.id, before, after: { label: input.label, zoneId: input.zoneId, status: input.status }, reason: null, severity: 'info' });
+  if (!table) throw new DomainError('That table is not part of this outlet.');
+  const zone = activeZone(input.zoneId);
+  const label = cleanLabel(input.label, 'table label', 12);
+  if (tradeTables().tables.some((t) => t.id !== table.id && !t.archived && t.status !== 'out_of_service' && t.label.toLowerCase() === label.toLowerCase())) throw new DomainError(`There is already a table ${label}.`);
+  if (input.status !== 'available' && input.status !== 'out_of_service' && input.status !== table.status) throw new DomainError('A table is in service or out of service. It is occupied only while a tab is open on it.');
+  const open = openTabOn(table.id);
+  if (open && input.status === 'out_of_service') throw new DomainError(`Table ${table.label} has an open tab. Take it out of service once it is settled.`);
+  if (open && zone.id !== table.zoneId) throw new DomainError(`Table ${table.label} has an open tab. Move it to another zone once it is settled.`);
+  const before = { label: table.label, zoneId: table.zoneId, seats: table.seats, status: table.status };
+  table.zoneId = zone.id;
+  table.label = label;
+  table.seats = checkSeats(input.seats);
+  table.positionX = checkPosition(input.positionX);
+  table.positionY = checkPosition(input.positionY);
+  // Bringing a table back into service makes it available, or occupied again if a tab is on it.
+  table.status = input.status === 'out_of_service' ? 'out_of_service' : open ? 'occupied' : table.status === 'occupied' ? 'occupied' : 'available';
+  bumpCatalogueVersion();
+  audit.record({ outletId: table.outletId, actorStaffId: input.actor.staffId, action: 'table.updated', entityType: 'table', entityId: table.id, before, after: { label, zone: zone.name, seats: table.seats, status: table.status }, reason: null, severity: 'info' });
   return table;
 }

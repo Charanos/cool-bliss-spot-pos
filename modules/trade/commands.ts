@@ -258,7 +258,15 @@ export function voidLine(p: OutboxPayload<'line.void'>, actor: Actor): void {
   const line = lineOrThrow(p.lineId);
   if (line.status === 'voided') return;
   assertNotBilled(line);
-  if (line.status === 'served' && !p.approvalToken) throw new CommandRejected('APPROVAL_REQUIRED', 'This line was poured. A supervisor approves the void with their PIN.');
+  // A poured line needs an approval: a genuine, unexpired token from someone who can approve voids,
+  // unless the person voiding can approve it themselves. A made-up token is no approval at all.
+  let approverId: string | null = null;
+  if (line.status === 'served') {
+    const approver = identity.approverFromToken(p.approvalToken, 'void.approve');
+    if (approver) approverId = approver.id;
+    else if (identity.can(actor.staffId, 'void.approve')) approverId = actor.staffId;
+    else throw new CommandRejected('APPROVAL_REQUIRED', 'This line was poured. A supervisor approves the void with their PIN.');
+  }
   const before = line.status;
   line.status = 'voided';
   line.voidedBy = actor.staffId;
@@ -275,7 +283,7 @@ export function voidLine(p: OutboxPayload<'line.void'>, actor: Actor): void {
     entityType: 'order_line',
     entityId: line.id,
     before: { status: before },
-    after: { status: 'voided', approverId: p.approvalToken ?? actor.staffId, voidedBy: actor.staffId, voidedAt: line.voidedAt },
+    after: { status: 'voided', approverId, voidedBy: actor.staffId, voidedAt: line.voidedAt },
     reason: p.reason,
     severity: 'sensitive',
   });
@@ -439,7 +447,47 @@ export function handOver(p: OutboxPayload<'tab.handover'>, actor: Actor): void {
   }
 }
 
+/**
+ * Void a line as part of closing a tab from the Console. A poured line was drunk, so its stock
+ * stays gone; a line not yet poured goes back on the shelf. The caller audits the close as a whole.
+ */
+export function voidForClose(lineId: string, reason: string, actor: Actor): void {
+  const line = lineOrThrow(lineId);
+  if (line.status === 'voided') return;
+  const poured = line.status === 'served';
+  line.status = 'voided';
+  line.voidedBy = actor.staffId;
+  line.voidedAt = Date.now();
+  line.voidReason = reason;
+  if (!poured) inventory.reverseSale({ lineId: line.id, actor });
+  rollUpOrder(line.orderId);
+  touch('lines', line.id);
+}
+
 /* ------------------------------------------------------ used by settlement */
+
+/**
+ * A bill on this tab was voided in the Console: its seats are open again and the tab is back to
+ * being paid, part paid if another bill still stands. The table was never let go (voiding a bill
+ * whose table has been cleared is refused), so the tab takes up where it was.
+ */
+export function reopenAfterBillVoid(tabId: string, billId: string): void {
+  const t = tradeTables();
+  const tab = t.tabs.find((x) => x.id === tabId);
+  if (!tab) return;
+  for (const seat of t.seats.filter((s) => s.tabId === tabId && s.settledBillId === billId)) {
+    seat.status = 'active';
+    seat.settledBillId = null;
+    seat.settledAt = null;
+    touch('seats', seat.id);
+  }
+  const standing = settlement.billsForTab(tabId).length;
+  tab.status = standing > 0 ? 'part_settled' : 'open';
+  tab.closedAt = null;
+  tab.clearedAt = null;
+  tab.clearedBy = null;
+  touch('tabs', tab.id);
+}
 
 /** Mark a seat settled by a bill. */
 export function settleSeat(seatId: string, billId: string, at: number): void {

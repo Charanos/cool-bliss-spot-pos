@@ -120,9 +120,9 @@ export function VeilButton({ icon: Glyph, children, className, type = 'button', 
       {...rest} 
       type={type} 
       className={cx(
-        'surface-veil group inline-flex h-control-md items-center gap-10 rounded-dot px-20 text-ink-subtle',
+        'surface-veil group inline-flex h-control-md items-center gap-8 rounded-dot px-20 text-ink-subtle',
         'transition-all duration-[400ms] ease-out',
-        'hover:text-ink hover:shadow-sm hover:-translate-y-[1px]',
+        'hover:text-ink hover:shadow-raised hover:-translate-y-[1px]',
         'active:scale-[0.98] active:translate-y-0 active:duration-75',
         className
       )}

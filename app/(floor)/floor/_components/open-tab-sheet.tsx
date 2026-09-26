@@ -78,7 +78,7 @@ function GuestSeatSelector({
             onClick={() => onChange(Math.max(MIN_GUESTS, guests - 1))}
             disabled={guests <= MIN_GUESTS}
             aria-label="One fewer guest"
-            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full ring-1 ring-rule-raised/30 bg-glass text-[32px] font-regular text-ink transition-colors hover:bg-glass-strong hover:ring-glass-edge disabled:opacity-30 disabled:hover:bg-glass disabled:hover:ring-rule-raised/30 press-feedback"
+            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full bg-glass text-[32px] font-regular text-ink transition-colors hover:bg-glass-strong disabled:opacity-30 disabled:hover:bg-glass disabled:hover:ring-rule-raised/30 press-feedback"
           >
             −
           </button>
@@ -90,7 +90,7 @@ function GuestSeatSelector({
             onClick={() => onChange(Math.min(MAX_GUESTS, guests + 1))}
             disabled={guests >= MAX_GUESTS}
             aria-label="One more guest"
-            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full ring-1 ring-rule-raised/30 bg-glass text-[32px] font-regular text-ink transition-colors hover:bg-glass-strong hover:ring-glass-edge disabled:opacity-30 disabled:hover:bg-glass disabled:hover:ring-rule-raised/30 press-feedback"
+            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full bg-glass text-[32px] font-regular text-ink transition-colors hover:bg-glass-strong disabled:opacity-30 disabled:hover:bg-glass disabled:hover:ring-rule-raised/30 press-feedback"
           >
             +
           </button>

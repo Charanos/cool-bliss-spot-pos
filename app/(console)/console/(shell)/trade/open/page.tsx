@@ -3,6 +3,7 @@ import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
 import * as trade from '@/modules/trade/service';
 import { OpenTabsTable, type OpenTabRow } from './open-tabs-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Open tabs' };
 
@@ -30,6 +31,9 @@ export default function OpenTabsPage() {
   }));
 
   return (
+    <>
+      <ViewHeader page="/console/trade/open" />
+
     <OpenTabsTable
       rows={rows}
       now={clock.now}
@@ -38,5 +42,6 @@ export default function OpenTabsPage() {
       zones={trade.zones().map((z) => ({ value: z.id, label: z.name }))}
       waiters={[...new Map(rows.map((r) => [r.waiterId, r.waiter])).entries()].map(([value, label]) => ({ value, label }))}
     />
+    </>
   );
 }

@@ -85,7 +85,7 @@ export function TenderPanel({
       if (kind === 'mpesa') {
         const cleanRef = reference.trim().toUpperCase();
         if (!cleanRef || cleanRef.length < 8) {
-          return setError('M-Pesa code required (min 8 chars). Verify on Till / Statement — NEVER the message on the customer\'s phone.');
+          return setError('Enter the M-Pesa code, at least 8 characters. Check it on the till statement, never on the guest\'s phone.');
         }
         onChange([...tenders, draftTender(kind, figure, null, cleanRef)]);
       } else if (kind === 'card') {

@@ -32,6 +32,7 @@ import { isSeated } from '@bliss/shared/trade';
 import { notify } from '@bliss/ui/components/notices';
 import { PANE, Quiet } from '../../../_components/parts';
 import { TENDER_ICON, TENDER_WORD, TenderPanel } from '../../../_components/tender-panel';
+import { printUrl } from '@/lib/pos/api';
 
 type Scope = 'tab' | 'seat' | 'even_split';
 
@@ -341,7 +342,7 @@ export default function SettleTabPage() {
               variant="secondary"
               size="xl"
               icon={IconPrinter}
-              onClick={() => window.open(`/print/bill/${result.billId}`, '_blank')}
+              onClick={() => window.open(printUrl(`/print/bill/${result.billId}`), '_blank')}
             >
               Print Final Receipt
             </Button>

@@ -179,6 +179,11 @@ export interface Supplier {
   leadTimeDays: number;
   minOrderCents: Cents;
   status: 'active' | 'archived';
+  phone?: string | null;
+  email?: string | null;
+  /** ISO weekdays the supplier delivers on, 1 Monday to 7 Sunday. */
+  deliveryDays?: number[];
+  notes?: string | null;
 }
 
 export const SUPPLIERS: Supplier[] = [

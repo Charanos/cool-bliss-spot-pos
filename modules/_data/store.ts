@@ -61,6 +61,12 @@ function state(): StoreState {
   return g.__blissStore;
 }
 
+/** The shared pool, for storage that sits beside the working set rather than in it (uploads). */
+export async function storePool(): Promise<Pool> {
+  await boot();
+  return state().pool;
+}
+
 /* ------------------------------------------------------------------ load */
 
 /** The date fields follow the clock, not the moment the data was seeded. */
@@ -121,9 +127,9 @@ export function boot(): Promise<void> {
 export function storeDataset(): Dataset {
   const s = state();
   if (!s.data) throw new Error('The outlet data is still loading. Try again in a moment.');
-  if (tracking && txn) return txn.view;
+  if (w.tracking && w.txn) return w.txn.view;
   // Reads that did not ask for freshness still catch up soon: at most a second behind.
-  if (!writing && Date.now() - s.checkedAt > 1000) void fresh().catch(() => undefined);
+  if (Date.now() - s.checkedAt > 1000) void fresh().catch(() => undefined);
   return s.data;
 }
 
@@ -185,14 +191,16 @@ export async function fresh(): Promise<void> {
   await boot();
   const s = state();
   if (s.checking) return s.checking;
-  s.checking = (async () => {
+  // A catch-up takes its turn in the same queue as writes, so the two never patch the working set
+  // at once (both would append the same change feed entries).
+  const check = s.queue.then(async () => {
     let client: PoolClient | null = null;
     try {
       client = await s.pool.connect();
       // One snapshot: the version and the rows it names are read at the same instant.
       await client.query('begin isolation level repeatable read read only');
       const latest = await versionOf(client);
-      if (latest > s.loaded && !writing) await catchUp(client, latest);
+      if (latest > s.loaded) await catchUp(client, latest);
       await client.query('commit');
       s.checkedAt = Date.now();
     } catch (error) {
@@ -202,8 +210,10 @@ export async function fresh(): Promise<void> {
       client?.release();
       s.checking = null;
     }
-  })();
-  return s.checking;
+  });
+  s.checking = check;
+  s.queue = check.catch(() => undefined);
+  return check;
 }
 
 /** The data is loaded; freshness not required. For reads that tolerate a second of lag. */
@@ -233,18 +243,24 @@ interface Txn {
   baseChangeSeq: number;
 }
 
-let txn: Txn | null = null;
-/** True only while a write's command runs, which is synchronous: nothing else interleaves. */
-let tracking = false;
-/** True from the start of a write to its end, so a background catch-up waits its turn. */
-let writing = false;
+/**
+ * Write state lives on globalThis with the rest of the store: development builds can load this module
+ * more than once (one copy per bundle), and every copy must see the same write in progress.
+ */
+interface WriteState {
+  txn: Txn | null;
+  /** True only while a write's command runs, which is synchronous: nothing else interleaves. */
+  tracking: boolean;
+}
+const gw = globalThis as unknown as { __blissWrite?: WriteState };
+const w: WriteState = (gw.__blissWrite ??= { txn: null, tracking: false });
 
 function frame(data: Dataset): Frame {
   return { pre: new Map(), lengths: new Map(), replaced: [], dirtyAdded: [], appliedAdded: [], scalars: new Map(), changesLength: data.changes.length };
 }
 
 function top(): Frame {
-  return txn!.frames[txn!.frames.length - 1]!;
+  return w.txn!.frames[w.txn!.frames.length - 1]!;
 }
 
 function unwrap<T>(value: T): T {
@@ -266,20 +282,20 @@ function unwrap<T>(value: T): T {
 }
 
 function markDirty(collection: string, row: object, ord: number | null) {
-  if (!txn) return;
+  if (!w.txn) return;
   const key = `${collection}\u0000${keyOf(collection, row)}`;
-  const known = txn.dirty.get(key);
+  const known = w.txn.dirty.get(key);
   if (known) {
     known.row = row;
     if (ord !== null) known.ord = ord;
     return;
   }
-  txn.dirty.set(key, { collection, row, ord });
+  w.txn.dirty.set(key, { collection, row, ord });
   top().dirtyAdded.push(key);
 }
 
 function remember(row: object) {
-  if (!txn) return;
+  if (!w.txn) return;
   const f = top();
   if (!f.pre.has(row)) f.pre.set(row, structuredClone(row));
 }
@@ -296,7 +312,7 @@ function tracked<T extends object>(target: T, collection: string, owner: object)
       return v && typeof v === 'object' && typeof prop === 'string' ? tracked(v as object, collection, owner) : v;
     },
     set(t, prop, value) {
-      if (tracking) {
+      if (w.tracking) {
         remember(owner);
         markDirty(collection, owner, null);
       }
@@ -304,7 +320,7 @@ function tracked<T extends object>(target: T, collection: string, owner: object)
       return true;
     },
     deleteProperty(t, prop) {
-      if (tracking) {
+      if (w.tracking) {
         remember(owner);
         markDirty(collection, owner, null);
       }
@@ -330,7 +346,7 @@ function trackedCollection(collection: string, list: unknown[]): unknown[] {
       if (isIndex(prop)) {
         const i = Number(prop as string);
         const raw = unwrap(value) as object;
-        if (tracking && txn) {
+        if (w.tracking && w.txn) {
           const f = top();
           if (!f.lengths.has(t)) f.lengths.set(t, t.length);
           if (i < t.length && t[i] !== raw) f.replaced.push([t, i, t[i]]);
@@ -339,7 +355,7 @@ function trackedCollection(collection: string, list: unknown[]): unknown[] {
         t[i] = raw;
         return true;
       }
-      if (prop === 'length' && tracking && txn && !top().lengths.has(t)) top().lengths.set(t, t.length);
+      if (prop === 'length' && w.tracking && w.txn && !top().lengths.has(t)) top().lengths.set(t, t.length);
       return Reflect.set(t, prop, value);
     },
   });
@@ -363,7 +379,7 @@ function trackedRoot(data: Dataset): Dataset {
             return set.size;
           },
           add(id: string) {
-            if (!set.has(id) && tracking && txn) top().appliedAdded.push(id);
+            if (!set.has(id) && w.tracking && w.txn) top().appliedAdded.push(id);
             set.add(id);
             return this;
           },
@@ -372,7 +388,7 @@ function trackedRoot(data: Dataset): Dataset {
       return Reflect.get(t, prop, receiver);
     },
     set(t, prop, value) {
-      if (typeof prop === 'string' && tracking && txn) {
+      if (typeof prop === 'string' && w.tracking && w.txn) {
         const f = top();
         if (!f.scalars.has(prop)) f.scalars.set(prop, (t as unknown as Record<string, unknown>)[prop]);
       }
@@ -389,7 +405,7 @@ function undo(f: Frame, data: Dataset) {
   }
   for (const [list, i, previous] of f.replaced.reverse()) list[i] = previous;
   for (const [list, length] of f.lengths) list.length = length;
-  for (const key of f.dirtyAdded) txn?.dirty.delete(key);
+  for (const key of f.dirtyAdded) w.txn?.dirty.delete(key);
   for (const id of f.appliedAdded) data.applied.delete(id);
   for (const [key, value] of f.scalars) (data as unknown as Record<string, unknown>)[key] = value;
   data.changes.length = f.changesLength;
@@ -401,22 +417,22 @@ export interface Checkpoint {
 
 /** Mark a point the current write can go back to. Outside a write, nothing to mark. */
 export function checkpoint(): Checkpoint | null {
-  if (!txn || !tracking) return null;
-  txn.frames.push(frame(state().data!));
-  return { depth: txn.frames.length };
+  if (!w.txn || !w.tracking) return null;
+  w.txn.frames.push(frame(state().data!));
+  return { depth: w.txn.frames.length };
 }
 
 /** Undo everything since the checkpoint, and forget it. */
 export function rollbackTo(cp: Checkpoint | null): void {
-  if (!cp || !txn) return;
-  while (txn.frames.length >= cp.depth) undo(txn.frames.pop()!, state().data!);
+  if (!cp || !w.txn) return;
+  while (w.txn.frames.length >= cp.depth) undo(w.txn.frames.pop()!, state().data!);
 }
 
 /** Keep everything since the checkpoint as part of the write around it. */
 export function release(cp: Checkpoint | null): void {
-  if (!cp || !txn) return;
-  while (txn.frames.length >= cp.depth) {
-    const f = txn.frames.pop()!;
+  if (!cp || !w.txn) return;
+  while (w.txn.frames.length >= cp.depth) {
+    const f = w.txn.frames.pop()!;
     const parent = top();
     for (const [row, before] of f.pre) if (!parent.pre.has(row)) parent.pre.set(row, before);
     for (const [list, length] of f.lengths) if (!parent.lengths.has(list)) parent.lengths.set(list, length);
@@ -452,7 +468,6 @@ export async function withWrite<T>(command: () => T): Promise<T> {
   const s = state();
   const run = s.queue.then(async () => {
     const client = await s.pool.connect();
-    writing = true;
     let t: Txn | null = null;
     try {
       await client.query('begin');
@@ -461,13 +476,13 @@ export async function withWrite<T>(command: () => T): Promise<T> {
       if (latest > s.loaded) await catchUp(client, latest);
       const data = s.data!;
       t = { view: trackedRoot(data), dirty: new Map(), frames: [frame(data)], baseChangeSeq: data.changeSeq };
-      txn = t;
-      tracking = true;
+      w.txn = t;
+      w.tracking = true;
       let result: T;
       try {
         result = command();
       } finally {
-        tracking = false;
+        w.tracking = false;
       }
       const next = latest + 1;
       if (t.dirty.size > 0 || t.frames.some((f) => f.appliedAdded.length > 0 || f.scalars.size > 0)) {
@@ -484,8 +499,7 @@ export async function withWrite<T>(command: () => T): Promise<T> {
       if (t && s.data) while (t.frames.length > 0) undo(t.frames.pop()!, s.data);
       throw error;
     } finally {
-      txn = null;
-      writing = false;
+      w.txn = null;
       client.release();
     }
   });

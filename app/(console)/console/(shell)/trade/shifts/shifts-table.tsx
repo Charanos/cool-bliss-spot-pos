@@ -1,13 +1,15 @@
 'use client';
 
-import { formatElapsed, formatIsoDate, formatTime } from '@bliss/shared/format';
-import { type Cents, formatDecimal, isPositive, sum, add } from '@bliss/shared/money';
+import { formatElapsed, formatIsoDate, formatTime, plural } from '@bliss/shared/format';
+import { type Cents, add, formatDecimal, isPositive, sum } from '@bliss/shared/money';
+import { Card, CardBand, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
-import { Metric } from '@bliss/ui/components/console/metric';
-import { Money, Num } from '@bliss/ui/components/money';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
+import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
-import { IconAlertCircle, IconClock, IconReceipt, IconUsers } from '@tabler/icons-react';
+import { IconClock, IconDiscount2, IconReceipt, IconUsers } from '@tabler/icons-react';
 import { UrlSelect } from '../../_components/url-select';
+import { StaffAvatar } from '../../people/staff/avatar';
 
 export interface ShiftRow {
   id: string;
@@ -24,13 +26,17 @@ export interface ShiftRow {
   voids: Cents;
   discounts: Cents;
   open: boolean;
+  avatarUrl: string | null;
+  colourIndex: number;
 }
 
+/** Shifts in a range: who worked, for how long, and what went through their hands. */
 export function ShiftsTable({
   rows,
   timezone,
   rangeOptions,
   rangeKey,
+  rangeLabel,
   staff,
   exportDate,
 }: {
@@ -38,27 +44,34 @@ export function ShiftsTable({
   timezone: string;
   rangeOptions: { value: string; label: string }[];
   rangeKey: string;
+  rangeLabel: string;
   staff: { value: string; label: string }[];
   exportDate: string;
 }) {
   const columns: Column<ShiftRow>[] = [
-    { key: 'staff', header: 'Person', width: 'minmax(150px,1fr)', fixed: true, sortValue: (r) => r.staff, csv: (r) => r.staff, cell: (r) => <StackCell primary={r.staff} secondary={r.role} /> },
-    { key: 'date', header: 'Business date', width: '120px', sortValue: (r) => r.businessDate, csv: (r) => r.businessDate, cell: (r) => <NumCell tone="muted">{formatIsoDate(r.businessDate)}</NumCell> },
+    { key: 'staff', header: 'Person', width: 'minmax(160px,1fr)', fixed: true, sortValue: (r) => r.staff, csv: (r) => r.staff, cell: (r) => (
+        <span className="flex min-w-0 items-center gap-12">
+          <StaffAvatar name={r.staff} avatarUrl={r.avatarUrl} colourIndex={r.colourIndex} />
+          <StackCell primary={r.staff} secondary={r.role} />
+        </span>
+      ),
+    },
+    { key: 'date', header: 'Business day', width: '128px', sortValue: (r) => r.businessDate, csv: (r) => r.businessDate, cell: (r) => <NumCell tone="muted">{formatIsoDate(r.businessDate)}</NumCell> },
     {
       key: 'hours',
       header: 'Hours',
-      width: '180px',
+      width: '176px',
       sortValue: (r) => r.startedAt,
       csv: (r) => `${new Date(r.startedAt).toISOString()} ${r.endedAt ? new Date(r.endedAt).toISOString() : ''}`,
       cell: (r) =>
         r.open ? (
           <span className="flex items-center gap-8">
-            <NumCell tone="muted">{formatTime(r.startedAt, timezone)}</NumCell>
+            <NumCell tone="muted">From {formatTime(r.startedAt, timezone)}</NumCell>
             <StatusChip status="open" label="On shift" />
           </span>
         ) : (
           <StackCell
-            primary={<span className="font-mono tabular text-num">{`${formatTime(r.startedAt, timezone)} to ${r.endedAt ? formatTime(r.endedAt, timezone) : '··'}`}</span>}
+            primary={<span className="font-mono tabular text-num-md">{`${formatTime(r.startedAt, timezone)} to ${r.endedAt ? formatTime(r.endedAt, timezone) : 'now'}`}</span>}
             secondary={r.endedAt ? formatElapsed(r.endedAt - r.startedAt) : undefined}
           />
         ),
@@ -66,129 +79,103 @@ export function ShiftsTable({
     {
       key: 'tabs',
       header: 'Tabs',
-      width: '110px',
+      width: '120px',
       align: 'right',
       sortValue: (r) => r.tabsOpened,
       csv: (r) => r.tabsOpened,
       cell: (r) => (
-        <span className="flex flex-col items-end ">
+        <span className="flex flex-col items-end">
           <NumCell>{r.tabsOpened}</NumCell>
           {r.tabsHandedOver > 0 ? <span className="text-body-sm text-ink-subtle">{r.tabsHandedOver} to {r.handoverTo ?? 'the next shift'}</span> : null}
         </span>
       ),
     },
-    { key: 'sales', header: 'Sales', width: '120px', align: 'right', sortValue: (r) => r.sales, csv: (r) => formatDecimal(r.sales), cell: (r) => <Money value={r.sales} currency={false} decimals="whole" /> },
+    { key: 'sales', header: 'Sales', width: '128px', align: 'right', sortValue: (r) => r.sales, csv: (r) => formatDecimal(r.sales), cell: (r) => <Money value={r.sales} currency={false} size="num-md" decimals="whole" /> },
     {
       key: 'voids',
       header: 'Voids',
-      width: '100px',
+      width: '104px',
       align: 'right',
       sortValue: (r) => r.voids,
       csv: (r) => formatDecimal(r.voids),
-      cell: (r) => (isPositive(r.voids) ? <Money value={r.voids} currency={false} decimals="whole" tone="attention" /> : <NumCell tone="muted">··</NumCell>),
+      cell: (r) => (isPositive(r.voids) ? <Money value={r.voids} currency={false} size="num-md" decimals="whole" tone="attention" /> : <NumCell tone="muted">None</NumCell>),
     },
     {
       key: 'discounts',
       header: 'Discounts',
-      width: '100px',
+      width: '104px',
       align: 'right',
       sortValue: (r) => r.discounts,
       csv: (r) => formatDecimal(r.discounts),
-      cell: (r) => (isPositive(r.discounts) ? <Money value={r.discounts} currency={false} decimals="whole" tone="attention" /> : <NumCell tone="muted">··</NumCell>),
+      cell: (r) => (isPositive(r.discounts) ? <Money value={r.discounts} currency={false} size="num-md" decimals="whole" tone="attention" /> : <NumCell tone="muted">None</NumCell>),
     },
   ];
 
-  const totalShifts = rows.length;
-  const activeStaff = rows.filter((r) => r.open).length;
+  const onShift = rows.filter((r) => r.open).length;
   const totalSales = sum(rows.map((r) => r.sales));
-  const totalExceptions = sum(rows.map((r) => add(r.voids, r.discounts)));
+  const given = sum(rows.map((r) => add(r.voids, r.discounts)));
+  const people = new Set(rows.map((r) => r.staffId)).size;
 
   return (
-    <div className="flex flex-col gap-24">
-      {/* Executive Shift Performance Metrics */}
-      <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
+    <div className="flex flex-col gap-32">
+      <MetricGrid>
+        <Metric label="Shifts" icon={IconUsers} value={<CountUp value={rows.length} />} detail={`${plural(people, 'person', 'people')}, ${rangeLabel}`} />
         <Metric
-          label={`Total Shifts${rangeKey ? ` (${rangeOptions.find(o => o.value === rangeKey)?.label ?? rangeKey})` : ''}`}
-          value={<Num size="title-lg">{totalShifts}</Num>}
-          detail="Staff sessions logged"
-          icon={IconUsers}
-          tone="default"
-        />
-        <Metric
-          label="Active Staff"
-          value={<Num size="title-lg">{activeStaff}</Num>}
-          detail="Currently on the floor"
+          label="On shift now"
           icon={IconClock}
-          tone={activeStaff > 0 ? 'poured' : 'default'}
+          tone={onShift > 0 ? 'info' : 'default'}
+          value={<CountUp value={onShift} delayMs={60} />}
+          detail={onShift > 0 ? 'Signed in on a tablet or the counter' : 'Nobody is signed in'}
         />
+        <Metric label="Sales" icon={IconReceipt} value={<Money value={totalSales} size="num-kpi" decimals="whole" />} detail="Settled on these shifts" />
         <Metric
-          label="Sales Driven"
-          value={<Money value={totalSales} currency={false} decimals="whole" size="title-lg" />}
-          detail="Revenue across shifts"
-          icon={IconReceipt}
-          tone="default"
+          label="Voids and discounts"
+          icon={IconDiscount2}
+          tone={isPositive(given) ? 'attention' : 'default'}
+          value={<Money value={given} size="num-kpi" decimals="whole" />}
+          detail={isPositive(given) ? 'Given away or taken back' : 'Nothing voided or discounted'}
         />
-        <Metric
-          label="Exceptions & Voids"
-          value={<Money value={totalExceptions} currency={false} decimals="whole" size="title-lg" />}
-          detail="Discounts & Voids"
-          icon={IconAlertCircle}
-          tone={totalExceptions > 0n ? 'attention' : 'default'}
-        />
-      </div>
-
-      {/* Elegant visual separator */}
-      <div className="h-[1px] mt-20 w-full bg-gradient-to-r from-transparent via-hairline/60 to-transparent opacity-80" aria-hidden="true" />
+      </MetricGrid>
 
       <DataTable
         id="trade-shifts"
         caption="Shifts"
+        noun={['shift', 'shifts']}
         rows={rows}
         columns={columns}
         rowKey={(r) => r.id}
+        rowHref={(r) => `/console/trade/shifts/${r.id}`}
         defaultSort={{ key: 'hours', dir: 'desc' }}
+        renderGridCard={(r) => (
+          <Card as="article" interactive className="group h-full" tone={r.open ? 'accent' : undefined}>
+            <CardBand
+              eyebrow={formatIsoDate(r.businessDate)}
+              status={r.open ? <StatusChip status="open" label="On shift" /> : null}
+              leading={<StaffAvatar name={r.staff} avatarUrl={r.avatarUrl} colourIndex={r.colourIndex} size="md" />}
+              title={r.staff}
+              subtitle={r.role}
+              href={`/console/trade/shifts/${r.id}`}
+            />
+            <KeyRows>
+              <KeyRow label="Hours">
+                {formatTime(r.startedAt, timezone)} to {r.endedAt ? formatTime(r.endedAt, timezone) : 'now'}
+              </KeyRow>
+              <KeyRow label="Sales">
+                <Money value={r.sales} currency={false} size="num-md" decimals="whole" />
+              </KeyRow>
+              <KeyRow label="Tabs">{r.tabsOpened}</KeyRow>
+              <KeyRow label="Voids" tone={isPositive(r.voids) ? 'low' : undefined}>
+                {isPositive(r.voids) ? <Money value={r.voids} currency={false} size="num-md" decimals="whole" /> : 'None'}
+              </KeyRow>
+            </KeyRows>
+          </Card>
+        )}
         leading={<UrlSelect param="range" label="Range" options={rangeOptions} allLabel={null} fallback={rangeKey} />}
         filters={[{ kind: 'select', key: 'person', label: 'Person', options: staff, test: (r, v) => r.staffId === v }]}
         exportName="shifts"
         exportDate={exportDate}
         empty={{ title: 'No shifts in this range', body: 'A shift starts when someone signs in on a floor tablet or the counter.' }}
-        renderGridCard={(r) => (
-          <div className="text-left w-full h-[320px] bg-page rounded-[20px] border border-hairline/60 shadow-[0_4px_16px_rgba(0,0,0,0.02)] transition-all flex flex-col group relative overflow-hidden">
-            {/* Header */}
-            <div className="flex flex-col p-20 bg-desk-hover border-b border-hairline/40 shrink-0">
-              <div className="flex items-center justify-between mb-8">
-                <span className="font-mono text-[11px] font-bold tracking-widest text-desk-muted uppercase">{formatIsoDate(r.businessDate)}</span>
-                {r.open ? (
-                  <StatusChip status="open" label="On shift" />
-                ) : (
-                  <span className="text-[11px] font-bold text-ink-muted uppercase tracking-widest">Closed</span>
-                )}
-              </div>
-              <span className="text-title font-medium text-ink truncate mb-4">{r.staff}</span>
-              <span className="text-micro text-ink-subtle truncate">{r.role}</span>
-            </div>
-
-            {/* Details */}
-            <div className="flex flex-col flex-1 p-20 text-body-sm bg-page w-full">
-              <div className="flex flex-col mt-auto gap-8">
-                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Time</span>
-                  <span className="font-mono text-ink font-medium">
-                    {`${formatTime(r.startedAt, timezone)} - ${r.endedAt ? formatTime(r.endedAt, timezone) : 'Now'}`}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Tabs</span>
-                  <span className="text-ink font-medium">{r.tabsOpened} opened</span>
-                </div>
-                <div className="flex justify-between items-center py-8">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Sales</span>
-                  <Money value={r.sales} currency={false} decimals="whole" className="font-medium text-[15px]" />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        emptyFiltered={{ title: 'No shifts for this person in the range', body: 'Choose someone else, or a longer range.' }}
       />
     </div>
   );

@@ -6,7 +6,7 @@ import { cx } from '../lib/cx';
 import { Button } from './button';
 import { TextArea } from './fields';
 import { OverlayActions } from './overlay';
-import { PIN_LENGTH, PinPad } from './pin-pad';
+import { PinPad } from './pin-pad';
 
 export interface ReasonSubmit {
   reason: string;
@@ -36,18 +36,7 @@ export interface ReasonFormProps {
  * Quick chips populate the field rather than replacing it, and a chip alone is never accepted.
  * There is no shared supervisor password: an approver types their own PIN here.
  */
-export function ReasonForm({
-  quickReasons,
-  initialReason = '',
-  confirmLabel,
-  cancelLabel = 'Keep it',
-  destructive = true,
-  approval,
-  children,
-  focus = 'field',
-  onCancel,
-  onConfirm,
-}: ReasonFormProps) {
+export function ReasonForm({ quickReasons, initialReason = '', confirmLabel, cancelLabel = 'Keep it', destructive = true, approval, children, focus = 'field', onCancel, onConfirm }: ReasonFormProps) {
   const [reason, setReason] = useState(initialReason);
   const [pin, setPin] = useState('');
   const [attempted, setAttempted] = useState(false);
@@ -59,7 +48,8 @@ export function ReasonForm({
   const length = reasonLength(reason);
   const check = checkReason(reason);
   const needsPin = Boolean(approval);
-  const pinReady = !needsPin || pin.length === PIN_LENGTH;
+  // An approver's PIN is four to eight digits; the pad does not know whose it will be.
+  const pinReady = !needsPin || pin.length >= 4;
 
   const submit = async () => {
     setAttempted(true);
@@ -129,7 +119,7 @@ export function ReasonForm({
       {approval ? (
         <div className="pt-24">
           <p className="pb-16 text-label text-ink-subtle">{approval.label}</p>
-          <PinPad value={pin} onChange={setPin} label={approval.label} size="md" error={attempted && !pinReady ? 'Six digits are needed to approve.' : null} />
+          <PinPad value={pin} onChange={setPin} label={approval.label} size="md" length={8} error={attempted && !pinReady ? "Enter the approver's PIN, four to eight digits." : null} />
         </div>
       ) : null}
 

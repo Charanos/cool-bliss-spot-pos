@@ -4,7 +4,7 @@ import '../globals.css';
 import { cx } from '@bliss/ui/lib/cx';
 
 export const metadata: Metadata = {
-  title: 'Print Receipt',
+  title: 'Print',
 };
 
 export default function PrintLayout({ children }: { children: ReactNode }) {
@@ -14,7 +14,7 @@ export default function PrintLayout({ children }: { children: ReactNode }) {
         For thermal printing, we want absolutely no background colors from the browser body,
         no margins, and we want to enforce a very clean slate. 
       */}
-      <body className={cx('bg-white text-black antialiased min-h-screen')} suppressHydrationWarning>
+      <body className={cx('bg-paper text-paper-ink antialiased min-h-screen')} suppressHydrationWarning>
         {children}
       </body>
     </html>

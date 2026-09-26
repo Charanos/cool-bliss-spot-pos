@@ -10,12 +10,12 @@ import { IconChevronRight } from '@tabler/icons-react';
 export function LineDerivation({ steps, unit }: { steps: readonly DerivationStep[]; unit: Cents }) {
   if (steps.length === 0) return null;
   return (
-    <details className="group ml-[64px] mt-8">
-      <summary className="inline-flex cursor-pointer list-none items-center gap-4 rounded-sm text-body-sm text-ink-subtle hover:text-ink [&::-webkit-details-marker]:hidden">
+    <details className="group">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-4 rounded-sm text-body-sm text-ink-subtle transition-hover hover:text-ink [&::-webkit-details-marker]:hidden">
         <IconChevronRight size={14} stroke={1.5} aria-hidden="true" className="transition-transform group-open:rotate-90 motion-reduce:transition-none" />
-        How the price was set · <span className="font-mono tabular text-num-sm">{formatFigure(unit)}</span> each
+        How the price was set, <span className="font-mono tabular text-num-sm">{formatFigure(unit)}</span> each
       </summary>
-      <ol className="mt-8 flex flex-col border-l border-hairline" aria-label="Price derivation, in order">
+      <ol className="mt-8 flex flex-col border-l border-rule" aria-label="Price derivation, in order">
         {steps.map((step, i) => (
           <li key={`${step.label}-${i}`} className="grid grid-cols-[24px_minmax(120px,1fr)_auto] items-baseline gap-12 py-4 pl-12">
             <span className="font-mono tabular text-num-sm text-ink-subtle">{i + 1}</span>

@@ -215,7 +215,7 @@ export function TabRecord({ tab, tz, now, staffId, onOpen }: { tab: HistoryTab; 
                   · {plural(r.lines.length, 'line')}
                   {r.deliveredAt ? ` · at the table ${formatTime(r.deliveredAt, tz)}` : ''}
                 </span>
-                <ul className="mt-4 rounded-md bg-sunken/50 px-8 py-2">
+                <ul className="mt-4 rounded-md bg-control px-8 py-2">
                   {r.lines.map((l) => (
                     <LineRow key={l.id} line={l} tz={tz} ordering={tab.state === 'ordering'} />
                   ))}
@@ -265,7 +265,7 @@ export function TabRecord({ tab, tz, now, staffId, onOpen }: { tab: HistoryTab; 
           </ol>
 
           {tab.bills.length > 0 && compare(tab.paidCents, tab.totalCents) !== 0 ? (
-            <p className="mt-12 flex items-center justify-between rounded-md bg-sunken/50 px-12 py-8 text-body-sm text-ink-muted">
+            <p className="mt-12 flex items-center justify-between rounded-md bg-control px-12 py-8 text-body-sm text-ink-muted">
               <span>Paid so far</span>
               <Money value={tab.paidCents} size="num-sm" decimals="whole" />
             </p>

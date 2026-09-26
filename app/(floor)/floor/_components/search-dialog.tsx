@@ -3,7 +3,6 @@
 import type { Cents } from '@bliss/shared/money';
 import { formatKes } from '@bliss/shared/money';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
-import { CountBadge } from '@bliss/ui/components/working';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconArrowRight, IconLayoutGrid, IconSearch, IconTag, IconX } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
@@ -134,26 +133,27 @@ export function SearchDialog({ open, onClose }: SearchDialogProps) {
         aria-hidden="true"
         onClick={onClose}
         className="fixed inset-0 transition-opacity"
-        style={{ background: 'rgba(8,12,16,0.80)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+        style={{ background: 'var(--color-scrim)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
       />
 
       {/* Search box container */}
       <div
-        onKeyDown={handleKeyDown}
+        role="search"
         className="relative z-10 flex w-full max-w-[540px] flex-col overflow-hidden"
         style={{
           borderRadius: '24px',
-          border: '1px solid rgba(255,255,255,0.09)',
-          backgroundColor: 'rgba(20,27,34,0.92)',
+          border: '1px solid color-mix(in oklab, var(--color-glint) 9%, transparent)',
+          backgroundColor: 'color-mix(in oklab, var(--color-sunken) 92%, transparent)',
           backdropFilter: 'blur(32px)',
           WebkitBackdropFilter: 'blur(32px)',
-          boxShadow: '0 32px 80px -16px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.1)',
+          boxShadow: 'var(--shadow-popover), inset 0 1px 0 color-mix(in oklab, var(--color-glint) 10%, transparent)',
         }}
       >
         {/* Search input bar */}
-        <div className="flex h-[64px] items-center gap-12 px-20" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex h-[64px] items-center gap-12 px-20" style={{ borderBottom: '1px solid color-mix(in oklab, var(--color-glint) 6%, transparent)' }}>
           <IconSearch size={20} stroke={ICON_STROKE} className="shrink-0 text-ink-subtle" />
           <input
+            onKeyDown={handleKeyDown}
             ref={inputRef}
             type="text"
             value={query}
@@ -173,7 +173,7 @@ export function SearchDialog({ open, onClose }: SearchDialogProps) {
               }}
               aria-label="Clear search"
               className="flex size-[32px] items-center justify-center rounded-full text-ink-subtle hover:text-ink press-feedback transition-colors"
-              style={{ background: 'rgba(255,255,255,0.06)' }}
+              style={{ background: 'color-mix(in oklab, var(--color-glint) 6%, transparent)' }}
             >
               <IconX size={15} stroke={ICON_STROKE} />
             </button>
@@ -291,14 +291,14 @@ export function SearchDialog({ open, onClose }: SearchDialogProps) {
         {/* Footer shortcuts helper */}
         <div
           className="flex items-center justify-between px-20 py-12 font-mono text-micro text-ink-disabled"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
+          style={{ borderTop: '1px solid color-mix(in oklab, var(--color-glint) 5%, transparent)' }}
         >
           <div className="flex items-center gap-16">
             <span>↑↓ Navigate</span>
             <span>↵ Select</span>
             <span>esc Dismiss</span>
           </div>
-          <span style={{ color: 'rgba(255,255,255,0.2)' }}>Bliss POS</span>
+          <span className="text-ink-disabled">Bliss</span>
         </div>
       </div>
     </div>

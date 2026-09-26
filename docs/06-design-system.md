@@ -22,6 +22,10 @@ This is enforceable, and it is enforced:
 
 The result is an interface that reads in one pass, which is the only kind that survives a dim room and a moving tray.
 
+### The Console's two families
+
+The Console holds two kinds of content. Tables, forms and settings are the **Pane** family: flat on the page, exactly as above. Dashboards, grid views of records and a record's detail page are the **Card** family: one surface a step off the page, with an edge and, in light, the `card` shadow. A card is still one level: its header and footer are **bands** (a tint on a strip of the same card, under one rule), never a box inside it, and nothing inside a card is another card. Hover deepens the shadow a step and lifts the card 2px; it never adds a second level. The lint rule knows the difference. See `19-console-system.md` section 1 and `11-design-drift.md` D-14.
+
 ---
 
 ## 2. The signature element: the seat chip
@@ -90,7 +94,7 @@ One sans and one mono. No display serif, no third family. A minimal system earns
 | `num` | 15 / 22 | -0.01em | Line prices, table cells |
 | `num-sm` | 12 / 17 | 0 | Dense tables, tile stock counts |
 
-Floor never renders text below 15px. Console never below 13px.
+Floor never renders text below 15px. The Console has its own ramp at 14px, a dense desktop tool with three heading levels (`title-page`, `title-section`, `title-card`) and body text in `ui`; only `label-caps` (11px capitals over a value), `num-sm` and status chips go below 13px. See `19-console-system.md` section 2 and D-15.
 
 ### Currency
 
@@ -197,11 +201,14 @@ Both themes are first class. Every component is specified in both. Neither is a 
 ### Radius
 | Token | Value | Use |
 |---|---|---|
-| `r-sm` | 6px | Controls, inputs, seat chips, status chips |
-| `r-md` | 10px | Tiles, panes, rows |
-| `r-lg` | 16px | Sheets, dialogs |
+| `r-sm` | 6px | Inputs, seat chips, status chips |
+| `r-md` | 10px | Tiles, panes, rows, small buttons, menus |
+| `r-control` | 12px | Buttons |
+| `r-lg` / `r-card` | 16px | Sheets, Console cards |
+| `r-overlay` | 20px | Console dialogs |
+| `r-pill` | full | Count badges and segmented controls only |
 
-Three values. No pills, no circles except the connection dot.
+No other pills, and no circles except dots and avatars. D-16.
 
 ### Elevation
 
@@ -213,6 +220,8 @@ Three values. No pills, no circles except the connection dot.
 | Light | `frost-0` page | `frost-50` with a 1px `frost-200` hairline, plus `0 1px 2px rgba(11,16,21,0.05)` |
 
 Sheets and dialogs use the same raised treatment with a scrim at `rgba(11,16,21,0.55)`. They do not get a second, heavier shadow.
+
+The Console's Card family has its own shadow, `card`, in light only (dark relies on the `edge`), and a hover step, `card-hover`. Menus and Console dialogs use `popover`. Each is a token; no shadow is written by hand.
 
 ---
 
@@ -322,7 +331,7 @@ ACTIONS      [ Keep it ]            [ Void the line ]
 
 ### 6.8 Status chip
 
-`micro` type, `r-sm`, 22px tall, 8px horizontal padding, a 6px dot plus a word. Colour, dot and word together, so it survives greyscale.
+`micro` type, `r-sm`, 22px tall, 8px horizontal padding, a 6px dot plus a word, on a wash of its own tone. Colour, dot and word together, so it survives greyscale. D-17.
 
 `Open` `Fired` `Poured` `Settled` `Voided` `Low` `Last few` `Finished` `On hold` `Ran out` `Offline` `Synced`
 
@@ -435,6 +444,8 @@ Type one step larger than anywhere else, no prices, seat chips leading every lin
 
 Every tab is a route. Every filter is in the query string.
 
+The current shell (a venue-first rail with four groups, breadcrumbs, a command menu and underline tabs) is drawn and specified in `19-console-system.md` section 4.
+
 ---
 
 ## 8. Accessibility
@@ -479,7 +490,7 @@ export const tokens = {
     seatText: '#0B1015',
     shared: '#B3BFC9',
   },
-  radius: { sm:6, md:10, lg:16 },
+  radius: { sm:6, md:10, control:12, lg:16, card:16, overlay:20, pill:9999 },
   space: [2,4,6,8,12,16,20,24,32,40,56,72,96],
   weight: { regular:400, medium:500 },  // there is no third entry, deliberately
   elevation: { one: true },             // there is no level two, deliberately
@@ -496,7 +507,8 @@ Written down so it does not drift in month four.
 - No second elevation level.
 - No font weight above 500.
 - No emoji in any interface string.
-- No glassmorphism, no neumorphism, no gradients, no coloured shadows.
+- No glassmorphism, no neumorphism, no gradients, no coloured shadows. (The atmosphere layer's glass, docs/12, is the one exception, and it never reaches a Console page.)
+- No arbitrary values: a size, colour, radius or shadow typed in brackets is refused in Console code.
 - No decorative animation. Motion carries meaning or it does not exist.
 - No modal that hides the number the user is acting on.
 - No `OK` and `Cancel`. Buttons say what they do.

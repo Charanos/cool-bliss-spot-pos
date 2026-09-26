@@ -80,7 +80,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                 {order.label}
               </span>
               {order.zoneName ? (
-                <span className="shrink-0 rounded-dot bg-sunken/60 px-8 py-2 text-micro text-ink-subtle">{order.zoneName}</span>
+                <span className="shrink-0 rounded-dot bg-neutral-wash px-8 py-2 text-micro text-ink-subtle">{order.zoneName}</span>
               ) : null}
             </div>
 
@@ -126,9 +126,9 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
     >
       <div className="flex flex-col gap-16 pb-8">
         {/* ── 1. High-Fidelity Itemized Ticket Breakdown ─────────────── */}
-        <div className="rounded-[20px] bg-sunken/80 border border-rule-raised/30 overflow-hidden ">
+        <div className="rounded-lg bg-control overflow-hidden ">
           {/* Ticket header row */}
-          <div className="flex items-center justify-between px-16 py-12 border-b border-rule-raised/25 font-mono text-micro uppercase text-ink-subtle bg-sunken/50">
+          <div className="flex items-center justify-between px-16 py-12 border-b border-rule-raised/25 font-mono text-micro uppercase text-ink-subtle">
             <span className="flex items-center gap-6">
               <span>Order items</span>
               <span className="text-ink-disabled font-regular">({totalQty} total)</span>
@@ -184,7 +184,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
           </div>
 
           {/* Summary footer */}
-          <div className="flex items-center justify-between px-16 py-16 border-t border-rule-raised/25 bg-sunken/50">
+          <div className="flex items-center justify-between px-16 py-16 border-t border-rule-raised/25">
             <div className="flex flex-col">
               <span className="font-mono text-micro uppercase text-ink-subtle">
                 Order Total
@@ -263,7 +263,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                 await deliver(order.orderId, order.label);
               })
             }
-            className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-[18px] bg-page border border-accent/30 text-ink shadow-sm hover:border-accent/50 hover:bg-page-raised active:scale-[0.99] transition-all group cursor-pointer"
+            className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-[18px] bg-page border border-accent/30 text-ink shadow-raised hover:border-accent/50 hover:bg-control active:scale-[0.99] transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-16 min-w-0">
               <div className="size-40 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
@@ -279,7 +279,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
               </div>
             </div>
             <div className="flex items-center gap-8 shrink-0">
-              <span className="hidden tablet:inline-flex px-8 py-2 rounded-full bg-accent-wash border border-accent/20 font-mono text-micro text-accent-text">
+              <span className="hidden tablet:inline-flex px-8 py-2 rounded-full bg-accent-wash font-mono text-micro text-accent-text">
                 Override
               </span>
               <IconChevronRight size={20} stroke={2.5} className="text-ink-subtle shrink-0 group-hover:translate-x-6 group-hover:text-ink transition-all" />

@@ -25,15 +25,16 @@ const GLYPH_NAME: Record<TileGlyph, string> = {
   bottle: 'BOTTLE',
 };
 
+/** The category's colour, from the seat palette the category edge also uses (lib/seat). */
 const CATEGORY_COLOR: Record<CategoryColour, string> = {
-  glacier: '#6FC6D6',
-  ember: '#E0A35A',
-  leaf: '#9DC271',
-  iris: '#B79BE0',
-  rose: '#E58BA4',
-  steel: '#7FA8E0',
-  brass: '#D9C46B',
-  jade: '#6FD2B4',
+  glacier: 'var(--color-seat-1)',
+  ember: 'var(--color-seat-2)',
+  leaf: 'var(--color-seat-3)',
+  iris: 'var(--color-seat-4)',
+  rose: 'var(--color-seat-5)',
+  steel: 'var(--color-seat-6)',
+  brass: 'var(--color-seat-7)',
+  jade: 'var(--color-seat-8)',
 };
 
 const GLYPH = {
@@ -131,7 +132,7 @@ export const ProductTile = memo(function ProductTile({
       aria-label={`${name}${price ? `, ${formatKes(price)}` : ''}${stateWords}${inCart > 0 ? `, ${inCart} added` : ''}`}
       data-variant-id={variantId}
       className={cx(
-        'group relative flex min-h-[192px] min-w-0 flex-col overflow-hidden rounded-[16px] bg-[#161F27] text-left will-change-transform',
+        'group relative flex min-h-[192px] min-w-0 flex-col overflow-hidden rounded-[16px] bg-sunken text-left will-change-transform',
         'shadow-[0_4px_16px_rgba(0,0,0,0.3)]',
         'transition-all duration-[300ms] ease-out hover:-translate-y-4 hover:shadow-[0_12px_28px_rgba(0,0,0,0.5)] active:scale-[0.98]',
         finished && 'cursor-default opacity-40',
@@ -149,7 +150,7 @@ export const ProductTile = memo(function ProductTile({
           </span>
         </>
       ) : null}
-      <span aria-hidden="true" className="relative block h-[96px] w-full shrink-0 overflow-hidden bg-[#11181F]">
+      <span aria-hidden="true" className="relative block h-[96px] w-full shrink-0 overflow-hidden bg-page">
         {imageUrl && !imageFailed ? (
           <>
             <img
@@ -169,12 +170,12 @@ export const ProductTile = memo(function ProductTile({
               className="absolute inset-0 pointer-events-none transition-opacity duration-300 group-hover:opacity-90"
               style={{
                 background:
-                  'linear-gradient(to top, #161F27 0%, rgba(22, 31, 39, 0.94) 28%, rgba(22, 31, 39, 0.6) 62%, rgba(10, 15, 20, 0.35) 100%)',
+                  'linear-gradient(to top, var(--color-sunken) 0%, color-mix(in oklab, var(--color-sunken) 94%, transparent) 28%, color-mix(in oklab, var(--color-sunken) 60%, transparent) 62%, color-mix(in oklab, var(--color-page) 35%, transparent) 100%)',
               }}
             />
           </>
         ) : (
-          <span className="flex size-full items-center justify-center text-ink-disabled bg-[#11181F] transition-transform duration-[500ms] ease-out group-hover:scale-105">
+          <span className="flex size-full items-center justify-center text-ink-disabled bg-page transition-transform duration-[500ms] ease-out group-hover:scale-105">
             <Glyph size={26} stroke={ICON_STROKE} />
           </span>
         )}
@@ -182,7 +183,7 @@ export const ProductTile = memo(function ProductTile({
         {/* Category Overlay Label (Bottom Left) */}
         <span
           className="absolute bottom-[6px] left-[14px] text-[10px] font-medium tracking-[0.14em] uppercase z-10 select-none"
-          style={{ color: CATEGORY_COLOR[category] ?? '#8C9AA6' }}
+          style={{ color: CATEGORY_COLOR[category] ?? 'var(--color-ink-subtle)' }}
         >
           {GLYPH_NAME[glyph] ?? 'ITEM'}
         </span>
@@ -198,7 +199,7 @@ export const ProductTile = memo(function ProductTile({
                   ? 'attention'
                   : 'neutral'
           }
-          className="absolute top-[8px] right-[8px] z-20 backdrop-blur-glass bg-[#0B1015]/85 shadow-raised px-[7px] py-[3px] text-[10px] font-medium rounded-[6px]"
+          className="absolute top-[8px] right-[8px] z-20 backdrop-blur-glass bg-page/85 shadow-raised px-[7px] py-[3px] text-[10px] font-medium rounded-[6px]"
         >
           {held
             ? (count > 0 ? `On hold · ${count}` : 'On hold')
@@ -210,7 +211,7 @@ export const ProductTile = memo(function ProductTile({
 
       <span className="relative z-10 flex flex-1 flex-col justify-between px-[14px] pb-[12px] pt-[8px]">
         <span
-          className="line-clamp-2 min-h-[38px] text-[14px] font-medium text-[#F4F7F9] leading-[19px]"
+          className="line-clamp-2 min-h-[38px] text-[14px] font-medium text-ink leading-[19px]"
           title={name}
         >
           {name}
@@ -225,7 +226,7 @@ export const ProductTile = memo(function ProductTile({
 
           <span
             aria-hidden="true"
-            className="flex size-[30px] shrink-0 items-center justify-center rounded-[8px] bg-[#1E3B40] text-[#3CD4D3] shadow-raised transition-all duration-200 group-hover:bg-[#275359] group-hover:scale-105 active:scale-90"
+            className="flex size-[30px] shrink-0 items-center justify-center rounded-[8px] bg-accent-wash text-accent-text shadow-raised transition-all duration-200 group-hover:bg-accent-subtle group-hover:scale-105 active:scale-90"
           >
             <IconPlus size={17} stroke={2.5} />
           </span>

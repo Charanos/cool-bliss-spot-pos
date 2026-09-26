@@ -3,10 +3,14 @@
 import type { AuditSeverity } from '@bliss/shared/domain';
 import { formatDateTime } from '@bliss/shared/format';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
+import { ButtonLink } from '@bliss/ui/components/button-link';
 import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Dot } from '@bliss/ui/components/status';
-import { IconFileSearch } from '@tabler/icons-react';
+import { IconArrowRight, IconFileSearch, IconHistory, IconShieldExclamation, IconUsers } from '@tabler/icons-react';
+import Link from 'next/link';
 import { useState } from 'react';
+import { EntityLink } from '../../_components/entity-link';
 import { UrlSelect } from '../../_components/url-select';
 
 export interface AuditRow {
@@ -16,6 +20,9 @@ export interface AuditRow {
   label: string;
   family: string;
   entityType: string;
+  /** The record it touched, when it has a page. */
+  href: string | null;
+  deviceId: string | null;
   actor: string;
   actorId: string;
   device: string | null;
@@ -25,6 +32,37 @@ export interface AuditRow {
   after: string | null;
 }
 
+/** What each kind of record is called, for the link to it. */
+const RECORD: Record<string, string> = {
+  product: 'Product',
+  category: 'Category',
+  modifier_group: 'Modifier group',
+  price_list: 'Price list',
+  price_rule: 'Time rule',
+  recipe: 'Recipe',
+  supplier: 'Supplier',
+  purchase_order: 'Order',
+  goods_receipt: 'Delivery',
+  stock_count: 'Count',
+  bill: 'Bill',
+  tab: 'Tab',
+  order_line: 'Tab',
+  stock_hold: 'Hold',
+  stock_movement: 'Movement',
+  price_list_item: 'Price',
+  outlet: 'Outlet',
+  product_variant: 'Product',
+  staff: 'Person',
+  role: 'Role',
+  drawer_session: 'Drawer',
+  shift: 'Shift',
+  device: 'Device',
+  stock_location: 'Location',
+  zone: 'Zone',
+  table: 'Table',
+  service_table: 'Table',
+};
+
 const SEVERITY: Record<AuditSeverity, { label: string; tone: 'neutral' | 'low' | 'stop' }> = {
   info: { label: 'Routine', tone: 'neutral' },
   notable: { label: 'Notable', tone: 'low' },
@@ -33,7 +71,7 @@ const SEVERITY: Record<AuditSeverity, { label: string; tone: 'neutral' | 'low' |
 
 /** Before and after are stored as recorded. Shown as key and value lines rather than raw JSON. */
 function Snapshot({ json }: { json: string | null }) {
-  if (!json) return <p className="text-body text-ink-subtle">Nothing</p>;
+  if (!json) return <p className="text-body-sm text-ink-subtle">Nothing</p>;
   let value: unknown;
   try {
     value = JSON.parse(json);
@@ -53,6 +91,7 @@ function Snapshot({ json }: { json: string | null }) {
   );
 }
 
+/** The audit trail: who did what, when, and why, with the record before and after. Read only. */
 export function AuditTable({
   rows,
   timezone,
@@ -87,17 +126,63 @@ export function AuditTable({
         </span>
       ),
     },
-    { key: 'actor', header: 'Who', width: '120px', sortValue: (r) => r.actor, csv: (r) => r.actor, cell: (r) => <StackCell primary={r.actor} secondary={r.device ?? undefined} /> },
-    { key: 'reason', header: 'Reason given', width: 'minmax(220px,2fr)', wrap: true, csv: (r) => r.reason ?? '', cell: (r) => <span className="text-body text-ink-muted">{r.reason ?? <span className="text-ink-subtle">··</span>}</span> },
+    {
+      key: 'actor',
+      header: 'Who',
+      width: '120px',
+      sortValue: (r) => r.actor,
+      csv: (r) => r.actor,
+      cell: (r) => (
+        <span className="flex min-w-0 flex-col">
+          <EntityLink kind="staff" id={r.actorId} className="truncate text-ui">
+            {r.actor}
+          </EntityLink>
+          {r.device ? (
+            <EntityLink kind="device" id={r.deviceId} muted className="truncate text-body-sm">
+              {r.device}
+            </EntityLink>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      key: 'record',
+      header: 'Record',
+      width: '132px',
+      sortValue: (r) => r.entityType,
+      csv: (r) => r.entityType,
+      cell: (r) =>
+        r.href ? (
+          <Link href={r.href} className="relative z-raised inline-flex items-center gap-4 rounded-sm text-body-sm text-ink-muted transition-hover hover:text-ink">
+            {RECORD[r.entityType] ?? 'Record'}
+            <IconArrowRight size={12} stroke={1.75} aria-hidden="true" />
+          </Link>
+        ) : (
+          <span className="text-body-sm text-ink-subtle">{RECORD[r.entityType] ?? r.entityType.replace(/_/g, ' ')}</span>
+        ),
+    },
+    { key: 'reason', header: 'Reason given', width: 'minmax(220px,2fr)', wrap: true, csv: (r) => r.reason ?? '', cell: (r) => <span className="text-body-sm text-ink-muted">{r.reason ?? <span className="text-ink-subtle">None given</span>}</span> },
     { key: 'before', header: 'Before', width: '0px', exportOnly: true, csv: (r) => r.before ?? '', cell: () => null },
     { key: 'after', header: 'After', width: '0px', exportOnly: true, csv: (r) => r.after ?? '', cell: () => null },
   ];
 
+  const sensitive = rows.filter((r) => r.severity === 'sensitive').length;
+  const notable = rows.filter((r) => r.severity === 'notable').length;
+  const people = new Set(rows.map((r) => r.actorId).filter(Boolean)).size;
+  const withReason = rows.filter((r) => r.reason).length;
+
   return (
-    <>
+    <div className="flex flex-col gap-32">
+      <MetricGrid>
+        <Metric label="Entries" icon={IconHistory} value={<CountUp value={rows.length} />} detail="In this range, never edited" />
+        <Metric label="Sensitive" icon={IconShieldExclamation} tone={sensitive > 0 ? 'stop' : 'default'} value={<CountUp value={sensitive} delayMs={60} />} detail="Voids, refunds, access and VAT" />
+        <Metric label="Notable" icon={IconFileSearch} tone={notable > 0 ? 'attention' : 'default'} value={<CountUp value={notable} delayMs={120} />} detail={`${withReason} with a reason given`} />
+        <Metric label="People" icon={IconUsers} value={<CountUp value={people} delayMs={180} />} detail="Who made a change" />
+      </MetricGrid>
       <DataTable
         id="settings-audit"
         caption="Audit trail"
+        noun={['entry', 'entries']}
         rows={rows}
         columns={columns}
         rowKey={(r) => r.id}
@@ -122,6 +207,7 @@ export function AuditTable({
         exportName="audit"
         exportDate={exportDate}
         empty={{ title: 'Nothing recorded in this range', body: 'Every price change, void, write-off, hold and permission change is recorded here.' }}
+        emptyFiltered={{ title: 'No entries match', body: 'Clear the kind, person, severity or search to see every entry in the range.' }}
       />
       <ConsoleOverlay open={Boolean(open)} onClose={() => setOpen(null)} title={open?.label ?? ''} description={open ? `${open.actor}${open.device ? ` on ${open.device}` : ''}, ${formatDateTime(open.at, timezone)}` : undefined} width="md" placement="side">
         {open ? (
@@ -129,7 +215,7 @@ export function AuditTable({
             {open.reason ? (
               <div>
                 <h3 className="text-label text-ink-subtle">Reason given</h3>
-                <p className="mt-4 text-body text-ink">{open.reason}</p>
+                <p className="mt-4 text-ui text-ink">{open.reason}</p>
               </div>
             ) : null}
             <div>
@@ -145,11 +231,16 @@ export function AuditTable({
               </div>
             </div>
             <p className="font-mono text-num-sm text-ink-subtle">
-              {open.entityType} · {open.action}
+              {open.entityType}, {open.action}
             </p>
+            {open.href ? (
+              <ButtonLink href={open.href} variant="secondary" icon={IconArrowRight}>
+                Open the {(RECORD[open.entityType] ?? 'record').toLowerCase()}
+              </ButtonLink>
+            ) : null}
           </div>
         ) : null}
       </ConsoleOverlay>
-    </>
+    </div>
   );
 }

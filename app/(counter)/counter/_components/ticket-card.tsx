@@ -57,7 +57,7 @@ export function TicketCard({
             <h2 id={`ticket-${ticket.orderId}`} className="truncate text-title font-medium text-ink">
               {ticket.label}
             </h2>
-            {ticket.waiter ? <span className="max-w-[120px] shrink-0 truncate rounded-dot bg-sunken/60 px-8 py-2 font-mono text-micro text-ink-subtle">{ticket.waiter}</span> : null}
+            {ticket.waiter ? <span className="max-w-[120px] shrink-0 truncate rounded-dot bg-neutral-wash px-8 py-2 font-mono text-micro text-ink-subtle">{ticket.waiter}</span> : null}
           </div>
           <p className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-micro text-ink-subtle">
             {ticket.tabNumber ? <span>Tab {ticket.tabNumber}</span> : null}
@@ -109,7 +109,7 @@ export function TicketCard({
                 aria-label={`${poured ? 'Poured' : 'Pour'} ${line.qty} ${line.name}${line.seatNo ? `, seat ${line.seatNo}` : ''}`}
                 className={cx(
                   'flex min-h-row-floor min-w-0 flex-1 items-center gap-12 rounded-md px-8 py-6 text-left press-feedback',
-                  poured ? 'opacity-50' : out ? '' : 'hover:bg-sunken/60 active:bg-control',
+                  poured ? 'opacity-50' : out ? '' : 'hover:bg-control-hover active:bg-control',
                 )}
               >
                 {ticket.showSeats ? <SeatChip seat={line.seatNo ?? 'shared'} label={line.seatLabel} size="dense" /> : null}

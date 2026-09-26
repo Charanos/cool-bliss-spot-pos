@@ -5,19 +5,21 @@ import * as inventory from '@/modules/inventory/service';
 import * as procurement from '@/modules/procurement/service';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { IconPlus } from '@tabler/icons-react';
-import { TabIntro } from '../../_components/workspace';
+import { ViewHeader } from '../../_components/workspace';
 import { type ReceiptRow, ReceiptsTable } from './receipts-table';
 
-export const metadata: Metadata = { title: 'Receipts' };
+export const metadata: Metadata = { title: 'Deliveries' };
 
-/** Goods received notes: what actually came off the van, against which order, and what went back. */
+/** Deliveries: what actually came off the van, against which order, and what went back. */
 export default function ReceiptsPage() {
   const outlet = identity.outlet();
   const locations = inventory.locations();
   const orders = procurement.purchaseOrders();
   const rows: ReceiptRow[] = procurement.receipts().map((r) => {
     const lines = procurement.receiptLines(r.id);
+    const note = procurement.noteForReceipt(r.id);
     return {
+      photo: note?.mediaUrls.find((u) => !u.endsWith('.pdf')) ?? null,
       id: r.id,
       number: r.grnNumber,
       poId: r.purchaseOrderId,
@@ -32,13 +34,19 @@ export default function ReceiptsPage() {
       rejected: lines.reduce((a, l) => a + l.qtyRejected, 0),
       value: sum(lines.map((l) => multiplyByQty(l.unitCostCents, l.qtyReceived))),
       note: r.varianceNote,
+      state: r.status === 'cancelled' ? 'reversed' : procurement.noteForReceipt(r.id)?.status === 'pending_variance_approval' ? 'short' : 'received',
     };
   });
   return (
     <>
-      <TabIntro action={<ButtonLink href="/console/purchasing/receipts/new" variant="primary" icon={IconPlus}>New Goods Received Note</ButtonLink>}>
-        Log intake from suppliers, KRA eTIMS invoices, and track FEFO stock batch expiration.
-      </TabIntro>
+      <ViewHeader
+        page="/console/purchasing/receipts"
+        actions={
+          <ButtonLink href="/console/purchasing/receipts/new" variant="create" icon={IconPlus}>
+            Receive a delivery
+          </ButtonLink>
+        }
+      />
       <ReceiptsTable rows={rows} timezone={outlet.timezone} suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} />
     </>
   );

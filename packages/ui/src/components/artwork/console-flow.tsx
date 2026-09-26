@@ -1,7 +1,7 @@
 import { memo } from 'react';
 
 /**
- * AmbientConsoleArtwork — "VIP & Lounge" (SVG rendered)
+ * The Console sign-in artwork, a bottle and a pipe in a lounge, drawn in SVG (D-19).
  *
  * This version uses pure SVG to construct the champagne bottle and shisha,
  * ensuring high-fidelity rendering at any resolution with complex gradients
