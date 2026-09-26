@@ -41,7 +41,7 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
   const seats = trade.seatsFor(tab.id).filter((s) => s.status !== 'removed');
   const lines = trade.linesFor(tab.id).sort((a, b) => a.clientCreatedAt - b.clientCreatedAt);
   const orders = trade.ordersFor(tab.id);
-  const bills = settlement.billsBetween(tab.businessDate, tab.businessDate).filter((b) => b.tabId === tab.id);
+  const bills = settlement.billsForTab(tab.id);
   const voided = lines.filter((l) => l.status === 'voided');
   const settled = sum(bills.filter((b) => b.status === 'settled').map((b) => b.totalCents));
   const showSeats = seats.length > 1;
@@ -52,6 +52,18 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
   ].filter((g) => g.lines.length > 0);
 
   const lineIds = new Set(lines.map((l) => l.id));
+  
+  const pouredGroups = new Map<number, { orderId: string; by: string; count: number }[]>();
+  for (const l of lines) {
+    if (l.servedAt) {
+      const g = pouredGroups.get(l.servedAt) ?? [];
+      const existing = g.find((x) => x.orderId === l.orderId && x.by === l.servedBy);
+      if (existing) existing.count++;
+      else g.push({ orderId: l.orderId, by: l.servedBy!, count: 1 });
+      pouredGroups.set(l.servedAt, g);
+    }
+  }
+
   const events: { at: number; text: string; reason?: string | null }[] = [
     { at: tab.openedAt, text: `Opened by ${identity.displayName(tab.openedBy)} for ${plural(tab.guestCount, 'guest')}` },
     ...orders.filter((o) => o.firedAt).map((o) => ({ at: o.firedAt!, text: `Order ${o.orderNumber ?? ''} fired by ${identity.displayName(o.firedBy)}, ${plural(lines.filter((l) => l.orderId === o.id).length, 'line')}`.replace('  ', ' ') })),
@@ -59,6 +71,12 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
       .list()
       .filter((e) => lineIds.has(e.entityId) || e.entityId === tab.id)
       .map((e) => ({ at: e.occurredAt, text: `${actionLabel(e.action)} by ${identity.displayName(e.actorStaffId)}`, reason: e.reason })),
+    ...[...pouredGroups.entries()].map(([at, groups]) => ({
+      at,
+      text: groups.map(g => `${plural(g.count, 'line')} poured on Order ${orders.find(o => o.id === g.orderId)?.orderNumber ?? ''} by ${identity.displayName(g.by)}`.replace('  ', ' ')).join(', ')
+    })),
+    ...orders.filter((o) => o.deliveredAt).map((o) => ({ at: o.deliveredAt!, text: `Order ${o.orderNumber ?? ''} served to table by ${identity.displayName(o.deliveredBy)}`.replace('  ', ' ') })),
+    ...(tab.billAskedAt ? [{ at: tab.billAskedAt, text: `Bill requested by ${identity.displayName(tab.billAskedBy)}` }] : []),
     ...bills.filter((b) => b.settledAt).map((b) => ({ at: b.settledAt!, text: `Bill ${b.billNumber} settled by ${identity.displayName(b.settledBy)}` })),
     ...(tab.closedAt ? [{ at: tab.closedAt, text: 'Tab closed' }] : []),
   ].sort((a, b) => a.at - b.at);
@@ -199,7 +217,7 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
             <div className="px-20 py-16 border-b border-hairline/60 bg-control/20 flex items-center justify-between">
               <div className="flex items-center gap-10">
                 <IconReceipt2 size={18} className="text-ink-subtle" />
-                <h3 id="tab-bills" className="text-subtitle font-medium text-ink">Bills</h3>
+                <h3 id="tab-bills" className="text-subtitle font-medium text-ink">Bills  </h3>
               </div>
               <span className="font-mono text-[11px] font-medium text-ink-subtle uppercase tracking-wider">{bills.length} {bills.length === 1 ? 'Bill' : 'Bills'}</span>
             </div>
@@ -238,7 +256,7 @@ export default async function TabPage({ params }: { params: Promise<{ tabId: str
           <div className="overflow-hidden rounded-[16px] bg-page border border-hairline/60 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
             <div className="px-20 py-16 border-b border-hairline/60 bg-control/20 flex items-center gap-10">
               <IconHistory size={18} className="text-ink-subtle" />
-              <h3 id="tab-activity" className="text-subtitle font-medium text-ink">What happened</h3>
+              <h3 id="tab-activity" className="text-subtitle font-medium text-ink">What happened  </h3>
             </div>
             <div className="p-24 pl-32">
               <ol className="relative flex flex-col gap-24 border-l-[2px] border-hairline/60 pl-24 ml-4">

@@ -1,11 +1,17 @@
 import 'server-only';
 
-import type { OrderLine, Tab, TabSeat } from '@bliss/shared/domain';
+import type { OrderLine, Tab, TabSeat, Zone, ServiceTable, CatalogueStatus, TableStatus } from '@bliss/shared/domain';
 import { type Cents, ZERO, add, sum } from '@bliss/shared/money';
 import type { IsoDate } from '@bliss/shared/time';
+import type { Actor } from '@bliss/shared/reason';
+import { createUuidV7 } from '@bliss/shared/id';
 import { isSeated, tabLabel } from '@bliss/shared/trade';
 import { dataset } from '../_data/source';
+import * as audit from '../audit/service';
+import { assertCan } from '../identity/service';
 import { tradeTables } from './schema';
+
+const createId = createUuidV7();
 
 export function zones() {
   return [...tradeTables().zones].sort((a, b) => a.sortOrder - b.sortOrder);
@@ -158,4 +164,68 @@ export function voidedBetween(from: IsoDate, to: IsoDate) {
 
 export function totalOf(lines: readonly OrderLine[]): Cents {
   return lines.reduce((a, l) => add(a, l.lineTotalCents), ZERO);
+}
+
+export function createZone(input: { name: string; sortOrder: number; defaultPriceListId: string | null; actor: Actor }) {
+  assertCan(input.actor.staffId, 'staff.manage', 'add a new zone');
+  const { zones } = tradeTables();
+  const id = createId();
+  const zone: Zone = {
+    id,
+    outletId: zones[0]?.outletId ?? createId(),
+    name: input.name,
+    sortOrder: input.sortOrder,
+    defaultPriceListId: input.defaultPriceListId,
+    status: 'active',
+  };
+  zones.push(zone);
+  audit.record({ outletId: zone.outletId, actorStaffId: input.actor.staffId, action: 'zone.created', entityType: 'zone', entityId: zone.id, before: null, after: { name: input.name }, reason: null, severity: 'info' });
+  return zone;
+}
+
+export function updateZone(input: { zoneId: string; name: string; sortOrder: number; defaultPriceListId: string | null; status: CatalogueStatus; actor: Actor }) {
+  assertCan(input.actor.staffId, 'staff.manage', 'update a zone');
+  const zone = zoneById(input.zoneId);
+  if (!zone) throw new Error('Zone not found.');
+  const before = { name: zone.name, status: zone.status };
+  zone.name = input.name;
+  zone.sortOrder = input.sortOrder;
+  zone.defaultPriceListId = input.defaultPriceListId;
+  zone.status = input.status;
+  audit.record({ outletId: zone.outletId, actorStaffId: input.actor.staffId, action: 'zone.updated', entityType: 'zone', entityId: zone.id, before, after: { name: input.name, status: input.status }, reason: null, severity: 'info' });
+  return zone;
+}
+
+export function createServiceTable(input: { zoneId: string; label: string; seats: number; positionX: number; positionY: number; actor: Actor }) {
+  assertCan(input.actor.staffId, 'staff.manage', 'add a new table');
+  const { tables } = tradeTables();
+  const id = createId();
+  const table: ServiceTable = {
+    id,
+    outletId: tables[0]?.outletId ?? createId(),
+    zoneId: input.zoneId,
+    label: input.label,
+    seats: input.seats,
+    positionX: input.positionX,
+    positionY: input.positionY,
+    status: 'available',
+  };
+  tables.push(table);
+  audit.record({ outletId: table.outletId, actorStaffId: input.actor.staffId, action: 'table.created', entityType: 'table', entityId: table.id, before: null, after: { label: input.label, zoneId: input.zoneId }, reason: null, severity: 'info' });
+  return table;
+}
+
+export function updateServiceTable(input: { tableId: string; zoneId: string; label: string; seats: number; positionX: number; positionY: number; status: TableStatus; actor: Actor }) {
+  assertCan(input.actor.staffId, 'staff.manage', 'update a table');
+  const table = tableById(input.tableId);
+  if (!table) throw new Error('Table not found.');
+  const before = { label: table.label, zoneId: table.zoneId, status: table.status };
+  table.zoneId = input.zoneId;
+  table.label = input.label;
+  table.seats = input.seats;
+  table.positionX = input.positionX;
+  table.positionY = input.positionY;
+  table.status = input.status;
+  audit.record({ outletId: table.outletId, actorStaffId: input.actor.staffId, action: 'table.updated', entityType: 'table', entityId: table.id, before, after: { label: input.label, zoneId: input.zoneId, status: input.status }, reason: null, severity: 'info' });
+  return table;
 }

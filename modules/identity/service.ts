@@ -2,7 +2,10 @@ import 'server-only';
 
 import type { Device, EmploymentStatus, PermissionKey, Role, Staff } from '@bliss/shared/domain';
 import { type Actor, requireReasoned } from '@bliss/shared/reason';
+import { createUuidV7 } from '@bliss/shared/id';
 import * as audit from '../audit/service';
+
+const createId = createUuidV7();
 import { identityTables } from './schema';
 
 export function outlet() {
@@ -180,4 +183,60 @@ export function setRolePermission(input: { roleId: string; permission: Permissio
   role.permissions = input.granted ? [...role.permissions, input.permission] : role.permissions.filter((p) => p !== input.permission);
   audit.record({ outletId: outlet().id, actorStaffId: actor.staffId, action: 'role.permission_changed', entityType: 'role', entityId: role.id, before: { permissions: before }, after: { permissions: role.permissions }, reason, severity: 'sensitive' });
   return role;
+}
+
+export function createStaff(input: { fullName: string; displayName: string; roleId: string; pinHash: string | null; avatarUrl: string | null; contactNumber: string | null; actor: Actor }) {
+  assertCan(input.actor.staffId, 'staff.manage', 'add a new person');
+  const { staff } = identityTables();
+  const id = createId();
+  const person: Staff = {
+    id,
+    outletId: staff[0]?.outletId ?? createId(),
+    fullName: input.fullName,
+    displayName: input.displayName,
+    roleId: input.roleId,
+    employmentStatus: 'active',
+    colourIndex: staff.length % 7,
+    pinHash: input.pinHash,
+    avatarUrl: input.avatarUrl,
+    contactNumber: input.contactNumber,
+    pinLockedUntil: null,
+  };
+  staff.push(person);
+  audit.record({
+    outletId: person.outletId,
+    actorStaffId: input.actor.staffId,
+    action: 'staff.created',
+    entityType: 'staff',
+    entityId: person.id,
+    before: null,
+    after: { fullName: input.fullName, displayName: input.displayName, roleId: input.roleId },
+    reason: null,
+    severity: 'sensitive',
+  });
+  return person;
+}
+
+export function updateStaff(input: { staffId: string; fullName: string; displayName: string; pinHash: string | null; avatarUrl: string | null; contactNumber: string | null; actor: Actor }) {
+  assertCan(input.actor.staffId, 'staff.manage', 'update a person');
+  const person = staffById(input.staffId);
+  if (!person) throw new Error('Person not found.');
+  const before = { fullName: person.fullName, displayName: person.displayName, contactNumber: person.contactNumber, avatarUrl: person.avatarUrl };
+  person.fullName = input.fullName;
+  person.displayName = input.displayName;
+  if (input.pinHash !== undefined) person.pinHash = input.pinHash;
+  if (input.avatarUrl !== undefined) person.avatarUrl = input.avatarUrl;
+  if (input.contactNumber !== undefined) person.contactNumber = input.contactNumber;
+  audit.record({
+    outletId: person.outletId,
+    actorStaffId: input.actor.staffId,
+    action: 'staff.updated',
+    entityType: 'staff',
+    entityId: person.id,
+    before,
+    after: { fullName: input.fullName, displayName: input.displayName, contactNumber: input.contactNumber, avatarUrl: input.avatarUrl },
+    reason: null,
+    severity: 'sensitive',
+  });
+  return person;
 }

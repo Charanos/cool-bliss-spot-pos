@@ -21,6 +21,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { deliver, deliverTable, undeliver } from '@/lib/pos/actions';
 import type { FiredOrderView } from '@/lib/pos/queries';
+import { pour } from '@/lib/pos/actions';
 
 export interface OrderActionSheetProps {
   order: FiredOrderView | null;
@@ -250,19 +251,40 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
             </button>
           </div>
         ) : isAtBar ? (
-          // Pouring is the counter's to record. The floor used to be able to mark it here, which
-          // the next sync quietly undid; now it says where the round is and leaves it at that.
-          <div className="flex w-full items-center gap-12 rounded-[18px] border border-accent/25 bg-accent-wash p-16">
-            <div className="flex size-40 shrink-0 items-center justify-center rounded-dot bg-accent/15">
-              <IconClockHour4 size={20} stroke={ICON_STROKE} className="text-accent-text" />
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() =>
+              handleAction(async () => {
+                const pendingIds = order.lines.filter((l) => l.state === 'waiting').map((l) => l.line.id);
+                if (pendingIds.length > 0) {
+                  await pour(order.tabId, order.orderId, pendingIds, order.label, true);
+                }
+                await deliver(order.orderId, order.label);
+              })
+            }
+            className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-[18px] bg-page border border-accent/30 text-ink shadow-sm hover:border-accent/50 hover:bg-page-raised active:scale-[0.99] transition-all group cursor-pointer"
+          >
+            <div className="flex items-center gap-16 min-w-0">
+              <div className="size-40 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                <IconClockHour4 size={22} stroke={2.5} className="text-accent-text group-hover:text-accent transition-colors" />
+              </div>
+              <div className="flex flex-col text-left min-w-0">
+                <span className="text-body-lg font-medium text-ink">
+                  Force mark served
+                </span>
+                <span className="text-micro desktop:text-body-sm text-ink-subtle font-mono truncate">
+                  Fired <Elapsed since={order.firedAt} /> ago · Bypass counter
+                </span>
+              </div>
             </div>
-            <div className="flex min-w-0 flex-col">
-              <span className="text-body font-medium text-accent-text">At the counter</span>
-              <span className="truncate text-body-sm text-ink-muted">
-                Fired <Elapsed since={order.firedAt} /> ago. It turns poured the moment the counter pours it.
+            <div className="flex items-center gap-8 shrink-0">
+              <span className="hidden tablet:inline-flex px-8 py-2 rounded-full bg-accent-wash border border-accent/20 font-mono text-micro text-accent-text">
+                Override
               </span>
+              <IconChevronRight size={20} stroke={2.5} className="text-ink-subtle shrink-0 group-hover:translate-x-6 group-hover:text-ink transition-all" />
             </div>
-          </div>
+          </button>
         ) : isNeedsYou ? (
           <div className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-[18px] bg-stop-wash border border-stop/35 text-stop">
             <div className="flex items-center gap-12 min-w-0">

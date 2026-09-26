@@ -186,17 +186,17 @@ export function Overlay({
       className="fixed inset-x-0 top-0 m-0 h-auto w-auto overflow-hidden bg-transparent p-0"
       style={{ bottom: bottomOffset }}
     >
-      <div ref={scrimRef} aria-hidden="true" className="absolute inset-0 bg-page/75 backdrop-blur-[8px]" onClick={onClose} />
+      <div ref={scrimRef} aria-hidden="true" className="absolute inset-0 bg-page/40 backdrop-blur-[12px] transition-all duration-300" onClick={onClose} />
       <div className={cx('pointer-events-none absolute inset-0 flex', wrapperPosition)}>
         <div
           ref={panelRef}
           tabIndex={-1}
           style={{
-            backdropFilter: 'blur(32px)',
-            WebkitBackdropFilter: 'blur(32px)',
-            backgroundColor: 'color-mix(in srgb, var(--color-raised) 92%, transparent)',
-            borderColor: 'color-mix(in srgb, white 9%, transparent)',
-            boxShadow: '0 32px 80px -16px black, 0 0 0 1px color-mix(in srgb, white 4%, transparent) inset, 0 1px 0 color-mix(in srgb, white 10%, transparent) inset',
+            backdropFilter: 'blur(40px)',
+            WebkitBackdropFilter: 'blur(40px)',
+            backgroundColor: 'color-mix(in srgb, var(--color-raised) 85%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--color-ink) 4%, transparent)',
+            boxShadow: '0 24px 48px -12px color-mix(in srgb, var(--color-ink) 12%, transparent), 0 8px 24px -4px color-mix(in srgb, var(--color-ink) 4%, transparent), inset 0 1px 0 color-mix(in srgb, white 20%, transparent)',
           }}
           className={cx(
             'pointer-events-auto flex max-h-[92dvh] flex-col border outline-none',

@@ -71,6 +71,9 @@ const person = (key: string, fullName: string, displayName: string, role: RoleKe
   roleId: roleByKey(role).id,
   employmentStatus: 'active',
   colourIndex,
+  pinHash: null,
+  avatarUrl: null,
+  contactNumber: null,
   pinLockedUntil: null,
 });
 

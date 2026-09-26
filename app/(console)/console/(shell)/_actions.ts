@@ -1,6 +1,6 @@
 'use server';
 
-import type { CountKind, EmploymentStatus, PermissionKey } from '@bliss/shared/domain';
+import type { CountKind, EmploymentStatus, PermissionKey, CatalogueStatus, TableStatus } from '@bliss/shared/domain';
 import { type Cents, parseKes } from '@bliss/shared/money';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
@@ -12,6 +12,7 @@ import * as inventory from '@/modules/inventory/service';
 import * as pricing from '@/modules/pricing/service';
 import * as procurement from '@/modules/procurement/service';
 import * as sync from '@/modules/sync/service';
+import * as trade from '@/modules/trade/service';
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
 
@@ -153,6 +154,48 @@ export async function setRolePermission(input: { roleId: string; permission: Per
   const actor = await identity.currentConsoleActor();
   return attempt(['/console/people'], () => {
     identity.setRolePermission({ ...input, actor });
+  });
+}
+
+export async function createStaff(input: { fullName: string; displayName: string; roleId: string; pinHash: string | null; avatarUrl: string | null; contactNumber: string | null }): Promise<ActionResult> {
+  const actor = await identity.currentConsoleActor();
+  return attempt(['/console/people'], () => {
+    identity.createStaff({ ...input, actor });
+  });
+}
+
+export async function updateStaff(input: { staffId: string; fullName: string; displayName: string; pinHash: string | null; avatarUrl: string | null; contactNumber: string | null }): Promise<ActionResult> {
+  const actor = await identity.currentConsoleActor();
+  return attempt(['/console/people'], () => {
+    identity.updateStaff({ ...input, actor });
+  });
+}
+
+export async function createZone(input: { name: string; sortOrder: number; defaultPriceListId: string | null }): Promise<ActionResult> {
+  const actor = await identity.currentConsoleActor();
+  return attempt(['/console/people'], () => {
+    trade.createZone({ ...input, actor });
+  });
+}
+
+export async function updateZone(input: { zoneId: string; name: string; sortOrder: number; defaultPriceListId: string | null; status: CatalogueStatus }): Promise<ActionResult> {
+  const actor = await identity.currentConsoleActor();
+  return attempt(['/console/people'], () => {
+    trade.updateZone({ ...input, actor });
+  });
+}
+
+export async function createServiceTable(input: { zoneId: string; label: string; seats: number; positionX: number; positionY: number }): Promise<ActionResult> {
+  const actor = await identity.currentConsoleActor();
+  return attempt(['/console/people'], () => {
+    trade.createServiceTable({ ...input, actor });
+  });
+}
+
+export async function updateServiceTable(input: { tableId: string; zoneId: string; label: string; seats: number; positionX: number; positionY: number; status: TableStatus }): Promise<ActionResult> {
+  const actor = await identity.currentConsoleActor();
+  return attempt(['/console/people'], () => {
+    trade.updateServiceTable({ ...input, actor });
   });
 }
 

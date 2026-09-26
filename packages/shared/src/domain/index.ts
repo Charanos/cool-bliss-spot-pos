@@ -63,6 +63,9 @@ export interface Staff {
   roleId: Id;
   employmentStatus: EmploymentStatus;
   colourIndex: number;
+  pinHash: string | null;
+  avatarUrl: string | null;
+  contactNumber: string | null;
   pinLockedUntil: EpochMs | null;
 }
 

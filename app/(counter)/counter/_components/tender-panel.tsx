@@ -265,7 +265,7 @@ export function TenderPanel({
               label={kind === 'mpesa' ? 'M-Pesa Transaction Ref (e.g. SJK4H2X9PQ)' : 'Acquirer Batch / Auth Code'}
               helper={
                 kind === 'mpesa'
-                  ? 'Verify on Till / API statement. NEVER trust the message on the customer\'s phone.'
+                  ? 'Verify on Till / API statement.'
                   : 'Card acquirer batch sequence or approval auth code.'
               }
               value={reference}

@@ -56,7 +56,7 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
     { href: '/console/purchasing', label: 'Purchasing', icon: icon(IconTruckDelivery), count: procurement.reorderSuggestions().length || undefined, section: 'Operations' },
     { href: '/console/catalogue', label: 'Catalogue', icon: icon(IconBuildingStore), section: 'Catalogue & Pricing' },
     { href: '/console/pricing', label: 'Pricing', icon: icon(IconTags), section: 'Catalogue & Pricing' },
-    { href: '/console/people', label: 'People', icon: icon(IconUsers), section: 'Management & System' },
+    { href: '/console/people', label: 'People & Zoning', icon: icon(IconUsers), section: 'Management & System' },
     { href: '/console/reports', label: 'Reports', icon: icon(IconChartBar), section: 'Management & System' },
     { href: '/console/settings', label: 'Settings', icon: icon(IconSettings), count: sync.unresolvedCount() || undefined, countTone: 'stop', section: 'Management & System' },
   ];

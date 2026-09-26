@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: 'Bills' };
 /** Settled bills for a range of business days, with how they were paid as the cashier recorded it. */
 export default async function BillsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
-  const range = businessRange(params.range, '1');
+  const range = businessRange(params.range, 'tonight');
   const outlet = identity.outlet();
   const tenders = settlement.tendersByBill();
 

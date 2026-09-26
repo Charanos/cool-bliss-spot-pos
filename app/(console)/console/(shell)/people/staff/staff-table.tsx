@@ -9,10 +9,12 @@ import { SelectField } from '@bliss/ui/components/fields';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { StatusChip } from '@bliss/ui/components/status';
 import { seatBgClass } from '@bliss/ui/lib/seat';
-import { IconDeviceTablet, IconDoorExit, IconLock, IconPlayerPause, IconPlayerPlay, IconUserCheck, IconUserCog, IconUsers } from '@tabler/icons-react';
+import { IconDeviceTablet, IconDoorExit, IconLock, IconPlayerPause, IconPlayerPlay, IconUserCheck, IconUserCog, IconUsers, IconPlus } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { setEmploymentStatus, setStaffRole } from '../../_actions';
+import { StaffDialog } from './staff-dialog';
+import { staffPhoto } from '@/lib/pos/staff-photos';
 
 export interface StaffRow {
   id: string;
@@ -22,6 +24,9 @@ export interface StaffRow {
   roleId: string;
   role: string;
   status: EmploymentStatus;
+  pinHash: string | null;
+  avatarUrl: string | null;
+  contactNumber: string | null;
   pinLocked: boolean;
   lastShiftAt: number | null;
   shifts: number;
@@ -33,6 +38,7 @@ type Pending = { kind: 'role'; row: StaffRow } | { kind: 'status'; row: StaffRow
 
 export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRow[]; roles: { value: string; label: string }[]; canManage: boolean; timezone: string }) {
   const [pending, setPending] = useState<Pending | null>(null);
+  const [pendingEdit, setPendingEdit] = useState<StaffRow | 'new' | null>(null);
   const totalStaff = rows.length;
   const activeStaff = rows.filter((r) => r.status === 'active' && !r.pinLocked).length;
   const signedInCount = rows.filter((r) => r.signedInOn.length > 0).length;
@@ -48,8 +54,8 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
       csv: (r) => r.name,
       cell: (r) => (
         <span className="flex min-w-0 items-center gap-12">
-          <span aria-hidden="true" className={`flex size-control-sm shrink-0 items-center justify-center rounded-sm font-mono text-num-sm text-seat-ink ${seatBgClass(r.colourIndex + 1)}`}>
-            {r.displayName.slice(0, 2).toUpperCase()}
+          <span aria-hidden="true" className={`flex size-control-sm shrink-0 items-center justify-center rounded-sm font-mono text-num-sm text-seat-ink ${seatBgClass(r.colourIndex + 1)} overflow-hidden`}>
+            {(r.avatarUrl || staffPhoto(r.displayName)) ? <img src={r.avatarUrl || staffPhoto(r.displayName)!} alt="" className="w-full h-full object-cover" /> : r.displayName.slice(0, 2).toUpperCase()}
           </span>
           <StackCell primary={`${r.name}${r.isSelf ? ' (you)' : ''}`} secondary={`Shows as ${r.displayName}`} />
         </span>
@@ -126,11 +132,77 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
         />
       </div>
 
+      {/* Elegant visual separator */}
+      <div className="h-[1px] mt-20 mb-8 w-full bg-gradient-to-r from-transparent via-hairline/60 to-transparent opacity-80" aria-hidden="true" />
+
       <DataTable
         id="people-staff"
         caption="Staff"
         rows={rows}
         columns={columns}
+        leading={
+          canManage ? (
+            <button
+              onClick={() => setPendingEdit('new')}
+              className="group relative inline-flex h-[32px] items-center gap-6 rounded-full bg-accent text-accent-ink px-16 text-[13px] font-medium shadow-[inset_0_1px_0_color-mix(in_oklab,white_20%,transparent),0_1px_3px_color-mix(in_oklab,var(--color-accent)_30%,transparent)] transition-all hover:-translate-y-[1px] hover:shadow-[inset_0_1px_0_color-mix(in_oklab,white_20%,transparent),0_3px_6px_color-mix(in_oklab,var(--color-accent)_40%,transparent)] active:scale-[0.98] active:translate-y-0"
+            >
+              <IconPlus size={14} stroke={2.5} className="transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
+              <span>Add person</span>
+            </button>
+          ) : undefined
+        }
+        renderGridCard={(r) => (
+          <button onClick={() => canManage && setPendingEdit(r)} className="text-left w-full h-[380px] bg-page rounded-[20px] border border-hairline/60 shadow-[0_4px_16px_rgba(0,0,0,0.02)] hover:border-hairline hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all flex flex-col group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2">
+            
+            {/* Full Bleed Image Header */}
+            <div className={`relative h-[170px] w-full bg-seat-ink ${seatBgClass(r.colourIndex + 1)} shrink-0 overflow-hidden`}>
+              {(r.avatarUrl || staffPhoto(r.displayName)) ? (
+                <img src={r.avatarUrl || staffPhoto(r.displayName)!} alt="" className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full text-[64px] font-mono text-white/40">
+                  {r.displayName.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute bottom-16 left-20 right-20 flex flex-col">
+                <span className="text-title font-medium text-[#fff] drop-shadow-md truncate">{r.name}{r.isSelf ? ' (you)' : ''}</span>
+                <span className="text-body-sm text-[#fff]/80 drop-shadow-md truncate">Shows as {r.displayName}</span>
+              </div>
+            </div>
+
+            {/* Tight Details Area */}
+            <div className="flex flex-col flex-1 p-20 text-body-sm bg-page w-full">
+              <div className="flex flex-col mt-auto">
+                <div className="flex justify-between items-center pb-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Role</span>
+                  <span className="text-ink font-medium">{r.role}</span>
+                </div>
+                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Access</span>
+                  <span>
+                    {r.status === 'active' ? (
+                      r.pinLocked ? <StatusChip status="suspended" label="PIN locked" /> : <StatusChip status="active" />
+                    ) : (
+                      <StatusChip status={r.status === 'suspended' ? 'suspended' : 'retired'} label={r.status === 'left' ? 'Left' : undefined} />
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Signed in on</span>
+                  <span className="text-ink-muted">{r.signedInOn.length > 0 ? r.signedInOn.join(', ') : '··'}</span>
+                </div>
+                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Shifts, 28 days</span>
+                  <span className="font-mono tabular">{r.shifts}</span>
+                </div>
+                <div className="flex justify-between items-center pt-8">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Last shift</span>
+                  <span className="font-mono tabular text-ink-muted">{r.lastShiftAt ? formatDate(r.lastShiftAt, timezone) : '··'}</span>
+                </div>
+              </div>
+            </div>
+          </button>
+        )}
         rowKey={(r) => r.id}
         defaultSort={{ key: 'name', dir: 'asc' }}
         search={{ placeholder: 'Search people', test: (r, q) => r.name.toLowerCase().includes(q) || r.displayName.toLowerCase().includes(q) }}
@@ -165,6 +237,12 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
         }
         exportName="staff"
         empty={{ title: 'Nobody here yet', body: 'Add the first person, then give them a role and a PIN.' }}
+      />
+      <StaffDialog 
+        target={pendingEdit === 'new' ? null : pendingEdit} 
+        roles={roles} 
+        open={pendingEdit !== null} 
+        onClose={() => setPendingEdit(null)} 
       />
       <RoleDialog target={pending?.kind === 'role' ? pending.row : null} roles={roles} onClose={() => setPending(null)} />
       <StatusDialog target={pending?.kind === 'status' ? pending : null} onClose={() => setPending(null)} />
