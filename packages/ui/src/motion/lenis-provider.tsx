@@ -33,7 +33,9 @@ export function LenisProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isReduced()) return;
+    const wrapper = document.getElementById('sheet-scroll-container') || window;
     const lenis = new Lenis({
+      wrapper,
       lerp: 0.1,
       smoothWheel: true,
       syncTouch: false,

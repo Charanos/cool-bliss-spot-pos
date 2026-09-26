@@ -134,6 +134,12 @@ export const themes = {
     'stop-wash': alpha(s.stop.dark, 10),
     'poured-wash': alpha(s.poured.dark, 10),
     'served-wash': alpha(s.served.dark, 10),
+    desk: '#000000',
+    'desk-ink': f[50],
+    'desk-muted': f[400],
+    'desk-hover': f[900],
+    'desk-active': f[50],
+    'scrim-media': 'linear-gradient(to top, rgba(11, 16, 21, 0.9) 0%, rgba(11, 16, 21, 0.4) 50%, transparent 100%)',
   },
   light: {
     page: f[0],
@@ -189,6 +195,12 @@ export const themes = {
     'stop-wash': alpha(s.stop.light, 8),
     'poured-wash': alpha(s.poured.light, 8),
     'served-wash': alpha(s.served.light, 8),
+    desk: f[100],
+    'desk-ink': f[900],
+    'desk-muted': f[600],
+    'desk-hover': f[200],
+    'desk-active': f[900],
+    'scrim-media': 'linear-gradient(to top, rgba(11, 16, 21, 0.7) 0%, rgba(11, 16, 21, 0.2) 50%, transparent 100%)',
   },
 } as const;
 
@@ -236,7 +248,7 @@ export const fontFamily = {
 export const space = [2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 56, 72, 96] as const;
 
 /** Three values. No pills, no circles except the connection dot and status dots. */
-export const radius = { sm: 6, md: 10, lg: 16, dot: 9999 } as const;
+export const radius = { sm: 6, md: 10, lg: 16, sheet: 14, dot: 9999 } as const;
 
 /**
  * Component dimensions. Not space: these size things, they do not separate them.
@@ -264,6 +276,8 @@ export const size = {
   'rail-ticket': 340,
   'rail-console': 220,
   'panel-tender': 420,
+  'page-max': 1200,
+  'inset-sheet': 8,
   strip: 56,
   /** The top bar on a phone, and on any screen shorter than the `short` variant's ceiling. */
   'strip-compact': 48,
@@ -284,12 +298,28 @@ export const size = {
   count: 18,
   /** A Floor nav rail item and a tables rail tab row. */
   'nav-item': 64,
+  'desk-nav': 232,
+  'desk-nav-collapsed': 60,
 } as const;
 
 /** One level of elevation. There is no level two, deliberately. */
 export const elevation = {
-  dark: 'none',
-  light: `0 1px 2px ${colour.lightShadow}`,
+  raised: {
+    dark: 'none',
+    light: `0 1px 2px ${colour.lightShadow}`,
+  },
+  sheet: {
+    dark: `0 8px 32px ${alpha(colour.frost[950], 80)}, 0 0 0 1px ${colour.frost[700]}`,
+    light: `0 8px 32px ${alpha(colour.frost[950], 12)}, 0 2px 8px ${alpha(colour.frost[950], 4)}`,
+  },
+  chip: {
+    dark: `0 2px 8px ${alpha(colour.frost[950], 40)}, 0 0 0 1px ${colour.frost[700]}`,
+    light: `0 2px 8px ${alpha(colour.frost[950], 8)}`,
+  },
+  create: {
+    dark: `0 4px 16px ${alpha(colour.glacier[400], 30)}, 0 0 0 1px ${colour.glacier[400]}`,
+    light: `0 4px 16px ${alpha(colour.glacier[600], 30)}, 0 0 0 1px ${colour.glacier[600]}`,
+  },
 } as const;
 
 /**

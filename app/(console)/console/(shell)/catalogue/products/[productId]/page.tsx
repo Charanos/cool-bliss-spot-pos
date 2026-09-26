@@ -1,6 +1,6 @@
 import { formatQty } from '@bliss/shared/format';
 import { ButtonLink } from '@bliss/ui/components/button-link';
-import { RevealSection } from '@bliss/ui/components/console/shell';
+import { RevealSection, PageHeader } from '@bliss/ui/components/console/shell';
 import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
 import { IconArrowLeft, IconHistory } from '@tabler/icons-react';
@@ -39,15 +39,24 @@ export default async function ProductPage({ params }: { params: Promise<{ produc
 
   return (
     <>
-      <div className="mb-16 flex flex-wrap items-center justify-between gap-16">
-        <ButtonLink href="/console/catalogue/products" variant="ghost" icon={IconArrowLeft} className="-ml-12">
-          Products
-        </ButtonLink>
-        {sealed ? (
-          <ButtonLink href={`/console/inventory/movements?variant=${sealed.id}&range=28`} variant="secondary" icon={IconHistory}>
-            View movements
-          </ButtonLink>
-        ) : null}
+      <div className="mb-24">
+        <PageHeader 
+          eyebrow="Catalogue"
+          title={product.name}
+          description={`SKU: ${product.sku || 'N/A'}`}
+          actions={
+            <>
+              <ButtonLink href="/console/catalogue/products" variant="ghost" icon={IconArrowLeft}>
+                Products
+              </ButtonLink>
+              {sealed ? (
+                <ButtonLink href={`/console/inventory/movements?variant=${sealed.id}&range=28`} variant="secondary" icon={IconHistory}>
+                  View movements
+                </ButtonLink>
+              ) : null}
+            </>
+          }
+        />
       </div>
 
       <div className="flex flex-wrap items-start gap-24 border-b border-hairline pb-20">

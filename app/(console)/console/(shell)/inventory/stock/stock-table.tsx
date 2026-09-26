@@ -6,10 +6,11 @@ import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components
 import { CountUp, Metric } from '@bliss/ui/components/console/metric';
 import { AnimatedMoney, Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
-import { IconAlertTriangle, IconBan, IconHistory, IconLock, IconLockOpen, IconScale, IconShoppingCart } from '@tabler/icons-react';
+import { IconAlertTriangle, IconBan, IconHistory, IconLock, IconLockOpen, IconScale, IconShoppingCart, IconPlus } from '@tabler/icons-react';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { cx } from '@bliss/ui/lib/cx';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useState } from 'react';
 import { HoldDialog, ReleaseHoldDialog, WriteOffDialog } from '../../_components/dialogs';
 import { UrlSelect } from '../../_components/url-select';
@@ -170,7 +171,18 @@ export function StockTable({
       <div className="h-[1px] mt-8 w-full mt-32 bg-gradient-to-r from-transparent via-hairline/60 to-transparent opacity-80" aria-hidden="true" />
 
       <DataTable
-        leading={<UrlSelect param="location" label="Location" options={locations} allLabel="All locations" />}
+        leading={
+          <div className="flex items-center gap-12">
+            <UrlSelect param="location" label="Location" options={locations} allLabel="All locations" />
+            <Link
+              href="/console/inventory/counts"
+              className="group relative inline-flex h-[32px] items-center gap-6 rounded-full bg-accent text-accent-ink px-16 text-[13px] font-medium shadow-[inset_0_1px_0_color-mix(in_oklab,white_20%,transparent),0_1px_3px_color-mix(in_oklab,var(--color-accent)_30%,transparent)] transition-all hover:-translate-y-[1px] hover:shadow-[inset_0_1px_0_color-mix(in_oklab,white_20%,transparent),0_3px_6px_color-mix(in_oklab,var(--color-accent)_40%,transparent)] active:scale-[0.98] active:translate-y-0"
+            >
+              <IconPlus size={14} stroke={2.5} className="transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
+              <span>Stock count</span>
+            </Link>
+          </div>
+        }
         id="inventory-stock"
         caption="Stock on hand"
         rows={rows}
@@ -189,6 +201,72 @@ export function StockTable({
           body: 'Import a CSV, or add your first product by hand.',
           action: <ButtonLink href="/console/catalogue/products">Import catalogue</ButtonLink>,
         }}
+        renderGridCard={(r) => (
+          <div className="text-left w-full h-[380px] bg-page rounded-[20px] border border-hairline/60 shadow-[0_4px_16px_rgba(0,0,0,0.02)] hover:border-hairline hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all flex flex-col group relative overflow-hidden focus-visible:outline-none">
+            {/* Header Image */}
+            <div className="relative h-[170px] w-full shrink-0 overflow-hidden bg-control-hover">
+              {r.imageKey ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={`https://images.unsplash.com/photo-${r.imageKey}?auto=format&fit=crop&w=400&h=400&q=80`} alt="" className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" loading="lazy" />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full text-[64px] font-mono text-ink-disabled/20">
+                  {r.variant.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute top-12 right-12">
+                {stateChip(r)}
+              </div>
+              <div className="absolute bottom-16 left-20 right-20 flex flex-col">
+                <span className="text-title font-medium text-[#fff] drop-shadow-md truncate">{r.variant}</span>
+                <span className="text-body-sm text-[#fff]/80 drop-shadow-md truncate">{r.categoryName}</span>
+              </div>
+            </div>
+
+            {/* Details */}
+            <div className="flex flex-col flex-1 p-20 text-body-sm bg-page w-full">
+              <div className="flex flex-col mt-auto">
+                <div className="flex justify-between items-center pb-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">On hand</span>
+                  <span className="font-medium text-ink tabular flex gap-4">
+                    <span className={r.onHand <= 0 ? 'text-stop' : ''}>{formatQty(r.onHand, r.unit === 'bottles' ? 2 : 0)}</span>
+                    <span className="text-ink-subtle">{r.unit === 'bottles' ? 'btl' : ''}</span>
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Unit cost</span>
+                  <Money value={r.unitCost} currency={false} tone="muted" />
+                </div>
+                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Total Value</span>
+                  <Money value={r.value} currency={false} decimals="whole" />
+                </div>
+                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">28d Velocity</span>
+                  <span className="font-mono text-ink-muted">{r.velocity.toFixed(r.velocity < 10 ? 1 : 0)}/day</span>
+                </div>
+                <div className="flex justify-between items-center pt-8">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Days Cover</span>
+                  <span className="font-mono tabular">
+                    <span className={r.daysCover !== null && r.daysCover < 3 ? 'text-stop' : 'text-ink'}>
+                      {r.daysCover === null ? '··' : Math.round(r.daysCover)}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Overlay Actions on Hover */}
+            <div className="absolute top-12 left-12 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-6 z-10">
+               <button onClick={(e) => { e.preventDefault(); setHold({ variantId: r.variantId, name: r.variant }); }} className="p-8 rounded-full bg-page/90 text-ink-subtle hover:text-ink backdrop-blur-md shadow-sm transition-colors border border-hairline/40" title="Hold stock">
+                 <IconLock size={16} stroke={1.5} />
+               </button>
+               <button onClick={(e) => { e.preventDefault(); setWriteOff(r); }} className="p-8 rounded-full bg-page/90 text-ink-subtle hover:text-stop backdrop-blur-md shadow-sm transition-colors border border-hairline/40" title="Write off">
+                 <IconBan size={16} stroke={1.5} />
+               </button>
+            </div>
+          </div>
+        )}
         rowActions={(r) => [
           { key: 'movements', label: 'View movements', icon: IconHistory, onSelect: () => router.push(`/console/inventory/movements?variant=${r.variantId}`) },
           { key: 'order', label: 'Add to order', icon: IconShoppingCart, onSelect: () => router.push('/console/purchasing/reorder') },

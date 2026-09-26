@@ -84,7 +84,7 @@ export function BarChart({ data, height = 200, highlightKey, caption }: { data: 
                   <span
                     data-bar=""
                     className={cx(
-                      'block w-full max-w-[20px] rounded-t-[4px] transition-opacity duration-[160ms] bg-chart',
+                      'block w-full max-w-[20px] rounded-t-[4px] transition-opacity duration-[160ms] bg-accent',
                       hover && !active ? 'opacity-40' : 'opacity-100',
                     )}
                     style={{ height: `${bps / 100}%`, minHeight: d.value > 0n ? 2 : 0 }}

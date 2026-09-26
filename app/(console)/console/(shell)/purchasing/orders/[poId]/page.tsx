@@ -1,5 +1,6 @@
 import { formatDate, formatDateTime } from '@bliss/shared/format';
 import { ButtonLink } from '@bliss/ui/components/button-link';
+import { PageHeader } from '@bliss/ui/components/console/shell';
 import { StatusChip } from '@bliss/ui/components/status';
 import { IconArrowLeft } from '@tabler/icons-react';
 import type { Metadata } from 'next';
@@ -24,24 +25,26 @@ export default async function OrderPage({ params }: { params: Promise<{ poId: st
 
   return (
     <>
-      <div className="mb-16">
-        <ButtonLink href="/console/purchasing/orders" variant="ghost" icon={IconArrowLeft} className="-ml-12">
-          Purchase orders
-        </ButtonLink>
-      </div>
-      <div className="border-b border-hairline pb-16">
-        <h2 className="flex flex-wrap items-center gap-12 text-title text-ink">
-          <span className="font-mono tabular">PO {order.poNumber}</span>
-          <span className="text-ink-muted">{supplier?.name}</span>
-          <StatusChip {...ORDER_STATUS[order.status]} />
-        </h2>
-        <p className="mt-4 text-body text-ink-muted">
-          Raised by {identity.displayName(order.raisedBy)} on {formatDateTime(order.raisedAt, tz)}
-          {order.approvedBy && order.approvedBy !== order.raisedBy ? ` · approved by ${identity.displayName(order.approvedBy)}` : ''}
-          {order.expectedAt ? ` · expected ${formatDate(order.expectedAt, tz)}` : ''}
-          {supplier ? ` · ${supplier.contactName}, pays in ${supplier.paymentTermsDays} days` : ''}
-        </p>
-        {order.notes ? <p className="mt-4 text-body text-ink">{order.notes}</p> : null}
+      <div className="mb-24">
+        <PageHeader 
+          eyebrow="Purchasing"
+          title={`PO ${order.poNumber} — ${supplier?.name}`}
+          badge={<StatusChip {...ORDER_STATUS[order.status]} />}
+          description={
+            <>
+              Raised by {identity.displayName(order.raisedBy)} on {formatDateTime(order.raisedAt, tz)}
+              {order.approvedBy && order.approvedBy !== order.raisedBy ? ` · approved by ${identity.displayName(order.approvedBy)}` : ''}
+              {order.expectedAt ? ` · expected ${formatDate(order.expectedAt, tz)}` : ''}
+              {supplier ? ` · ${supplier.contactName}, pays in ${supplier.paymentTermsDays} days` : ''}
+              {order.notes ? <span className="block mt-4 text-ink">{order.notes}</span> : null}
+            </>
+          }
+          actions={
+            <ButtonLink href="/console/purchasing/orders" variant="ghost" icon={IconArrowLeft}>
+              Purchase orders
+            </ButtonLink>
+          }
+        />
       </div>
 
       <OrderDetail

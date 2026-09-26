@@ -19,7 +19,7 @@ export default async function ConsoleRootLayout({ children }: { children: ReactN
   const theme = (await cookies()).get(THEME_COOKIE)?.value === 'dark' ? 'dark' : 'light';
   return (
     <html lang="en-KE" data-theme={theme} data-surface="console" className={fontVariables}>
-      <body className="min-h-dvh bg-page text-ink antialiased">{children}</body>
+      <body className="min-h-dvh bg-page text-ink antialiased" suppressHydrationWarning>{children}</body>
     </html>
   );
 }

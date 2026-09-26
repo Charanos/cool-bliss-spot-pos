@@ -152,6 +152,43 @@ export function ShiftsTable({
         exportName="shifts"
         exportDate={exportDate}
         empty={{ title: 'No shifts in this range', body: 'A shift starts when someone signs in on a floor tablet or the counter.' }}
+        renderGridCard={(r) => (
+          <div className="text-left w-full h-[320px] bg-page rounded-[20px] border border-hairline/60 shadow-[0_4px_16px_rgba(0,0,0,0.02)] transition-all flex flex-col group relative overflow-hidden">
+            {/* Header */}
+            <div className="flex flex-col p-20 bg-desk-hover border-b border-hairline/40 shrink-0">
+              <div className="flex items-center justify-between mb-8">
+                <span className="font-mono text-[11px] font-bold tracking-widest text-desk-muted uppercase">{formatIsoDate(r.businessDate)}</span>
+                {r.open ? (
+                  <StatusChip status="open" label="On shift" />
+                ) : (
+                  <span className="text-[11px] font-bold text-ink-muted uppercase tracking-widest">Closed</span>
+                )}
+              </div>
+              <span className="text-title font-medium text-ink truncate mb-4">{r.staff}</span>
+              <span className="text-micro text-ink-subtle truncate">{r.role}</span>
+            </div>
+
+            {/* Details */}
+            <div className="flex flex-col flex-1 p-20 text-body-sm bg-page w-full">
+              <div className="flex flex-col mt-auto gap-8">
+                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Time</span>
+                  <span className="font-mono text-ink font-medium">
+                    {`${formatTime(r.startedAt, timezone)} - ${r.endedAt ? formatTime(r.endedAt, timezone) : 'Now'}`}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Tabs</span>
+                  <span className="text-ink font-medium">{r.tabsOpened} opened</span>
+                </div>
+                <div className="flex justify-between items-center py-8">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Sales</span>
+                  <Money value={r.sales} currency={false} decimals="whole" className="font-medium text-[15px]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       />
     </div>
   );

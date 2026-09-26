@@ -82,10 +82,10 @@ push();
 push('@theme inline {');
 for (const name of Object.keys(themes.dark)) push(`  --color-${name}: var(--bliss-${name});`);
 push('  --color-scrim: var(--bliss-scrim);');
-push('  --shadow-raised: var(--bliss-shadow-raised);');
-push('  --shadow-lift: var(--bliss-shadow-lift);');
-push('  --shadow-key: var(--bliss-shadow-key);');
-push('}');
+  for (const name of Object.keys(elevation)) push(`  --shadow-${name}: var(--bliss-shadow-${name});`);
+  push('  --shadow-lift: var(--bliss-shadow-lift);');
+  push('  --shadow-key: var(--bliss-shadow-key);');
+  push('}');
 push();
 
 function themeBlock(selector: string, name: keyof typeof themes, scheme: 'light' | 'dark') {
@@ -93,7 +93,9 @@ function themeBlock(selector: string, name: keyof typeof themes, scheme: 'light'
   push(`  color-scheme: ${scheme};`);
   for (const [key, value] of Object.entries(themes[name])) push(`  --bliss-${key}: ${value};`);
   push(`  --bliss-scrim: ${colour.scrim};`);
-  push(`  --bliss-shadow-raised: ${elevation[name]};`);
+  for (const [elevName, elevVal] of Object.entries(elevation)) {
+    push(`  --bliss-shadow-${elevName}: ${elevVal[name]};`);
+  }
   push(`  --bliss-shadow-lift: ${atmosphere.lift[name]};`);
   push(`  --bliss-shadow-key: ${atmosphere.key[name]};`);
   push('}');

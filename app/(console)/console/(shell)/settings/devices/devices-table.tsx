@@ -146,6 +146,58 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
         rowActions={canManage ? (r) => (r.status === 'active' ? [{ key: 'withdraw', label: `Withdraw ${r.label}`, icon: IconDeviceTabletOff, destructive: true, onSelect: () => setWithdraw({ deviceId: r.id, label: r.label }) }] : []) : undefined}
         exportName="devices"
         empty={{ title: 'No devices registered', body: 'Register a tablet by signing in on it with an owner or manager PIN.' }}
+        renderGridCard={(r) => (
+          <div className="text-left w-full h-[340px] bg-page rounded-[20px] border border-hairline/60 shadow-[0_4px_16px_rgba(0,0,0,0.02)] hover:border-hairline hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all flex flex-col group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2">
+            {/* Header */}
+            <div className="flex flex-col p-20 bg-desk-hover border-b border-hairline/40 shrink-0">
+              <div className="flex items-center justify-between mb-8">
+                <span className="font-mono text-[11px] font-bold tracking-widest text-desk-muted uppercase">{r.kind}</span>
+                {r.status !== 'active' ? (
+                  <StatusChip status={r.status === 'lost' ? 'lost' : r.status === 'suspended' ? 'suspended' : 'retired'} label={r.status === 'lost' ? 'Withdrawn' : undefined} />
+                ) : (
+                  <span className="flex items-center gap-8 text-[11px] font-medium text-ink uppercase tracking-wider">
+                    <Dot tone={r.online ? 'poured' : 'info'} />
+                    {r.online ? 'Online' : 'Offline'}
+                  </span>
+                )}
+              </div>
+              <span className="text-title font-medium text-ink truncate mb-4">{r.label}</span>
+              <span className="text-micro text-ink-subtle truncate">
+                {r.status === 'active' ? (r.lastSeenAt ? `Seen ${formatAgo(Math.max(0, now - r.lastSeenAt))}` : 'Never seen') : r.revokedReason}
+              </span>
+            </div>
+
+            {/* Details */}
+            <div className="flex flex-col flex-1 p-20 text-body-sm bg-page w-full">
+              <div className="flex flex-col mt-auto gap-8">
+                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Signed in</span>
+                  <span className="text-ink font-medium truncate ml-16">{r.signedIn ?? '··'}</span>
+                </div>
+                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Version</span>
+                  <span className={r.status === 'active' && r.appVersion !== latestVersion ? "text-low font-medium" : "text-ink font-medium"}>{r.appVersion}</span>
+                </div>
+                <div className="flex justify-between items-center py-8">
+                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Unsynced</span>
+                  <span className={r.unsynced > 0 ? "text-info font-medium" : "text-ink-muted"}>{r.unsynced > 0 ? `${r.unsynced} held` : '··'}</span>
+                </div>
+              </div>
+              {canManage && r.status === 'active' && (
+                <div className="mt-16 pt-16 border-t border-hairline/40 flex justify-end">
+                  <button 
+                    type="button" 
+                    onClick={() => setWithdraw({ deviceId: r.id, label: r.label })}
+                    className="inline-flex h-[32px] items-center gap-6 rounded-full bg-desk-muted/10 text-stop px-16 text-[13px] font-medium hover:bg-desk-muted/20 transition-colors"
+                  >
+                    <IconDeviceTabletOff size={14} stroke={2.5} />
+                    <span>Withdraw</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       />
       <WithdrawDeviceDialog target={withdraw} onClose={() => setWithdraw(null)} />
     </div>
