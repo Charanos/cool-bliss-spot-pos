@@ -97,6 +97,21 @@ brackets (`text-[13px]`, `shadow-[...]`, `rounded-[12px]`, `px-[6px]`) is refuse
 
 Console-local parts: `ProductThumb` (a catalogue photograph or its initial, with the category edge) and `StaffAvatar` (an uploaded photo or initials, never a stock photograph). Every primitive is on one page at `/console/kit` when development data is on.
 
+Console-local composition (`app/(console)/console/(shell)/_components`):
+
+| Part | Use |
+|---|---|
+| `EntityLink` | A record's name as a link to its page, through `hrefFor(kind, id)` in `_lib/nav.ts`. The one way a name is shown, so nothing dead-ends. It sits above a stretched row link, so it may go in any cell of a linked row except the first |
+| `hrefFor`, `hrefForEntity` | The page for a record kind, and for an audit entry's entity type (a voided line opens its tab) |
+| `ViewHeader` | A list page's title, purpose, headline actions and aside figure, from the nav manifest |
+| `FormDialog`, `Fieldset` | Every create and edit: one form for both, the server's refusal above the fields, the dialog closing and the page refreshing on success |
+| `ReasonDialog` | Every archive, void, refund, review or reinstatement: a reason of at least ten characters for the audit trail; extra fields go in as children |
+| `useDialog`, `useCreateParam` | One piece of dialog state per page; `?new=1` opens the page's create dialog, from the command menu or a header `ButtonLink variant="create"` |
+| `OneTimeCode` | A secret shown once, such as a device's pairing code |
+| `PhotoField`, `DaysField` | An uploaded photograph with its preview; days of the week as toggles |
+
+Managers that serve a list and its record alike live beside the list: `useStaffManager` (people), `useDeviceManager` (devices). A record page's header actions use the same hook as the list's row menu, so an action reads and behaves the same in both places.
+
 Console server actions go through `runAction` (`app/(console)/console/(shell)/_lib/action.ts`): the
 session actor, a zod schema for every field, `withWrite`, safe error messages, revalidation.
 
@@ -201,3 +216,13 @@ prototype language. The rewrites made in this pass, for reference:
       controls are labelled; dialogs trap focus and return it.
 - [ ] Correct in light and dark, at 1440 and 1280, and usable (scrolling, not clipped) at 1024.
 - [ ] Every write goes through `runAction` with a schema; the service enforces permission and rules.
+- [ ] A list page has its anatomy: `ViewHeader`, a `MetricGrid` of up to four toned metrics, a hero
+      `Callout` only when something needs a person, then the table with a card view for anything
+      with an identity.
+- [ ] A record page has its anatomy: `DetailHeader` with the record's own actions, a callout when its
+      state needs explaining, its figures, then a two-column grid of cards with related records.
+- [ ] Every record named on the page is an `EntityLink`, or the row opens it; nothing dead-ends.
+- [ ] Create, edit and archive (or its domain's word: void, refund, withdraw) are reachable for the
+      page's own records, and `?new=1` opens its create dialog.
+- [ ] Removal is a status, never a delete: stored rows are only ever upserted, and history keeps
+      reading back.

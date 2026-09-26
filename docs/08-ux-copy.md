@@ -313,3 +313,26 @@ The Console is read at a desk, not on a tray, but the voice is the same: plain, 
 - **Errors say what happened, then what to do**, and never show an internal message. Services refuse with a `DomainError` written in this voice.
 - **No invented figures or placeholders.** A number on screen is real, or the line says it is not tracked yet. No stock photos of staff; initials until a photo is uploaded.
 - **Out of scope stays out of the interface.** No KRA, eTIMS or fiscal wording anywhere; a Bliss bill says it is not a tax invoice.
+
+### Correcting a bill or a tab
+
+Two words, never swapped. **Void** a bill that was settled wrongly (the wrong tender, split or tab):
+it is set aside and its lines go back on the tab to be settled again. **Refund** gives a guest money
+back for lines they paid for: the bill stays, with the refund against it.
+
+| Moment | Copy |
+|---|---|
+| Void, title | "Void bill 21808?" |
+| Void, body | "For a bill settled wrongly. Its lines go back on the tab, open again, to be settled right. Stock does not move, and the cash leaves the drawer's expected figure." |
+| Void, refused | "The drawer that took the cash for bill 21808 has been counted. Refund the bill instead." |
+| Refund, title | "Refund on bill 21808" |
+| Refund, button | "Refund KES 700", the amount of the lines chosen |
+| Refund, cash with no drawer | "No drawer is open now. Open one on a counter, or give the money back another way." |
+| Refund, restock | "Put the items back in stock. Only when they can be sold again, such as a sealed bottle." |
+| Refunded bill, callout | "Part refunded. KES 350 given back. The bill counts at what was kept." |
+| Close a tab, body | "The 3 lines not yet on a bill are voided with your reason. Poured stock stays gone; stock not poured goes back. The table is freed." |
+| Drawer review | "Mark reviewed", with a note of what was found and done |
+| Device pairing | "On Floor 4, choose it on the sign-in screen and enter this code. Nobody can sign in on it until it is paired." |
+
+Every one of these asks for a reason, and the reason is kept in the audit trail beside who gave it.
+
