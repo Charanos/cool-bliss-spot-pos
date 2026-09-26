@@ -3,16 +3,19 @@
 import { formatDateTime } from '@bliss/shared/format';
 import { Button } from '@bliss/ui/components/button';
 import { Card } from '@bliss/ui/components/console/card';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Section } from '@bliss/ui/components/console/section';
 import { EmptyState } from '@bliss/ui/components/feedback';
 import { Dot, StatusChip } from '@bliss/ui/components/status';
-import { IconCheck } from '@tabler/icons-react';
+import { IconAlertOctagon, IconCheck, IconChecks, IconCloudOff, IconWifiOff } from '@tabler/icons-react';
 import { useState } from 'react';
 import { ResolveDeadLetterDialog } from '../../_components/dialogs';
+import { EntityLink } from '../../_components/entity-link';
 
 export interface DeadLetterRow {
   id: string;
   device: string;
+  deviceId: string;
   kind: string;
   what: string;
   code: string;
@@ -24,13 +27,20 @@ export interface DeadLetterRow {
 }
 
 /** What a device could not send, until a person deals with it, and what was done about the rest. */
-export function SyncView({ rows, timezone, canResolve }: { rows: DeadLetterRow[]; timezone: string; canResolve: boolean }) {
+export function SyncView({ rows, timezone, canResolve, held, offline }: { rows: DeadLetterRow[]; timezone: string; canResolve: boolean; held: number; offline: number }) {
   const [resolving, setResolving] = useState<{ id: string; title: string } | null>(null);
   const open = rows.filter((r) => r.resolvedAt === null);
   const done = rows.filter((r) => r.resolvedAt !== null);
 
   return (
     <div className="flex flex-col gap-40">
+      <MetricGrid>
+        <Metric label="Could not be sent" icon={IconAlertOctagon} tone={open.length > 0 ? 'stop' : 'poured'} value={<CountUp value={open.length} />} detail={open.length > 0 ? 'Waiting on a person' : 'Nothing waiting'} />
+        <Metric label="Resolved" icon={IconChecks} value={<CountUp value={done.length} delayMs={60} />} detail="Each with what was done" />
+        <Metric label="Held on devices" icon={IconCloudOff} tone={held > 0 ? 'attention' : 'default'} value={<CountUp value={held} delayMs={120} />} detail={held > 0 ? 'Sent when they reconnect' : 'Every device has sent everything'} />
+        <Metric label="Offline now" icon={IconWifiOff} tone={offline > 0 ? 'attention' : 'default'} href="/console/settings/devices" value={<CountUp value={offline} delayMs={180} />} detail={offline > 0 ? 'They keep working, and send later' : 'Every device is connected'} />
+      </MetricGrid>
+
       <Section
         id="sync-open"
         title={open.length === 0 ? 'Nothing waiting' : `${open.length} could not be sent`}
@@ -49,7 +59,10 @@ export function SyncView({ rows, timezone, canResolve }: { rows: DeadLetterRow[]
                     </span>
                     <div className="min-w-0">
                       <p className="text-ui font-medium text-ink">
-                        {r.kind} from {r.device}
+                        {r.kind} from{' '}
+                        <EntityLink kind="device" id={r.deviceId}>
+                          {r.device}
+                        </EntityLink>
                         {r.what ? `, ${r.what}` : ''}
                       </p>
                       <p className="mt-2 text-body-sm text-ink-muted">

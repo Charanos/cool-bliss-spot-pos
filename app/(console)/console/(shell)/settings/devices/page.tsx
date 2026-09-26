@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
-import { type DeviceTableRow, DevicesTable } from './devices-table';
 import { ViewHeader } from '../../_components/workspace';
+import { type DeviceTableRow, DevicesTable } from './devices-table';
 
 export const metadata: Metadata = { title: 'Devices' };
 
@@ -16,7 +16,9 @@ export default async function DevicesPage() {
     id: d.id,
     label: d.label,
     kind: KIND[d.kind] ?? d.kind,
+    kindKey: d.kind,
     status: d.status,
+    pairingPending: d.pairingPending,
     online: d.online,
     lastSeenAt: d.lastSeenAt,
     signedIn: d.signedInStaffId ? identity.displayName(d.signedInStaffId) : null,

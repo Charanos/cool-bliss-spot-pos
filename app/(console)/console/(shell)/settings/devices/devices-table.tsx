@@ -2,19 +2,23 @@
 
 import type { DeviceStatus } from '@bliss/shared/domain';
 import { formatAgo, formatDate, plural } from '@bliss/shared/format';
+import { Button } from '@bliss/ui/components/button';
+import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
-import { Dot, StatusChip } from '@bliss/ui/components/status';
+import { OverflowMenu } from '@bliss/ui/components/menu';
+import { Dot, StatusChip, ToneChip } from '@bliss/ui/components/status';
 import { useHydrated, useNow } from '@bliss/ui/hooks';
-import { IconCheck, IconCloudOff, IconDeviceTablet, IconDeviceTabletOff } from '@tabler/icons-react';
-import { useState } from 'react';
-import { WithdrawDeviceDialog } from '../../_components/dialogs';
+import { IconBuildingStore, IconCheck, IconCloudOff, IconDeviceDesktop, IconDeviceTablet, IconGlassFull, IconPlus } from '@tabler/icons-react';
+import { type DeviceKind, useDeviceManager } from './device-manager';
 
 export interface DeviceTableRow {
   id: string;
   label: string;
   kind: string;
+  kindKey: DeviceKind | 'console';
   status: DeviceStatus;
+  pairingPending: boolean;
   online: boolean;
   lastSeenAt: number | null;
   signedIn: string | null;
@@ -24,9 +28,11 @@ export interface DeviceTableRow {
   revokedReason: string | null;
 }
 
+const KIND_ICON = { floor: IconDeviceTablet, counter: IconBuildingStore, bar: IconGlassFull, console: IconDeviceDesktop } as const;
+
 /** Every registered device: connected or not, who is signed in, and what it holds that is not yet sent. */
 export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, canManage }: { rows: DeviceTableRow[]; now: number; latestVersion: string; timezone: string; canManage: boolean }) {
-  const [withdraw, setWithdraw] = useState<{ deviceId: string; label: string } | null>(null);
+  const manager = useDeviceManager({ canManage, createParam: true });
   const clientNow = useNow(15_000);
   const now = useHydrated() ? clientNow : serverNow;
 
@@ -39,7 +45,9 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
       sortValue: (r) => (r.status !== 'active' ? 2 : r.online ? 0 : 1),
       csv: (r) => (r.status !== 'active' ? r.status : r.online ? 'online' : 'offline'),
       cell: (r) =>
-        r.status !== 'active' ? (
+        r.status === 'active' && r.pairingPending ? (
+          <ToneChip tone="info">Waiting to pair</ToneChip>
+        ) : r.status !== 'active' ? (
           <span title={r.revokedReason ?? undefined}>
             <StatusChip status={r.status === 'lost' ? 'lost' : r.status === 'suspended' ? 'suspended' : 'retired'} label={r.status === 'lost' ? 'Withdrawn' : undefined} />
           </span>
@@ -109,13 +117,60 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
         rows={rows}
         columns={columns}
         rowKey={(r) => r.id}
+        rowHref={(r) => `/console/settings/devices/${r.id}`}
         defaultSort={{ key: 'connection', dir: 'asc' }}
+        leading={
+          canManage ? (
+            <Button variant="create" size="sm" icon={IconPlus} onClick={manager.register}>
+              Register a device
+            </Button>
+          ) : null
+        }
+        renderGridCard={(r) => {
+          const Icon = KIND_ICON[r.kindKey];
+          const own = manager.actions(r);
+          return (
+            <Card as="article" interactive className="group h-full" tone={r.status !== 'active' ? undefined : r.unsynced > 0 ? 'low' : r.online ? 'poured' : undefined}>
+              <CardHeader
+                band
+                icon={Icon}
+                title={r.label}
+                subtitle={r.kind}
+                href={`/console/settings/devices/${r.id}`}
+                meta={
+                  r.status !== 'active' ? (
+                    <StatusChip status={r.status === 'lost' ? 'lost' : 'retired'} label={r.status === 'lost' ? 'Withdrawn' : undefined} />
+                  ) : r.pairingPending ? (
+                    <ToneChip tone="info">Waiting to pair</ToneChip>
+                  ) : (
+                    <span className="flex items-center gap-6 text-body-sm text-ink-muted">
+                      <Dot tone={r.online ? 'poured' : 'info'} className={r.online ? 'animate-breathe' : undefined} />
+                      {r.online ? 'Online' : 'Offline'}
+                    </span>
+                  )
+                }
+                actions={own.length > 0 ? <OverflowMenu label={`More for ${r.label}`} size="sm" items={own} /> : undefined}
+              />
+              <CardStats columns={3}>
+                <Stat label="Signed in">{r.signedIn ?? 'Nobody'}</Stat>
+                <Stat label="Not yet sent" tone={r.unsynced > 0 ? 'low' : undefined}>
+                  {r.unsynced > 0 ? r.unsynced : 'None'}
+                </Stat>
+                <Stat label="Version">{r.appVersion || 'Not yet'}</Stat>
+              </CardStats>
+              <CardFooter>
+                <span className="text-body-sm text-ink-muted">{r.lastSeenAt ? `Seen ${formatAgo(Math.max(0, now - r.lastSeenAt))}` : 'Never seen'}</span>
+                <span className="text-body-sm text-ink-subtle">Since {formatDate(r.enrolledAt, timezone)}</span>
+              </CardFooter>
+            </Card>
+          );
+        }}
         rowTone={(r) => (r.status !== 'active' ? 'muted' : r.unsynced > 0 ? 'attention' : 'default')}
-        rowActions={canManage ? (r) => (r.status === 'active' ? [{ key: 'withdraw', label: `Withdraw ${r.label}`, icon: IconDeviceTabletOff, destructive: true, onSelect: () => setWithdraw({ deviceId: r.id, label: r.label }) }] : []) : undefined}
+        rowActions={canManage ? manager.actions : undefined}
         exportName="devices"
-        empty={{ title: 'No devices registered', body: 'Register a tablet by signing in on it with an owner or manager PIN.' }}
+        empty={{ title: 'No devices registered', body: 'Register a tablet here, then pair it with the code shown.' }}
       />
-      <WithdrawDeviceDialog target={withdraw} onClose={() => setWithdraw(null)} />
+      {manager.dialogs}
     </div>
   );
 }

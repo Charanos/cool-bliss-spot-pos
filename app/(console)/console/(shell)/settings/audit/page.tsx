@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import * as audit from '@/modules/audit/service';
 import * as identity from '@/modules/identity/service';
+import * as trade from '@/modules/trade/service';
 import { actionLabel } from '../../_lib/labels';
+import { hrefForEntity } from '../../_lib/nav';
 import { businessRange, rangeOptions } from '../../_lib/range';
-import { type AuditRow, AuditTable } from './audit-table';
 import { ViewHeader } from '../../_components/workspace';
+import { type AuditRow, AuditTable } from './audit-table';
 
 export const metadata: Metadata = { title: 'Audit trail' };
 
@@ -17,6 +19,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const range = businessRange(params.range, '28');
   const tz = identity.outlet().timezone;
   const devices = identity.devices();
+  const lineTab = new Map(trade.readTables().lines.map((l) => [l.id, l.tabId]));
   const rows: AuditRow[] = audit.list({ from: range.start, to: range.end }).map((e) => ({
     id: e.id,
     at: e.occurredAt,
@@ -24,6 +27,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     label: actionLabel(e.action),
     family: e.action.split('.')[0] ?? e.action,
     entityType: e.entityType,
+    // A voided line is read on its tab.
+    href: e.entityType === 'order_line' ? (lineTab.has(e.entityId) ? hrefForEntity('tab', lineTab.get(e.entityId)!) : null) : hrefForEntity(e.entityType, e.entityId),
+    deviceId: e.actorDeviceId ?? null,
     actor: identity.displayName(e.actorStaffId),
     actorId: e.actorStaffId ?? '',
     device: e.actorDeviceId ? (devices.find((d) => d.id === e.actorDeviceId)?.label ?? null) : null,

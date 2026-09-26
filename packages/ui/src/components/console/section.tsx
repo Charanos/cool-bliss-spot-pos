@@ -115,8 +115,8 @@ export function KeyValueList({ items, columns = 1, layout = 'stacked', className
         {items.map((item, i) => (
           <div key={i} className="grid grid-cols-kv items-baseline gap-16 border-b border-rule py-12 last:border-b-0">
             <dt className="text-body-sm text-ink-muted">{item.label}</dt>
-            <dd className={cx('min-w-0 text-ui text-ink', item.mono && 'font-mono tabular')}>
-              {item.value}
+            <dd className="min-w-0 text-ui text-ink">
+              <span className={cx(item.mono && 'font-mono tabular')}>{item.value}</span>
               {item.hint ? <p className="mt-2 text-body-sm text-ink-subtle">{item.hint}</p> : null}
             </dd>
           </div>
