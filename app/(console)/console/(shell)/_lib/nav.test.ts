@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { WORKSPACES, crumbsFor, destinations, isRecordPath, pageFor, workspaceFor } from './nav';
+import { type RecordKind, WORKSPACES, crumbsFor, destinations, hrefFor, hrefForEntity, isRecordPath, pageFor, workspaceFor } from './nav';
 
 /**
  * The nav manifest is the Console's map: the rail, the tabs, the crumbs and the command menu read
@@ -65,5 +65,40 @@ describe('the nav manifest', () => {
     const record = crumbsFor('/console/trade/bills/abc', 'Bill 142');
     expect(record.at(-1)).toEqual({ label: 'Bill 142', href: null });
     expect(record[1]).toEqual({ label: 'Bills', href: '/console/trade/bills' });
+  });
+});
+
+const KINDS: RecordKind[] = ['product', 'category', 'modifier', 'priceList', 'rule', 'recipe', 'supplier', 'order', 'receipt', 'count', 'bill', 'tab', 'staff', 'role', 'drawer', 'shift', 'device', 'location', 'zone'];
+
+/** The page file a record address resolves to: a literal folder where one exists, else the dynamic one. */
+function pageFileFor(href: string): string | null {
+  let dir = SHELL;
+  for (const segment of href.replace(/^\/console\/?/, '').split('/').filter(Boolean)) {
+    if (existsSync(join(dir, segment))) {
+      dir = join(dir, segment);
+      continue;
+    }
+    const dynamic = readdirSync(dir).find((name) => name.startsWith('[') && statSync(join(dir, name)).isDirectory());
+    if (!dynamic) return null;
+    dir = join(dir, dynamic);
+  }
+  const file = join(dir, 'page.tsx');
+  return existsSync(file) ? file : null;
+}
+
+describe('record links', () => {
+  it('sends every kind of record to a page that exists', () => {
+    for (const kind of KINDS) expect(pageFileFor(hrefFor(kind, '019f0000-0000-7000-8000-000000000000')), kind).not.toBeNull();
+  });
+
+  it('escapes an id, so a stray character cannot change the address', () => {
+    expect(hrefFor('bill', 'a/b?c')).toBe('/console/trade/bills/a%2Fb%3Fc');
+  });
+
+  it('maps the audit trail\'s entity types to their records, and leaves the rest unlinked', () => {
+    expect(hrefForEntity('drawer_session', 'x')).toBe('/console/trade/drawers/x');
+    expect(hrefForEntity('purchase_order', 'x')).toBe('/console/purchasing/orders/x');
+    expect(hrefForEntity('stock_location', 'x')).toBe('/console/settings/locations');
+    expect(hrefForEntity('outbox_dead_letter', 'x')).toBeNull();
   });
 });

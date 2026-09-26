@@ -119,8 +119,12 @@ describe('the menu', () => {
     expect(catalogue.stockVariantFor(tot.id)?.stockVariantId).toBe(variant.id);
     // The sealed way cannot go while a serve pours from it.
     expect(() => catalogueManage.setVariantStatus({ id: variant.id, status: 'archived', reason: 'Testing the pour rule', actor })).toThrow(/pour from/);
+    const beforeArchive = catalogue.version();
     catalogueManage.setProductStatus({ id: product.id, status: 'archived', reason: 'Added by the test, not needed', actor });
     expect(catalogue.productById(product.id)?.status).toBe('archived');
+    // The tablets pull again, and the snapshot they get carries it as archived, so the floor drops it.
+    expect(catalogue.version()).toBeGreaterThan(beforeArchive);
+    expect(catalogue.snapshot().products.find((p) => p.id === product.id)?.status).toBe('archived');
   });
 
   it('refuses a menu change from someone without the menu permission', () => {
@@ -222,6 +226,27 @@ describe('bill corrections', () => {
     const paidOut = dataset().cashMovements.filter((m) => m.drawerSessionId === session.id && m.kind === 'payout').map((m) => m.amountCents);
     expect(sum(paidOut as Cents[])).toBeGreaterThanOrEqual(refundedCents);
     expect(() => corrections.refundBill({ billId: bill.id, billLineIds: [line.id], method: 'cash', drawerSessionId: session.id, reference: null, restock: false, reason: 'Trying the same refund again', actor })).toThrow();
+  });
+
+  it('takes a voided cash bill out of what the drawer expects, while it is still open', () => {
+    const actor = ownerActor();
+    const { bill, due } = quickSale('cash');
+    const session = settlement.openDrawerFor(counter)!;
+    const takenBefore = sum(settlement.cashTakenIn(session.id));
+    corrections.voidBill({ billId: bill.id, reason: 'Settled on the wrong screen', actor });
+    expect(sum(settlement.cashTakenIn(session.id))).toBe(subtract(takenBefore, due));
+    expect(settlement.billsInDrawer(session.id).find((b) => b.id === bill.id)?.status).toBe('voided');
+    expect(settlement.drawerForBill(bill)?.id).toBe(session.id);
+  });
+
+  it('shows a drawer review once, and only on a counted drawer', () => {
+    const actor = ownerActor();
+    const open = settlement.openDrawerFor(counter)!;
+    expect(() => corrections.acknowledgeDrawer({ sessionId: open.id, note: 'Looked at it before the count', actor })).toThrow(/counted and closed/);
+    const closed = settlement.drawerSessions().find((d) => d.status === 'closed' && !d.reviewedAt)!;
+    corrections.acknowledgeDrawer({ sessionId: closed.id, note: 'Checked with the cashier, change given wrongly', actor });
+    expect(settlement.drawerView(closed.id)).toMatchObject({ stage: 'closed', reviewedBy: actor.staffId });
+    expect(() => corrections.acknowledgeDrawer({ sessionId: closed.id, note: 'Reviewing the same drawer again', actor })).toThrow(/already/);
   });
 
   it('refuses both without the refund permission', () => {
