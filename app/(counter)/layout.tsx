@@ -32,7 +32,7 @@ export const viewport: Viewport = {
 export default function CounterRootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-KE" data-theme="dark" data-surface="counter" className={fontVariables}>
-      <body className="min-h-dvh overflow-hidden bg-page text-ink antialiased">
+      <body className="min-h-dvh overflow-hidden bg-page text-ink antialiased" suppressHydrationWarning>
         <SWRegister />
         {children}
       </body>

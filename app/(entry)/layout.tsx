@@ -32,7 +32,7 @@ export const viewport: Viewport = {
 export default function EntryLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-KE" data-theme="dark" className={fontVariables}>
-      <body className="min-h-dvh bg-page text-ink antialiased">
+      <body className="min-h-dvh bg-page text-ink antialiased" suppressHydrationWarning>
         <SWRegister />
         {children}
       </body>
