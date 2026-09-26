@@ -2,7 +2,7 @@
 
 import type { PermissionKey } from '@bliss/shared/domain';
 import { plural } from '@bliss/shared/format';
-import { Card, CardFooter, CardGroup, CardHeader } from '@bliss/ui/components/console/card';
+import { Card, CardBand, CardGroup, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { InlineBar } from '@bliss/ui/components/console/inline-bar';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { IconKey, IconLock, IconShieldCheck, IconUsers, IconUsersGroup } from '@tabler/icons-react';
@@ -38,32 +38,33 @@ export function RolesView({ roles, permissions, canManage, bases }: { roles: Rol
       >
         {roles.map((r) => (
           <Card key={r.id} as="article" interactive className="group h-full" tone={r.people === 0 ? 'low' : undefined}>
-            <CardHeader
-              band
+            <CardBand
+              eyebrow={r.isSystem ? 'Bliss role' : 'Added here'}
+              status={r.locked ? <IconLock size={14} stroke={1.5} aria-label={r.lockedReason ?? 'Locked'} className="text-ink-subtle" /> : null}
               title={r.name}
               subtitle={`Signs in on ${r.surfaces}`}
               href={`/console/people/roles/${r.id}`}
-              meta={r.locked ? <IconLock size={14} stroke={1.5} aria-label={r.lockedReason ?? 'Locked'} className="text-ink-subtle" /> : null}
             />
-            <div className="flex flex-col gap-8 px-20 py-16">
-              <span className="flex items-baseline justify-between gap-12 text-body-sm">
-                <span className="text-ink-muted">Permissions</span>
-                <span className="font-mono tabular text-num-sm text-ink">
+            <KeyRows>
+              <KeyRow label="Permissions">
+                <span className="inline-flex items-center gap-8">
+                  <InlineBar value={r.permissions.length / permissions.length} tone={r.key === 'owner' ? 'attention' : 'accent'} label={`${r.permissions.length} of ${permissions.length} permissions`} />
                   {r.permissions.length} of {permissions.length}
                 </span>
-              </span>
-              <InlineBar value={r.permissions.length / permissions.length} tone={r.key === 'owner' ? 'attention' : 'accent'} label={`${r.permissions.length} of ${permissions.length} permissions`} className="w-full" />
-            </div>
-            <CardFooter>
-              <span className="flex -space-x-6">
-                {r.members.slice(0, 5).map((m) => (
-                  <span key={m.id} className="rounded-dot ring-2 ring-card">
-                    <StaffAvatar name={m.name} avatarUrl={m.avatarUrl} colourIndex={m.colourIndex} />
+              </KeyRow>
+              <KeyRow label="Held by" tone={r.people === 0 ? 'low' : undefined}>
+                <span className="inline-flex items-center gap-8">
+                  <span className="flex -space-x-6">
+                    {r.members.slice(0, 4).map((m) => (
+                      <span key={m.id} className="rounded-dot ring-2 ring-card">
+                        <StaffAvatar name={m.name} avatarUrl={m.avatarUrl} colourIndex={m.colourIndex} />
+                      </span>
+                    ))}
                   </span>
-                ))}
-              </span>
-              <span className="text-body-sm text-ink-muted">{r.people === 0 ? 'Nobody holds it' : plural(r.people, 'person', 'people')}</span>
-            </CardFooter>
+                  {r.people === 0 ? 'Nobody' : plural(r.people, 'person', 'people')}
+                </span>
+              </KeyRow>
+            </KeyRows>
           </Card>
         ))}
       </CardGroup>

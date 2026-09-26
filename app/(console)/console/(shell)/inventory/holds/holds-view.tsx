@@ -3,7 +3,8 @@
 import { formatAgo, formatDateTime, formatIsoDate } from '@bliss/shared/format';
 import { addDays } from '@bliss/shared/time';
 import { Button } from '@bliss/ui/components/button';
-import { Card, CardFooter, CardHeader, CardMedia, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { StatusChip } from '@bliss/ui/components/status';
+import { Card, CardFooter, CardHeader, CardMedia, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { LedgerItem, LedgerList } from '@bliss/ui/components/console/section';
 import { EmptyState } from '@bliss/ui/components/feedback';
@@ -83,19 +84,15 @@ export function HoldsView({ active, released, holdable, timezone, today }: { act
             const late = Boolean(h.expectedBack && h.expectedBack < today);
             return (
               <Card key={h.id} as="article" className="group h-full" tone={late ? 'stop' : 'low'}>
-                <CardMedia src={assetUrl(h.imageKey, 640, 320)} title={h.variant} subtitle={h.product} href={h.productId ? `/console/catalogue/products/${h.productId}` : undefined} />
-                <CardStats columns={2}>
-                  <Stat label="On hold for">{since(now - h.placedAt)}</Stat>
-                  <Stat label="Back" tone={late ? 'stop' : undefined}>
+                <CardMedia src={assetUrl(h.imageKey, 640, 340)} meta={<StatusChip status={late ? 'unresolved' : 'held'} label={late ? 'Overdue' : 'On hold'} />} title={h.variant} subtitle={h.product} href={h.productId ? `/console/catalogue/products/${h.productId}` : undefined} />
+                <KeyRows>
+                  <KeyRow label="On hold for">{since(now - h.placedAt)}</KeyRow>
+                  <KeyRow label="Back" tone={late ? 'stop' : undefined}>
                     {h.expectedBack ? formatIsoDate(h.expectedBack) : 'Not given'}
-                  </Stat>
-                </CardStats>
-                <p className="px-20 pb-16 text-body-sm text-ink-muted">
-                  {h.reason}
-                  <span className="block text-ink-subtle">
-                    {h.placedBy}, {formatDateTime(h.placedAt, timezone)}
-                  </span>
-                </p>
+                  </KeyRow>
+                  <KeyRow label="Held by">{h.placedBy}</KeyRow>
+                </KeyRows>
+                <p className="border-t border-rule px-20 py-12 text-body-sm text-ink-muted">{h.reason}</p>
                 <CardFooter>
                   <Button size="sm" variant="ghost" icon={IconCalendarEvent} onClick={() => dialog.open('date', h)}>
                     Change the date
