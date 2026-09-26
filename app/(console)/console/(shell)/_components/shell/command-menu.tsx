@@ -3,19 +3,25 @@
 import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
 import { cx } from '@bliss/ui/lib/cx';
 import {
+  IconArrowBackUp,
   IconArrowRight,
   IconCash,
+  IconCategory,
   IconClipboardList,
+  IconDeviceTablet,
   IconFileInvoice,
   IconHistory,
+  IconListNumbers,
   IconLogout,
   IconMoon,
   IconPackageImport,
   IconReceipt2,
   IconRefresh,
   IconSearch,
+  IconShieldCheck,
   IconShoppingCart,
   IconTag,
+  IconTruck,
   IconUser,
   IconUserPlus,
 } from '@tabler/icons-react';
@@ -40,7 +46,20 @@ interface Entry {
 }
 
 const RECENT_KEY = 'bliss.command.recent';
-const HIT_ICON: Record<SearchHit['kind'], Icon> = { tab: IconReceipt2, bill: IconFileInvoice, product: IconTag, person: IconUser, delivery: IconPackageImport, order: IconShoppingCart };
+const HIT_ICON: Record<SearchHit['kind'], Icon> = {
+  tab: IconReceipt2,
+  bill: IconFileInvoice,
+  product: IconTag,
+  person: IconUser,
+  delivery: IconPackageImport,
+  order: IconShoppingCart,
+  supplier: IconTruck,
+  category: IconCategory,
+  priceList: IconListNumbers,
+  role: IconShieldCheck,
+  drawer: IconCash,
+  device: IconDeviceTablet,
+};
 
 function readRecent(): { href: string; label: string; detail: string }[] {
   try {
@@ -137,6 +156,14 @@ export function CommandMenu({ theme }: { theme: 'light' | 'dark' | 'system' }) {
       { id: 'do-receive', group: 'Do', label: 'Receive a delivery', icon: IconPackageImport, keywords: 'goods grn supplier', run: () => go('/console/purchasing/receipts/new', 'Receive a delivery', 'Purchasing') },
       { id: 'do-count', group: 'Do', label: 'Start a stock count', icon: IconClipboardList, keywords: 'stock take', run: () => go('/console/inventory/counts/new', 'Start a stock count', 'Inventory') },
       { id: 'do-person', group: 'Do', label: 'Add a person', icon: IconUserPlus, keywords: 'staff waiter new', run: () => go('/console/people/staff?new=1', 'Add a person', 'People') },
+      { id: 'do-product', group: 'Do', label: 'Add a product', icon: IconTag, keywords: 'menu item drink new', run: () => go('/console/catalogue/products?new=1', 'Add a product', 'Catalogue') },
+      { id: 'do-category', group: 'Do', label: 'Add a category', icon: IconCategory, keywords: 'menu tab new', run: () => go('/console/catalogue/categories?new=1', 'Add a category', 'Catalogue') },
+      { id: 'do-list', group: 'Do', label: 'Add a price list', icon: IconListNumbers, keywords: 'prices happy hour new', run: () => go('/console/pricing/lists?new=1', 'Add a price list', 'Pricing') },
+      { id: 'do-supplier', group: 'Do', label: 'Add a supplier', icon: IconTruck, keywords: 'vendor distributor new', run: () => go('/console/purchasing/suppliers?new=1', 'Add a supplier', 'Purchasing') },
+      { id: 'do-order', group: 'Do', label: 'Raise a purchase order', icon: IconShoppingCart, keywords: 'po buy order supplier new', run: () => go('/console/purchasing/orders/new', 'Raise a purchase order', 'Purchasing') },
+      { id: 'do-refund', group: 'Do', label: 'Refund a bill', icon: IconArrowBackUp, keywords: 'money back void return', run: () => go('/console/trade/bills', 'Refund a bill', 'Trade') },
+      { id: 'do-device', group: 'Do', label: 'Register a device', icon: IconDeviceTablet, keywords: 'tablet counter pair new', run: () => go('/console/settings/devices?new=1', 'Register a device', 'Settings') },
+      { id: 'do-role', group: 'Do', label: 'Add a role', icon: IconShieldCheck, keywords: 'permissions access new', run: () => go('/console/people/roles?new=1', 'Add a role', 'People') },
       { id: 'do-open', group: 'Do', label: 'See open tabs', icon: IconCash, keywords: 'floor tables', run: () => go('/console/trade/open', 'Open tabs', 'Trade') },
       {
         id: 'do-theme',

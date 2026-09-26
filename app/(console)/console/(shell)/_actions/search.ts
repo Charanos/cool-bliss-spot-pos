@@ -4,12 +4,13 @@ import { formatIsoDate } from '@bliss/shared/format';
 import { tabLabel } from '@bliss/shared/trade';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
+import * as pricing from '@/modules/pricing/service';
 import * as procurement from '@/modules/procurement/service';
 import * as settlement from '@/modules/settlement/service';
 import * as trade from '@/modules/trade/service';
 
 export interface SearchHit {
-  kind: 'tab' | 'bill' | 'product' | 'person' | 'delivery' | 'order';
+  kind: 'tab' | 'bill' | 'product' | 'person' | 'delivery' | 'order' | 'supplier' | 'category' | 'priceList' | 'role' | 'drawer' | 'device';
   label: string;
   detail: string;
   href: string;
@@ -77,7 +78,54 @@ export async function searchConsole(query: string): Promise<SearchHit[]> {
     .staffSummaries()
     .filter((s) => s.displayName.toLowerCase().includes(q) || s.fullName.toLowerCase().includes(q))
     .slice(0, PER_KIND);
-  for (const s of people) hits.push({ kind: 'person', label: s.fullName, detail: s.roleName, href: `/console/people/staff?q=${encodeURIComponent(s.displayName)}` });
+  for (const s of people) hits.push({ kind: 'person', label: s.fullName, detail: s.roleName, href: `/console/people/staff/${s.id}` });
+
+  for (const c of catalogue
+    .categories()
+    .filter((c) => c.name.toLowerCase().includes(q))
+    .slice(0, PER_KIND)) {
+    hits.push({ kind: 'category', label: c.name, detail: c.status === 'active' ? 'Category' : 'Category, archived', href: `/console/catalogue/categories/${c.id}` });
+  }
+
+  for (const l of pricing
+    .priceLists()
+    .filter((l) => l.name.toLowerCase().includes(q))
+    .slice(0, PER_KIND)) {
+    hits.push({ kind: 'priceList', label: l.name, detail: 'Price list', href: `/console/pricing/lists/${l.id}` });
+  }
+
+  if (identity.can(actor.staffId, 'cost.read')) {
+    for (const x of procurement
+      .suppliers()
+      .filter((x) => x.name.toLowerCase().includes(q))
+      .slice(0, PER_KIND)) {
+      hits.push({ kind: 'supplier', label: x.name, detail: x.status === 'active' ? 'Supplier' : 'Supplier, archived', href: `/console/purchasing/suppliers/${x.id}` });
+    }
+  }
+
+  for (const r of identity
+    .roles()
+    .filter((r) => r.name.toLowerCase().includes(q))
+    .slice(0, PER_KIND)) {
+    hits.push({ kind: 'role', label: r.name, detail: 'Role', href: `/console/people/roles/${r.id}` });
+  }
+
+  const devices = identity.devices();
+  for (const d of devices.filter((d) => d.label.toLowerCase().includes(q)).slice(0, PER_KIND)) {
+    hits.push({ kind: 'device', label: d.label, detail: d.status === 'active' ? (d.online ? 'Device, online' : 'Device, offline') : 'Device, withdrawn', href: `/console/settings/devices/${d.id}` });
+  }
+  // "Counter 1 drawer": the latest sessions on a device whose name matches.
+  if (q.includes('drawer') || devices.some((d) => d.kind === 'counter' && d.label.toLowerCase().includes(q))) {
+    const named = new Map(devices.map((d) => [d.id, d.label]));
+    const term = q.replace('drawer', '').trim();
+    for (const s of settlement
+      .drawerSessions()
+      .filter((s) => !term || (named.get(s.deviceId) ?? '').toLowerCase().includes(term))
+      .sort((a, b) => b.openedAt - a.openedAt)
+      .slice(0, 3)) {
+      hits.push({ kind: 'drawer', label: `${named.get(s.deviceId) ?? 'Drawer'}, ${formatIsoDate(s.businessDate)}`, detail: s.status === 'closed' ? 'Drawer, counted' : 'Drawer, open', href: `/console/trade/drawers/${s.id}` });
+    }
+  }
 
   return hits;
 }
