@@ -41,6 +41,11 @@ export function tables() {
   return tradeTables().tables.filter((t) => !t.archived);
 }
 
+/** Tables that have held at least one tab: these stay for the record. */
+export function usedTableIds(): Set<string> {
+  return new Set(tradeTables().tabs.map((x) => x.serviceTableId).filter((id): id is string => Boolean(id)));
+}
+
 /**
  * Remove a table that has never held a tab: added by mistake, or never used. A table with history
  * is taken out of service instead, so its nights still read back.

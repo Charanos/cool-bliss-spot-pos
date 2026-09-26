@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as pricing from '@/modules/pricing/service';
 import * as trade from '@/modules/trade/service';
-import { ZoningManager } from './zoning-manager';
 import { ViewHeader } from '../../_components/workspace';
+import { ZoningManager } from './zoning-manager';
 
 export const metadata: Metadata = { title: 'Zones and tables' };
 
@@ -13,13 +13,13 @@ export default async function ZoningPage() {
   return (
     <>
       <ViewHeader page="/console/people/zoning" />
-
-    <ZoningManager
-      zones={trade.zones()}
-      tables={trade.tables()}
-      priceLists={pricing.priceLists().map((l) => ({ value: l.id, label: l.name }))}
-      canManage={identity.can(actor.staffId, 'staff.manage')}
-    />
+      <ZoningManager
+        zones={trade.zones()}
+        tables={trade.tables()}
+        used={[...trade.usedTableIds()]}
+        priceLists={pricing.priceLists().map((l) => ({ value: l.id, label: l.name }))}
+        canManage={identity.can(actor.staffId, 'staff.manage')}
+      />
     </>
   );
 }

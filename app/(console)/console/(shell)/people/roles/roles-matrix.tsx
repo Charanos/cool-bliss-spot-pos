@@ -1,31 +1,25 @@
 'use client';
 
-import type { PermissionKey, RoleKey } from '@bliss/shared/domain';
+import type { PermissionKey } from '@bliss/shared/domain';
 import { plural } from '@bliss/shared/format';
 import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
 import { Card } from '@bliss/ui/components/console/card';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconCheck, IconLock, IconMinus } from '@tabler/icons-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { setRolePermission } from '../../_actions/people';
+import type { RoleView } from './permissions';
 
-interface RoleColumn {
-  id: string;
-  key: RoleKey;
-  name: string;
-  permissions: PermissionKey[];
-  people: number;
-  locked: boolean;
-  lockedReason: string | null;
-}
+type RoleColumn = Pick<RoleView, 'id' | 'key' | 'name' | 'permissions' | 'people' | 'locked' | 'lockedReason'>;
 
 /**
  * N-09: the permission matrix, on one card. Each cell is a toggle button with aria-pressed; changing
  * one asks for a reason, because a permission change is audited as sensitive like a void.
  */
-export function RolesMatrix({ roles, permissions, canManage }: { roles: RoleColumn[]; permissions: { key: PermissionKey; label: string; detail: string }[]; canManage: boolean }) {
+export function RolesMatrix({ roles, permissions, canManage, label = 'Permissions by role' }: { roles: RoleColumn[]; permissions: { key: PermissionKey; label: string; detail: string }[]; canManage: boolean; label?: string }) {
   const router = useRouter();
   const [pending, setPending] = useState<{
     role: RoleColumn;
@@ -35,10 +29,10 @@ export function RolesMatrix({ roles, permissions, canManage }: { roles: RoleColu
 
   return (
     <>
-      <Card aria-label="Permissions by role">
+      <Card aria-label={label}>
         <div className="scroll-x">
           <table className="w-full border-collapse">
-            <caption className="sr-only">Permissions by role</caption>
+            <caption className="sr-only">{label}</caption>
             <thead>
               <tr className="border-b border-edge card-band">
                 <th scope="col" className="w-[280px] py-12 pl-20 pr-16 text-left align-bottom text-label text-ink-subtle">
@@ -49,7 +43,9 @@ export function RolesMatrix({ roles, permissions, canManage }: { roles: RoleColu
                     <span className="flex flex-col items-center gap-2">
                       <span className="flex items-center gap-4 text-ui font-medium text-ink">
                         {r.locked ? <IconLock size={14} stroke={1.5} aria-label={r.lockedReason ?? 'Locked'} className="text-ink-subtle" /> : null}
-                        {r.name}
+                        <Link href={`/console/people/roles/${r.id}`} className="rounded-sm transition-hover hover:text-accent-text">
+                          {r.name}
+                        </Link>
                       </span>
                       <span className="text-body-sm text-ink-subtle">{plural(r.people, 'person', 'people')}</span>
                     </span>

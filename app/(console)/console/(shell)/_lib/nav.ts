@@ -270,3 +270,34 @@ const RECORD_HREF: Record<RecordKind, (id: string) => string> = {
 export function hrefFor(kind: RecordKind, id: string): string {
   return RECORD_HREF[kind](encodeURIComponent(id));
 }
+
+/** The audit trail's entity types, mapped to the record they touched. Types with no page of their own are left out. */
+const AUDIT_KIND: Record<string, RecordKind> = {
+  product: 'product',
+  category: 'category',
+  modifier_group: 'modifier',
+  price_list: 'priceList',
+  price_rule: 'rule',
+  recipe: 'recipe',
+  supplier: 'supplier',
+  purchase_order: 'order',
+  goods_receipt: 'receipt',
+  stock_count: 'count',
+  bill: 'bill',
+  tab: 'tab',
+  staff: 'staff',
+  role: 'role',
+  drawer_session: 'drawer',
+  shift: 'shift',
+  device: 'device',
+  stock_location: 'location',
+  zone: 'zone',
+  table: 'zone',
+  service_table: 'zone',
+};
+
+/** The page for whatever an audit event touched, or null when it has none. */
+export function hrefForEntity(entityType: string, entityId: string): string | null {
+  const kind = AUDIT_KIND[entityType];
+  return kind ? hrefFor(kind, entityId) : null;
+}

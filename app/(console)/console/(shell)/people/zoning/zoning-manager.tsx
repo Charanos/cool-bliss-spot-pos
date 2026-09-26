@@ -5,11 +5,15 @@ import { plural } from '@bliss/shared/format';
 import { Button } from '@bliss/ui/components/button';
 import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell } from '@bliss/ui/components/console/data-table';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Section } from '@bliss/ui/components/console/section';
 import { OverflowMenu } from '@bliss/ui/components/menu';
 import { StatusChip } from '@bliss/ui/components/status';
-import { IconPencil, IconPlus } from '@tabler/icons-react';
+import { IconArmchair, IconLayoutGrid, IconMap2, IconPencil, IconPlus, IconTrash, IconUsers } from '@tabler/icons-react';
 import { useState } from 'react';
+import { removeServiceTable } from '../../_actions/venue';
+import { EntityLink } from '../../_components/entity-link';
+import { FormDialog, useCreateParam } from '../../_components/forms';
 import { TableDialog } from './table-dialog';
 import { ZoneDialog } from './zone-dialog';
 
@@ -27,9 +31,15 @@ function ZoneState({ zone }: { zone: Zone }) {
  * Zones and the tables in them. Pane family: two flat sections, each a table with a card view.
  * Changes reach every tablet on its next sync.
  */
-export function ZoningManager({ zones, tables, priceLists, canManage }: { zones: Zone[]; tables: ServiceTable[]; priceLists: { value: string; label: string }[]; canManage: boolean }) {
+export function ZoningManager({ zones, tables, used, priceLists, canManage }: { zones: Zone[]; tables: ServiceTable[]; used: string[]; priceLists: { value: string; label: string }[]; canManage: boolean }) {
   const [editingZone, setEditingZone] = useState<Zone | 'new' | null>(null);
   const [editingTable, setEditingTable] = useState<ServiceTable | 'new' | null>(null);
+  const [removing, setRemoving] = useState<ServiceTable | null>(null);
+  useCreateParam(() => setEditingTable('new'), canManage && zones.length > 0);
+  const usedIds = new Set(used);
+  const seats = tables.filter((t) => t.status !== 'out_of_service').reduce((n, t) => n + t.seats, 0);
+  const occupied = tables.filter((t) => t.status === 'occupied').length;
+  const outOfService = tables.filter((t) => t.status === 'out_of_service').length;
   const zoneName = (id: string) => zones.find((z) => z.id === id)?.name ?? 'No zone';
   const inZone = (id: string) => tables.filter((t) => t.zoneId === id);
   const priceList = (id: string | null) => (id ? (priceLists.find((l) => l.value === id)?.label ?? 'Removed list') : 'The outlet default');
@@ -67,7 +77,14 @@ export function ZoningManager({ zones, tables, priceLists, canManage }: { zones:
       header: 'Price list',
       width: 'minmax(160px,1fr)',
       csv: (z) => priceList(z.defaultPriceListId),
-      cell: (z) => <span className="truncate text-ui text-ink-muted">{priceList(z.defaultPriceListId)}</span>,
+      cell: (z) =>
+        z.defaultPriceListId ? (
+          <EntityLink kind="priceList" id={z.defaultPriceListId} muted className="truncate text-ui">
+            {priceList(z.defaultPriceListId)}
+          </EntityLink>
+        ) : (
+          <span className="truncate text-ui text-ink-subtle">{priceList(null)}</span>
+        ),
     },
     {
       key: 'order',
@@ -145,18 +162,26 @@ export function ZoningManager({ zones, tables, priceLists, canManage }: { zones:
             icon: IconPencil,
             onSelect: () => setEditingTable(t),
           },
+          ...(usedIds.has(t.id) ? [] : [{ key: 'remove', label: 'Remove the table', icon: IconTrash, destructive: true, onSelect: () => setRemoving(t) }]),
         ]
       : [];
 
   return (
     <div className="flex flex-col gap-40">
+      <MetricGrid>
+        <Metric label="Zones" icon={IconMap2} value={<CountUp value={zones.filter((z) => z.status === 'active').length} />} detail={zones.some((z) => z.defaultPriceListId) ? `${zones.filter((z) => z.defaultPriceListId).length} with their own prices` : 'All on the outlet prices'} />
+        <Metric label="Tables" icon={IconLayoutGrid} value={<CountUp value={tables.length} delayMs={60} />} detail={outOfService > 0 ? `${outOfService} out of service` : 'All in service'} />
+        <Metric label="Seats" icon={IconArmchair} tone="poured" value={<CountUp value={seats} delayMs={120} />} detail="At tables in service" />
+        <Metric label="Occupied now" icon={IconUsers} tone={occupied > 0 ? 'info' : 'default'} value={<CountUp value={occupied} delayMs={180} />} detail={occupied > 0 ? 'A tab is open on them' : 'The floor is clear'} />
+      </MetricGrid>
+
       <Section
         id="zones"
         title="Zones"
         description="The areas of the floor. A zone can carry its own price list, such as the terrace."
         actions={
           canManage ? (
-            <Button variant="primary" size="sm" icon={IconPlus} onClick={() => setEditingZone('new')}>
+            <Button variant="create" size="sm" icon={IconPlus} onClick={() => setEditingZone('new')}>
               Add a zone
             </Button>
           ) : null
@@ -189,6 +214,16 @@ export function ZoningManager({ zones, tables, priceLists, canManage }: { zones:
                 <Stat label="Tables">{inZone(z.id).length}</Stat>
                 <Stat label="Seats">{inZone(z.id).reduce((n, t) => n + t.seats, 0)}</Stat>
               </CardStats>
+              <CardFooter>
+                <span className="text-body-sm text-ink-muted">Prices</span>
+                {z.defaultPriceListId ? (
+                  <EntityLink kind="priceList" id={z.defaultPriceListId} className="truncate text-body-sm">
+                    {priceList(z.defaultPriceListId)}
+                  </EntityLink>
+                ) : (
+                  <span className="text-body-sm text-ink-subtle">{priceList(null)}</span>
+                )}
+              </CardFooter>
             </Card>
           )}
         />
@@ -200,7 +235,7 @@ export function ZoningManager({ zones, tables, priceLists, canManage }: { zones:
         description={`${plural(tables.length, 'table')} across ${plural(zones.length, 'zone')}. A table with an open tab cannot be taken out of service.`}
         actions={
           canManage ? (
-            <Button variant="primary" size="sm" icon={IconPlus} onClick={() => setEditingTable('new')} disabled={zones.length === 0}>
+            <Button variant="create" size="sm" icon={IconPlus} onClick={() => setEditingTable('new')} disabled={zones.length === 0}>
               Add a table
             </Button>
           ) : null
@@ -253,6 +288,18 @@ export function ZoningManager({ zones, tables, priceLists, canManage }: { zones:
 
       <ZoneDialog target={editingZone === 'new' ? null : editingZone} priceLists={priceLists} open={editingZone !== null} onClose={() => setEditingZone(null)} />
       <TableDialog target={editingTable === 'new' ? null : editingTable} zones={zones} open={editingTable !== null} onClose={() => setEditingTable(null)} />
+      <FormDialog
+        open={Boolean(removing)}
+        onClose={() => setRemoving(null)}
+        width="md"
+        title={`Remove ${removing?.label ?? 'the table'}?`}
+        description="It has never held a tab, so nothing refers to it. The tablets stop drawing it at their next sync."
+        submitLabel="Remove the table"
+        submitVariant="destructive"
+        onSubmit={() => removeServiceTable({ tableId: removing!.id })}
+      >
+        <p className="text-body-sm text-ink-muted">To keep a table that has served guests but is not in use, take it out of service instead.</p>
+      </FormDialog>
     </div>
   );
 }
