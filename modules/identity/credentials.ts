@@ -9,7 +9,9 @@ import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from
 
 /* ------------------------------------------------------------------ secret */
 
-let cachedSecret: Buffer | null = null;
+// Held on globalThis, like the attempt store: a server can load this module more than once (server
+// actions and page renders), and a per-process key must be the same key in every copy.
+const holder = globalThis as unknown as { __blissSessionSecret?: Buffer | null };
 
 /**
  * The signing key. BLISS_SESSION_SECRET is the configured value. Without it, a deployment that has a
@@ -17,7 +19,8 @@ let cachedSecret: Buffer | null = null;
  * so sessions survive a restart and work across instances. Development falls back to a fixed key.
  */
 function secret(): Buffer {
-  if (cachedSecret) return cachedSecret;
+  if (holder.__blissSessionSecret) return holder.__blissSessionSecret;
+  let cachedSecret: Buffer;
   const configured = process.env.BLISS_SESSION_SECRET;
   if (configured && configured.length >= 32) {
     cachedSecret = Buffer.from(configured, 'utf8');
@@ -29,12 +32,13 @@ function secret(): Buffer {
   } else {
     cachedSecret = Buffer.from('bliss-development-session-key-not-for-production', 'utf8');
   }
+  holder.__blissSessionSecret = cachedSecret;
   return cachedSecret;
 }
 
 /** Test seam: forget the cached key so a changed environment is read again. */
 export function resetSecretForTests() {
-  cachedSecret = null;
+  holder.__blissSessionSecret = null;
 }
 
 /* -------------------------------------------------------------------- PINs */
