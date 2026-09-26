@@ -2,7 +2,7 @@
 
 import { formatElapsed, formatIsoDate, formatTime, plural } from '@bliss/shared/format';
 import { type Cents, add, formatDecimal, isPositive, sum } from '@bliss/shared/money';
-import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardBand, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Money } from '@bliss/ui/components/money';
@@ -148,29 +148,26 @@ export function ShiftsTable({
         defaultSort={{ key: 'hours', dir: 'desc' }}
         renderGridCard={(r) => (
           <Card as="article" interactive className="group h-full" tone={r.open ? 'accent' : undefined}>
-            <CardHeader
-              band
-              icon={<StaffAvatar name={r.staff} avatarUrl={r.avatarUrl} colourIndex={r.colourIndex} size="md" />}
+            <CardBand
+              eyebrow={formatIsoDate(r.businessDate)}
+              status={r.open ? <StatusChip status="open" label="On shift" /> : null}
+              leading={<StaffAvatar name={r.staff} avatarUrl={r.avatarUrl} colourIndex={r.colourIndex} size="md" />}
               title={r.staff}
-              subtitle={`${r.role}, ${formatIsoDate(r.businessDate)}`}
+              subtitle={r.role}
               href={`/console/trade/shifts/${r.id}`}
-              meta={r.open ? <StatusChip status="open" label="On shift" /> : null}
             />
-            <CardStats columns={3}>
-              <Stat label="Sales">
-                <Money value={r.sales} currency={false} size="num-md" decimals="whole" />
-              </Stat>
-              <Stat label="Tabs">{r.tabsOpened}</Stat>
-              <Stat label="Voids" tone={isPositive(r.voids) ? 'low' : undefined}>
-                {isPositive(r.voids) ? <Money value={r.voids} currency={false} size="num-md" decimals="whole" /> : 'None'}
-              </Stat>
-            </CardStats>
-            <CardFooter>
-              <span className="font-mono tabular text-num-sm text-ink-muted">
+            <KeyRows>
+              <KeyRow label="Hours">
                 {formatTime(r.startedAt, timezone)} to {r.endedAt ? formatTime(r.endedAt, timezone) : 'now'}
-              </span>
-              <span className="truncate text-body-sm text-ink-subtle">{r.endedAt ? formatElapsed(r.endedAt - r.startedAt) : 'Still signed in'}</span>
-            </CardFooter>
+              </KeyRow>
+              <KeyRow label="Sales">
+                <Money value={r.sales} currency={false} size="num-md" decimals="whole" />
+              </KeyRow>
+              <KeyRow label="Tabs">{r.tabsOpened}</KeyRow>
+              <KeyRow label="Voids" tone={isPositive(r.voids) ? 'low' : undefined}>
+                {isPositive(r.voids) ? <Money value={r.voids} currency={false} size="num-md" decimals="whole" /> : 'None'}
+              </KeyRow>
+            </KeyRows>
           </Card>
         )}
         leading={<UrlSelect param="range" label="Range" options={rangeOptions} allLabel={null} fallback={rangeKey} />}

@@ -3,7 +3,7 @@
 import { formatDateTime } from '@bliss/shared/format';
 import { type Cents, formatDecimal, sum } from '@bliss/shared/money';
 import { ActionPill } from '@bliss/ui/components/console/action-pill';
-import { Card, CardFooter, CardMedia, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardMedia, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Callout } from '@bliss/ui/components/console/section';
 import { IconAlertTriangle, IconArrowBackUp, IconPackageImport, IconTruckDelivery } from '@tabler/icons-react';
@@ -135,17 +135,17 @@ export function ReceiptsTable({ rows, timezone, suppliers }: { rows: ReceiptRow[
         renderGridCard={(r) => (
           <Card as="article" interactive className="group h-full" tone={r.state === 'short' ? 'low' : undefined}>
             <CardMedia src={r.photo} title={`Delivery ${r.number}`} subtitle={r.supplier} href={`/console/purchasing/receipts/${r.id}`} meta={STATE[r.state]} />
-            <CardStats columns={3}>
-              <Stat label="Units">{r.units}</Stat>
-              <Stat label="Sent back" tone={r.rejected > 0 ? 'stop' : undefined}>
-                {r.rejected}
-              </Stat>
-              <Stat label="Order">{r.poNumber ?? 'By hand'}</Stat>
-            </CardStats>
-            <CardFooter>
-              <span className="text-body-sm text-ink-muted">{formatDateTime(r.receivedAt, timezone)}</span>
-              <Money value={r.value} size="num-md" decimals="whole" />
-            </CardFooter>
+            <KeyRows>
+              <KeyRow label="Received">{formatDateTime(r.receivedAt, timezone)}</KeyRow>
+              <KeyRow label="Units">{r.units}</KeyRow>
+              <KeyRow label="Sent back" tone={r.rejected > 0 ? 'stop' : undefined}>
+                {r.rejected > 0 ? r.rejected : 'None'}
+              </KeyRow>
+              <KeyRow label="Order">{r.poNumber ? `PO ${r.poNumber}` : 'By hand'}</KeyRow>
+              <KeyRow label="Value">
+                <Money value={r.value} currency={false} size="num-md" decimals="whole" />
+              </KeyRow>
+            </KeyRows>
           </Card>
         )}
         id="purchasing-receipts"

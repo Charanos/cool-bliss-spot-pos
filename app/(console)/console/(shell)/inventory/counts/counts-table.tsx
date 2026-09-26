@@ -4,7 +4,7 @@ import type { CountKind, CountStatus } from '@bliss/shared/domain';
 import { formatDateTime, formatIsoDate } from '@bliss/shared/format';
 import { type Cents, formatDecimal } from '@bliss/shared/money';
 import { ButtonLink } from '@bliss/ui/components/button-link';
-import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardBand, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { InlineBar } from '@bliss/ui/components/console/inline-bar';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
@@ -113,22 +113,18 @@ export function CountsTable({ rows, timezone, lastCommitted }: { rows: CountRow[
         emptyFiltered={{ title: 'No counts in that state', body: 'Choose another state to see those counts.' }}
         renderGridCard={(r) => (
           <Card as="article" interactive className="group h-full" tone={r.status === 'review' ? 'low' : r.status === 'counting' ? 'accent' : undefined}>
-            <CardHeader band title={`${KIND[r.kind]}, ${r.location}`} subtitle={formatIsoDate(r.businessDate)} href={`/console/inventory/counts/${r.id}`} meta={<StatusChip status={r.status} />} />
-            <CardStats columns={2}>
-              <Stat label="Counted">
-                {r.counted} of {r.total}
-              </Stat>
-              <Stat label="Variance" tone={r.outside ? 'stop' : undefined}>
-                {r.variance === null ? 'Hidden' : <Money value={r.variance} currency={false} size="num-md" decimals="whole" />}
-              </Stat>
-            </CardStats>
-            <CardFooter>
-              <span className="inline-flex items-center gap-8 text-body-sm text-ink-muted">
-                <InlineBar value={r.total > 0 ? r.counted / r.total : 0} tone={r.counted < r.total ? 'attention' : 'accent'} />
-                {r.total > 0 ? Math.round((r.counted / r.total) * 100) : 0}% counted
-              </span>
-              <span className="text-body-sm text-ink-subtle">{r.openedBy}</span>
-            </CardFooter>
+            <CardBand eyebrow={formatIsoDate(r.businessDate)} status={<StatusChip status={r.status} />} title={KIND[r.kind]} subtitle={`${r.location}, opened by ${r.openedBy}`} href={`/console/inventory/counts/${r.id}`} />
+            <KeyRows>
+              <KeyRow label="Counted">
+                <span className="inline-flex items-center gap-8">
+                  <InlineBar value={r.total > 0 ? r.counted / r.total : 0} tone={r.counted < r.total ? 'attention' : 'accent'} />
+                  {r.counted} of {r.total}
+                </span>
+              </KeyRow>
+              <KeyRow label="Variance" tone={r.outside ? 'stop' : undefined}>
+                {r.variance === null ? 'Shown once counted' : <Money value={r.variance} currency={false} size="num-md" decimals="whole" />}
+              </KeyRow>
+            </KeyRows>
           </Card>
         )}
       />

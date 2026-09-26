@@ -3,7 +3,7 @@
 import { formatIsoDate, formatTime, plural } from '@bliss/shared/format';
 import { type Cents, abs, compare, formatDecimal, formatFigure, formatKes, isNegative, isPositive, isZero, sum } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
-import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardBand, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
@@ -179,27 +179,24 @@ export function DrawersTable({
         rowTone={(r) => (outside(r) && !r.reviewed ? 'attention' : 'default')}
         rowHref={(r) => `/console/trade/drawers/${r.id}`}
         renderGridCard={(r) => (
-          <Card as="article" interactive className="group h-full" tone={outside(r) && !r.reviewed ? 'stop' : r.status !== 'closed' ? 'accent' : undefined}>
-            <CardHeader
-              band
-              title={`${r.device}, ${formatIsoDate(r.businessDate)}`}
+          <Card as="article" interactive className="group h-full" tone={outside(r) && !r.reviewed ? 'stop' : undefined}>
+            <CardBand
+              eyebrow={formatIsoDate(r.businessDate)}
+              status={r.status !== 'closed' ? <StatusChip status={r.status === 'counting' ? 'counting' : 'open'} /> : r.reviewed ? <StatusChip status="resolved" label="Reviewed" /> : outside(r) ? <StatusChip status="unresolved" label="To review" /> : <StatusChip status="settled" label="Closed" />}
+              title={r.device}
               subtitle={`Opened by ${r.openedBy} at ${formatTime(r.openedAt, timezone)}`}
               href={`/console/trade/drawers/${r.id}`}
-              meta={r.status !== 'closed' ? <StatusChip status={r.status === 'counting' ? 'counting' : 'open'} /> : r.reviewed ? <StatusChip status="resolved" label="Reviewed" /> : outside(r) ? <StatusChip status="unresolved" label="To review" /> : <StatusChip status="settled" label="Closed" />}
             />
-            <CardStats columns={3}>
-              <Stat label="Float">
+            <KeyRows>
+              <KeyRow label="Float">
                 <Money value={r.float} currency={false} size="num-md" decimals="whole" />
-              </Stat>
-              <Stat label="Counted">{r.counted === null ? 'Not yet' : <Money value={r.counted} currency={false} size="num-md" decimals="whole" />}</Stat>
-              <Stat label="Variance" tone={outside(r) ? 'stop' : undefined}>
+              </KeyRow>
+              <KeyRow label="Counted">{r.counted === null ? 'Not yet' : <Money value={r.counted} currency={false} size="num-md" decimals="whole" />}</KeyRow>
+              <KeyRow label="Variance" tone={outside(r) ? 'stop' : undefined}>
                 {r.variance === null ? (r.stage === 'blind' ? 'Withheld' : 'None') : isZero(r.variance) ? 'Balanced' : `${isNegative(r.variance) ? '−' : '+'}${formatFigure(abs(r.variance))}`}
-              </Stat>
-            </CardStats>
-            <CardFooter>
-              <span className="text-body-sm text-ink-muted">{plural(r.bills, 'bill')}</span>
-              <span className="truncate text-body-sm text-ink-subtle">{r.reason ?? (r.closedBy ? `Closed by ${r.closedBy}` : 'Still open')}</span>
-            </CardFooter>
+              </KeyRow>
+              <KeyRow label="Bills">{r.bills}</KeyRow>
+            </KeyRows>
           </Card>
         )}
         exportName="drawers"

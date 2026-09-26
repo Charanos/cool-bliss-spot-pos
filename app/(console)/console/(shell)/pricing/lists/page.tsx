@@ -1,6 +1,6 @@
 import { describeRuleWindow } from '@bliss/shared/pricing';
 import { ButtonLink } from '@bliss/ui/components/button-link';
-import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardBand, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { InlineBar } from '@bliss/ui/components/console/inline-bar';
 import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { StatusChip } from '@bliss/ui/components/status';
@@ -56,25 +56,23 @@ export default async function PriceListsPage({ searchParams }: { searchParams: P
             const usedBy = zones.filter((z) => z.defaultPriceListId === l.id);
             return (
               <Card key={l.id} as="article" interactive className="group h-full" tone={l.id === base?.id ? 'accent' : undefined}>
-                <CardHeader
-                  band
+                <CardBand
+                  eyebrow={l.kind === 'base' ? (l.id === base?.id ? 'Base, the default' : 'Base') : `Overlay, priority ${l.priority}`}
+                  status={l.status === 'archived' ? <StatusChip status="retired" label="Archived" /> : null}
                   title={l.name}
-                  href={`/console/pricing/lists/${l.id}`}
                   subtitle={l.kind === 'base' ? (l.id === base?.id ? 'The base price, all day' : 'A base list') : mine.length > 0 ? mine.map((r) => describeRuleWindow(r)).join('; ') : 'No rule switches it on'}
-                  meta={l.status === 'archived' ? <StatusChip status="retired" label="Archived" /> : null}
+                  href={`/console/pricing/lists/${l.id}`}
                 />
-                <CardStats columns={3}>
-                  <Stat label="Prices">{priced}</Stat>
-                  <Stat label="Priority">{l.priority}</Stat>
-                  <Stat label="Zones">{usedBy.length > 0 ? usedBy.map((z) => z.name).join(', ') : 'None'}</Stat>
-                </CardStats>
-                <CardFooter>
-                  <span className="inline-flex items-center gap-8 text-body-sm text-ink-muted">
-                    <InlineBar value={onSale > 0 ? Math.min(1, priced / onSale) : 0} tone={l.kind === 'base' && priced < onSale ? 'attention' : 'accent'} />
-                    {l.kind === 'base' ? `${priced} of ${onSale} priced` : `${priced} on offer`}
-                  </span>
-                  <span className="text-body-sm text-ink-subtle">{l.kind === 'base' ? 'Base' : 'Overlay'}</span>
-                </CardFooter>
+                <KeyRows>
+                  <KeyRow label={l.kind === 'base' ? 'Priced' : 'On offer'} tone={l.kind === 'base' && priced < onSale ? 'low' : undefined}>
+                    <span className="inline-flex items-center gap-8">
+                      <InlineBar value={onSale > 0 ? Math.min(1, priced / onSale) : 0} tone={l.kind === 'base' && priced < onSale ? 'attention' : 'accent'} />
+                      {l.kind === 'base' ? `${priced} of ${onSale}` : priced}
+                    </span>
+                  </KeyRow>
+                  <KeyRow label="Priority">{l.priority}</KeyRow>
+                  <KeyRow label="Zones">{usedBy.length > 0 ? usedBy.map((z) => z.name).join(', ') : 'None'}</KeyRow>
+                </KeyRows>
               </Card>
             );
           })}

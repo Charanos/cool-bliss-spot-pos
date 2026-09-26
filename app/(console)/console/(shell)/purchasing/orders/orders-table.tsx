@@ -7,7 +7,7 @@ import { ButtonLink } from '@bliss/ui/components/button-link';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
-import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardBand, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { InlineBar } from '@bliss/ui/components/console/inline-bar';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { IconChecks, IconClockExclamation, IconPackageImport, IconShoppingCart, IconTruckDelivery } from '@tabler/icons-react';
@@ -135,21 +135,22 @@ export function OrdersTable({ rows, timezone, suppliers, now }: { rows: OrderRow
       <DataTable
         renderGridCard={(r) => (
           <Card as="article" interactive className="group h-full" tone={late.includes(r) ? 'stop' : r.status === 'draft' ? 'low' : undefined}>
-            <CardHeader band title={`Order ${r.number}`} subtitle={r.supplier} href={`/console/purchasing/orders/${r.id}`} meta={<StatusChip {...ORDER_STATUS[r.status]} />} />
-            <CardStats columns={3}>
-              <Stat label="Lines">{r.lines}</Stat>
-              <Stat label="Raised">{formatDate(r.raisedAt, timezone)}</Stat>
-              <Stat label="Due" tone={late.includes(r) ? 'stop' : undefined}>
+            <CardBand eyebrow={`PO ${r.number}`} status={<StatusChip {...ORDER_STATUS[r.status]} />} title={r.supplier} subtitle={`Raised by ${r.raisedBy}, ${formatDate(r.raisedAt, timezone)}`} href={`/console/purchasing/orders/${r.id}`} />
+            <KeyRows>
+              <KeyRow label="Lines">{r.lines}</KeyRow>
+              <KeyRow label="Received" tone={r.received >= r.ordered && r.ordered > 0 ? 'poured' : r.received > 0 ? 'low' : undefined}>
+                <span className="inline-flex items-center gap-8">
+                  <InlineBar value={r.ordered ? r.received / r.ordered : 0} tone={r.received >= r.ordered ? 'poured' : 'accent'} />
+                  {r.received} of {r.ordered}
+                </span>
+              </KeyRow>
+              <KeyRow label="Due" tone={late.includes(r) ? 'stop' : undefined}>
                 {r.expectedAt ? formatDate(r.expectedAt, timezone) : 'Not set'}
-              </Stat>
-            </CardStats>
-            <CardFooter>
-              <span className="inline-flex items-center gap-8 text-body-sm text-ink-muted">
-                <InlineBar value={r.ordered ? r.received / r.ordered : 0} tone={r.received >= r.ordered ? 'poured' : 'accent'} />
-                {r.received} of {r.ordered} in
-              </span>
-              <Money value={r.total} size="num-md" decimals="whole" />
-            </CardFooter>
+              </KeyRow>
+              <KeyRow label="Value">
+                <Money value={r.total} currency={false} size="num-md" decimals="whole" />
+              </KeyRow>
+            </KeyRows>
           </Card>
         )}
         id="purchasing-orders"

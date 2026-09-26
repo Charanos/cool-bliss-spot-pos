@@ -1,7 +1,7 @@
 import { formatBps } from '@bliss/shared/format';
 import { isPositive, shareBps } from '@bliss/shared/money';
 import { ButtonLink } from '@bliss/ui/components/button-link';
-import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardBand, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { InlineBar } from '@bliss/ui/components/console/inline-bar';
 import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { EmptyState } from '@bliss/ui/components/feedback';
@@ -61,27 +61,26 @@ export default async function RecipesPage() {
               const share = r.price && isPositive(r.price) ? Number(r.cost) / Number(r.price) : 0;
               return (
                 <Card key={r.id} as="article" interactive className="group h-full">
-                  <CardHeader band title={r.name} subtitle={r.variantName} href={`/console/inventory/recipes/${r.id}`} />
-                  <ul className="flex flex-1 flex-col">
+                  <CardBand eyebrow={`${r.parts.length} ${r.parts.length === 1 ? 'part' : 'parts'}`} title={r.name} subtitle={r.variantName} href={`/console/inventory/recipes/${r.id}`} />
+                  <KeyRows>
                     {r.parts.map((p) => (
-                      <li key={p.componentVariantId} className="flex items-baseline justify-between gap-16 border-b border-rule px-20 py-8 last:border-b-0">
-                        <span className="min-w-0 truncate text-body-sm text-ink-muted">{p.name}</span>
-                        <span className="font-mono tabular text-num-md text-ink">{p.volumeMl ? `${p.volumeMl}ml` : p.qty}</span>
-                      </li>
+                      <KeyRow key={p.componentVariantId} label={p.name}>
+                        {p.volumeMl ? `${p.volumeMl}ml` : p.qty}
+                      </KeyRow>
                     ))}
-                  </ul>
-                  <CardStats columns={2}>
-                    <Stat label="Costs">{canCost ? <Money value={r.cost} currency={false} size="num-md" /> : 'Hidden'}</Stat>
-                    <Stat label="Sells at">{r.price ? <Money value={r.price} currency={false} size="num-md" decimals="whole" /> : 'No price'}</Stat>
-                  </CardStats>
-                  {canCost ? (
-                    <CardFooter>
-                      <span className="inline-flex items-center gap-8 text-body-sm text-ink-muted">
-                        <InlineBar value={share} tone={share > 0.35 ? 'attention' : 'accent'} />
-                        {r.price ? `${Math.round(share * 100)}% of the price` : 'No base price'}
-                      </span>
-                    </CardFooter>
-                  ) : null}
+                  </KeyRows>
+                  <KeyRows className="mt-auto border-t border-edge card-band">
+                    <KeyRow label="Costs">{canCost ? <Money value={r.cost} currency={false} size="num-md" /> : 'Hidden'}</KeyRow>
+                    <KeyRow label="Sells at">{r.price ? <Money value={r.price} currency={false} size="num-md" decimals="whole" /> : 'No price'}</KeyRow>
+                    {canCost ? (
+                      <KeyRow label="Cost share" tone={share > 0.35 ? 'low' : undefined}>
+                        <span className="inline-flex items-center gap-8">
+                          <InlineBar value={share} tone={share > 0.35 ? 'attention' : 'accent'} />
+                          {r.price ? `${Math.round(share * 100)}%` : 'No price'}
+                        </span>
+                      </KeyRow>
+                    ) : null}
+                  </KeyRows>
                 </Card>
               );
             })}

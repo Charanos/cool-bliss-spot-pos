@@ -2,7 +2,7 @@
 
 import type { Cents } from '@bliss/shared/money';
 import { Button } from '@bliss/ui/components/button';
-import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardBand, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell } from '@bliss/ui/components/console/data-table';
 import { InlineBar } from '@bliss/ui/components/console/inline-bar';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
@@ -123,20 +123,27 @@ export function CategoriesTable({ rows, canEdit, days }: { rows: CategoryRow[]; 
         empty={{ title: 'No categories yet', body: 'A category becomes a tab on the floor. Add the first one.' }}
         renderGridCard={(r) => (
           <Card as="article" interactive className="group h-full">
-            <span aria-hidden="true" className={cx('h-4 w-full', categoryEdgeClass(r.colour))} />
-            <CardHeader title={r.name} subtitle={r.active ? `Tab ${r.position} on the floor` : 'Archived'} href={`/console/catalogue/categories/${r.id}`} meta={r.active ? null : <StatusChip status="retired" label="Archived" />} />
-            <CardStats columns={3}>
-              <Stat label="On sale">{r.products}</Stat>
-              <Stat label="Prints at">{r.routing}</Stat>
-              <Stat label="Stock">{r.trackStock ? 'Counted' : 'Not counted'}</Stat>
-            </CardStats>
-            <CardFooter>
-              <span className="inline-flex items-center gap-8 text-body-sm text-ink-muted">
-                <InlineBar value={r.share} />
-                {Math.round(r.share * 100)}% of takings
-              </span>
-              <Money value={r.takings} size="num-md" decimals="whole" />
-            </CardFooter>
+            <CardBand
+              eyebrow={r.active ? `Tab ${r.position}` : 'Archived'}
+              status={r.active ? null : <StatusChip status="retired" label="Archived" />}
+              leading={<span aria-hidden="true" className={cx('size-control-sm shrink-0 rounded-md', categoryEdgeClass(r.colour))} />}
+              title={r.name}
+              subtitle={`Prints at ${r.routing.toLowerCase()}`}
+              href={`/console/catalogue/categories/${r.id}`}
+            />
+            <KeyRows>
+              <KeyRow label="On sale">{r.products}</KeyRow>
+              <KeyRow label="Stock">{r.trackStock ? 'Counted' : 'Not counted'}</KeyRow>
+              <KeyRow label="Share of takings">
+                <span className="inline-flex items-center gap-8">
+                  <InlineBar value={r.share} />
+                  {Math.round(r.share * 100)}%
+                </span>
+              </KeyRow>
+              <KeyRow label="Takings">
+                <Money value={r.takings} currency={false} size="num-md" decimals="whole" />
+              </KeyRow>
+            </KeyRows>
           </Card>
         )}
       />

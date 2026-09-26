@@ -2,8 +2,9 @@
 
 import type { CategoryColourToken } from '@bliss/shared/domain';
 import { type Cents, formatDecimal } from '@bliss/shared/money';
-import { Button } from '@bliss/ui/components/button';
-import { Card, CardFooter, CardMedia, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Button, IconButton } from '@bliss/ui/components/button';
+import { Card, CardMedia, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
+import { categoryEdgeClass } from '@bliss/ui/lib/seat';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Money } from '@bliss/ui/components/money';
@@ -167,25 +168,25 @@ export function ProductsTable({ rows, categories, suppliers, canEdit }: { rows: 
         empty={{ title: 'No products yet', body: 'Add the first product, and it goes on sale at the next sync.' }}
         emptyFiltered={{ title: 'No products match', body: 'Clear the category, the toggles or the search to see every product.' }}
         renderGridCard={(r) => (
-          <Card as="article" interactive className="group h-full">
+          <Card as="article" interactive className="group h-full" tone={r.status === 'archived' ? undefined : r.onHand !== null && r.onHand <= r.effectiveThreshold ? 'low' : undefined}>
             <CardMedia
-              src={assetUrl(r.imageKey, 640, 320)}
+              src={assetUrl(r.imageKey, 640, 340)}
+              tint={categoryEdgeClass(r.colour)}
               title={r.name}
               subtitle={`${r.category}, ${r.sku}`}
               href={`/console/catalogue/products/${r.id}`}
               meta={r.status === 'archived' ? <StatusChip status="retired" label="Archived" /> : r.onHand !== null && r.onHand <= r.effectiveThreshold ? <StatusChip status="low" label="Low" /> : null}
+              actions={canEdit ? <IconButton size="sm" variant="secondary" icon={IconPencil} label={`Edit ${r.name}`} onClick={() => dialog.open('edit', r)} /> : null}
             />
-            <CardStats columns={3}>
-              <Stat label="From">{r.fromPrice === null ? 'No price' : <Money value={r.fromPrice} currency={false} size="num-md" decimals="whole" />}</Stat>
-              <Stat label="On hand" tone={r.onHand !== null && r.onHand <= r.effectiveThreshold ? 'low' : undefined}>
+            <KeyRows>
+              <KeyRow label="Sold as">{r.serves.join(', ') || 'Not sold yet'}</KeyRow>
+              <KeyRow label="Bottle">{r.containerVolumeMl ? `${r.containerVolumeMl}ml` : 'Not a bottle'}</KeyRow>
+              <KeyRow label="From">{r.fromPrice === null ? 'No price' : <Money value={r.fromPrice} currency={false} size="num-md" decimals="whole" />}</KeyRow>
+              <KeyRow label="On hand" tone={r.onHand !== null && r.onHand <= r.effectiveThreshold ? 'low' : undefined}>
                 {r.onHand === null ? 'Not kept' : `${r.onHand} ${r.unit}`}
-              </Stat>
-              <Stat label="Sold as">{r.serves.length || 'None'}</Stat>
-            </CardStats>
-            <CardFooter>
-              <span className="min-w-0 truncate text-body-sm text-ink-muted">{r.supplier ?? 'No supplier set'}</span>
-              <span className="truncate text-body-sm text-ink-subtle">{r.serves.slice(0, 2).join(', ')}</span>
-            </CardFooter>
+              </KeyRow>
+              <KeyRow label="Low at">{r.tracked ? `${r.effectiveThreshold}${r.thresholdIsDefault ? ', the default' : ''}` : 'Not kept'}</KeyRow>
+            </KeyRows>
           </Card>
         )}
       />

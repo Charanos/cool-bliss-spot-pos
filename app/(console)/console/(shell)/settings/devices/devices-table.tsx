@@ -3,7 +3,7 @@
 import type { DeviceStatus } from '@bliss/shared/domain';
 import { formatAgo, formatDate, plural } from '@bliss/shared/format';
 import { Button } from '@bliss/ui/components/button';
-import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardBand, IconTile, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { OverflowMenu } from '@bliss/ui/components/menu';
@@ -130,43 +130,40 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
           const Icon = KIND_ICON[r.kindKey];
           const own = manager.actions(r);
           return (
-            <Card as="article" interactive className="group h-full" tone={r.status !== 'active' ? undefined : r.unsynced > 0 ? 'low' : r.online ? 'poured' : undefined}>
-              <CardHeader
-                band
-                icon={Icon}
-                title={r.label}
-                subtitle={r.kind}
-                href={`/console/settings/devices/${r.id}`}
-                meta={
+            <Card as="article" interactive className="group h-full" tone={r.status !== 'active' ? undefined : r.unsynced > 0 ? 'low' : undefined}>
+              <CardBand
+                eyebrow={r.kind}
+                leading={<IconTile icon={Icon} size="md" />}
+                status={
                   r.status !== 'active' ? (
                     <StatusChip status={r.status === 'lost' ? 'lost' : 'retired'} label={r.status === 'lost' ? 'Withdrawn' : undefined} />
                   ) : r.pairingPending ? (
                     <ToneChip tone="info">Waiting to pair</ToneChip>
                   ) : (
-                    <span className="flex items-center gap-6 text-body-sm text-ink-muted">
+                    <span className="flex items-center gap-6 label-caps text-ink-muted">
                       <Dot tone={r.online ? 'poured' : 'info'} className={r.online ? 'animate-breathe' : undefined} />
                       {r.online ? 'Online' : 'Offline'}
                     </span>
                   )
                 }
                 actions={own.length > 0 ? <OverflowMenu label={`More for ${r.label}`} size="sm" items={own} /> : undefined}
+                title={r.label}
+                subtitle={r.lastSeenAt ? `Seen ${formatAgo(Math.max(0, now - r.lastSeenAt))}` : 'Never seen'}
+                href={`/console/settings/devices/${r.id}`}
               />
-              <CardStats columns={3}>
-                <Stat label="Signed in">{r.signedIn ?? 'Nobody'}</Stat>
-                <Stat label="Not yet sent" tone={r.unsynced > 0 ? 'low' : undefined}>
+              <KeyRows>
+                <KeyRow label="Signed in">{r.signedIn ?? 'Nobody'}</KeyRow>
+                <KeyRow label="Not yet sent" tone={r.unsynced > 0 ? 'low' : undefined}>
                   {r.unsynced > 0 ? r.unsynced : 'None'}
-                </Stat>
-                <Stat label="Version">{r.appVersion || 'Not yet'}</Stat>
-              </CardStats>
-              <CardFooter>
-                <span className="text-body-sm text-ink-muted">{r.lastSeenAt ? `Seen ${formatAgo(Math.max(0, now - r.lastSeenAt))}` : 'Never seen'}</span>
-                <span className="text-body-sm text-ink-subtle">Since {formatDate(r.enrolledAt, timezone)}</span>
-              </CardFooter>
+                </KeyRow>
+                <KeyRow label="Version" tone={r.status === 'active' && r.appVersion && r.appVersion !== latestVersion ? 'low' : undefined}>
+                  {r.appVersion || 'Not yet'}
+                </KeyRow>
+                <KeyRow label="Registered">{formatDate(r.enrolledAt, timezone)}</KeyRow>
+              </KeyRows>
             </Card>
           );
         }}
-        rowTone={(r) => (r.status !== 'active' ? 'muted' : r.unsynced > 0 ? 'attention' : 'default')}
-        rowActions={canManage ? manager.actions : undefined}
         exportName="devices"
         empty={{ title: 'No devices registered', body: 'Register a tablet here, then pair it with the code shown.' }}
       />

@@ -3,12 +3,12 @@
 import type { EmploymentStatus } from '@bliss/shared/domain';
 import { formatDate, plural } from '@bliss/shared/format';
 import { Button } from '@bliss/ui/components/button';
-import { Card, CardFooter, CardHeader, CardMedia, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardBand, CardMedia, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { OverflowMenu } from '@bliss/ui/components/menu';
 import { StatusChip } from '@bliss/ui/components/status';
-import { IconDeviceTablet, IconLock, IconPencil, IconPlus, IconUserCheck, IconUsers } from '@tabler/icons-react';
+import { IconDeviceTablet, IconLock, IconPlus, IconUserCheck, IconUsers } from '@tabler/icons-react';
 import { StaffAvatar } from './avatar';
 import { useStaffManager } from './staff-manager';
 
@@ -183,31 +183,31 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
           return (
             <Card as="article" interactive tone={r.pinLocked || r.status === 'suspended' ? 'low' : undefined} className="group h-full">
               {r.avatarUrl ? (
-                <CardMedia src={r.avatarUrl} title={`${r.name}${r.isSelf ? ' (you)' : ''}`} subtitle={`${r.role}, shows as ${r.displayName}`} href={`/console/people/staff/${r.id}`} meta={own.length > 0 ? <OverflowMenu label={`Actions for ${r.name}`} size="sm" items={own} /> : null} />
+                <CardMedia
+                  src={r.avatarUrl}
+                  title={`${r.name}${r.isSelf ? ' (you)' : ''}`}
+                  subtitle={`${r.role}, shows as ${r.displayName}`}
+                  href={`/console/people/staff/${r.id}`}
+                  meta={<Access row={r} />}
+                  actions={own.length > 0 ? <OverflowMenu label={`Actions for ${r.name}`} size="sm" items={own} /> : null}
+                />
               ) : (
-                <CardHeader
-                  band
-                  icon={<StaffAvatar name={r.name} avatarUrl={r.avatarUrl} colourIndex={r.colourIndex} size="md" />}
+                <CardBand
+                  eyebrow={r.role}
+                  status={<Access row={r} />}
+                  actions={own.length > 0 ? <OverflowMenu label={`Actions for ${r.name}`} size="sm" items={own} /> : undefined}
+                  leading={<StaffAvatar name={r.name} avatarUrl={r.avatarUrl} colourIndex={r.colourIndex} size="md" />}
                   title={`${r.name}${r.isSelf ? ' (you)' : ''}`}
                   subtitle={`Shows as ${r.displayName}`}
                   href={`/console/people/staff/${r.id}`}
-                  actions={own.length > 0 ? <OverflowMenu label={`Actions for ${r.name}`} size="sm" items={own} /> : undefined}
                 />
               )}
-              <CardStats>
-                <Stat label="Role">{r.role}</Stat>
-                <Stat label="Signed in on">{r.signedInOn.length > 0 ? r.signedInOn.join(', ') : 'Not signed in'}</Stat>
-                <Stat label="Shifts, 28 days">{r.shifts}</Stat>
-                <Stat label="Last shift">{r.lastShiftAt ? formatDate(r.lastShiftAt, timezone) : 'None yet'}</Stat>
-              </CardStats>
-              <CardFooter>
-                <Access row={r} />
-                {canManage && r.status !== 'left' ? (
-                  <Button variant="ghost" size="xs" icon={IconPencil} onClick={() => manager.edit(r)}>
-                    Edit
-                  </Button>
-                ) : null}
-              </CardFooter>
+              <KeyRows>
+                <KeyRow label="Signed in on">{r.signedInOn.length > 0 ? r.signedInOn.join(', ') : 'Not signed in'}</KeyRow>
+                <KeyRow label="Shifts, 28 days">{r.shifts}</KeyRow>
+                <KeyRow label="Last shift">{r.lastShiftAt ? formatDate(r.lastShiftAt, timezone) : 'None yet'}</KeyRow>
+                <KeyRow label="Contact">{r.contactNumber ?? 'Not given'}</KeyRow>
+              </KeyRows>
             </Card>
           );
         }}

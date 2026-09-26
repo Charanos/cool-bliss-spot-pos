@@ -3,7 +3,9 @@
 import { formatQty } from '@bliss/shared/format';
 import { formatDecimal, sum } from '@bliss/shared/money';
 import { ActionPill } from '@bliss/ui/components/console/action-pill';
-import { Card, CardFooter, CardMedia, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardMedia, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
+import { IconButton } from '@bliss/ui/components/button';
+import { categoryEdgeClass } from '@bliss/ui/lib/seat';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { InlineBar } from '@bliss/ui/components/console/inline-bar';
 import { Callout } from '@bliss/ui/components/console/section';
@@ -199,25 +201,42 @@ export function StockTable({
         rowHref={(r) => `/console/catalogue/products/${r.productId}`}
         renderGridCard={(r) => (
           <Card as="article" interactive className="group h-full" tone={r.reason === 'hold' || r.state === 'finished' ? 'stop' : r.state === 'low' || r.state === 'last_few' ? 'low' : undefined}>
-            <CardMedia src={assetUrl(r.imageKey, 640, 320)} title={r.variant} subtitle={r.location === 'All locations' ? r.categoryName : `${r.categoryName}, ${r.location}`} href={`/console/catalogue/products/${r.productId}`} meta={r.state !== 'available' || r.reason === 'hold' ? stateChip(r) : null} />
-            <CardStats columns={3}>
-              <Stat label="On hand" tone={r.onHand <= 0 ? 'stop' : undefined}>
+            <CardMedia
+              src={assetUrl(r.imageKey, 640, 340)}
+              tint={categoryEdgeClass(r.colour)}
+              title={r.variant}
+              subtitle={r.location === 'All locations' ? r.categoryName : `${r.categoryName}, ${r.location}`}
+              href={`/console/catalogue/products/${r.productId}`}
+              meta={r.state !== 'available' || r.reason === 'hold' ? stateChip(r) : null}
+              actions={
+                <>
+                  {r.holdId ? (
+                    <IconButton size="sm" variant="secondary" icon={IconLockOpen} label={`Take ${r.variant} off hold`} onClick={() => setRelease({ holdId: r.holdId!, name: r.variant })} />
+                  ) : (
+                    <IconButton size="sm" variant="secondary" icon={IconLock} label={`Put ${r.variant} on hold`} onClick={() => setHold({ variantId: r.variantId, name: r.variant })} />
+                  )}
+                  <IconButton size="sm" variant="secondary" icon={IconBan} label={`Write off ${r.variant}`} onClick={() => setWriteOff(r)} />
+                </>
+              }
+            />
+            <KeyRows>
+              <KeyRow label="On hand" tone={r.onHand <= 0 ? 'stop' : undefined}>
                 {formatQty(r.onHand, r.unit === 'bottles' ? 2 : 0)} {r.unit === 'bottles' ? 'btl' : ''}
-              </Stat>
-              <Stat label="Lasts" tone={r.daysCover !== null && r.daysCover < 2 ? 'low' : undefined}>
-                {r.daysCover === null ? 'No sales' : `${r.daysCover.toFixed(1)} days`}
-              </Stat>
-              <Stat label="Value">
+              </KeyRow>
+              <KeyRow label="Unit cost">
+                <Money value={r.unitCost} currency={false} size="num-md" tone="muted" />
+              </KeyRow>
+              <KeyRow label="Total value">
                 <Money value={r.value} currency={false} size="num-md" decimals="whole" />
-              </Stat>
-            </CardStats>
-            <CardFooter>
-              <span className="inline-flex items-center gap-8 text-body-sm text-ink-muted">
-                <InlineBar value={r.daysCover === null ? 0 : r.daysCover / 14} tone={r.daysCover !== null && r.daysCover < 2 ? 'stop' : 'accent'} />
-                Sells {r.velocity.toFixed(r.velocity < 10 ? 1 : 0)} a day
-              </span>
-              {r.variancePct !== null && Math.abs(r.variancePct) > 2 ? <span className="text-body-sm text-stop">{r.variancePct.toFixed(1)}% at count</span> : null}
-            </CardFooter>
+              </KeyRow>
+              <KeyRow label="Sells a day">{r.velocity.toFixed(r.velocity < 10 ? 1 : 0)}</KeyRow>
+              <KeyRow label="Lasts" tone={r.daysCover !== null && r.daysCover < 2 ? 'low' : undefined}>
+                <span className="inline-flex items-center gap-8">
+                  <InlineBar value={r.daysCover === null ? 0 : r.daysCover / 14} tone={r.daysCover !== null && r.daysCover < 2 ? 'stop' : 'accent'} />
+                  {r.daysCover === null ? 'No sales' : `${r.daysCover.toFixed(1)} days`}
+                </span>
+              </KeyRow>
+            </KeyRows>
           </Card>
         )}
         rowActions={(r) => [

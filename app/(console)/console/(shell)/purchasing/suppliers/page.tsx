@@ -1,7 +1,7 @@
 import { formatBps, formatDate, plural } from '@bliss/shared/format';
 import { formatKes, sum } from '@bliss/shared/money';
 import { ButtonLink } from '@bliss/ui/components/button-link';
-import { Card, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Card, CardBand, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Section } from '@bliss/ui/components/console/section';
 import { Money } from '@bliss/ui/components/money';
@@ -67,23 +67,22 @@ export default async function SuppliersPage() {
             const last = own[0];
             return (
               <Card key={s.id} as="article" interactive className="group h-full" tone={openHere.length > 0 ? 'accent' : undefined}>
-                <CardHeader
-                  band
+                <CardBand
+                  eyebrow={s.status === 'archived' ? 'Not used' : `${procurement.supplierProducts(s.id).length} items`}
+                  status={s.status === 'archived' ? <StatusChip status="retired" label="Not used" /> : openHere.length > 0 ? <StatusChip status="sent" label={`${openHere.length} open`} /> : null}
                   title={s.name}
-                  href={`/console/purchasing/suppliers/${s.id}`}
                   subtitle={[s.contactName, s.phone].filter(Boolean).join(', ') || 'No contact set'}
-                  meta={s.status === 'archived' ? <StatusChip status="retired" label="Not used" /> : openHere.length > 0 ? <StatusChip status="sent" label={`${openHere.length} open`} /> : null}
+                  href={`/console/purchasing/suppliers/${s.id}`}
                 />
-                <CardStats>
-                  <Stat label="Delivers in">{plural(s.leadTimeDays, 'day')}</Stat>
-                  <Stat label="Delivers on">{s.deliveryDays && s.deliveryDays.length > 0 ? s.deliveryDays.map((d) => DAY[d]).join(', ') : 'Any day'}</Stat>
-                  <Stat label="Pays in">{plural(s.paymentTermsDays, 'day')}</Stat>
-                  <Stat label="Items">{procurement.supplierProducts(s.id).length}</Stat>
-                </CardStats>
-                <CardFooter>
-                  <span className="text-body-sm text-ink-muted">{last ? `Last order ${last.poNumber}, ${formatDate(last.raisedAt, tz)}` : 'No orders yet'}</span>
-                  <Money value={sum(own.map((o) => o.totalCents))} size="num-md" decimals="whole" />
-                </CardFooter>
+                <KeyRows>
+                  <KeyRow label="Delivers in">{plural(s.leadTimeDays, 'day')}</KeyRow>
+                  <KeyRow label="Delivers on">{s.deliveryDays && s.deliveryDays.length > 0 ? s.deliveryDays.map((d) => DAY[d]).join(', ') : 'Any day'}</KeyRow>
+                  <KeyRow label="Pays in">{plural(s.paymentTermsDays, 'day')}</KeyRow>
+                  <KeyRow label="Last order">{last ? `PO ${last.poNumber}, ${formatDate(last.raisedAt, tz)}` : 'None yet'}</KeyRow>
+                  <KeyRow label="Ordered in all">
+                    <Money value={sum(own.map((o) => o.totalCents))} currency={false} size="num-md" decimals="whole" />
+                  </KeyRow>
+                </KeyRows>
               </Card>
             );
           })}
