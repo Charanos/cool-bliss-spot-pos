@@ -3,26 +3,16 @@
 import type { AvailabilityReason, AvailabilityState } from '@bliss/shared/domain';
 import { type Cents, formatKes } from '@bliss/shared/money';
 import { IconBottle, IconBowlChopsticks, IconBeer, IconGlassCocktail, IconGlassFull, IconBottleFilled, IconPlus } from '@tabler/icons-react';
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useRef } from 'react';
 import { useLongPress } from '../../hooks';
 import { cx } from '../../lib/cx';
 import { type CategoryColour } from '../../lib/seat';
-import { gsap } from '../../motion/engine';
-import { tileFinished, tilePressDown, tilePressUp } from '../../motion/floor';
-import { Badge } from '../badge';
+import { tilePressDown, tilePressUp } from '../../motion/floor';
 import { ICON_STROKE } from '../icon';
 import { Money } from '../money';
+import { Photo } from '../photo';
 
 export type TileGlyph = 'beer' | 'spirit' | 'wine' | 'soft' | 'food' | 'bottle';
-
-const GLYPH_NAME: Record<TileGlyph, string> = {
-  beer: 'BEER',
-  spirit: 'SPIRITS',
-  wine: 'WINE',
-  soft: 'SOFT DRINK',
-  food: 'FOOD',
-  bottle: 'BOTTLE',
-};
 
 /** The category's colour, from the seat palette the category edge also uses (lib/seat). */
 const CATEGORY_COLOR: Record<CategoryColour, string> = {
@@ -67,34 +57,25 @@ export interface ProductTileProps {
 }
 
 /**
- * The product tile, the most tapped object in the system. docs/06-design-system.md section 6.3,
- * with a photograph band per the tile imagery decision (docs/11-design-drift.md, D-02).
+ * The product tile, the most tapped object in the system. docs/06-design-system.md section 6.3.
  *
- * The whole tile is the target: there is no separate add button, which would nest a filled control
- * inside the tile. Press feedback runs before any state change. The tap adds the line locally, so
- * the network is never in the interaction path and a spinner here would be a lie.
+ * Compact, so a tablet held upright shows a whole category without scrolling: the category's mark
+ * (or the item's photograph, small), the name on two lines, the price and the add mark. The whole
+ * tile is the target; press feedback runs before any state change; the tap adds the line locally.
  *
  *   available  normal
- *   low        remaining count in the corner, attention colour
- *   last_few   count plus a 1px corner tick
- *   finished   40% opacity, one diagonal hairline, FINISHED or ON HOLD chip, not tappable, still focusable
+ *   low        "3 left" in the corner, attention colour
+ *   last_few   the same, stronger
+ *   finished   dimmed, one word in the corner ("Finished", "On hold"), not tappable, still focusable
+ *
+ * An edge you can see on every profile, and no hover lift on touch, so nothing jumps under a finger.
  */
 export const ProductTile = memo(function ProductTile({ variantId, name, price, ruled, state, reason, qtyAvailable, category, glyph, imageUrl, onAdd, onLongPress, inCart = 0 }: ProductTileProps) {
   const ref = useRef<HTMLButtonElement>(null);
-  const hairlineRef = useRef<HTMLSpanElement>(null);
-  const previousState = useRef(state);
-  const [imageFailed, setImageFailed] = useState(false);
   const finished = state === 'finished';
   const held = finished && reason === 'hold';
+  const low = state === 'low' || state === 'last_few';
   const count = Math.max(0, Math.floor(qtyAvailable));
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (state === 'finished' && previousState.current !== 'finished') tileFinished(el, hairlineRef.current);
-    if (state !== 'finished' && previousState.current === 'finished') gsap.set(el, { clearProps: 'opacity' });
-    previousState.current = state;
-  }, [state]);
 
   const press = useLongPress({
     onPressStart: () => ref.current && !finished && tilePressDown(ref.current),
@@ -105,8 +86,9 @@ export const ProductTile = memo(function ProductTile({ variantId, name, price, r
     onLongPress: () => onLongPress(variantId),
   });
 
-  const stateWords = finished ? (held ? ', on hold' : ', finished') : state === 'low' || state === 'last_few' ? `, ${count} left` : '';
+  const stateWords = finished ? (held ? ', on hold' : ', finished') : low ? `, ${count} left` : '';
   const Glyph = GLYPH[glyph];
+  const tint = CATEGORY_COLOR[category] ?? 'var(--color-ink-subtle)';
 
   return (
     <button
@@ -117,93 +99,46 @@ export const ProductTile = memo(function ProductTile({ variantId, name, price, r
       aria-label={`${name}${price ? `, ${formatKes(price)}` : ''}${stateWords}${inCart > 0 ? `, ${inCart} added` : ''}`}
       data-variant-id={variantId}
       className={cx(
-        'group relative flex min-h-[192px] min-w-0 flex-col overflow-hidden rounded-[16px] bg-sunken text-left will-change-transform',
-        'shadow-[0_4px_16px_rgba(0,0,0,0.3)]',
-        'transition-all duration-[300ms] ease-out hover:-translate-y-4 hover:shadow-[0_12px_28px_rgba(0,0,0,0.5)] active:scale-[0.98]',
-        finished && 'cursor-default opacity-40',
+        'group relative flex h-tile min-w-0 flex-col justify-between gap-6 rounded-card border bg-raised p-12 text-left transition-colors duration-150',
+        inCart > 0 ? 'border-accent/60' : 'border-rule',
+        finished ? 'cursor-default opacity-45' : 'mouse:hover:border-hairline active:bg-control-hover',
       )}
     >
-      {inCart > 0 ? (
-        <>
-          <span key={`ring-${inCart}`} aria-hidden="true" className="flash pointer-events-none absolute inset-0 z-30 rounded-[16px]" />
-          <span
-            key={`count-${inCart}`}
-            aria-hidden="true"
-            className="bump absolute left-8 top-8 z-30 flex h-24 min-w-24 items-center justify-center rounded-dot bg-accent px-6 font-mono tabular text-num-sm text-accent-ink shadow-raised"
-          >
+      {inCart > 0 ? <span key={`ring-${inCart}`} aria-hidden="true" className="flash pointer-events-none absolute inset-0 rounded-card" /> : null}
+
+      <span className="flex items-start justify-between gap-8">
+        <Photo
+          src={imageUrl}
+          className="size-control-sm shrink-0 rounded-md object-cover"
+          fallback={
+            <span aria-hidden="true" className="flex size-control-sm shrink-0 items-center justify-start" style={{ color: tint }}>
+              <Glyph size={18} stroke={ICON_STROKE} />
+            </span>
+          }
+        />
+        {finished ? (
+          <span className="py-2 text-caps caps text-ink-muted">{held ? 'On hold' : 'Finished'}</span>
+        ) : low ? (
+          <span className={cx('rounded-sm px-6 py-2 font-mono tabular text-num-sm', state === 'last_few' ? 'bg-low-wash text-low' : 'text-low')}>{count} left</span>
+        ) : null}
+      </span>
+
+      <span className="line-clamp-2 text-ui font-medium text-ink" title={name}>
+        {name}
+      </span>
+
+      <span className="flex items-center justify-between gap-8">
+        {price ? <Money value={price} size="num" tone={ruled ? 'accent' : finished ? 'disabled' : 'default'} decimals="whole" /> : <span className="text-body-sm text-ink-subtle">No price</span>}
+        {inCart > 0 ? (
+          <span key={`count-${inCart}`} aria-hidden="true" className="bump flex h-24 min-w-24 items-center justify-center rounded-dot bg-accent px-6 font-mono tabular text-num-sm text-accent-ink">
             ×{inCart}
           </span>
-        </>
-      ) : null}
-      <span aria-hidden="true" className="relative block h-[96px] w-full shrink-0 overflow-hidden bg-page">
-        {imageUrl && !imageFailed ? (
-          <>
-            <img
-              src={imageUrl}
-              alt=""
-              draggable={false}
-              loading="lazy"
-              decoding="async"
-              onError={() => setImageFailed(true)}
-              className={cx('size-full object-cover transition-transform duration-[500ms] ease-out group-hover:scale-105', finished ? 'grayscale' : 'saturate-[0.9] contrast-[1.05] brightness-[0.88]')}
-            />
-            {/* Rich cinematic dark mask */}
-            <div
-              className="absolute inset-0 pointer-events-none transition-opacity duration-300 group-hover:opacity-90"
-              style={{
-                background: 'linear-gradient(to top, var(--color-sunken) 0%, rgb(var(--bliss-sunken-rgb) / 94%) 28%, rgb(var(--bliss-sunken-rgb) / 60%) 62%, rgb(var(--bliss-page-rgb) / 35%) 100%)',
-              }}
-            />
-          </>
         ) : (
-          <span className="flex size-full items-center justify-center text-ink-disabled bg-page transition-transform duration-[500ms] ease-out group-hover:scale-105">
-            <Glyph size={26} stroke={ICON_STROKE} />
+          <span aria-hidden="true" className="flex size-24 shrink-0 items-center justify-center rounded-dot bg-accent-wash text-accent-text">
+            <IconPlus size={15} stroke={2.25} />
           </span>
         )}
-
-        {/* Category Overlay Label (Bottom Left) */}
-        <span
-          className="absolute bottom-[6px] left-[14px] text-[10px] font-medium tracking-[0.14em] uppercase z-10 select-none"
-          style={{ color: CATEGORY_COLOR[category] ?? 'var(--color-ink-subtle)' }}
-        >
-          {GLYPH_NAME[glyph] ?? 'ITEM'}
-        </span>
-
-        {/* Availability / Quantity / Status Badge (Top Right) */}
-        <Badge
-          tone={held ? 'attention' : finished ? 'stop' : state === 'low' || state === 'last_few' ? 'attention' : 'neutral'}
-          className="absolute top-[8px] right-[8px] z-20 backdrop-blur-glass bg-page/85 shadow-raised px-[7px] py-[3px] text-[10px] font-medium rounded-[6px]"
-        >
-          {held ? (count > 0 ? `On hold · ${count}` : 'On hold') : finished ? (count > 0 ? `Finished · ${count}` : '0 left') : `${count} left`}
-        </Badge>
       </span>
-
-      <span className="relative z-10 flex flex-1 flex-col justify-between px-[14px] pb-[12px] pt-[8px]">
-        <span className="line-clamp-2 min-h-[38px] text-[14px] font-medium text-ink leading-[19px]" title={name}>
-          {name}
-        </span>
-
-        <div className="mt-auto flex items-center justify-between pt-[6px]">
-          {price ? <Money value={price} size="num" tone={ruled ? 'accent' : 'default'} /> : <span className="text-[12px] font-medium text-ink-subtle">No price</span>}
-
-          <span
-            aria-hidden="true"
-            className="flex size-[30px] shrink-0 items-center justify-center rounded-[8px] bg-accent-wash text-accent-text shadow-raised transition-all duration-200 group-hover:bg-accent-subtle group-hover:scale-105 active:scale-90"
-          >
-            <IconPlus size={17} stroke={2.5} />
-          </span>
-        </div>
-      </span>
-
-      {state === 'last_few' ? <span aria-hidden="true" className="pointer-events-none absolute bottom-[6px] right-[6px] size-[10px] border-b border-r border-attention" /> : null}
-
-      {finished ? (
-        <span ref={hairlineRef} aria-hidden="true" className="pointer-events-none absolute inset-0 origin-left text-ink-disabled">
-          <svg className="size-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-            <line x1="0" y1="0" x2="100" y2="100" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-          </svg>
-        </span>
-      ) : null}
     </button>
   );
 });

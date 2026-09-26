@@ -395,7 +395,7 @@ export const size = {
   'avatar-lg': 96,
   node: 32,
   /** The Floor tab card and free table card: a minimum, so a long name or large text never clips. */
-  'card-tab': 148,
+  'card-tab': 120,
   /** A count badge on a nav item or a zone chip. */
   count: 18,
   /** A Floor nav rail item and a tables rail tab row. */

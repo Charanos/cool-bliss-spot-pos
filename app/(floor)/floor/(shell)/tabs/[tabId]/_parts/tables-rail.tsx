@@ -27,7 +27,10 @@ export function TablesRail({
   currentZoneId,
   staffId,
   selectedSeatId,
+  variant = 'rail',
 }: {
+  /** A rail beside the grid on a wide screen, or the same list inside a sheet on a tablet. */
+  variant?: 'rail' | 'sheet';
   tabs: TabListItem[];
   currentTabId: string;
   currentZoneId: string | null;
@@ -44,7 +47,7 @@ export function TablesRail({
   return (
     <aside
       aria-label="Zones and my tabs"
-      className="hidden tablet:flex min-h-0 w-rail-tables shrink-0 flex-col bg-page/60 border-r border-rule shadow-[2px_0_20px_-4px_rgba(0,0,0,0.4)] relative z-10 select-none"
+      className={cx('relative z-10 min-h-0 flex-col select-none', variant === 'rail' ? 'hidden w-rail-tables shrink-0 border-r border-rule bg-page desktop:flex' : 'flex w-full')}
     >
       {/* ── 1. Zone filter section ──────────────────────────────────── */}
       <div className="shrink-0 px-8 pt-12">
@@ -80,14 +83,7 @@ export function TablesRail({
                 </span>
 
                 {/* Count */}
-                <span
-                  className={cx(
-                    'font-mono tabular text-num-sm shrink-0 transition-colors',
-                    selected ? 'text-accent' : 'text-ink-subtle/60 group-hover:text-ink-subtle',
-                  )}
-                >
-                  {count}
-                </span>
+                <span className={cx('font-mono tabular text-num-sm shrink-0 transition-colors', selected ? 'text-accent' : 'text-ink-subtle/60 group-hover:text-ink-subtle')}>{count}</span>
               </button>
             );
           })}
@@ -104,9 +100,7 @@ export function TablesRail({
             <IconClipboardList size={11} stroke={2} className="text-attention/70" aria-hidden="true" />
             My tabs
           </span>
-          {mine.length > 0 ? (
-            <CountBadge count={mine.length} tone="attention" />
-          ) : null}
+          {mine.length > 0 ? <CountBadge count={mine.length} tone="attention" /> : null}
         </div>
       </div>
 
@@ -129,12 +123,7 @@ export function TablesRail({
               >
                 {/* Header row: Table label & total */}
                 <span className="flex items-baseline justify-between gap-6">
-                  <span
-                    className={cx(
-                      'flex min-w-0 items-center gap-6 text-body-sm',
-                      current ? 'font-medium text-ink' : 'font-medium text-ink-muted group-hover:text-ink',
-                    )}
-                  >
+                  <span className={cx('flex min-w-0 items-center gap-6 text-body-sm', current ? 'font-medium text-ink' : 'font-medium text-ink-muted group-hover:text-ink')}>
                     <Dot tone={STAGE[t.stage].tone} className={STAGE[t.stage].live ? 'animate-breathe' : undefined} />
                     <span className="truncate">{t.label}</span>
                     <span className="sr-only">, {STAGE[t.stage].word}</span>
@@ -144,12 +133,7 @@ export function TablesRail({
                     size="num-sm"
                     currency={false}
                     decimals="whole"
-                    className={cx(
-                      'font-mono tabular shrink-0 transition-colors',
-                      current
-                        ? 'text-accent-text'
-                        : 'text-ink-subtle group-hover:text-ink-muted',
-                    )}
+                    className={cx('font-mono tabular shrink-0 transition-colors', current ? 'text-accent-text' : 'text-ink-subtle group-hover:text-ink-muted')}
                   />
                 </span>
 

@@ -85,7 +85,7 @@ export function TicketLineView({ qty, name, lineTotal, state, detail, pouredAt, 
 
   return (
     <div className="relative flex items-center gap-12 py-8">
-      <Photo src={imageUrl} className="size-[40px] shrink-0 rounded-[8px] object-cover" fallback={<span className="size-[40px] shrink-0 rounded-[8px] bg-sunken/60 border border-rule/30" />} />
+      <Photo src={imageUrl} className="size-[40px] shrink-0 rounded-[8px] object-cover" />
 
       <div className="min-w-0 flex-1 flex flex-col justify-center">
         <div className="flex items-center gap-6 min-w-0">
