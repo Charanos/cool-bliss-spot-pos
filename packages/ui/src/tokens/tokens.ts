@@ -168,6 +168,8 @@ export const themes = {
     'desk-hover': alpha(f[800], 55),
     'desk-active': f[900],
     'desk-well': alpha(f[900], 70),
+    /* A chip set on the desk (an avatar, a count): a step up from the desk so it always reads. */
+    'desk-chip': f[800],
     'on-scrim': f[0],
     /* The selected segment of a segmented control: a thumb, not a nested pane. */
     thumb: f[700],
@@ -249,6 +251,7 @@ export const themes = {
     'desk-hover': alpha(f[200], 70),
     'desk-active': f[0],
     'desk-well': alpha(f[0], 55),
+    'desk-chip': f[0],
     'on-scrim': f[0],
     thumb: f[0],
   },
@@ -315,7 +318,7 @@ export const space = [2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 56, 72, 96] as const;
  * value as `lg`), `overlay` for dialogs, and `pill`, which only a count badge or a segmented control
  * uses. Status chips stay `sm`.
  */
-export const radius = { sm: 6, md: 10, control: 12, sheet: 14, lg: 16, card: 16, overlay: 20, pill: 9999, dot: 9999 } as const;
+export const radius = { sm: 6, md: 10, control: 12, lg: 16, card: 16, sheet: 20, overlay: 20, pill: 9999, dot: 9999 } as const;
 
 /**
  * Component dimensions. Not space: these size things, they do not separate them.
@@ -344,9 +347,15 @@ export const size = {
   'rail-console': 240,
   'rail-collapsed': 64,
   /** The Console desk navigation, open and folded, and the gap the sheet floats in. */
-  'desk-nav': 232,
-  'desk-nav-collapsed': 60,
+  'desk-nav': 248,
+  'desk-nav-collapsed': 64,
   'sheet-inset': 8,
+  /** The widest the sheet grows on a large monitor, centred on the desk. */
+  'sheet-max': 1400,
+  /** The desk's venue masthead, a workspace row in it, and a page row under an open workspace. */
+  masthead: 72,
+  'nav-row': 34,
+  'nav-sub': 30,
   /** The Console top bar and the rail's venue block, aligned. */
   bar: 56,
   /** The Console content column. */
@@ -366,7 +375,7 @@ export const size = {
   /** The totals block at the foot of a bill, an order or a delivery. */
   totals: 320,
   /** The photograph band across the top of a record card. */
-  media: 160,
+  media: 170,
   /** A single-column Console form: a count, a zone, a person. */
   form: 720,
   'panel-tender': 420,
@@ -409,8 +418,17 @@ export const consoleElevation = {
   },
   /* The floating sheet: a hairline, a contact shadow and a long soft fall onto the desk. */
   sheet: {
-    light: `0 0 0 1px ${ink(6)}, 0 1px 2px ${ink(4)}, 0 12px 32px -16px ${ink(16)}`,
-    dark: `0 0 0 1px ${f[800]}, 0 16px 40px -20px ${alpha('#000000', 80)}`,
+    light: `0 0 0 1px ${ink(5)}, 0 2px 8px ${ink(4)}, 0 8px 32px ${ink(10)}`,
+    dark: `0 0 0 1px ${f[800]}, 0 8px 32px ${alpha('#000000', 70)}`,
+  },
+  /* The one way to make something new: the accent pill, lit from above and glowing in its colour. */
+  create: {
+    light: `inset 0 1px 0 color-mix(in oklab, #FFFFFF 22%, transparent), 0 1px 3px color-mix(in oklab, var(--bliss-accent) 30%, transparent)`,
+    dark: `inset 0 1px 0 color-mix(in oklab, #FFFFFF 22%, transparent), 0 1px 3px color-mix(in oklab, var(--bliss-accent) 30%, transparent)`,
+  },
+  'create-hover': {
+    light: `inset 0 1px 0 color-mix(in oklab, #FFFFFF 22%, transparent), 0 4px 10px color-mix(in oklab, var(--bliss-accent) 40%, transparent)`,
+    dark: `inset 0 1px 0 color-mix(in oklab, #FFFFFF 22%, transparent), 0 4px 10px color-mix(in oklab, var(--bliss-accent) 40%, transparent)`,
   },
   /* The active desk item: a chip of the sheet's surface, raised by a hair. */
   chip: { light: `0 0 0 1px ${ink(6)}, 0 1px 2px ${ink(6)}`, dark: `0 0 0 1px ${f[800]}` },

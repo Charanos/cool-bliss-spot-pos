@@ -139,7 +139,7 @@ export default async function DrawerPage({ params }: { params: Promise<{ drawerI
               <EmptyState title="No bills yet" body="Bills settled at this counter while the drawer is open appear here." />
             </div>
           ) : (
-            <LedgerList className="mx-20 my-16" label="Bills">
+            <LedgerList className="mx-8 my-8" label="Bills">
               {bills.map((b) => {
                 const own = tenders.get(b.id) ?? [];
                 const cash = sum(own.filter((t) => t.kind === 'cash' && !isNegative(t.amountCents)).map((t) => t.amountCents));
@@ -172,7 +172,7 @@ export default async function DrawerPage({ params }: { params: Promise<{ drawerI
               <EmptyState title="Nothing but sales" body="No float, drop or refund was recorded against this drawer." />
             </div>
           ) : (
-            <LedgerList className="mx-20 my-16" label="Cash movements">
+            <LedgerList className="mx-8 my-8" label="Cash movements">
               {movements.map((m) => (
                 <LedgerItem key={m.id} tone={m.kind === 'opening_float' ? 'poured' : m.kind === 'payout' ? 'stop' : undefined}>
                   <span className="flex items-baseline justify-between gap-12">

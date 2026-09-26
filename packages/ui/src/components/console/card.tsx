@@ -25,7 +25,7 @@ export function Card({
   as?: ElementType;
   /** Lift under the pointer. Set automatically when a CardHeader inside has an href. */
   interactive?: boolean;
-  /** A 2px edge in a tone on the card's leading side, for a record that needs a second look. */
+  /** A record that needs a second look: its edge takes the tone and its head a faint wash of it. */
   tone?: Extract<Tone, 'stop' | 'low' | 'accent' | 'poured'>;
   className?: string;
   children: ReactNode;
@@ -38,11 +38,10 @@ export function Card({
       className={cx(
         'relative flex min-w-0 flex-col overflow-hidden card-surface',
         interactive && 'card-interactive',
-        tone && 'before:absolute before:inset-y-12 before:left-0 before:w-2 before:rounded-r-sm',
-        tone === 'stop' && 'before:bg-stop',
-        tone === 'low' && 'before:bg-low',
-        tone === 'accent' && 'before:bg-accent',
-        tone === 'poured' && 'before:bg-poured',
+        tone === 'stop' && 'card-tone-stop',
+        tone === 'low' && 'card-tone-low',
+        tone === 'accent' && 'card-tone-accent',
+        tone === 'poured' && 'card-tone-poured',
         className,
       )}
     >
@@ -150,6 +149,88 @@ export function Stat({ label, children, tone, className }: { label: ReactNode; c
         {children}
       </dd>
     </div>
+  );
+}
+
+/**
+ * A record card's facts as rows: an uppercase label on the left, its value on the right, a hairline
+ * between them. What a grid card shows under its photograph or band.
+ */
+export function KeyRows({ className, children }: { className?: string; children: ReactNode }) {
+  return <dl className={cx('flex flex-col px-20 py-16', className)}>{children}</dl>;
+}
+
+export function KeyRow({ label, children, tone, className }: { label: ReactNode; children: ReactNode; tone?: Extract<Tone, 'stop' | 'low' | 'poured' | 'accent'>; className?: string }) {
+  return (
+    <div className={cx('kv-row', className)}>
+      <dt className="label-caps shrink-0 text-ink-subtle">{label}</dt>
+      <dd
+        className={cx(
+          'min-w-0 truncate text-right text-ui font-medium tabular',
+          tone === 'stop' ? 'text-stop' : tone === 'low' ? 'text-low' : tone === 'poured' ? 'text-poured' : tone === 'accent' ? 'text-accent-text' : 'text-ink',
+        )}
+      >
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+/**
+ * The head of a record card with no photograph: a band holding the record's number or kind as an
+ * eyebrow, its state, its name and one line under it. With `href` the name is the card's link.
+ */
+export function CardBand({
+  eyebrow,
+  status,
+  title,
+  subtitle,
+  href,
+  actions,
+  leading,
+  level = 'h3',
+  className,
+}: {
+  eyebrow?: ReactNode;
+  status?: ReactNode;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  href?: string;
+  /** Menus or buttons at the band's right, above the card's link. */
+  actions?: ReactNode;
+  /** An avatar or an icon before the name. */
+  leading?: ReactNode;
+  level?: HeadingLevel;
+  className?: string;
+}) {
+  const Heading = level;
+  return (
+    <header className={cx('flex flex-col gap-8 border-b border-edge px-20 pb-16 pt-16 card-band', className)}>
+      {eyebrow || status || actions ? (
+        <div className="flex min-h-count items-center justify-between gap-8">
+          <span className="min-w-0 truncate font-mono text-num-sm uppercase text-ink-subtle">{eyebrow}</span>
+          <span className="relative z-raised flex shrink-0 items-center gap-6">
+            {status}
+            {actions}
+          </span>
+        </div>
+      ) : null}
+      <div className="flex min-w-0 items-center gap-12">
+        {leading}
+        <div className="flex min-w-0 flex-col gap-2">
+          <Heading className="min-w-0 truncate text-title-section text-ink">
+            {href ? (
+              <Link href={href} className="link-stretched rounded-sm focus-visible:outline-offset-4">
+                {title}
+              </Link>
+            ) : (
+              title
+            )}
+          </Heading>
+          {subtitle ? <p className="truncate text-body-sm text-ink-muted">{subtitle}</p> : null}
+        </div>
+      </div>
+    </header>
   );
 }
 

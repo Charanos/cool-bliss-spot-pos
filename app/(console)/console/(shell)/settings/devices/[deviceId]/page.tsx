@@ -161,7 +161,7 @@ export default async function DevicePage({ params }: { params: Promise<{ deviceI
                 <EmptyState title="No drawer on this device" body="A counter opens a drawer when the cashier counts the float in." />
               </div>
             ) : (
-              <LedgerList className="mx-20 my-16" label="Drawers">
+              <LedgerList className="mx-8 my-8" label="Drawers">
                 {drawers.map((d) => (
                   <LedgerItem key={d.id} tone={d.status !== 'closed' ? 'poured' : undefined}>
                     <span className="flex items-baseline justify-between gap-12">
@@ -187,7 +187,7 @@ export default async function DevicePage({ params }: { params: Promise<{ deviceI
                 <EmptyState title="No orders in seven days" body="Orders a waiter fires from this device appear here." />
               </div>
             ) : (
-              <LedgerList className="mx-20 my-16" label="Orders fired">
+              <LedgerList className="mx-8 my-8" label="Orders fired">
                 {orders.slice(0, 10).map((o) => (
                   <LedgerItem key={o.id}>
                     <span className="flex items-baseline justify-between gap-12">
@@ -213,7 +213,7 @@ export default async function DevicePage({ params }: { params: Promise<{ deviceI
               <EmptyState title="Nothing recorded" body="Changes to this device appear here." />
             </div>
           ) : (
-            <LedgerList className="mx-20 my-16" label="Device history">
+            <LedgerList className="mx-8 my-8" label="Device history">
               {events.map((e) => (
                 <LedgerItem key={e.id} tone={e.severity === 'sensitive' ? 'stop' : undefined}>
                   <span className="block text-ui text-ink">{actionLabel(e.action)}</span>

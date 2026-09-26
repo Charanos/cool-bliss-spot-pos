@@ -24,9 +24,9 @@ export function ConsoleMotionRoot({ children, scrollerId }: { children: ReactNod
  */
 export function ConsoleSheet({ scrollerId, header, children }: { scrollerId: string; header: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-1 py-sheet-inset pr-sheet-inset">
-      <div className="sheet-scope relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-sheet bg-page shadow-sheet">
-        <div id={scrollerId} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+    <div className="flex min-w-0 flex-1 justify-center py-sheet-inset pr-sheet-inset">
+      <div className="sheet-scope relative flex w-full min-w-0 max-w-sheet-max flex-col overflow-hidden rounded-sheet bg-page shadow-sheet">
+        <div id={scrollerId} className="min-h-0 flex-1 overflow-y-auto overscroll-contain no-scrollbar">
           <div className="flex min-h-full flex-col">
             {header}
             {children}
@@ -57,13 +57,15 @@ export function ConsolePage({ children, scrollerId }: { children: ReactNode; scr
   }, [pathname, scrollerId, lenis]);
 
   return (
-    <div ref={ref} className="mx-auto w-full min-w-0 max-w-page-max px-32 pb-72 pt-32">
+    <div ref={ref} className="mx-auto flex w-full min-w-0 max-w-page-max flex-col gap-32 px-32 pb-72 pt-24">
       {children}
     </div>
   );
 }
 
 export interface PageHeaderProps {
+  /** The workspace the page belongs to, in capitals above the title. */
+  eyebrow?: string;
   title: string;
   /** One sentence: what the page answers or lets you do. */
   description?: ReactNode;
@@ -79,23 +81,27 @@ export interface PageHeaderProps {
  * A page's header: the title, one sentence of purpose, and the page's actions. No eyebrow and no
  * ornament; the breadcrumb above already says where you are. docs/19 section 4.
  */
-export function PageHeader({ title, description, badge, aside, actions, className }: PageHeaderProps) {
+export function PageHeader({ eyebrow, title, description, badge, aside, actions, className }: PageHeaderProps) {
   return (
-    <header className={cx('flex flex-wrap items-end justify-between gap-x-32 gap-y-16 pb-24', className)}>
-      <div className="flex min-w-0 flex-col gap-6">
-        <div className="flex min-w-0 flex-wrap items-center gap-12">
-          <h1 className="text-title-page text-balance text-ink">{title}</h1>
-          {badge}
+    <div className="flex flex-col gap-24">
+      <header className={cx('flex flex-wrap items-end justify-between gap-x-32 gap-y-16 pb-8', className)}>
+        <div className="flex min-w-0 flex-col gap-6">
+          {eyebrow ? <p className="label-caps text-accent-text">{eyebrow}</p> : null}
+          <div className="flex min-w-0 flex-wrap items-center gap-12">
+            <h1 className="text-title-page text-balance text-ink">{title}</h1>
+            {badge}
+          </div>
+          {description ? <p className="measure text-ui text-pretty text-ink-muted">{description}</p> : null}
         </div>
-        {description ? <p className="measure text-ui text-pretty text-ink-muted">{description}</p> : null}
-      </div>
-      {aside || actions ? (
-        <div className="flex shrink-0 flex-wrap items-end gap-24">
-          {aside ? <div className={cx('flex items-end gap-24', actions ? 'border-r border-rule pr-24' : null)}>{aside}</div> : null}
-          {actions ? <div className="flex flex-wrap items-center gap-8">{actions}</div> : null}
-        </div>
-      ) : null}
-    </header>
+        {aside || actions ? (
+          <div className="flex shrink-0 flex-wrap items-end gap-24">
+            {aside ? <div className={cx('flex items-end gap-24', actions ? 'border-r border-rule pr-24' : null)}>{aside}</div> : null}
+            {actions ? <div className="flex flex-wrap items-center gap-8">{actions}</div> : null}
+          </div>
+        ) : null}
+      </header>
+      <div aria-hidden="true" className="rule-fade" />
+    </div>
   );
 }
 

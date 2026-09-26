@@ -1,7 +1,9 @@
 import { PageHeader } from '@bliss/ui/components/console/shell';
+import { PillTabs } from '@bliss/ui/components/console/tabs';
 import { EmptyState } from '@bliss/ui/components/feedback';
 import type { ReactNode } from 'react';
 import * as identity from '@/modules/identity/service';
+import { navCounts } from '../_lib/counts';
 import { type WorkspaceKey, pageByHref, workspaceByKey } from '../_lib/nav';
 
 /**
@@ -29,6 +31,20 @@ export async function Workspace({ workspace, children }: { workspace: WorkspaceK
  * most, the one figure it is about.
  */
 export function ViewHeader({ page, actions, aside, badge }: { page: string; actions?: ReactNode; aside?: ReactNode; badge?: ReactNode }) {
-  const { page: p } = pageByHref(page);
-  return <PageHeader title={p.label} description={p.description} actions={actions} aside={aside} badge={badge} />;
+  const { page: p, workspace } = pageByHref(page);
+  const counts = workspace.pages.length > 1 ? navCounts().pages : {};
+  return (
+    <div className="flex flex-col gap-24">
+      {workspace.pages.length > 1 ? (
+        <PillTabs
+          label={`${workspace.label} pages`}
+          tabs={workspace.pages.map((x) => {
+            const c = counts[x.href];
+            return { href: x.href, label: x.label, count: c?.count || undefined, attention: c?.tone === 'attention', stop: c?.tone === 'stop' };
+          })}
+        />
+      ) : null}
+      <PageHeader eyebrow={workspace.label} title={p.label} description={p.description} actions={actions} aside={aside} badge={badge} />
+    </div>
+  );
 }

@@ -55,6 +55,7 @@ export default function OverviewPage() {
       {openTabs.length > 0 ? (
         <Callout
           tone="info"
+          texture
           title="On the floor now"
           aside={<Money value={onFloor} size="num-lg" decimals="whole" />}
           action={

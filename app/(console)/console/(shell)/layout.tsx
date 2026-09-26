@@ -63,7 +63,11 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
     const w = WORKSPACES.find((x) => x.key === key)!;
     const Glyph = ICONS[key];
     const c = counts.workspaces[key];
-    return { href: w.href, label: w.label, icon: <Glyph size={16} stroke={1.5} />, count: c?.count || undefined, tone: c?.count ? c.tone : undefined };
+    const pages = w.pages.map((p) => {
+      const pc = counts.pages[p.href];
+      return { href: p.href, label: p.label, count: pc?.count || undefined, tone: pc?.count ? pc.tone : undefined };
+    });
+    return { href: w.href, label: w.label, icon: <Glyph size={16} stroke={1.5} />, count: c?.count || undefined, tone: c?.count ? c.tone : undefined, pages };
   };
   const groups: DeskGroup[] = NAV_GROUPS.map((g) => ({ label: g.label, items: visible.filter((w) => w.group === g.key).map((w) => item(w.key)) })).filter((g) => g.items.length > 0);
   const icons = Object.fromEntries(
@@ -108,7 +112,9 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
               <SheetHeader
                 timezone={outlet.timezone}
                 icons={icons}
-                counts={counts.pages}
+                day={formatDayShort(clock.current)}
+                trading={clock.tradingInProgress}
+                theme={theme}
                 stations={devices.map((d) => ({ id: d.id, label: d.label, kind: d.kind, online: d.online, lastSeenAt: d.lastSeenAt, unsynced: d.unsyncedCount }))}
               />
             }

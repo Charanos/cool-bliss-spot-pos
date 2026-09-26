@@ -140,7 +140,7 @@ export default async function ShiftPage({ params }: { params: Promise<{ shiftId:
               <EmptyState title="No tabs opened" body="Tabs this person opens during the shift appear here." />
             </div>
           ) : (
-            <LedgerList className="mx-20 my-16" label="Tabs opened">
+            <LedgerList className="mx-8 my-8" label="Tabs opened">
               {tabs.map((t) => (
                 <LedgerItem key={t.id} tone={t.status === 'voided' ? 'stop' : t.status === 'settled' ? 'poured' : undefined}>
                   <span className="flex items-baseline justify-between gap-12">
@@ -163,7 +163,7 @@ export default async function ShiftPage({ params }: { params: Promise<{ shiftId:
           <Card aria-labelledby="shift-bills">
             <CardHeader band level="h2" titleId="shift-bills" title="Bills settled" subtitle={bills.length > 0 ? undefined : 'None on this shift'} actions={bills.length > 0 ? <Money value={settled} size="num-md" /> : null} />
             {bills.length > 0 ? (
-              <LedgerList className="mx-20 my-16" label="Bills settled">
+              <LedgerList className="mx-8 my-8" label="Bills settled">
                 {bills.map((b) => (
                   <LedgerItem key={b.id}>
                     <span className="flex items-baseline justify-between gap-12">
@@ -182,7 +182,7 @@ export default async function ShiftPage({ params }: { params: Promise<{ shiftId:
           <Card aria-labelledby="shift-voids">
             <CardHeader band level="h2" titleId="shift-voids" title="Voids" subtitle={voids.length > 0 ? 'Lines they rang up or voided' : 'Nothing voided on this shift'} />
             {voids.length > 0 ? (
-              <LedgerList className="mx-20 my-16" label="Voided lines">
+              <LedgerList className="mx-8 my-8" label="Voided lines">
                 {voids.map((l) => (
                   <LedgerItem key={l.id} tone="stop">
                     <span className="flex items-baseline justify-between gap-12">

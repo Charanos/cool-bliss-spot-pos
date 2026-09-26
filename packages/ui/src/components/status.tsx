@@ -27,8 +27,8 @@ const textTone: Record<Tone, string> = {
 };
 
 /** A 6px dot. The only circles in the product are dots. */
-export function Dot({ tone, className }: { tone: Tone; className?: string }) {
-  return <span aria-hidden="true" className={cx('inline-block size-dot shrink-0 rounded-dot', dotTone[tone], className)} />;
+export function Dot({ tone, className, ...rest }: { tone: Tone; className?: string; 'data-chip-dot'?: string }) {
+  return <span aria-hidden="true" {...rest} className={cx('inline-block size-dot shrink-0 rounded-dot', dotTone[tone], className)} />;
 }
 
 export type StatusKey =
@@ -116,7 +116,7 @@ export function StatusChip({ status, label, className }: { status: StatusKey; la
   const { word, tone } = STATUS[status];
   return (
     <span className={cx('inline-flex h-chip-dense shrink-0 items-center gap-6 whitespace-nowrap rounded-sm px-8 text-micro micro-caps', washTone[tone], className)}>
-      <Dot tone={tone} />
+      <Dot tone={tone} data-chip-dot="" />
       {label ?? word}
     </span>
   );
@@ -126,7 +126,7 @@ export function StatusChip({ status, label, className }: { status: StatusKey; la
 export function ToneChip({ tone, children, dot = true, className }: { tone: Tone; children: React.ReactNode; dot?: boolean; className?: string }) {
   return (
     <span className={cx('inline-flex h-chip-dense shrink-0 items-center gap-6 whitespace-nowrap rounded-sm px-8 text-micro micro-caps', washTone[tone], className)}>
-      {dot ? <Dot tone={tone} /> : null}
+      {dot ? <Dot tone={tone} data-chip-dot="" /> : null}
       {children}
     </span>
   );

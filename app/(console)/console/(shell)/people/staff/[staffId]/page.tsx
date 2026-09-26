@@ -123,7 +123,7 @@ export default async function StaffRecordPage({ params }: { params: Promise<{ st
               <EmptyState title="No shifts in four weeks" body="A shift starts when they sign in on a floor tablet or the counter." />
             </div>
           ) : (
-            <LedgerList className="mx-20 my-16" label="Shifts">
+            <LedgerList className="mx-8 my-8" label="Shifts">
               {own.slice(0, 10).map((s) => (
                 <LedgerItem key={s.id} tone={s.status === 'open' ? 'poured' : undefined}>
                   <span className="flex items-baseline justify-between gap-12">
@@ -145,7 +145,7 @@ export default async function StaffRecordPage({ params }: { params: Promise<{ st
           <Card aria-labelledby="person-tabs">
             <CardHeader band level="h2" titleId="person-tabs" title="Tabs they hold" subtitle={holding.length > 0 ? plural(holding.length, 'open tab') : 'None open now'} />
             {holding.length > 0 ? (
-              <LedgerList className="mx-20 my-16" label="Tabs they hold">
+              <LedgerList className="mx-8 my-8" label="Tabs they hold">
                 {holding.map((t) => (
                   <LedgerItem key={t.tab.id}>
                     <span className="flex items-baseline justify-between gap-12">
@@ -166,7 +166,7 @@ export default async function StaffRecordPage({ params }: { params: Promise<{ st
           <Card aria-labelledby="person-bills">
             <CardHeader band level="h2" titleId="person-bills" title="Bills settled" subtitle={bills.length > 0 ? 'The last seven days' : 'None in the last seven days'} actions={bills.length > 0 ? <Money value={sum(bills.map(settlement.billNet))} size="num-md" decimals="whole" /> : null} />
             {bills.length > 0 ? (
-              <LedgerList className="mx-20 my-16" label="Bills settled">
+              <LedgerList className="mx-8 my-8" label="Bills settled">
                 {bills.slice(0, 8).map((b) => (
                   <LedgerItem key={b.id}>
                     <span className="flex items-baseline justify-between gap-12">
@@ -193,7 +193,7 @@ export default async function StaffRecordPage({ params }: { params: Promise<{ st
         <Card aria-labelledby="person-voids">
           <CardHeader band level="h2" titleId="person-voids" title="Voids" subtitle={voids.length > 0 ? 'Lines they rang up or voided, four weeks' : 'Nothing voided in four weeks'} />
           {voids.length > 0 ? (
-            <LedgerList className="mx-20 my-16" label="Voided lines">
+            <LedgerList className="mx-8 my-8" label="Voided lines">
               {voids.slice(0, 10).map((l) => (
                 <LedgerItem key={l.id} tone="stop">
                   <span className="flex items-baseline justify-between gap-12">
@@ -216,7 +216,7 @@ export default async function StaffRecordPage({ params }: { params: Promise<{ st
           <Card aria-labelledby="person-drawers">
             <CardHeader band level="h2" titleId="person-drawers" title="Drawers" subtitle={drawers.length > 0 ? 'Opened or counted by them, four weeks' : 'No drawer in four weeks'} />
             {drawers.length > 0 ? (
-              <LedgerList className="mx-20 my-16" label="Drawers">
+              <LedgerList className="mx-8 my-8" label="Drawers">
                 {drawers.slice(0, 8).map((d) => (
                   <LedgerItem key={d.id} tone={d.status !== 'closed' ? 'poured' : undefined}>
                     <span className="flex items-baseline justify-between gap-12">
@@ -239,7 +239,7 @@ export default async function StaffRecordPage({ params }: { params: Promise<{ st
                 <EmptyState title="Nothing recorded" body="Changes they make in the Console, and changes to their access, appear here." />
               </div>
             ) : (
-              <LedgerList className="mx-20 my-16" label="Audit events">
+              <LedgerList className="mx-8 my-8" label="Audit events">
                 {events.map((e) => {
                   const href = hrefForEntity(e.entityType, e.entityId);
                   return (

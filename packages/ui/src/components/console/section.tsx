@@ -1,3 +1,4 @@
+import { IconChevronLeft } from '@tabler/icons-react';
 import Link from 'next/link';
 import { Fragment, type ReactNode } from 'react';
 import { cx } from '../../lib/cx';
@@ -183,7 +184,7 @@ export function SummaryStrip({ items, className }: { items: readonly { label: Re
 /** A timeline or a list of entries hung on one hairline rail, not boxed. */
 export function LedgerList({ children, className, label }: { children: ReactNode; className?: string; label?: string }) {
   return (
-    <ol aria-label={label} className={cx('flex flex-col border-l border-rule', className)}>
+    <ol aria-label={label} className={cx('flex flex-col gap-2', className)}>
       {children}
     </ol>
   );
@@ -193,8 +194,8 @@ export function LedgerItem({ children, className, tone }: { children: ReactNode;
   return (
     <li
       className={cx(
-        'relative py-8 pl-16 before:absolute before:left-0 before:top-16 before:size-dot before:-translate-x-1/2 before:rounded-dot',
-        tone === 'stop' ? 'before:bg-stop' : tone === 'poured' ? 'before:bg-poured' : tone === 'low' ? 'before:bg-low' : 'before:bg-hairline',
+        'relative rounded-md px-12 py-8 transition-hover',
+        tone === 'stop' ? 'bg-stop-wash' : tone === 'poured' ? 'bg-poured-wash' : tone === 'low' ? 'bg-low-wash' : 'hover:bg-band',
         className,
       )}
     >
@@ -223,9 +224,12 @@ export function DetailHeader({
   className?: string;
 }) {
   return (
-    <header className={cx('flex flex-col gap-12 pb-24', className)}>
-      <Link href={back.href} className="inline-flex w-fit items-center gap-4 rounded-sm text-body-sm text-ink-muted transition-hover hover:text-ink">
-        <span aria-hidden="true">←</span>
+    <header className={cx('flex flex-col gap-16 pb-8', className)}>
+      <Link
+        href={back.href}
+        className="group inline-flex h-control-sm w-fit items-center gap-6 rounded-pill border border-edge bg-card pl-8 pr-12 text-body-sm font-medium text-ink-muted shadow-control transition-hover hover:border-edge-strong hover:text-ink"
+      >
+        <IconChevronLeft size={16} stroke={1.75} aria-hidden="true" className="transition-hover group-hover:-translate-x-2" />
         {back.label}
       </Link>
       <div className="flex flex-wrap items-start justify-between gap-x-24 gap-y-12">
@@ -238,6 +242,7 @@ export function DetailHeader({
         </div>
         {actions ? <div className="flex shrink-0 flex-wrap items-center gap-8">{actions}</div> : null}
       </div>
+      <div aria-hidden="true" className="mt-8 rule-fade" />
     </header>
   );
 }
@@ -254,6 +259,7 @@ export function Callout({
   action,
   icon,
   size = 'default',
+  texture = false,
   className,
 }: {
   tone?: 'stop' | 'low' | 'info' | 'poured';
@@ -266,13 +272,16 @@ export function Callout({
   icon?: ReactNode;
   /** `hero` is the one banner at the head of a page: a larger tile, and its figure set off by a rule. */
   size?: 'default' | 'hero';
+  /** The fine dot grid in the callout's tone. A hero always carries it. */
+  texture?: boolean;
   className?: string;
 }) {
+  const dots = tone === 'stop' || tone === 'low' ? 'texture-dots-stop' : 'texture-dots-accent';
   if (size === 'hero') {
     const wash = tone === 'stop' ? 'bg-stop-wash' : tone === 'info' ? 'bg-info-wash' : tone === 'poured' ? 'bg-poured-wash' : 'bg-low-wash';
     const ink = tone === 'stop' ? 'text-stop' : tone === 'info' ? 'text-info' : tone === 'poured' ? 'text-poured' : 'text-low';
     return (
-      <section role="status" className={cx('flex flex-wrap items-center justify-between gap-x-32 gap-y-16 rounded-card px-24 py-20', wash, className)}>
+      <section role="status" className={cx('flex flex-wrap items-center justify-between gap-x-32 gap-y-16 rounded-card px-24 py-20', wash, dots, className)}>
         <div className="flex min-w-0 items-center gap-16">
           <span aria-hidden="true" className={cx('flex size-control-lg shrink-0 items-center justify-center rounded-control bg-card shadow-chip', ink)}>
             {icon}
@@ -297,11 +306,11 @@ export function Callout({
       className={cx(
         'flex flex-wrap items-center justify-between gap-x-24 gap-y-12 rounded-card px-20 py-16',
         tone === 'stop' ? 'bg-stop-wash' : tone === 'info' ? 'bg-info-wash' : tone === 'poured' ? 'bg-poured-wash' : 'bg-low-wash',
+        texture && dots,
         className,
       )}
     >
       <div className="flex min-w-0 items-start gap-12">
-        <span aria-hidden="true" className={cx('mt-6 size-dot shrink-0 rounded-dot', tone === 'stop' ? 'bg-stop' : tone === 'info' ? 'bg-info' : tone === 'poured' ? 'bg-poured' : 'bg-low')} />
         <div className="flex min-w-0 flex-col gap-2">
           <p className="text-title-card text-ink">{title}</p>
           {children ? <p className="measure text-body-sm text-ink-muted">{children}</p> : null}

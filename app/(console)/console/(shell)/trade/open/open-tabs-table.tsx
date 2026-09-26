@@ -147,7 +147,7 @@ export function OpenTabsTable({
   return (
     <div className="flex flex-col gap-32">
       {stale.length > 0 ? (
-        <Callout
+        <Callout texture
           tone="stop"
           title={`${plural(stale.length, 'tab')} still open from an earlier business day`}
           aside={<Money value={sum(stale.map((r) => r.total))} size="num-lg" />}

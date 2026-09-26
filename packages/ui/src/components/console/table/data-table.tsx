@@ -79,11 +79,14 @@ export interface DataTableProps<Row> {
   /** Offer a grid of cards as a second view. With no renderer, cards are built from the columns. */
   gridView?: boolean;
   renderGridCard?: (row: Row) => ReactNode;
-  /** Which view a first visit sees. A catalogue of pictures opens as cards; a ledger as a table. */
+  /** Which view a first visit sees. Cards when there are cards to show, unless a ledger says table. */
   defaultView?: 'table' | 'grid';
 }
 
 const VIRTUAL_THRESHOLD = 50;
+/** How many to a page: cards come in rows of three, so their sizes divide by three. */
+const GRID_SIZES = [12, 24, 48, 96] as const;
+const LIST_SIZES = [25, 50, 100] as const;
 const DEFAULT_FILTERED = { title: 'Nothing matches these filters', body: 'Clear the filters or the search to see every row again.' };
 
 /**
@@ -122,7 +125,7 @@ export function DataTable<Row>({
   variant = 'card',
   pageSize = 50,
   gridView = false,
-  defaultView = 'table',
+  defaultView,
   renderGridCard,
 }: DataTableProps<Row>) {
   const url = useUrlState();
@@ -146,7 +149,8 @@ export function DataTable<Row>({
   const [storedDensity, setStoredDensity] = usePersistentState<'comfortable' | 'compact'>(`bliss.table.${id}.density`, 'comfortable', ['comfortable', 'compact']);
   const density = (read('density') as 'comfortable' | 'compact' | null) ?? storedDensity;
   const gridAvailable = gridView || Boolean(renderGridCard);
-  const view = read('view') ?? defaultView;
+  const initialView = defaultView ?? (gridAvailable ? 'grid' : 'table');
+  const view = read('view') ?? initialView;
   const isGrid = gridAvailable && view === 'grid';
   const rowHeight = density === 'compact' ? 36 : 44;
 
@@ -188,10 +192,23 @@ export function DataTable<Row>({
   }, [rows, filters, search, query, sortKey, sortDir, columns, url.params, local]);
 
   const activeFilters = filters.some((f) => read(f.key)) || query.trim().length > 0;
-  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const sizes: readonly number[] = isGrid ? GRID_SIZES : LIST_SIZES;
+  const fallbackSize = isGrid ? 24 : (LIST_SIZES as readonly number[]).includes(pageSize) ? pageSize : 50;
+  const askedSize = Number.parseInt(read('per') ?? '', 10);
+  const perPage = sizes.includes(askedSize) ? askedSize : fallbackSize;
+  const pages = Math.max(1, Math.ceil(filtered.length / perPage));
   const page = Math.min(Math.max(1, Number.parseInt(read('page') ?? '1', 10) || 1), pages);
-  const offset = (page - 1) * pageSize;
-  const shown = useMemo(() => filtered.slice(offset, offset + pageSize), [filtered, offset, pageSize]);
+  const offset = (page - 1) * perPage;
+  const shown = useMemo(() => filtered.slice(offset, offset + perPage), [filtered, offset, perPage]);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const goPage = (p: number) => {
+    write({ page: p > 1 ? String(p) : null });
+    rootRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+  const pager =
+    filtered.length > sizes[0]! ? (
+      <Pagination page={page} pages={pages} total={filtered.length} perPage={perPage} perPageOptions={sizes} noun={noun} onPage={goPage} onPerPage={(n) => write({ per: n === fallbackSize ? null : String(n), page: null })} />
+    ) : null;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const virtual = !isGrid && shown.length > VIRTUAL_THRESHOLD;
@@ -257,8 +274,8 @@ export function DataTable<Row>({
           'px-20',
           href && 'hover:bg-rail-hover focus-within:bg-rail-hover',
           tone === 'muted' && 'text-ink-subtle',
-          // A mark, not a fill: a 2px edge on the rows that need a second look.
-          tone === 'attention' && 'before:absolute before:inset-y-8 before:left-0 before:w-2 before:rounded-r-sm before:bg-attention',
+          // A row that needs a second look wears a faint wash of the attention tone, never a side bar.
+          tone === 'attention' && 'bg-attention-wash',
         )}
       >
         {visibleColumns.map((c, i) => (
@@ -306,7 +323,7 @@ export function DataTable<Row>({
   };
 
   return (
-    <div className="flex min-w-0 flex-col gap-16">
+    <div ref={rootRef} className="flex min-w-0 scroll-mt-24 flex-col gap-16">
       {toolbar ? (
         <Toolbar
           label={`${caption} filters`}
@@ -319,7 +336,7 @@ export function DataTable<Row>({
                   variant="ghost"
                   icon={isGrid ? IconLayoutRows : IconLayoutGrid}
                   label={isGrid ? 'Show as a list' : 'Show as cards'}
-                  onClick={() => write({ view: (isGrid ? 'table' : 'grid') === defaultView ? null : isGrid ? 'table' : 'grid' })}
+                  onClick={() => write({ view: (isGrid ? 'table' : 'grid') === initialView ? null : isGrid ? 'table' : 'grid', per: null, page: null })}
                 />
               ) : null}
               <OverflowMenu
@@ -386,11 +403,7 @@ export function DataTable<Row>({
                 </li>
               ))}
             </ul>
-            {pages > 1 ? (
-              <div className="card-surface">
-                <Pagination page={page} pages={pages} onPage={(p) => write({ page: p > 1 ? String(p) : null })} />
-              </div>
-            ) : null}
+            {pager ? <div className="card-surface">{pager}</div> : null}
           </>
         )
       ) : (
@@ -461,7 +474,7 @@ export function DataTable<Row>({
             </div>
           </div>
           {footer ? <div className="border-t border-edge card-band-strong px-20 py-12">{footer}</div> : null}
-          {pages > 1 ? <Pagination page={page} pages={pages} onPage={(p) => write({ page: p > 1 ? String(p) : null })} /> : null}
+          {pager ? <div className="border-t border-edge">{pager}</div> : null}
         </div>
       )}
     </div>

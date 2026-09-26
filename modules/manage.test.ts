@@ -310,8 +310,13 @@ describe('the venue', () => {
 
   it('takes a write-off back the same day, once', () => {
     const actor = ownerActor();
-    const tusker = variantIdFor('tusker', 'bottle');
-    const location = inventory.locations().find((l) => inventory.onHand(tusker, l.id) >= 1)!;
+    // Any item with a unit on a shelf: the seed's stock moves with the calendar.
+    const held = catalogue
+      .stockVariants()
+      .flatMap((v) => inventory.locations().map((l) => ({ v: v.id, l })))
+      .find((x) => inventory.onHand(x.v, x.l.id) >= 1)!;
+    const tusker = held.v;
+    const location = held.l;
     const before = inventory.onHand(tusker);
     inventory.writeOff({ variantId: tusker, locationId: location.id, qty: 1, category: 'write_off_breakage', reason: 'Dropped a crate by the fridge', actor });
     const group = dataset().movements.at(-1)!.sourceId!;

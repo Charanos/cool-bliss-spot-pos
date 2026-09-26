@@ -12,6 +12,8 @@ export interface TabLink {
   count?: number;
   /** A tab whose count needs attention shows it in the attention tone. */
   attention?: boolean;
+  /** A count that needs action now, such as a message that could not sync. */
+  stop?: boolean;
 }
 
 /** Whether a path is inside a tab. Longest match wins, so /trade/bills does not light up /trade. */
@@ -49,6 +51,60 @@ export function RouteTabs({ tabs, label, className }: { tabs: readonly TabLink[]
               >
                 {tab.label}
                 {tab.count !== undefined ? <span className={cx('font-mono tabular text-num-sm', tab.attention ? 'text-attention' : 'text-ink-subtle')}>{tab.count}</span> : null}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+/**
+ * A workspace's pages as pills at the head of the page: a track on the band, the page you are on
+ * a raised chip of the card's surface, each with its count. Links, so every page is a URL, with
+ * arrow keys moving between them.
+ */
+export function PillTabs({ tabs, label, className }: { tabs: readonly TabLink[]; label: string; className?: string }) {
+  const pathname = usePathname();
+  const current = activeHref(pathname, tabs);
+  const refs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const onKeyDown = (event: KeyboardEvent<HTMLAnchorElement>, index: number) => {
+    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    if (!step) return;
+    event.preventDefault();
+    refs.current[(index + step + tabs.length) % tabs.length]?.focus();
+  };
+  return (
+    <nav aria-label={label} className={cx('max-w-full overflow-x-auto no-scrollbar', className)}>
+      <ul className="inline-flex items-center gap-2 rounded-pill bg-band-strong p-4 shadow-well">
+        {tabs.map((tab, i) => {
+          const active = tab.href === current;
+          return (
+            <li key={tab.href} className="shrink-0">
+              <Link
+                ref={(el) => {
+                  refs.current[i] = el;
+                }}
+                href={tab.href}
+                aria-current={active ? 'page' : undefined}
+                onKeyDown={(e) => onKeyDown(e, i)}
+                className={cx(
+                  'inline-flex h-control-sm items-center gap-8 rounded-pill px-16 text-body-sm transition-hover',
+                  active ? 'bg-card font-medium text-ink shadow-chip' : 'text-ink-muted hover:bg-card hover:text-ink',
+                )}
+              >
+                {tab.label}
+                {tab.count ? (
+                  <span
+                    className={cx(
+                      'inline-flex h-count min-w-count items-center justify-center rounded-pill px-6 font-mono tabular text-num-sm',
+                      tab.stop ? 'bg-stop text-stop-ink' : tab.attention ? 'bg-attention text-accent-ink' : active ? 'bg-accent-wash text-accent-text' : 'bg-band-strong text-ink-subtle',
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                ) : null}
               </Link>
             </li>
           );

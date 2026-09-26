@@ -113,6 +113,8 @@
 @custom-variant short (@media (max-height: 34rem));
 /* Enough height for a header, a list that breathes and a dock. */
 @custom-variant tall (@media (min-height: 48rem));
+/* A laptop screen: the desk drops what it can live without so its foot never clips. */
+@custom-variant cramped (@media (max-height: 47.5rem));
 /* A finger, not a mouse: targets grow, hover styles are not the whole story. */
 @custom-variant touch (@media (pointer: coarse));
 @custom-variant mouse (@media (pointer: fine));
@@ -761,6 +763,10 @@
  * `bg-page` (a sticky header, a table head) matches the sheet it sits on, in both themes. */
 @utility sheet-scope {
   --bliss-page: var(--bliss-sheet);
+  /* In the Console a chip's word says its state; the dot beside it is one mark too many. */
+  & [data-chip-dot] {
+    display: none;
+  }
 }
 
 /*
@@ -831,4 +837,84 @@
       transform: scale(1.06);
     }
   }
+}
+
+/* The create pill's rise: a pixel up under the pointer, back down when pressed. Still under reduced motion. */
+@utility lift-on-hover {
+  transition:
+    transform 160ms var(--bliss-ease-out),
+    box-shadow 160ms var(--bliss-ease-out),
+    background-color 160ms var(--bliss-ease-out);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+/* A row of a record card: an uppercase label on the left, its value on the right, a hairline between rows. */
+@utility kv-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 8px;
+  border-bottom: 1px solid var(--color-rule);
+  &:first-child {
+    padding-top: 0;
+  }
+  &:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+}
+
+/* The sheet header once the page scrolls under it: the page, frosted. */
+@utility glass-header {
+  background-color: color-mix(in oklab, var(--color-page) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+
+/* The desk's reading of the night: a card of the sheet's surface, fading into the desk. */
+@utility tonight-surface {
+  background-image: linear-gradient(to bottom, var(--color-desk-active), color-mix(in oklab, var(--color-desk-active) 40%, var(--color-desk)));
+  box-shadow: var(--shadow-chip);
+}
+
+/* Focus on the desk: a ring in the focus colour, offset so it sits on the desk, keyboard only. */
+@utility focus-ring-desk {
+  outline: none;
+  &:focus-visible {
+    box-shadow:
+      0 0 0 2px var(--color-desk),
+      0 0 0 4px var(--color-focus);
+  }
+}
+
+/* A list that opens to its own height: grid rows from nothing to one fraction. */
+@utility grid-rows-open {
+  grid-template-rows: 1fr;
+}
+
+@utility grid-rows-shut {
+  grid-template-rows: 0fr;
+}
+
+/*
+ * A card that needs a second look: its edge takes the tone and its head a faint wash of it, fading
+ * down the card. Never a bar down one side.
+ */
+@utility card-tone-* {
+  --card-tone: --value(--color-*);
+  border-color: color-mix(in oklab, var(--card-tone) 45%, var(--color-edge));
+  background-image: linear-gradient(to bottom, color-mix(in oklab, var(--card-tone) 8%, transparent), transparent 112px);
+}
+
+/* A scrolling list whose foot fades into the desk, so a cut-off row reads as "more below". */
+@utility fade-foot {
+  mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent);
 }

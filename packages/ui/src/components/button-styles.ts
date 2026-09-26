@@ -11,7 +11,7 @@ export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 const variantClass: Record<ButtonVariant, string> = {
   primary: 'bg-accent text-accent-ink font-medium shadow-control-primary hover:bg-accent-hover active:bg-accent-pressed',
   /* The one way to make something new on a page: the primary, as a pill, its plus turning a quarter. */
-  create: 'bg-accent text-accent-ink font-medium shadow-control-primary hover:bg-accent-hover active:bg-accent-pressed',
+  create: 'bg-accent text-accent-ink font-medium shadow-create lift-on-hover hover:bg-accent-hover hover:shadow-create-hover active:bg-accent-pressed',
   secondary: 'bg-control text-ink font-medium shadow-control hover:bg-control-hover active:bg-control-pressed',
   ghost: 'bg-transparent text-ink-muted hover:bg-control hover:text-ink active:bg-control-hover',
   /* The Console's quiet action beside a primary: the card surface with its edge. */
@@ -62,10 +62,11 @@ export function buttonClass({
   className?: string;
 }): string {
   return cx(
-    'relative inline-flex select-none items-center justify-center whitespace-nowrap press-feedback press-scale',
+    'relative inline-flex select-none items-center justify-center whitespace-nowrap press-feedback',
+    variant === 'create' ? null : 'press-scale',
     variantClass[variant],
     sizeClass[size],
-    variant === 'create' ? 'rounded-pill' : roundClass[size],
+    variant === 'create' ? 'rounded-pill px-16' : roundClass[size],
     iconOnly && iconOnlyClass[size],
     fullWidth && 'w-full',
     disabled && 'bg-control text-ink-disabled shadow-none hover:bg-control active:scale-100',

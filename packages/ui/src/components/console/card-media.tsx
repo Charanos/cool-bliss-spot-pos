@@ -18,6 +18,8 @@ export function CardMedia({
   subtitle,
   href,
   meta,
+  actions,
+  tint,
   level = 'h3',
   className,
 }: {
@@ -28,6 +30,10 @@ export function CardMedia({
   href?: string;
   /** A chip set in the photograph's top corner: a state, a count. */
   meta?: ReactNode;
+  /** Quick actions over the photograph's other corner, shown when the card is hovered or focused. */
+  actions?: ReactNode;
+  /** The tint the initials sit on when there is no photograph, such as the category's colour class. */
+  tint?: string;
   level?: HeadingLevel;
   className?: string;
 }) {
@@ -43,9 +49,9 @@ export function CardMedia({
   }, []);
 
   return (
-    <div className={cx('relative h-media shrink-0 overflow-hidden border-b border-edge', failed ? 'card-band-strong' : 'bg-band-strong', className)}>
+    <div className={cx('relative h-media shrink-0 overflow-hidden border-b border-edge', failed ? (tint ?? 'card-band-strong') : 'bg-band-strong', className)}>
       {failed ? (
-        <span aria-hidden="true" className="absolute left-20 top-16 flex size-control-lg select-none items-center justify-center rounded-control bg-card text-title-section text-ink-muted shadow-chip">
+        <span aria-hidden="true" className="absolute inset-0 flex select-none items-center justify-center font-mono text-num-xl text-ink-subtle media-zoom">
           {initial}
         </span>
       ) : (
@@ -56,6 +62,9 @@ export function CardMedia({
         </>
       )}
       {meta ? <div className="absolute right-12 top-12 z-raised">{meta}</div> : null}
+      {actions ? (
+        <div className="absolute left-12 top-12 z-raised flex gap-6 opacity-0 transition-hover group-hover:opacity-100 group-focus-within:opacity-100">{actions}</div>
+      ) : null}
       <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 px-20 pb-16">
         <Heading className={cx('min-w-0 truncate text-title-section', failed ? 'text-ink' : 'text-on-scrim')}>
           {href ? (

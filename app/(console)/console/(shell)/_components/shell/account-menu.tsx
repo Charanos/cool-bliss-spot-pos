@@ -83,23 +83,25 @@ export function AccountMenu({ name, role, photo, theme: initialTheme, compact }:
         onClick={() => setOpen((v) => !v)}
         title={`${name}, ${role}`}
         className={cx(
-          'flex h-control-md w-full items-center gap-12 rounded-md text-left transition-hover hover:bg-desk-hover aria-expanded:bg-desk-hover',
-          compact ? 'justify-center px-0' : 'justify-center px-0 desktop:justify-start desktop:px-4',
+          'focus-ring-desk group flex min-h-control-lg w-full items-center gap-12 rounded-control text-left transition-hover hover:bg-desk-hover aria-expanded:bg-desk-hover',
+          compact ? 'justify-center px-0' : 'justify-center px-0 desktop:justify-start desktop:px-8',
         )}
       >
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element -- a staff photo, sized by CSS
-          <img src={photo} alt="" className="size-control-sm shrink-0 rounded-dot object-cover" />
+          <img src={photo} alt="" className="size-control-md shrink-0 rounded-dot object-cover ring-2 ring-desk-chip shadow-chip" />
         ) : (
-          <span aria-hidden="true" className="flex size-control-sm shrink-0 items-center justify-center rounded-dot bg-control text-label text-ink">
+          <span aria-hidden="true" className="flex size-control-md shrink-0 items-center justify-center rounded-dot bg-desk-chip text-label font-medium text-ink shadow-chip">
             {initials}
           </span>
         )}
         <span className={cx('min-w-0 flex-1 flex-col', compact ? 'hidden' : 'hidden desktop:flex')}>
-          <span className="truncate text-body-sm font-medium text-ink">{name}</span>
-          <span className="truncate text-body-sm text-ink-subtle">{role}</span>
+          <span className="truncate text-ui font-medium text-ink">{name}</span>
+          <span className="truncate text-body-sm text-ink-subtle transition-hover group-hover:text-ink-muted">{role}</span>
         </span>
-        <IconSelector size={16} stroke={1.5} aria-hidden="true" className={cx('shrink-0 text-ink-subtle', compact ? 'hidden' : 'hidden desktop:block')} />
+        <span aria-hidden="true" className={cx('size-row-compact shrink-0 items-center justify-center rounded-dot bg-desk-chip text-ink-subtle shadow-chip transition-hover group-hover:text-ink', compact ? 'hidden' : 'hidden desktop:flex')}>
+          <IconSelector size={14} stroke={1.75} />
+        </span>
         <span className="sr-only">Account and theme</span>
       </button>
       {open && typeof document !== 'undefined'
