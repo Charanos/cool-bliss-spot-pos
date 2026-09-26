@@ -10,7 +10,7 @@ import { Dot, type Tone } from '@bliss/ui/components/status';
 import { LiveRegion } from '@bliss/ui/components/surface';
 import { cx } from '@bliss/ui/lib/cx';
 import { Photo } from '@bliss/ui/components/photo';
-import { IconBeer, IconCash, IconHistory, IconReceipt2, IconSearch, IconSettings, IconShoppingBag } from '@tabler/icons-react';
+import { IconBeer, IconCash, IconHistory, IconReceipt2, IconKeyboard, IconSearch, IconSettings, IconShoppingBag } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
@@ -23,6 +23,7 @@ import { useOutlet } from '@/lib/pos/queries';
 import { useDevice, useSession } from '@/lib/pos/session';
 import { useStaffPhotos } from '@/lib/pos/staff-photos';
 import { useSync } from '@/lib/pos/sync';
+import { ShortcutsSheet, useShortcut } from './shortcuts';
 
 /**
  * The Counter shell. The same chrome as the Floor (app/_pos/chrome.tsx) with the Counter's own
@@ -36,6 +37,7 @@ import { useSync } from '@/lib/pos/sync';
  * row until `tablet`, because settling carries an amount and a 768 tablet needs the width for it.
  * On a keyboard, Alt and a number moves between the five views, and Ctrl K finds a tab.
  */
+
 export function CounterShell({ children }: { children: ReactNode }) {
   const photoOf = useStaffPhotos();
   const session = useSession();
@@ -73,6 +75,15 @@ export function CounterShell({ children }: { children: ReactNode }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [router]);
+
+  const [keysOpen, setKeysOpen] = useState(false);
+  useShortcut('o', () => router.push('/counter/orders'));
+  useShortcut('t', () => router.push('/counter/tabs'));
+  useShortcut('s', () => router.push('/counter/sale'));
+  useShortcut('d', () => router.push('/counter/drawer'));
+  useShortcut('h', () => router.push('/counter/history'));
+  useShortcut('/', () => router.push('/counter/tabs?find=1'));
+  useShortcut('?', () => setKeysOpen(true));
 
   if (!session) return <div className="h-dvh bg-page" aria-busy="true" />;
 
@@ -142,6 +153,15 @@ export function CounterShell({ children }: { children: ReactNode }) {
                 <ConnectionChip state={link} heldOrders={sync.heldOrders} compact />
               </span>
               <LiveClock timeZone={tz} />
+              <button
+                type="button"
+                onClick={() => setKeysOpen(true)}
+                aria-label="Keyboard shortcuts"
+                title="Keyboard shortcuts (?)"
+                className="hidden size-control-sm shrink-0 items-center justify-center rounded-md text-ink-muted press-feedback hover:bg-control hover:text-ink mouse:flex"
+              >
+                <IconKeyboard size={18} stroke={ICON_STROKE} aria-hidden="true" />
+              </button>
               <Link
                 href="/counter/settings"
                 aria-label="Settings for this counter"
@@ -185,6 +205,7 @@ export function CounterShell({ children }: { children: ReactNode }) {
           ))}
         />
       </div>
+      <ShortcutsSheet open={keysOpen} onClose={() => setKeysOpen(false)} />
       <LiveRegion>{sync.announcements.join(' ')}</LiveRegion>
     </BaseLayerContext.Provider>
   );
