@@ -26,14 +26,14 @@ interface SnowflakePlan {
   width: number;
   core: number;
   rings?: number[];
-  plates?: { at: number; r: number; }[];
-  levels: { at: number; scale: number; }[][];
+  plates?: { at: number; r: number }[];
+  levels: { at: number; scale: number }[][];
 }
 
 interface OutData {
-  segments: { d: string; w: number; depth: number; }[];
-  nodes: { x: number; y: number; r: number; depth: number; }[];
-  joints: { x: number; y: number; r: number; }[];
+  segments: { d: string; w: number; depth: number }[];
+  nodes: { x: number; y: number; r: number; depth: number }[];
+  joints: { x: number; y: number; r: number }[];
 }
 
 /** Recursively grow one arm. Every child leaves its parent at ±FORK. */
@@ -84,7 +84,11 @@ const HABITS: Record<string, SnowflakePlan> = {
     width: 2.3,
     core: 13,
     levels: [
-      [{ at: 0.30, scale: 0.40 }, { at: 0.52, scale: 0.32 }, { at: 0.74, scale: 0.21 }],
+      [
+        { at: 0.3, scale: 0.4 },
+        { at: 0.52, scale: 0.32 },
+        { at: 0.74, scale: 0.21 },
+      ],
       [{ at: 0.46, scale: 0.34 }],
     ],
   },
@@ -92,16 +96,19 @@ const HABITS: Record<string, SnowflakePlan> = {
   sectored: {
     width: 2.4,
     core: 22,
-    plates: [{ at: 0.45, r: 18 }, { at: 0.85, r: 10 }],
+    plates: [
+      { at: 0.45, r: 18 },
+      { at: 0.85, r: 10 },
+    ],
     levels: [
       [
-        { at: 0.25, scale: 0.50 },
+        { at: 0.25, scale: 0.5 },
         { at: 0.55, scale: 0.35 },
-        { at: 0.80, scale: 0.20 },
+        { at: 0.8, scale: 0.2 },
       ],
       [
-        { at: 0.40, scale: 0.35 },
-        { at: 0.70, scale: 0.25 },
+        { at: 0.4, scale: 0.35 },
+        { at: 0.7, scale: 0.25 },
       ],
     ],
   },
@@ -110,12 +117,12 @@ const HABITS: Record<string, SnowflakePlan> = {
     width: 2.8,
     core: 26,
     rings: [26, 16, 8],
-    plates: [{ at: 0.60, r: 12 }],
+    plates: [{ at: 0.6, r: 12 }],
     levels: [
       [
-        { at: 0.35, scale: 0.40 },
+        { at: 0.35, scale: 0.4 },
         { at: 0.75, scale: 0.28 },
-      ]
+      ],
     ],
   },
   /* Hexagonal plate — nested rings and six stubs. Distant flurry. */
@@ -132,7 +139,16 @@ const HABITS: Record<string, SnowflakePlan> = {
  * personnel cards stay clear, and cut by the same bottom fade.
  * ------------------------------------------------------------------------- */
 
-interface Flake { id: string; habit: string; r: number; x: number; y: number; rot: number; o: number; spin?: 'slow' | 'reverse'; }
+interface Flake {
+  id: string;
+  habit: string;
+  r: number;
+  x: number;
+  y: number;
+  rot: number;
+  o: number;
+  spin?: 'slow' | 'reverse';
+}
 const FLAKES: Flake[] = [
   { id: 'a', habit: 'dendrite', r: 205, x: 5, y: 140, rot: 9, o: 1.0, spin: 'slow' },
   { id: 'b', habit: 'sectored', r: 116, x: 720, y: 480, rot: 25, o: 0.82, spin: 'reverse' },
@@ -142,10 +158,22 @@ const FLAKES: Flake[] = [
 
 /* Deterministic frost motes — no branching, just caught light. */
 const MOTES: [number, number, number][] = [
-  [320, 60, 1.6], [40, 150, 1.2], [480, 90, 1.0], [650, 180, 1.4],
-  [140, 260, 1.1], [520, 290, 0.9], [40, 520, 1.3], [350, 480, 1.0],
-  [620, 550, 1.1], [180, 650, 0.9], [460, 740, 0.8], [80, 750, 0.7],
-  [680, 380, 1.0], [420, 820, 0.9], [580, 710, 1.1], [120, 850, 0.8]
+  [320, 60, 1.6],
+  [40, 150, 1.2],
+  [480, 90, 1.0],
+  [650, 180, 1.4],
+  [140, 260, 1.1],
+  [520, 290, 0.9],
+  [40, 520, 1.3],
+  [350, 480, 1.0],
+  [620, 550, 1.1],
+  [180, 650, 0.9],
+  [460, 740, 0.8],
+  [80, 750, 0.7],
+  [680, 380, 1.0],
+  [420, 820, 0.9],
+  [580, 710, 1.1],
+  [120, 850, 0.8],
 ];
 
 /** The geometry is pure and never changes, so it is built once per module, not per render. */
@@ -169,16 +197,8 @@ export const AmbientTerminalArtwork = memo(function AmbientTerminalArtwork() {
   const arms = ARMS;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-40 mix-blend-screen">
-      <svg
-        className="absolute inset-0 h-full w-full"
-        viewBox="0 0 1000 800"
-        preserveAspectRatio="xMinYMin slice"
-        fill="none"
-        aria-hidden="true"
-        focusable="false"
-        xmlns="http://www.w3.org/2000/svg"
-      >
+    <div className="ambient-art pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-40 mix-blend-screen">
+      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1000 800" preserveAspectRatio="xMinYMin slice" fill="none" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
         <style>{`
           .bliss-frost-slow { animation: bliss-frost-turn 420s steps(4200) infinite; transform-origin: 0 0; }
           .bliss-frost-reverse { animation: bliss-frost-turn 560s steps(5600) infinite reverse; transform-origin: 0 0; }
@@ -273,18 +293,8 @@ export const AmbientTerminalArtwork = memo(function AmbientTerminalArtwork() {
               {arm.plan.plates?.map((p, i) => (
                 <g key={`p${i}`} transform={`translate(${(100 * p.at).toFixed(2)} 0)`}>
                   <path d={hexPath(p.r)} fill="url(#bliss-frost-facet-face)" />
-                  <path
-                    d={hexPath(p.r)}
-                    stroke="var(--color-accent)"
-                    strokeWidth={arm.plan.width * 0.6}
-                    strokeOpacity="0.8"
-                  />
-                  <path
-                    d={hexPath(p.r - arm.plan.width * 0.6)}
-                    stroke="var(--color-glint)"
-                    strokeWidth={arm.plan.width * 0.2}
-                    strokeOpacity="0.9"
-                  />
+                  <path d={hexPath(p.r)} stroke="var(--color-accent)" strokeWidth={arm.plan.width * 0.6} strokeOpacity="0.8" />
+                  <path d={hexPath(p.r - arm.plan.width * 0.6)} stroke="var(--color-glint)" strokeWidth={arm.plan.width * 0.2} strokeOpacity="0.9" />
                 </g>
               ))}
               {/* junction and tip glints - 4K geometric style */}
@@ -334,8 +344,7 @@ export const AmbientTerminalArtwork = memo(function AmbientTerminalArtwork() {
 
         <g mask="url(#bliss-frost-fade-bottom)">
           {FLAKES.map((f) => {
-            const spin =
-              f.spin === 'slow' ? 'bliss-frost-slow' : f.spin === 'reverse' ? 'bliss-frost-reverse' : null;
+            const spin = f.spin === 'slow' ? 'bliss-frost-slow' : f.spin === 'reverse' ? 'bliss-frost-reverse' : null;
             const body = (
               <g transform={`rotate(${f.rot}) scale(${(f.r / 100).toFixed(4)})`} opacity={f.o}>
                 {/* D₆: the same arm, six times. */}

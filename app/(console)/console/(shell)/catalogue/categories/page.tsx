@@ -1,60 +1,47 @@
-import { plural } from '@bliss/shared/format';
-import { RevealSection } from '@bliss/ui/components/console/shell';
-import { StatusChip } from '@bliss/ui/components/status';
-import { categoryEdgeClass } from '@bliss/ui/lib/seat';
+import { ZERO, isPositive, sum } from '@bliss/shared/money';
+import { addDays } from '@bliss/shared/time';
 import type { Metadata } from 'next';
 import * as catalogue from '@/modules/catalogue/service';
-import { TabIntro } from '../../_components/workspace';
+import * as identity from '@/modules/identity/service';
+import * as reporting from '@/modules/reporting/service';
+import { ViewHeader } from '../../_components/workspace';
+import { type CategoryRow, CategoriesTable } from './categories-table';
 
 export const metadata: Metadata = { title: 'Categories' };
 
-const ROUTING: Record<string, string> = { bar: 'Bar screen', kitchen: 'Kitchen', none: 'Not routed' };
+const ROUTING: Record<string, string> = { bar: 'The bar', kitchen: 'The kitchen', none: 'Nowhere' };
+const DAYS = 28;
 
-/** Categories set the floor's tabs, where a fired line goes, and whether stock is tracked. */
-export default function CategoriesPage() {
-  const categories = catalogue.categories();
+/** Categories set the floor's tabs, where a fired line prints, and whether stock is counted. */
+export default async function CategoriesPage() {
+  const actor = await identity.currentConsoleActor();
   const products = catalogue.products();
-
+  const to = reporting.clock().lastNight;
+  const sales = new Map(reporting.salesByCategory(addDays(to, -DAYS + 1), to).map((c) => [c.name, c.value]));
+  const total = sum([...sales.values()]);
+  const ordered = catalogue.categories();
+  const onFloor = ordered.filter((c) => c.status === 'active');
+  const rows: CategoryRow[] = ordered.map((c) => {
+    const takings = sales.get(c.name) ?? ZERO;
+    return {
+      id: c.id,
+      position: onFloor.indexOf(c) + 1,
+      name: c.name,
+      colour: c.colourToken,
+      routingTarget: c.routingTarget,
+      routing: ROUTING[c.routingTarget] ?? 'Nowhere',
+      trackStock: c.trackStock,
+      products: products.filter((p) => p.categoryId === c.id && p.status === 'active').length,
+      archivedProducts: products.filter((p) => p.categoryId === c.id && p.status === 'archived').length,
+      takings,
+      share: isPositive(total) ? Number(takings) / Number(total) : 0,
+      active: c.status === 'active',
+    };
+  });
   return (
     <>
-      <TabIntro>The colour marks the category edge on every floor tile. Order here is the order of the floor&rsquo;s category tabs.</TabIntro>
-      <RevealSection>
-        <div role="table" aria-label="Categories">
-          <div role="row" className="grid grid-cols-[48px_minmax(180px,1.5fr)_140px_140px_120px_110px] gap-16 border-b border-hairline py-8">
-            {['Order', 'Category', 'Fired lines go to', 'Stock', 'Products', 'State'].map((h, i) => (
-              <span key={h} role="columnheader" className={i === 0 || i === 4 ? 'text-right text-label text-ink-subtle' : 'text-label text-ink-subtle'}>
-                {h}
-              </span>
-            ))}
-          </div>
-          {categories.map((c) => {
-            const count = products.filter((p) => p.categoryId === c.id && p.status === 'active').length;
-            return (
-              <div key={c.id} role="row" className="grid min-h-row-floor grid-cols-[48px_minmax(180px,1.5fr)_140px_140px_120px_110px] items-center gap-16 border-b border-rule">
-                <span role="cell" className="text-right font-mono tabular text-num text-ink-subtle">
-                  {c.sortOrder}
-                </span>
-                <span role="cell" className="flex items-center gap-12">
-                  <span aria-hidden="true" className={`h-[24px] w-[3px] rounded-sm ${categoryEdgeClass(c.colourToken)}`} />
-                  <span className="text-body text-ink">{c.name}</span>
-                </span>
-                <span role="cell" className="text-body text-ink-muted">
-                  {ROUTING[c.routingTarget]}
-                </span>
-                <span role="cell" className="text-body text-ink-muted">
-                  {c.trackStock ? 'Tracked' : 'Not tracked'}
-                </span>
-                <span role="cell" className="text-right font-mono tabular text-num text-ink">
-                  {plural(count, 'product')}
-                </span>
-                <span role="cell">
-                  <StatusChip status={c.status === 'active' ? 'active' : 'retired'} label={c.status === 'active' ? 'On sale' : 'Archived'} />
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </RevealSection>
+      <ViewHeader page="/console/catalogue/categories" />
+      <CategoriesTable rows={rows} canEdit={identity.can(actor.staffId, 'price.write')} days={DAYS} />
     </>
   );
 }

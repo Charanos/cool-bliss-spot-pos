@@ -31,6 +31,62 @@ the copy lint rule reads `!` in any string as an exclamation mark.
 Two more variants exist for the cases where the input, not the size, is the question: `touch`
 (`pointer: coarse`), `mouse` (`pointer: fine`) and `standalone` (installed to the home screen).
 
+### The reference devices
+
+| Device | Engine | Input | Profile | Notes |
+| --- | --- | --- | --- | --- |
+| iPad mini 4, the Floor | Safari 15.6 (iPadOS 15.8, the last it gets) | touch | `lite` | 768 by 1024 at 2x, used upright and on its side equally. An A8 with 2GB: no blur, no ambient artwork |
+| The counter laptop | Chrome or Edge, current, on Windows 10 or 11 | mouse and keyboard | `clarity` | A 1366 by 768 panel with lifted blacks and little colour. Letters move between views (section 6) |
+| Manager laptops, the Console | current Chrome, Edge or Safari | mouse and keyboard | `standard` | Ledgers fold columns below the width they need (docs/19 section 3) |
+
+**Build targets.** Safari 15.4, iOS 15.4, and Chrome, Edge and Firefox 111 (docs/11 D-24). Three
+things keep the build inside them:
+
+- `scripts/legacy/downlevel.mjs` runs after `next build` and brings Next's own framework chunks
+  down to those targets with Next's bundled SWC.
+- `packages/config/postcss-rgb-alpha.cjs` turns every `color-mix(... var(--x) n%, transparent)`
+  into `rgb(var(--x-rgb) / n%)`; the token build emits the `-rgb` channel for every colour.
+- `pnpm legacy` (`scripts/check-legacy-browsers.mjs`, in `pnpm ci`) parses every built script
+  and stylesheet and fails on class static blocks, regex lookbehind, unguarded `color-mix`,
+  `:has`, `@container`, `@starting-style` and an unprefixed `backdrop-filter`.
+
+There is no WebKit in CI, so the device itself is the last check: Settings, This device, on the
+Floor or the Counter lists the engine, the screen and a pass or fail for each feature Bliss uses,
+and sends the same to the Console's device record with each pull.
+
+### Checking on the real devices
+
+CI has no WebKit and no weak panel, so each deploy is confirmed once on the devices themselves.
+
+**The iPad mini 4 (the Floor)**
+
+1. Open the Floor in Safari, add it to the Home Screen, and open it from there.
+2. Settings, This device: every feature row passes, and the engine reads Safari 15. The suggested
+   profile is Lite; keep it. Turn on Keep the screen on, or set Auto-Lock to Never in iPadOS.
+3. Sign in, open a tab, add two drinks to two seats, send. Turn the iPad on its side and back: the
+   grid, the seats and the dock stay whole in both, and nothing needs a pinch or a double tap.
+4. The ticket sheet opens from the dock and closes with a tap on the dimmed page.
+5. In Control Centre, turn on Airplane Mode, send an order, turn it off: the order reaches the
+   Counter once.
+
+**The counter laptop**
+
+1. Open the Counter in Chrome or Edge. Settings, This device: every row passes; the suggested
+   profile is Clarity; keep it.
+2. Status colours (new, poured, low, stopped) read apart from across the counter, and the grey
+   text is legible. If any of it still washes out, raise the laptop's own brightness first, then
+   tell us which screen and which colour.
+3. Press `?` for the keys; pour with `P`; settle a tab with a typed amount and Enter.
+
+**The Console, any laptop**
+
+1. Settings, Devices: each station shows the report it last sent, with its profile.
+2. Trade, Bills, and one report on a 1366 screen: no table scrolls sideways; the columns that do
+   not fit sit under the row's name.
+
+Anything that fails: a screenshot of Settings, This device, and of the screen itself, is enough to
+find it. On the iPad, Safari's Web Inspector from a Mac shows the console.
+
 ## 2. Rules that hold on every surface
 
 1. **The chrome is in the flow, never over it.** The Floor's dock is the last child of the shell's

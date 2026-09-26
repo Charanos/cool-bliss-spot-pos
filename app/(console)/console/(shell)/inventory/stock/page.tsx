@@ -1,11 +1,14 @@
-import type { AvailabilityReason, AvailabilityState } from '@bliss/shared/domain';
+import type { AvailabilityReason, AvailabilityState, CategoryColourToken } from '@bliss/shared/domain';
 import type { Cents } from '@bliss/shared/money';
 import type { Metadata } from 'next';
 import * as availability from '@/modules/availability/service';
 import * as catalogue from '@/modules/catalogue/service';
 import * as inventory from '@/modules/inventory/service';
 import * as identity from '@/modules/identity/service';
+import { ButtonLink } from '@bliss/ui/components/button-link';
+import { IconClipboardList } from '@tabler/icons-react';
 import { StockTable } from './stock-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Stock' };
 
@@ -13,10 +16,13 @@ export interface StockRow {
   id: string;
   variantId: string;
   sellableVariantId: string;
+  productId: string;
+  supplierId: string | null;
   product: string;
   variant: string;
   categoryId: string;
   categoryName: string;
+  colour: CategoryColourToken;
   imageKey: string | null;
   location: string;
   locationId: string;
@@ -35,8 +41,8 @@ export interface StockRow {
 }
 
 /**
- * Stock, docs/10 N2. The state column carries the same status the Floor tile shows, so the two
- * surfaces agree visually, and a hold outranks any stock figure.
+ * Stock, docs/10 N2: what is in the building, what it is worth, how long it lasts. The state column
+ * carries the status the Floor tile shows, so the two surfaces agree, and a hold outranks any figure.
  */
 export default async function StockPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
@@ -66,10 +72,13 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         id: `${variant.id}:${location?.id ?? 'all'}`,
         variantId: variant.id,
         sellableVariantId: sellable.id,
+        productId: product.id,
+        supplierId: product.defaultSupplierId,
         product: product.name,
         variant: variant.name,
         categoryId: category.id,
         categoryName: category.name,
+        colour: category.colourToken,
         imageKey: product.imageKey,
         location: location?.name ?? 'All locations',
         locationId: location?.id ?? locations.find((l) => l.kind === 'service')!.id,
@@ -90,11 +99,22 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
   }
 
   return (
+    <>
+      <ViewHeader
+        page="/console/inventory/stock"
+        actions={
+          <ButtonLink href="/console/inventory/counts/new" variant="outline" icon={IconClipboardList}>
+            Start a count
+          </ButtonLink>
+        }
+      />
+
     <StockTable
       rows={rows}
       locations={locations.map((l) => ({ value: l.id, label: l.name }))}
       categories={catalogue.categories().filter((c) => c.trackStock).map((c) => ({ value: c.id, label: c.name }))}
       exportDate={new Date().toISOString().slice(0, 10)}
     />
+    </>
   );
 }

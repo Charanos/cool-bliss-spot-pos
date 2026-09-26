@@ -296,3 +296,77 @@ Applied to every string before merge.
 - [ ] Readable at 200% zoom without truncating
 - [ ] Money as `KES 12,450.00`, time in 24-hour, dates as `6 Sep 2026`
 - [ ] No em dashes
+
+
+---
+
+## Console
+
+The Console is read at a desk, not on a tray, but the voice is the same: plain, specific, calm, and exact about money. `scripts/check-copy.mjs` checks these in `pnpm lint`; the rewrite table is in `19-console-system.md` section 5.
+
+- **Titles are the nouns people use at the bar.** Overview, Bills, Open tabs, Stock, Deliveries, Staff. Not "Executive Overview", not "Tender Settlement Mix", not "Operational Intelligence".
+- **One sentence of purpose under a title**: what the page answers or lets you do. Never how the system works; mechanics go in a "How this is worked out" note or in the docs.
+- **Sentence case everywhere.** Capitals are presentation (`label-caps`), so the source string is always sentence case and a screen reader reads words.
+- **The terminology lock holds.** Tab, seat, line, bill, tender, variance, write-off, void, drawer session, business day. A delivery is received; a line is voided, never deleted.
+- **Buttons name their outcome**, with the count or amount where there is one: "Receive 12 lines", "Commit count", "Add a person", "Export".
+- **Every table has its own empty and filtered copy.** "No bills yet tonight." "No bills match these filters. Clear the filters to see them all."
+- **Errors say what happened, then what to do**, and never show an internal message. Services refuse with a `DomainError` written in this voice.
+- **No invented figures or placeholders.** A number on screen is real, or the line says it is not tracked yet. No stock photos of staff; initials until a photo is uploaded.
+- **Out of scope stays out of the interface.** No KRA, eTIMS or fiscal wording anywhere; a Bliss bill says it is not a tax invoice.
+
+### Correcting a bill or a tab
+
+Two words, never swapped. **Void** a bill that was settled wrongly (the wrong tender, split or tab):
+it is set aside and its lines go back on the tab to be settled again. **Refund** gives a guest money
+back for lines they paid for: the bill stays, with the refund against it.
+
+| Moment | Copy |
+|---|---|
+| Void, title | "Void bill 21808?" |
+| Void, body | "For a bill settled wrongly. Its lines go back on the tab, open again, to be settled right. Stock does not move, and the cash leaves the drawer's expected figure." |
+| Void, refused | "The drawer that took the cash for bill 21808 has been counted. Refund the bill instead." |
+| Refund, title | "Refund on bill 21808" |
+| Refund, button | "Refund KES 700", the amount of the lines chosen |
+| Refund, cash with no drawer | "No drawer is open now. Open one on a counter, or give the money back another way." |
+| Refund, restock | "Put the items back in stock. Only when they can be sold again, such as a sealed bottle." |
+| Refunded bill, callout | "Part refunded. KES 350 given back. The bill counts at what was kept." |
+| Close a tab, body | "The 3 lines not yet on a bill are voided with your reason. Poured stock stays gone; stock not poured goes back. The table is freed." |
+| Drawer review | "Mark reviewed", with a note of what was found and done |
+| Device pairing | "On Floor 4, choose it on the sign-in screen and enter this code. Nobody can sign in on it until it is paired." |
+
+Every one of these asks for a reason, and the reason is kept in the audit trail beside who gave it.
+
+
+### PINs
+
+A PIN is four to eight digits. The outlet's rules (Settings, Outlet, Sign-in and PINs) set how many
+digits a new PIN has, when a PIN runs out, how many wrong tries lock it for 15 minutes, how many old
+PINs cannot come back, and whether a PIN a manager sets works once before the person chooses their
+own. A manager sets PINs for people below them; only an owner sets a manager's or an owner's. Nobody
+sets their own from People: they change it from the account menu, with the one they have.
+
+| Moment | Copy |
+|---|---|
+| Set, title | "Set Amina's PIN", or "Reset Amina's PIN" when she has one |
+| Reset, body | "Their current PIN stops working and every session they have ends." |
+| How | "Make one at random" or "Type one" |
+| Typed, rules | "6 digits", "Not a run, a repeat or a common PIN", "Typed the same twice", "Not one they had before, checked when you save" |
+| Too easy | "That PIN is too easy to guess. It is a run of digits." |
+| Used before | "That PIN was used before. Choose one they have not had." |
+| Hand over, title | "Hand this to Amina" |
+| Hand over, body | "Shown once. Nobody, you included, can see it again." |
+| Chooses own | "They choose their own at the next sign-in" |
+| Sign-in, prompt | "Enter your 4 digit PIN", the person's own length |
+| Sign-in, after a reset | "A manager set this PIN for you. Choose one only you know." |
+| Sign-in, expired | "Your PIN has run out. Choose a new one." |
+| Sign-in, mismatch | "The two PINs were not the same. Start again." |
+| Session ended by a change | "Your PIN was changed, so your session ended. Sign in with the new one." |
+| Take away, title | "Take Amina's PIN away?" |
+| Take away, body | "Nobody can sign in as them until a new PIN is set. Their sessions end now. Their history stays." |
+| End sessions, body | "Every device and browser they are signed in on asks for their PIN again. Their PIN does not change." |
+| Only an owner | "Only an owner sets the PIN of a manager or another owner." |
+| Staff list chips | "No PIN", "Chooses own PIN", "PIN ran out", "PIN runs out in 3 days" |
+| Overview | "3 PINs run out this week" |
+
+Every set, reset and removal asks for a reason and is kept in the audit trail as sensitive. The PIN
+itself is never written anywhere but as a hash.

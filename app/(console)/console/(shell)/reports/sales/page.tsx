@@ -1,4 +1,4 @@
-import { formatDayShort, plural } from '@bliss/shared/format';
+import { plural } from '@bliss/shared/format';
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
@@ -6,9 +6,11 @@ import * as settlement from '@/modules/settlement/service';
 import { TENDER_LABEL } from '../../_lib/labels';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { SalesReport } from './sales-report';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Sales' };
 
+/** Sales, for a range of business days against the same number before it. Margin needs report.margin. */
 export default async function SalesPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
   const range = businessRange(params.range, '28');
@@ -19,6 +21,9 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
   const single = range.from === range.to;
 
   return (
+    <>
+      <ViewHeader page="/console/reports/sales" />
+
     <SalesReport
       rangeKey={range.key}
       rangeOptions={rangeOptions(false)}
@@ -27,7 +32,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
       chart={
         single
           ? reporting.salesByHour(range.to).map((h) => ({ key: h.hour, label: h.hour.slice(0, 2), value: h.value }))
-          : days.map((d) => ({ key: d.date, label: formatDayShort(d.date), value: d.value }))
+          : days.map((d) => ({ key: d.date, label: String(Number(d.date.slice(8))), value: d.value }))
       }
       chartCaption={single ? `Sales by hour, ${range.label}` : `Sales by business day, ${range.label}`}
       categories={reporting
@@ -38,5 +43,6 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
       tenders={settlement.tenderMix(range.from, range.to).map((t) => ({ key: t.kind, label: TENDER_LABEL[t.kind], value: t.amount, detail: plural(t.count, 'tender') }))}
       exportDate={range.to}
     />
+    </>
   );
 }

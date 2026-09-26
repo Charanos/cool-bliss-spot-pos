@@ -8,14 +8,15 @@ import { EmptyState, Skeleton } from '@bliss/ui/components/feedback';
 import { FreeTableCard, TabCard } from '@bliss/ui/components/floor/tab-card';
 import { MetaLine } from '@bliss/ui/components/working';
 import { SectionHeader } from '@bliss/ui/components/working';
-import { useNow } from '@bliss/ui/hooks';
+import { useNow, usePersistentState } from '@bliss/ui/hooks';
+import { cx } from '@bliss/ui/lib/cx';
 import { CardAction } from '@bliss/ui/components/card-action';
 import { IconCheck, IconPlus, IconReceipt } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { OpenTabSheet, tableLabel } from '../../_components/open-tab-sheet';
-import { useOpenTabs, useSeatedTabs, useZonesAndTables } from '@/lib/pos/queries';
+import { useOpenTabs, useSeatedTabs, useTradeReady, useZonesAndTables } from '@/lib/pos/queries';
 import { SeatedTabs } from '@/app/_pos/seated-tabs';
 import { STAGE } from '@/app/_pos/table-stage';
 import { askBill, deliverTable } from '@/lib/pos/actions';
@@ -49,26 +50,21 @@ export default function TabsPage() {
   const now = useNow(30_000);
   const [zone, setZone] = useState('all');
   const [scope, setScope] = useState<'mine' | 'everyone'>('mine');
+  const [section, setSection] = usePersistentState<'open' | 'free'>('floor.tabs.section', 'open', ['open', 'free']);
   const [sheet, setSheet] = useState<{ open: boolean; table: ServiceTable | null }>({ open: false, table: null });
 
   const seated = useSeatedTabs();
+  const tradeReady = useTradeReady();
   // A table is taken while it has a tab being ordered on, or a paid one whose guests have not left.
-  const occupied = useMemo(
-    () => new Set([...(tabs ?? []).map((t) => t.tab.serviceTableId), ...(seated ?? []).map((t) => t.tab.serviceTableId)].filter(Boolean)),
-    [tabs, seated],
-  );
-  const visibleTabs = (tabs ?? []).filter(
-    (t) => (scope === 'everyone' || t.tab.assignedTo === session?.staffId) && (zone === 'all' || t.tab.zoneId === zone),
-  );
+  const occupied = useMemo(() => new Set([...(tabs ?? []).map((t) => t.tab.serviceTableId), ...(seated ?? []).map((t) => t.tab.serviceTableId)].filter(Boolean)), [tabs, seated]);
+  const visibleTabs = (tabs ?? []).filter((t) => (scope === 'everyone' || t.tab.assignedTo === session?.staffId) && (zone === 'all' || t.tab.zoneId === zone));
   const freeTables = (places?.tables ?? [])
     .filter((t) => !occupied.has(t.id) && t.status !== 'out_of_service' && (zone === 'all' || t.zoneId === zone))
     .sort((a, b) => a.label.localeCompare(b.label, 'en', { numeric: true }));
   const counterZone = places?.zones.find((z) => z.name === 'Counter')?.id ?? places?.zones[0]?.id ?? null;
 
   // Total across all visible tabs (not just mine) for the floor summary
-  const allScopedTabs = (tabs ?? []).filter(
-    (t) => scope === 'everyone' || t.tab.assignedTo === session?.staffId,
-  );
+  const allScopedTabs = (tabs ?? []).filter((t) => scope === 'everyone' || t.tab.assignedTo === session?.staffId);
   const onFloor = sum(allScopedTabs.map((t) => t.total));
 
   const zoneOptions = [
@@ -80,13 +76,11 @@ export default function TabsPage() {
     ...(places?.zones ?? []).map((z) => ({
       value: z.id,
       label: z.name,
-      count: (tabs ?? []).filter(
-        (t) => t.tab.zoneId === z.id && (scope === 'everyone' || t.tab.assignedTo === session?.staffId),
-      ).length,
+      count: (tabs ?? []).filter((t) => t.tab.zoneId === z.id && (scope === 'everyone' || t.tab.assignedTo === session?.staffId)).length,
     })),
   ];
 
-  const loading = tabs === undefined || places === undefined;
+  const loading = tabs === undefined || places === undefined || !tradeReady;
 
   // Build summary MetaLine
   const summaryItems = loading
@@ -129,97 +123,37 @@ export default function TabsPage() {
             />
           </div>
         </div>
-        <FilterChips
-          label="Zone"
-          size="md"
-          value={zone}
-          onChange={setZone}
-          options={zoneOptions}
-          className="mt-12 overflow-x-auto no-scrollbar pad:mt-20 short:mt-6"
-        />
+        <FilterChips label="Zone" size="md" value={zone} onChange={setZone} options={zoneOptions} className="mt-12 overflow-x-auto no-scrollbar pad:mt-20 short:mt-6" />
       </header>
 
-      {/* ── Workspace: Two Columns ─────────────────────────────────── */}
-      <div className="flex flex-col tablet:flex-row flex-1 min-h-0 overflow-y-auto tablet:overflow-y-hidden no-scrollbar">
-        
-        {/* ── Main Column: Free Tables ─────────────────────────────── */}
-        <div className="order-2 flex-1 px-12 pb-24 pt-16 no-scrollbar tablet:order-1 tablet:overflow-y-auto tablet:px-24 tablet:pt-24">
-          {loading ? (
-            <div className="grid grid-cols-2 gap-8 pad:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] pad:gap-16">
-              {Array.from({ length: 8 }, (_, i) => (
-                <Skeleton key={i} className="min-h-card-tab rounded-md" />
-              ))}
-            </div>
-          ) : (
-            <>
-            <section aria-labelledby="free-tables-heading">
-              <SectionHeader
-                id="free-tables-heading"
-                title="Free tables"
-                count={freeTables.length}
-                className="mb-16"
-              />
-              {freeTables.length > 0 ? (
-                <div className="grid grid-cols-2 gap-8 pad:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] pad:gap-16">
-                  {freeTables.map((table) => (
-                    <FreeTableCard
-                      key={table.id}
-                      tableLabel={tableLabel(table)}
-                      capacity={table.seats}
-                      onOpen={() => setSheet({ open: true, table })}
-                    />
-                  ))}
-                </div>
-              ) : zone !== 'all' ? (
-                <EmptyState
-                  title={`Nothing in ${places?.zones.find((z) => z.id === zone)?.name ?? 'this zone'} right now`}
-                  body="Try a different zone or check all zones."
-                  action={
-                    <Button variant="secondary" size="lg" onClick={() => setZone('all')}>
-                      Show all zones
-                    </Button>
-                  }
-                />
-              ) : (
-                <EmptyState
-                  title="No free tables"
-                  body="All tables are currently occupied."
-                  action={
-                    <Button
-                      variant="secondary"
-                      size="lg"
-                      icon={IconPlus}
-                      onClick={() => setSheet({ open: true, table: null })}
-                    >
-                      Open a walk-up tab
-                    </Button>
-                  }
-                />
-              )}
-            </section>
-            </>
-          )}
-        </div>
+      {/* Upright, one list at a time; on its side, your tabs in the room and free tables beside them. */}
+      <div className="shrink-0 px-12 pt-12 pad:px-24 tablet:hidden">
+        <Segmented
+          label="Show"
+          value={section}
+          onChange={setSection}
+          options={[
+            { value: 'open', label: `Open tabs · ${visibleTabs.length}` },
+            { value: 'free', label: `Free tables · ${freeTables.length}` },
+          ]}
+          className="w-full [&>*]:flex-1"
+        />
+      </div>
 
-        {/* ── Right Rail: Open Tabs ────────────────────────────────── */}
-        <aside className="order-1 w-full shrink-0 px-12 pb-16 pt-16 no-scrollbar tablet:order-2 tablet:w-[360px] tablet:overflow-y-auto tablet:border-l tablet:border-rule-raised/30 tablet:bg-sunken/30 tablet:px-16 tablet:pb-24 tablet:pt-24 tablet:backdrop-blur-glass">
+      <div className="flex min-h-0 flex-1 flex-col tablet:flex-row">
+        <div className={cx('min-h-0 flex-1 overflow-y-auto overscroll-contain px-12 pb-24 pt-16 pad:px-24 tablet:block tablet:pt-24', section === 'open' ? 'block' : 'hidden')}>
           {loading ? (
-            <div className="grid grid-cols-2 gap-8 tablet:flex tablet:flex-col tablet:gap-12">
-              {Array.from({ length: 4 }, (_, i) => (
-                <Skeleton key={i} className="min-h-card-tab rounded-[20px]" />
+            <div className="grid grid-cols-1 gap-12 pad:grid-cols-cards">
+              {Array.from({ length: 6 }, (_, i) => (
+                <Skeleton key={i} className="min-h-card-tab rounded-card" />
               ))}
             </div>
           ) : (
             <section aria-labelledby="open-tabs-heading">
-              <SectionHeader
-                id="open-tabs-heading"
-                title="Open tabs"
-                count={visibleTabs.length}
-                className="mb-16"
-              />
-              
+              <SectionHeader id="open-tabs-heading" title="Open tabs" count={visibleTabs.length} className="mb-16" />
+
               {visibleTabs.length > 0 ? (
-                <div className="grid grid-cols-2 gap-8 tablet:flex tablet:flex-col tablet:gap-12">
+                <div className="grid grid-cols-1 gap-12 pad:grid-cols-cards">
                   {visibleTabs.map((t) => (
                     <TabCard
                       key={t.tab.id}
@@ -240,11 +174,11 @@ export default function TabsPage() {
                   ))}
                 </div>
               ) : freeTables.length > 0 ? (
-                <div className="rounded-[20px] border border-dashed border-rule-raised/40 p-20 text-center">
+                <div className="rounded-card border border-dashed border-rule-raised p-20 text-center">
                   <p className="text-body text-ink-subtle">Tap a free table to start one.</p>
                 </div>
               ) : (
-                <div className="rounded-[20px] border border-dashed border-rule-raised/40 p-20 text-center">
+                <div className="rounded-card border border-dashed border-rule-raised p-20 text-center">
                   <p className="text-body text-ink-subtle">No tabs open.</p>
                 </div>
               )}
@@ -256,9 +190,55 @@ export default function TabsPage() {
               staffId={session?.staffId}
               onOpen={(id) => router.push(`/floor/tabs/${id}`)}
               className="mt-24"
-              layout="rail"
+              layout="grid"
             />
           ) : null}
+        </div>
+
+        <aside
+          className={cx(
+            'min-h-0 w-full shrink-0 overflow-y-auto overscroll-contain px-12 pb-24 pt-16 pad:px-24 tablet:block tablet:w-rail-ticket tablet:border-l tablet:border-rule tablet:bg-sunken tablet:px-16 tablet:pt-24',
+            section === 'free' ? 'block' : 'hidden',
+          )}
+        >
+          {loading ? (
+            <div className="flex flex-col gap-8">
+              {Array.from({ length: 5 }, (_, i) => (
+                <Skeleton key={i} className="h-row-floor rounded-control" />
+              ))}
+            </div>
+          ) : (
+            <section aria-labelledby="free-tables-heading">
+              <SectionHeader id="free-tables-heading" title="Free tables" count={freeTables.length} className="mb-16" />
+              {freeTables.length > 0 ? (
+                <div className="grid grid-cols-2 gap-8 pad:grid-cols-3 tablet:flex tablet:flex-col">
+                  {freeTables.map((table) => (
+                    <FreeTableCard key={table.id} tableLabel={tableLabel(table)} capacity={table.seats} onOpen={() => setSheet({ open: true, table })} />
+                  ))}
+                </div>
+              ) : zone !== 'all' ? (
+                <EmptyState
+                  title={`Nothing in ${places?.zones.find((z) => z.id === zone)?.name ?? 'this zone'} right now`}
+                  body="Try a different zone or check all zones."
+                  action={
+                    <Button variant="secondary" size="lg" onClick={() => setZone('all')}>
+                      Show all zones
+                    </Button>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  title="No free tables"
+                  body="All tables are currently occupied."
+                  action={
+                    <Button variant="secondary" size="lg" icon={IconPlus} onClick={() => setSheet({ open: true, table: null })}>
+                      Open a walk-up tab
+                    </Button>
+                  }
+                />
+              )}
+            </section>
+          )}
         </aside>
       </div>
 
@@ -269,12 +249,7 @@ export default function TabsPage() {
         </Button>
       </BaseAction>
 
-      <OpenTabSheet
-        open={sheet.open}
-        table={sheet.table}
-        walkUpZoneId={counterZone}
-        onClose={() => setSheet((s) => ({ ...s, open: false }))}
-      />
+      <OpenTabSheet open={sheet.open} table={sheet.table} walkUpZoneId={counterZone} onClose={() => setSheet((s) => ({ ...s, open: false }))} />
     </div>
   );
 }

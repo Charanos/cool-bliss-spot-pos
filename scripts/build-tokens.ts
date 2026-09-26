@@ -9,7 +9,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { atmosphere, breakpoints, colour, elevation, fontFamily, motion, radius, size, space, themes, type, weight } from '../packages/ui/src/tokens/tokens';
+import { atmosphere, breakpoints, clarity, colour, consoleElevation, elevation, fontFamily, motion, radius, size, space, themes, type, weight } from '../packages/ui/src/tokens/tokens';
 
 const OUT = resolve(import.meta.dirname, '../packages/ui/src/styles/tokens.css');
 
@@ -82,31 +82,62 @@ push();
 push('@theme inline {');
 for (const name of Object.keys(themes.dark)) push(`  --color-${name}: var(--bliss-${name});`);
 push('  --color-scrim: var(--bliss-scrim);');
-  for (const name of Object.keys(elevation)) push(`  --shadow-${name}: var(--bliss-shadow-${name});`);
-  push('  --shadow-lift: var(--bliss-shadow-lift);');
-  push('  --shadow-key: var(--bliss-shadow-key);');
-  push('}');
+push('  --shadow-raised: var(--bliss-shadow-raised);');
+push('  --shadow-lift: var(--bliss-shadow-lift);');
+push('  --shadow-key: var(--bliss-shadow-key);');
+for (const name of Object.keys(consoleElevation)) push(`  --shadow-${name}: var(--bliss-shadow-${name});`);
+push('}');
 push();
 
-function themeBlock(selector: string, name: keyof typeof themes, scheme: 'light' | 'dark') {
-  push(`${selector} {`);
-  push(`  color-scheme: ${scheme};`);
-  for (const [key, value] of Object.entries(themes[name])) push(`  --bliss-${key}: ${value};`);
-  push(`  --bliss-scrim: ${colour.scrim};`);
-  for (const [elevName, elevVal] of Object.entries(elevation)) {
-    push(`  --bliss-shadow-${elevName}: ${elevVal[name]};`);
+/** '#6FC6D6' as '111 198 214', or null for anything that is not a solid hex colour. */
+function channels(value: string): string | null {
+  const hex = /^#([0-9a-f]{6})$/i.exec(value.trim())?.[1];
+  if (!hex) return null;
+  return [0, 2, 4].map((i) => Number.parseInt(hex.slice(i, i + 2), 16)).join(' ');
+}
+
+function themeBlock(selector: string, name: keyof typeof themes, scheme: 'light' | 'dark', indent = '') {
+  push(`${indent}${selector} {`);
+  push(`${indent}  color-scheme: ${scheme};`);
+  for (const [key, value] of Object.entries(themes[name])) push(`${indent}  --bliss-${key}: ${value};`);
+  // Channels for every solid colour, so a translucent tint is rgb(var(--bliss-x-rgb) / 20%): read by
+  // every browser Bliss supports, where color-mix() is not (Safari 15 on the Floor's iPad). docs/11 D-24.
+  for (const [key, value] of Object.entries(themes[name])) {
+    const rgb = channels(value);
+    if (rgb) push(`${indent}  --bliss-${key}-rgb: ${rgb};`);
   }
-  push(`  --bliss-shadow-lift: ${atmosphere.lift[name]};`);
-  push(`  --bliss-shadow-key: ${atmosphere.key[name]};`);
-  push('}');
+  push(`${indent}  --bliss-scrim: ${colour.scrim};`);
+  push(`${indent}  --bliss-shadow-raised: ${elevation[name]};`);
+  push(`${indent}  --bliss-shadow-lift: ${atmosphere.lift[name]};`);
+  push(`${indent}  --bliss-shadow-key: ${atmosphere.key[name]};`);
+  for (const [key, value] of Object.entries(consoleElevation)) push(`${indent}  --bliss-shadow-${key}: ${value[name]};`);
+  push(`${indent}}`);
   push();
 }
 
-themeBlock(":root,\n[data-theme='light']", 'light', 'light');
+themeBlock(":root,\n[data-theme='light'],\n[data-theme='system']", 'light', 'light');
 themeBlock("[data-theme='dark']", 'dark', 'dark');
+// Clarity, per device, on the dark stations: the overridden roles and their channels. docs/11 D-25.
+push("[data-theme='dark'][data-display~='clarity'] {");
+for (const [key, value] of Object.entries(clarity)) {
+  push(`  --bliss-${key}: ${value};`);
+  const rgb = channels(value as string);
+  if (rgb) push(`  --bliss-${key}-rgb: ${rgb};`);
+}
+push('}');
+push();
+// The Console's System choice follows the device.
+push('@media (prefers-color-scheme: dark) {');
+themeBlock("[data-theme='system']", 'dark', 'dark', '  ');
+lines.pop();
+push('}');
+push();
 
 push(':root {');
+// Seat colours as channels, outside @theme so they are always emitted: inline styles use them.
+colour.seat.forEach((hex, i) => push(`  --bliss-seat-${i + 1}-rgb: ${channels(hex)};`));
 push(`  --bliss-duration-hover: ${motion.hoverMs}ms;`);
+push(`  --bliss-duration-card: ${motion.cardMs}ms;`);
 push(`  --bliss-duration-press: ${motion.pressMs}ms;`);
 push(`  --bliss-ease-out: ${motion.ease.out};`);
 push(`  --bliss-ease-snap: ${motion.ease.snap};`);

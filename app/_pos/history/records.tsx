@@ -151,7 +151,7 @@ export function TabRecord({ tab, tz, now, staffId, onOpen }: { tab: HistoryTab; 
   const settledAt = tab.bills.reduce<number | null>((m, b) => (b.settledAt && (!m || b.settledAt > m) ? b.settledAt : m), null);
 
   return (
-    <li className={cx('overflow-hidden rounded-[18px] border bg-raised/70 backdrop-blur-glass transition-colors', open ? 'border-rule-raised/70' : 'border-rule-raised/40', live && 'border-l-2 border-l-accent/60')}>
+    <li className={cx('overflow-hidden rounded-sheet border bg-raised/70 backdrop-blur-glass transition-colors', open ? 'border-rule-raised/70' : 'border-rule-raised/40', live && 'border-l-2 border-l-accent/60')}>
       <button
         type="button"
         aria-expanded={open}
@@ -185,7 +185,7 @@ export function TabRecord({ tab, tz, now, staffId, onOpen }: { tab: HistoryTab; 
             <span className="text-micro text-ink-subtle">{STATE[tab.state].word}</span>
           </span>
         </span>
-        <IconChevronDown size={18} stroke={ICON_STROKE} aria-hidden="true" className={cx('shrink-0 text-ink-subtle transition-transform duration-[160ms]', open && 'rotate-180')} />
+        <IconChevronDown size={18} stroke={ICON_STROKE} aria-hidden="true" className={cx('shrink-0 text-ink-subtle transition-move', open && 'rotate-180')} />
       </button>
 
       {open ? (
@@ -215,7 +215,7 @@ export function TabRecord({ tab, tz, now, staffId, onOpen }: { tab: HistoryTab; 
                   · {plural(r.lines.length, 'line')}
                   {r.deliveredAt ? ` · at the table ${formatTime(r.deliveredAt, tz)}` : ''}
                 </span>
-                <ul className="mt-4 rounded-md bg-sunken/50 px-8 py-2">
+                <ul className="mt-4 rounded-md bg-control px-8 py-2">
                   {r.lines.map((l) => (
                     <LineRow key={l.id} line={l} tz={tz} ordering={tab.state === 'ordering'} />
                   ))}
@@ -265,7 +265,7 @@ export function TabRecord({ tab, tz, now, staffId, onOpen }: { tab: HistoryTab; 
           </ol>
 
           {tab.bills.length > 0 && compare(tab.paidCents, tab.totalCents) !== 0 ? (
-            <p className="mt-12 flex items-center justify-between rounded-md bg-sunken/50 px-12 py-8 text-body-sm text-ink-muted">
+            <p className="mt-12 flex items-center justify-between rounded-md bg-control px-12 py-8 text-body-sm text-ink-muted">
               <span>Paid so far</span>
               <Money value={tab.paidCents} size="num-sm" decimals="whole" />
             </p>
@@ -287,7 +287,7 @@ export function TabRecord({ tab, tz, now, staffId, onOpen }: { tab: HistoryTab; 
 export function SaleRecord({ sale, tz }: { sale: HistorySale; tz: string }) {
   const count = sale.items.reduce((n, i) => n + i.qty, 0);
   return (
-    <li className="flex min-h-row-floor items-center gap-12 rounded-[18px] border border-rule-raised/40 bg-raised/50 px-12 py-8 backdrop-blur-glass pad:px-16">
+    <li className="flex min-h-row-floor items-center gap-12 rounded-sheet border border-rule-raised/40 bg-raised/50 px-12 py-8 backdrop-blur-glass pad:px-16">
       <span className="hidden w-[44px] shrink-0 font-mono tabular text-num-sm text-ink-subtle compact:block">{sale.bill.settledAt ? formatTime(sale.bill.settledAt, tz) : ''}</span>
       <span aria-hidden="true" className="flex size-control-sm shrink-0 items-center justify-center rounded-dot bg-money/15 text-money">
         <IconShoppingBag size={16} stroke={ICON_STROKE} />

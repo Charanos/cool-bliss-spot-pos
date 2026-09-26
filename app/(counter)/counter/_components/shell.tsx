@@ -6,11 +6,11 @@ import { Eyebrow } from '@bliss/ui/components/atmosphere';
 import { BlissMark } from '@bliss/ui/components/brand';
 import { ConnectionChip } from '@bliss/ui/components/connection-chip';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
-import { OverflowMenu } from '@bliss/ui/components/menu';
 import { Dot, type Tone } from '@bliss/ui/components/status';
 import { LiveRegion } from '@bliss/ui/components/surface';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconBeer, IconCash, IconLayoutGrid, IconLogout, IconHistory, IconReceipt2, IconSearch, IconShoppingBag } from '@tabler/icons-react';
+import { Photo } from '@bliss/ui/components/photo';
+import { IconBeer, IconCash, IconHistory, IconReceipt2, IconKeyboard, IconSearch, IconSettings, IconShoppingBag } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
@@ -20,9 +20,10 @@ import { UpdateBar } from '@/app/_pos/update-bar';
 import { useCounterWatch } from '@/app/_pos/watchers';
 import { useCounterTabs, useDrawerState, useTickets } from '@/lib/pos/counter-queries';
 import { useOutlet } from '@/lib/pos/queries';
-import { signOut, useDevice, useSession } from '@/lib/pos/session';
-import { staffPhoto } from '@/lib/pos/staff-photos';
+import { useDevice, useSession } from '@/lib/pos/session';
+import { useStaffPhotos } from '@/lib/pos/staff-photos';
 import { useSync } from '@/lib/pos/sync';
+import { ShortcutsSheet, useShortcut } from './shortcuts';
 
 /**
  * The Counter shell. The same chrome as the Floor (app/_pos/chrome.tsx) with the Counter's own
@@ -36,7 +37,9 @@ import { useSync } from '@/lib/pos/sync';
  * row until `tablet`, because settling carries an amount and a 768 tablet needs the width for it.
  * On a keyboard, Alt and a number moves between the five views, and Ctrl K finds a tab.
  */
+
 export function CounterShell({ children }: { children: ReactNode }) {
+  const photoOf = useStaffPhotos();
   const session = useSession();
   const device = useDevice();
   const router = useRouter();
@@ -73,6 +76,15 @@ export function CounterShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [router]);
 
+  const [keysOpen, setKeysOpen] = useState(false);
+  useShortcut('o', () => router.push('/counter/orders'));
+  useShortcut('t', () => router.push('/counter/tabs'));
+  useShortcut('s', () => router.push('/counter/sale'));
+  useShortcut('d', () => router.push('/counter/drawer'));
+  useShortcut('h', () => router.push('/counter/history'));
+  useShortcut('/', () => router.push('/counter/tabs?find=1'));
+  useShortcut('?', () => setKeysOpen(true));
+
   if (!session) return <div className="h-dvh bg-page" aria-busy="true" />;
 
   const waiting = tickets?.waiting.length ?? 0;
@@ -96,7 +108,7 @@ export function CounterShell({ children }: { children: ReactNode }) {
     { href: '/counter/history', label: 'History', icon: IconHistory, shortcut: 'Alt 5' },
   ];
 
-  const photo = staffPhoto(session.displayName);
+  const photo = photoOf(session.staffId);
   const firstName = session.displayName.trim().split(/\s+/)[0] ?? session.displayName;
 
   return (
@@ -141,14 +153,28 @@ export function CounterShell({ children }: { children: ReactNode }) {
                 <ConnectionChip state={link} heldOrders={sync.heldOrders} compact />
               </span>
               <LiveClock timeZone={tz} />
+              <button
+                type="button"
+                onClick={() => setKeysOpen(true)}
+                aria-label="Keyboard shortcuts"
+                title="Keyboard shortcuts (?)"
+                className="hidden size-control-sm shrink-0 items-center justify-center rounded-md text-ink-muted press-feedback hover:bg-control hover:text-ink mouse:flex"
+              >
+                <IconKeyboard size={18} stroke={ICON_STROKE} aria-hidden="true" />
+              </button>
+              <Link
+                href="/counter/settings"
+                aria-label="Settings for this counter"
+                className="flex size-control-sm shrink-0 items-center justify-center rounded-md text-ink-muted press-feedback hover:bg-control hover:text-ink"
+              >
+                <IconSettings size={18} stroke={ICON_STROKE} aria-hidden="true" />
+              </Link>
               <Link href="/counter/shift" aria-label={`${session.displayName}, view shift`} className="flex shrink-0 items-center gap-8 rounded-md p-2 press-feedback hover:bg-control/40">
-                <span aria-hidden="true" className="flex size-control-sm items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-label font-medium text-accent-text">
-                  {photo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={photo} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    firstName.slice(0, 1)
-                  )}
+                <span
+                  aria-hidden="true"
+                  className="flex size-control-sm items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-label font-medium text-accent-text"
+                >
+                  {photo ? <Photo src={photo} className="h-full w-full object-cover" /> : firstName.slice(0, 1)}
                 </span>
                 <span className="hidden min-w-0 text-left tablet:block">
                   <span className="block max-w-[120px] truncate text-body-sm font-medium text-ink">{firstName}</span>
@@ -170,8 +196,16 @@ export function CounterShell({ children }: { children: ReactNode }) {
 
         <main className="page-flow relative flex min-h-0 flex-1 flex-col overflow-hidden">{children}</main>
 
-        <Dock label="Counter" inlineFrom="tablet" actionRef={setActionTarget} nav={nav.map((item) => <DockLink key={item.href} item={item} active={pathname.startsWith(item.href)} />)} />
+        <Dock
+          label="Counter"
+          inlineFrom="tablet"
+          actionRef={setActionTarget}
+          nav={nav.map((item) => (
+            <DockLink key={item.href} item={item} active={pathname.startsWith(item.href)} />
+          ))}
+        />
       </div>
+      <ShortcutsSheet open={keysOpen} onClose={() => setKeysOpen(false)} />
       <LiveRegion>{sync.announcements.join(' ')}</LiveRegion>
     </BaseLayerContext.Provider>
   );

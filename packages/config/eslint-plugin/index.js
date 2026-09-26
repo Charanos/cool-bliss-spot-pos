@@ -1,6 +1,7 @@
 import gsapTransformOpacityOnly from './rules/gsap-transform-opacity-only.js';
 import maxFontWeight from './rules/max-font-weight.js';
 import motionBudget from './rules/motion-budget.js';
+import noArbitraryDesignValues from './rules/no-arbitrary-design-values.js';
 import noCentsArithmetic from './rules/no-cents-arithmetic.js';
 import noCrossModuleSchema from './rules/no-cross-module-schema.js';
 import noEmDashOrEmoji from './rules/no-em-dash-or-emoji.js';
@@ -14,6 +15,7 @@ const plugin = {
     'gsap-transform-opacity-only': gsapTransformOpacityOnly,
     'max-font-weight': maxFontWeight,
     'motion-budget': motionBudget,
+    'no-arbitrary-design-values': noArbitraryDesignValues,
     'no-cents-arithmetic': noCentsArithmetic,
     'no-cross-module-schema': noCrossModuleSchema,
     'no-em-dash-or-emoji': noEmDashOrEmoji,

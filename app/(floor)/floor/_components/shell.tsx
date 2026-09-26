@@ -1,5 +1,6 @@
 'use client';
 
+import { Photo } from '@bliss/ui/components/photo';
 import { AmbientFloorArtwork } from '@bliss/ui/components/artwork/floor-workspace';
 import { BlissMark } from '@bliss/ui/components/brand';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
@@ -9,12 +10,12 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { BaseLayerContext } from '@/app/_pos/base-layer';
-import { Dock, DockButton, type DockItem, DockLink, LiveClock, SurfaceSwitcher, TopBar } from '@/app/_pos/chrome';
+import { Dock, type DockItem, DockLink, LiveClock, SurfaceSwitcher, TopBar } from '@/app/_pos/chrome';
 import { UpdateBar } from '@/app/_pos/update-bar';
 import { useFloorWatch } from '@/app/_pos/watchers';
 import { useFiredOrders, useOpenTabs, useOutlet } from '@/lib/pos/queries';
 import { useSession } from '@/lib/pos/session';
-import { staffPhoto } from '@/lib/pos/staff-photos';
+import { useStaffPhotos } from '@/lib/pos/staff-photos';
 import { useSync } from '@/lib/pos/sync';
 import { SearchDialog } from './search-dialog';
 
@@ -23,11 +24,12 @@ import { SearchDialog } from './search-dialog';
  * (app/_pos/chrome.tsx); what is the Floor's own is the nav, the search and the avatar that opens
  * the waiter's shift.
  *
- * Phone, phone on its side and tablet are one layout with three sizes, not three layouts: the top
- * bar loses the clock and the search field, the dock stacks the page's action above the nav, and
- * `short` (a phone on its side, or a tablet with the keyboard up) takes the dock labels away.
+ * Phone, tablet upright and tablet on its side are one layout at three sizes: below a tablet on its
+ * side the search field becomes an icon and the dock stacks the page's action above the tabs, and
+ * `short` (a tablet with the keyboard up) takes the dock labels away.
  */
 export function FloorShell({ children }: { children: ReactNode }) {
+  const photoOf = useStaffPhotos();
   const session = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -61,7 +63,7 @@ export function FloorShell({ children }: { children: ReactNode }) {
   const mine = tabs?.filter((t) => t.tab.assignedTo === session.staffId).length ?? 0;
   const needsMe = orders?.filter((o) => o.state === 'needs_you').length ?? 0;
   const firstName = session.displayName.trim().split(/\s+/)[0] ?? session.displayName;
-  const photoUrl = staffPhoto(session.displayName);
+  const photoUrl = photoOf(session.staffId);
 
   const nav: DockItem[] = [
     { href: '/floor/tabs', label: 'Tabs', icon: IconLayoutGrid, badge: mine || undefined },
@@ -81,6 +83,14 @@ export function FloorShell({ children }: { children: ReactNode }) {
               <Link href="/floor/tabs" aria-label="Bliss, floor tabs" className="flex shrink-0 items-center justify-center rounded-md press-feedback">
                 <BlissMark size={32} />
               </Link>
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                aria-label="Search items, seats, tabs"
+                className="flex size-control-md items-center justify-center rounded-md text-ink-muted press-feedback hover:bg-control hover:text-ink tablet:hidden"
+              >
+                <IconSearch size={20} stroke={ICON_STROKE} aria-hidden="true" />
+              </button>
               <div className="hidden h-24 w-px bg-rule-raised/60 tablet:block" aria-hidden="true" />
               <button
                 type="button"
@@ -98,13 +108,11 @@ export function FloorShell({ children }: { children: ReactNode }) {
             <>
               <LiveClock timeZone={outlet?.timezone} />
               <Link href="/floor/shift" aria-label={`${session.displayName}, view shift`} className="flex shrink-0 items-center gap-8 rounded-md p-2 press-feedback hover:bg-control/40">
-                <span aria-hidden="true" className="flex size-control-sm items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-label font-medium text-accent-text">
-                  {photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={photoUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    firstName.slice(0, 1)
-                  )}
+                <span
+                  aria-hidden="true"
+                  className="flex size-control-sm items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-label font-medium text-accent-text"
+                >
+                  {photoUrl ? <Photo src={photoUrl} className="h-full w-full object-cover" /> : firstName.slice(0, 1)}
                 </span>
                 <span className="hidden min-w-0 text-left tablet:block">
                   <span className="block max-w-[120px] truncate text-body-sm font-medium text-ink">{firstName}</span>
@@ -121,17 +129,15 @@ export function FloorShell({ children }: { children: ReactNode }) {
             whole page scrolls here instead, under a fixed top bar (page-flow, base.css). */}
         <main className="page-flow relative flex min-h-0 flex-1 flex-col overflow-hidden">{children}</main>
 
+        {/* Actions stack above the tabs until there is room beside them: a tablet held upright keeps
+            the whole of both, and search lives in the top bar, where iPad apps keep it. */}
         <Dock
           label="Floor"
           actionRef={setActionTarget}
-          nav={
-            <>
-              {nav.map((item) => (
-                <DockLink key={item.href} item={item} active={pathname.startsWith(item.href)} />
-              ))}
-              <DockButton label="Search items, seats, tabs" icon={IconSearch} onClick={() => setSearchOpen(true)} shortcut="⌘K" />
-            </>
-          }
+          inlineFrom="tablet"
+          nav={nav.map((item) => (
+            <DockLink key={item.href} item={item} active={pathname.startsWith(item.href)} />
+          ))}
         />
       </div>
 

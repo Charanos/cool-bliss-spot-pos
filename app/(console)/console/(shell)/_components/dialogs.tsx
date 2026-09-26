@@ -6,8 +6,11 @@ import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
 import { SelectField, TextField } from '@bliss/ui/components/fields';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@bliss/ui/components/console/toast';
 import { useState } from 'react';
-import { type ActionResult, placeHold, releaseHold, resolveDeadLetter, withdrawDevice, writeOff } from '../_actions';
+import { placeHold, releaseHold, writeOff } from '../_actions/inventory';
+import { resolveDeadLetter, withdrawDevice } from '../_actions/settings';
+import type { ActionResult } from '../_lib/action-result';
 
 async function settle(result: Promise<ActionResult>, after: () => void) {
   const r = await result;
@@ -17,6 +20,7 @@ async function settle(result: Promise<ActionResult>, after: () => void) {
 
 export function HoldDialog({ target, onClose }: { target: { variantId: string; name: string } | null; onClose: () => void }) {
   const router = useRouter();
+  const notify = useToast();
   const [expectedBack, setExpectedBack] = useState('');
   return (
     <ConsoleOverlay open={Boolean(target)} onClose={onClose} title={target ? `Put ${target.name} on hold?` : ''} description="The floor stops being able to sell it straight away." width="md">
@@ -28,6 +32,7 @@ export function HoldDialog({ target, onClose }: { target: { variantId: string; n
           onCancel={onClose}
           onConfirm={({ reason }) =>
             settle(placeHold({ variantId: target.variantId, reason, expectedBack: expectedBack || null }), () => {
+              notify({ title: `${target.name} is on hold` });
               onClose();
               router.refresh();
             })
@@ -44,6 +49,7 @@ export function HoldDialog({ target, onClose }: { target: { variantId: string; n
 
 export function ReleaseHoldDialog({ target, onClose }: { target: { holdId: string; name: string } | null; onClose: () => void }) {
   const router = useRouter();
+  const notify = useToast();
   return (
     <ConsoleOverlay open={Boolean(target)} onClose={onClose} title={target ? `Take ${target.name} off hold?` : ''} description="The floor can sell it again straight away." width="md">
       {target ? (
@@ -55,6 +61,7 @@ export function ReleaseHoldDialog({ target, onClose }: { target: { holdId: strin
           onCancel={onClose}
           onConfirm={({ reason }) =>
             settle(releaseHold({ holdId: target.holdId, note: reason }), () => {
+              notify({ title: `${target.name} is back on sale` });
               onClose();
               router.refresh();
             })
@@ -83,6 +90,7 @@ export function WriteOffDialog({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const notify = useToast();
   const [qty, setQty] = useState('1');
   const [category, setCategory] = useState<(typeof WRITE_OFF_CATEGORIES)[number]['value']>('write_off_breakage');
   const [locationId, setLocationId] = useState(target?.locationId ?? '');
@@ -106,6 +114,7 @@ export function WriteOffDialog({
           onConfirm={({ reason }) => {
             if (!valid) throw new Error(`Write off at least part of one ${target.unit.replace(/s$/, '')}.`);
             return settle(writeOff({ variantId: target.variantId, locationId: locationId || target.locationId, qty: amount, category, reason }), () => {
+              notify({ title: `${target.name} written off` });
               onClose();
               router.refresh();
             });
@@ -124,6 +133,7 @@ export function WriteOffDialog({
 
 export function WithdrawDeviceDialog({ target, onClose }: { target: { deviceId: string; label: string } | null; onClose: () => void }) {
   const router = useRouter();
+  const notify = useToast();
   return (
     <ConsoleOverlay
       open={Boolean(target)}
@@ -140,6 +150,7 @@ export function WithdrawDeviceDialog({ target, onClose }: { target: { deviceId: 
           onCancel={onClose}
           onConfirm={({ reason }) =>
             settle(withdrawDevice({ deviceId: target.deviceId, reason }), () => {
+              notify({ title: `${target.label} withdrawn` });
               onClose();
               router.refresh();
             })
@@ -152,8 +163,15 @@ export function WithdrawDeviceDialog({ target, onClose }: { target: { deviceId: 
 
 export function ResolveDeadLetterDialog({ target, onClose }: { target: { id: string; title: string } | null; onClose: () => void }) {
   const router = useRouter();
+  const notify = useToast();
   return (
-    <ConsoleOverlay open={Boolean(target)} onClose={onClose} title={target ? `Mark ${target.title} as resolved?` : ''} description="Write what was done, so the next person knows nothing was lost." width="md">
+    <ConsoleOverlay
+      open={Boolean(target)}
+      onClose={onClose}
+      title={target ? `Mark ${target.title} as resolved?` : ''}
+      description="Write what was done, so the next person knows nothing was lost."
+      width="md"
+    >
       {target ? (
         <ReasonForm
           key={target.id}
@@ -163,6 +181,7 @@ export function ResolveDeadLetterDialog({ target, onClose }: { target: { id: str
           onCancel={onClose}
           onConfirm={({ reason }) =>
             settle(resolveDeadLetter({ id: target.id, reason }), () => {
+              notify({ title: 'Marked resolved' });
               onClose();
               router.refresh();
             })

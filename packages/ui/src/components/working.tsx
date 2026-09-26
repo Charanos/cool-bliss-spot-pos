@@ -1,4 +1,3 @@
-import Link, { type LinkProps } from 'next/link';
 import { type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from 'react';
 import { cx } from '../lib/cx';
 import { Eyebrow } from './atmosphere';
@@ -16,9 +15,10 @@ type Emphasis = 'default' | 'mine' | 'attention';
 
 const EMPHASIS: Record<Emphasis, string> = {
   default: '',
-  // An owned tab uses a soft ambient glow and background tint, with a very subtle inner glass ring, no hard colored borders.
-  mine: 'shadow-[0_8px_32px_-8px_color-mix(in_oklab,var(--color-accent)_10%,transparent),inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_0_0_1px_rgba(255,255,255,0.03)] texture-dots-accent',
-  attention: 'shadow-[0_8px_32px_-8px_color-mix(in_oklab,var(--color-stop)_10%,transparent),inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_0_0_1px_rgba(255,255,255,0.03)] texture-dots-stop',
+  // Yours: an accent edge and the faintest accent wash. No glow, no texture: a tablet draws it for free.
+  mine: 'border-accent/35 bg-accent-wash',
+  // Needs a look: the same, in stop.
+  attention: 'border-stop/45 bg-stop-wash',
 };
 
 /** The class list for a tappable pane, for an element the wrappers below cannot be. */
@@ -39,20 +39,6 @@ export function PaneButton({
     <button {...rest} type={type} aria-pressed={rest['aria-pressed'] ?? (selected ? true : undefined)} className={cx(paneClass({ emphasis, selected }), className)}>
       {children}
     </button>
-  );
-}
-
-/** A raised pane that navigates. Middle click and long press open it like any link. */
-export function PaneLink({
-  emphasis = 'default',
-  className,
-  children,
-  ...rest
-}: LinkProps & { emphasis?: Emphasis; className?: string; children: ReactNode; 'aria-label'?: string; 'aria-current'?: 'page' | undefined }) {
-  return (
-    <Link {...rest} className={cx(paneClass({ emphasis }), className)}>
-      {children}
-    </Link>
   );
 }
 
@@ -133,7 +119,19 @@ export interface StackSeat {
  * Seat chips in a row with a quiet overflow: seven seats on a 240px card become six chips and "+1".
  * One accessible name for the group, because eight separate "Seat n" announcements are noise.
  */
-export function SeatChipStack({ seats, max = 6, size = 'tile', className, overlapping = false }: { seats: readonly StackSeat[]; max?: number; size?: SeatChipSize; className?: string; overlapping?: boolean }) {
+export function SeatChipStack({
+  seats,
+  max = 6,
+  size = 'tile',
+  className,
+  overlapping = false,
+}: {
+  seats: readonly StackSeat[];
+  max?: number;
+  size?: SeatChipSize;
+  className?: string;
+  overlapping?: boolean;
+}) {
   const shown = seats.slice(0, max);
   const hidden = seats.length - shown.length;
   const settled = seats.filter((s) => s.settled).length;
@@ -160,9 +158,7 @@ export function SeatChipStack({ seats, max = 6, size = 'tile', className, overla
       {shown.map((s) => (
         <span key={s.seatNo} className="relative flex">
           <SeatChip seat={s.seatNo} size={size} settled={s.settled} label={s.label} className="pointer-events-none" />
-          {s.selected ? (
-            <span className="absolute -inset-[2px] rounded-full texture-dots-accent ring-2 ring-accent pointer-events-none" />
-          ) : null}
+          {s.selected ? <span className="absolute -inset-[2px] rounded-full texture-dots-accent ring-2 ring-accent pointer-events-none" /> : null}
         </span>
       ))}
       {hidden > 0 ? <span className="font-mono tabular text-num-sm text-ink-subtle">+{hidden}</span> : null}
@@ -174,14 +170,7 @@ export function SeatChipStack({ seats, max = 6, size = 'tile', className, overla
  * A section heading on a working surface: mono capitals, a count, and an optional action. The same
  * label style as the sign-in screen, set flat.
  */
-export function SectionHeader({
-  id,
-  title,
-  count,
-  action,
-  className,
-  ...rest
-}: Omit<HTMLAttributes<HTMLDivElement>, 'title'> & { id: string; title: string; count?: number; action?: ReactNode }) {
+export function SectionHeader({ id, title, count, action, className, ...rest }: Omit<HTMLAttributes<HTMLDivElement>, 'title'> & { id: string; title: string; count?: number; action?: ReactNode }) {
   return (
     <div {...rest} className={cx('flex min-h-control-md items-center justify-between gap-16', className)}>
       <span className="flex items-baseline gap-12">

@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
+import * as reporting from '@/modules/reporting/service';
 import { HoldsView } from './holds-view';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Holds' };
 
@@ -16,6 +18,8 @@ export default function HoldsPage() {
     id: h.id,
     variantId: h.productVariantId,
     product: catalogue.productOfVariant(h.productVariantId)?.name ?? '',
+    productId: catalogue.productOfVariant(h.productVariantId)?.id ?? null,
+    imageKey: catalogue.productOfVariant(h.productVariantId)?.imageKey ?? null,
     variant: catalogue.variantById(h.productVariantId)?.name ?? '',
     placedBy: identity.displayName(h.placedBy),
     placedAt: h.placedAt,
@@ -40,5 +44,10 @@ export default function HoldsPage() {
     .stockVariants()
     .filter((v) => !active.some((h) => h.variantId === v.id))
     .map((v) => ({ value: v.id, label: v.name }));
-  return <HoldsView active={active} released={released} holdable={holdable} timezone={tz} />;
+  return (
+    <>
+      <ViewHeader page="/console/inventory/holds" />
+      <HoldsView active={active} released={released} holdable={holdable} timezone={tz} today={reporting.clock().current} />
+    </>
+  );
 }

@@ -125,12 +125,12 @@ export function OrderCard({
       }}
       className={cx(
         paneClass({ emphasis }),
-        'group relative flex w-full flex-col justify-between rounded-[20px] tablet:rounded-[22px] p-12 tablet:p-20 text-left transition-all duration-300 min-h-[200px] cursor-pointer select-none',
+        'group relative flex w-full flex-col justify-between rounded-sheet tablet:rounded-sheet p-12 tablet:p-20 text-left transition-all duration-300 min-h-[200px] cursor-pointer select-none',
         'bg-raised/70 backdrop-blur-glass border',
-        isNeedsYou && 'border-stop/40 hover:border-stop/70 shadow-[0_8px_32px_-8px_color-mix(in_oklab,var(--color-stop)_25%,transparent)]',
-        isPoured && 'border-poured/45 hover:border-poured/75 shadow-[0_8px_32px_-8px_color-mix(in_oklab,var(--color-poured)_20%,transparent)]',
-        isServed && 'border-served/40 hover:border-served/70 shadow-[0_8px_32px_-8px_color-mix(in_oklab,var(--color-served)_18%,transparent)]',
-        isAtBar && 'border-rule-raised/50 hover:border-accent-subtle/60 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.3)]',
+        isNeedsYou && 'border-stop/40 hover:border-stop/70 glow-stop',
+        isPoured && 'border-poured/45 hover:border-poured/75 glow-poured',
+        isServed && 'border-served/40 hover:border-served/70 glow-served',
+        isAtBar && 'border-rule-raised/50 hover:border-accent-subtle/60 shadow-key',
         isHeld && 'border-rule-raised/40 hover:border-rule-raised',
       )}
     >
@@ -143,10 +143,10 @@ export function OrderCard({
                 {label}
               </span>
               {zoneName ? (
-                <span className="shrink-0 rounded-dot bg-sunken/60 px-8 py-2 text-micro text-ink-subtle">{zoneName}</span>
+                <span className="shrink-0 rounded-dot bg-neutral-wash px-8 py-2 text-micro text-ink-subtle">{zoneName}</span>
               ) : null}
               {!mine && waiter ? (
-                <span className="max-w-[112px] shrink-0 truncate rounded-dot bg-sunken/60 px-8 py-2 text-micro text-ink-subtle">
+                <span className="max-w-[112px] shrink-0 truncate rounded-dot bg-neutral-wash px-8 py-2 text-micro text-ink-subtle">
                   {waiter}
                 </span>
               ) : null}
@@ -199,7 +199,7 @@ export function OrderCard({
                   e.stopPropagation();
                   onActionMenu();
                 }}
-                className="size-32 rounded-full flex items-center justify-center text-ink-subtle hover:text-ink hover:bg-sunken/80 transition-colors focus:outline-none focus:ring-1 focus:ring-accent"
+                className="size-32 rounded-full flex items-center justify-center text-ink-subtle hover:text-ink hover:bg-control-hover transition-colors focus:outline-none focus:ring-1 focus:ring-accent"
               >
                 <IconDots size={16} stroke={ICON_STROKE} />
               </button>
@@ -217,7 +217,7 @@ export function OrderCard({
               key={l.id}
               className={cx(
                 'flex min-h-[36px] tablet:min-h-[38px] items-center justify-between gap-8 tablet:gap-12 rounded-md px-6 py-4 tablet:px-8 tablet:py-6 transition-colors border-t border-rule-raised/20 first:border-t-0',
-                l.state === 'ran_out' ? 'bg-stop/10' : 'hover:bg-sunken/40',
+                l.state === 'ran_out' ? 'bg-stop/10' : 'hover:bg-control',
               )}
             >
               {/* Left group: Seat chip, Qty multiplier, Item name & modifiers */}
@@ -248,7 +248,7 @@ export function OrderCard({
                     {l.name}
                   </span>
                   {l.modifiers && l.modifiers.length > 0 ? (
-                    <span className="truncate font-mono text-[9px] tablet:text-micro text-ink-subtle mt-4">
+                    <span className="truncate font-mono text-badge tablet:text-micro text-ink-subtle mt-4">
                       {l.modifiers.join(' · ')}
                     </span>
                   ) : null}

@@ -358,6 +358,8 @@ export interface Recipe {
   productVariantId: string;
   name: string;
   components: RecipeComponent[];
+  /** Archived in the Console: the serve depletes as a plain pour again. Rows are never deleted. */
+  status?: 'active' | 'archived';
 }
 
 export const RECIPES: Recipe[] = [

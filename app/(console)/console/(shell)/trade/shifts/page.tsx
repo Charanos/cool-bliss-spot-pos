@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as trade from '@/modules/trade/service';
+import { ROLE_LABEL } from '../../_lib/labels';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { type ShiftRow, ShiftsTable } from './shifts-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Shifts' };
 
-const ROLE_LABEL: Record<string, string> = { owner: 'Owner', manager: 'Manager', supervisor: 'Supervisor', cashier: 'Cashier', waiter: 'Waiter', stock_controller: 'Stock controller' };
-
+/** Who worked, when, and what went through their hands: sales, voids and discounts by shift. */
 export default async function ShiftsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
   const range = businessRange(params.range, '1');
@@ -29,16 +30,22 @@ export default async function ShiftsPage({ searchParams }: { searchParams: Promi
       voids: s.voidsCents,
       discounts: s.discountsCents,
       open: s.status === 'open',
+      avatarUrl: identity.staffById(s.staffId)?.avatarUrl ?? null,
+      colourIndex: identity.staffById(s.staffId)?.colourIndex ?? 0,
     }));
 
   return (
-    <ShiftsTable
+    <>
+      <ViewHeader page="/console/trade/shifts" />
+      <ShiftsTable
       rows={rows}
       timezone={outlet.timezone}
       rangeOptions={rangeOptions(true)}
       rangeKey={range.key}
+      rangeLabel={range.label}
       staff={[...new Map(rows.map((r) => [r.staffId, r.staff])).entries()].map(([value, label]) => ({ value, label }))}
-      exportDate={range.to}
-    />
+        exportDate={range.to}
+      />
+    </>
   );
 }

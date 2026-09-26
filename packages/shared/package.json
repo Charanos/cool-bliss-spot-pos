@@ -16,6 +16,7 @@
     "./domain": "./src/domain/index.ts",
     "./sync": "./src/sync/payloads.ts",
     "./identity": "./src/identity/surfaces.ts",
+    "./pin": "./src/identity/pin.ts",
     "./trade": "./src/trade/index.ts",
     "./settlement": "./src/settlement/settle.ts"
   },

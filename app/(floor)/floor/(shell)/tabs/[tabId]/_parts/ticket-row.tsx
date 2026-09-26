@@ -138,8 +138,8 @@ export function TicketRow({
         }}
         style={{ transform: `translateX(${offset}px)`, touchAction: 'pan-y' }}
         className={cx(
-          'relative flex items-center outline-offset-[-2px] select-none',
-          drag === null && 'transition-transform duration-[120ms] ease-out',
+          'relative flex items-center -outline-offset-2 select-none',
+          drag === null && 'transition-move',
           open || drag !== null ? 'bg-raised' : 'bg-transparent'
         )}
       >

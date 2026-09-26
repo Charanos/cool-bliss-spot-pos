@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { DomainError } from '../_data/errors';
+
 import { type Actor, requireReasoned } from '@bliss/shared/reason';
 import * as audit from '../audit/service';
 import * as identity from '../identity/service';
@@ -23,8 +25,8 @@ export function resolve(input: { id: string; reason: string; actor: Actor }) {
   const { reason, actor } = requireReasoned(input);
   identity.assertCan(actor.staffId, 'device.manage', 'resolving unsent orders');
   const letter = syncTables().deadLetters.find((d) => d.id === input.id);
-  if (!letter) throw new Error('That item is no longer in the queue.');
-  if (letter.resolvedAt) throw new Error('That item was already resolved.');
+  if (!letter) throw new DomainError('That item is no longer in the queue.');
+  if (letter.resolvedAt) throw new DomainError('That item was already resolved.');
   letter.resolvedAt = Date.now();
   letter.resolvedBy = actor.staffId;
   letter.resolutionNote = reason;

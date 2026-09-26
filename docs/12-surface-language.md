@@ -107,8 +107,19 @@ Tokenized in place: `Badge` (a span, `text-badge`), `PinPad` keys (`surface-key`
 2. Press feedback within 100ms. Only colour and border may take the 300 to 500ms durations.
 3. No glass inside glass. A pane inside a pane is still a container inside a container.
 4. Artwork and photography only on atmospheric screens, at most one of each per screen.
-5. Every value is a token. Arbitrary values are for one-off geometry only, such as a `max-w`.
+5. Every value is a token. Arbitrary values are for one-off geometry only, such as a `max-w`. `bliss/no-arbitrary-design-values` and `scripts/check-copy.mjs` read the Floor, the Counter and `app/_pos` as they read the Console.
 6. No utility from Tailwind's default theme: the theme is reset, so such a class compiles to nothing (see section 6).
+
+### The station layout model
+
+One layout, chosen by width and orientation, never by which device it is. The iPad mini 4 is the reference: 768 by 1024 upright and 1024 by 768 on its side, at 2x.
+
+- **Chrome.** A top bar (mark, search, surface switcher, clock, person) and a dock of icons with labels, in the flow at the foot of the shell. From `tablet` the page's own action sits in the dock's row; below it, on its own row above the icons. Search lives in the top bar, where iPad apps keep it.
+- **The tab screen.** Below `desktop`, the tables rail is a sheet opened from the table's name in the header, which gives the product grid its width back. The seats scroll sideways in their own row, so the status never collides with them. Upright, the ticket is a bottom sheet with a grabber and a scrim, and its total and send action stay in the dock; on its side, the ticket is a fixed column beside the grid.
+- **Product tiles.** 116px: a glyph or photo, the name, the price and an add mark. Stock shows only when it is low; a finished item is dimmed with one word. `grid-cols-tiles` fits as many 160px columns as the width allows.
+- **Tabs home.** Open and Free are one segmented control, remembered per device; open tabs fill the grid and free tables sit beside it on a wide screen.
+- **Touch.** Inside `[data-surface]`: no double-tap zoom, no tap highlight (our pressed states instead), 16px inputs so iOS never zooms on focus, and contained overscroll on every pane.
+- **The Counter on a laptop.** The same chrome, with letters for the views (O, T, S, D, H, `/` to find a tab, P to pour the oldest, `?` for the list) and typed amounts in place of the keypad when a mouse is the pointer.
 
 ## 6. Fidelity audit of the revamp
 
@@ -133,7 +144,7 @@ Also fixed on the way:
 - **Terminal jargon** ("unlock terminal session", "personnel"). Replaced with plain words per docs/08.
 - **A heading inside a button** (invalid HTML). Now spans.
 - **Clock hydration mismatch.** The minute differs between server and browser; now opted out on the two text nodes only.
-- **Placeholder faces picked by hashing the staff id.** Two people could share a face. Now an explicit per-person map with an initials fallback (`floor/_lib/staff-photos.ts`).
+- **Placeholder faces picked by hashing the staff id.** Two people could share a face. Now an explicit per-person map with an initials fallback (`floor/_lib/staff-photos.ts`). Since superseded: faces come only from photos uploaded in the Console, with initials otherwise (`lib/pos/staff-photos.ts`, `Photo`).
 - **Hardcoded landing telemetry** ("2 live tabs", "KES 184.2K"). Now live, and deliberately not financial on a page in front of sign-in.
 - **The frost artwork built its geometry inside a hook.** Now built once at module level, so it is server safe.
 

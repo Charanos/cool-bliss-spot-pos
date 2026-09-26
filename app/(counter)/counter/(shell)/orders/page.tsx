@@ -15,6 +15,7 @@ import { pour } from '@/lib/pos/actions';
 import { useTickets } from '@/lib/pos/counter-queries';
 import { useOutlet } from '@/lib/pos/queries';
 import { PANE, Quiet } from '../../_components/parts';
+import { useShortcut } from '../../_components/shortcuts';
 import { LATE_MS, TicketCard } from '../../_components/ticket-card';
 import { type VoidTarget, VoidLineDialog } from '../../_components/void-line-dialog';
 
@@ -41,6 +42,18 @@ export default function CounterOrdersPage() {
   const oldest = waiting.find((t) => t.lines.some((l) => l.state === 'waiting'));
   const late = waiting.filter((t) => now - t.firedAt > LATE_MS).length;
   const ranOut = waiting.filter((t) => t.ranOut > 0).length;
+  const pourOldest = () => {
+    if (!oldest) return;
+    void pour(
+      oldest.tabId,
+      oldest.orderId,
+      oldest.lines.filter((l) => l.state === 'waiting').map((l) => l.lineId),
+      oldest.label,
+      true,
+    );
+  };
+  // P pours the oldest ticket, the same as the button in the dock.
+  useShortcut('p', pourOldest, Boolean(oldest) && view === 'waiting');
   const toPour = waiting.reduce((n, t) => n + t.lines.filter((l) => l.state === 'waiting').length, 0);
 
   return (
@@ -78,15 +91,12 @@ export default function CounterOrdersPage() {
         {tickets === undefined ? (
           <div className="columns-1 gap-16 pad:columns-2 desktop:columns-3">
             {Array.from({ length: 6 }, (_, i) => (
-              <Skeleton key={i} className="mb-16 h-[220px] break-inside-avoid rounded-[20px]" />
+              <Skeleton key={i} className="mb-16 h-[220px] break-inside-avoid rounded-sheet" />
             ))}
           </div>
         ) : view === 'waiting' ? (
           waiting.length === 0 ? (
-            <Quiet
-              title="Nothing waiting"
-              body="Everything fired has been poured. A new order appears here the moment a waiter fires it, oldest first."
-            />
+            <Quiet title="Nothing waiting" body="Everything fired has been poured. A new order appears here the moment a waiter fires it, oldest first." />
           ) : (
             <div ref={grid} className="columns-1 gap-16 pad:columns-2 desktop:columns-3">
               {waiting.map((t) => (
@@ -127,20 +137,7 @@ export default function CounterOrdersPage() {
 
       {oldest && view === 'waiting' ? (
         <BaseAction>
-          <Button
-            variant="primary"
-            size="xl"
-            icon={IconChecks}
-            onClick={() =>
-              void pour(
-                oldest.tabId,
-                oldest.orderId,
-                oldest.lines.filter((l) => l.state === 'waiting').map((l) => l.lineId),
-                oldest.label,
-                true,
-              )
-            }
-          >
+          <Button variant="primary" size="xl" icon={IconChecks} onClick={pourOldest} title="Pour the oldest ticket (P)">
             Pour oldest · {oldest.label}
           </Button>
         </BaseAction>
@@ -150,4 +147,3 @@ export default function CounterOrdersPage() {
     </div>
   );
 }
-

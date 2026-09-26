@@ -7,12 +7,13 @@ import { Sheet } from '@bliss/ui/components/floor/sheet';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Dot } from '@bliss/ui/components/status';
 import { cx } from '@bliss/ui/lib/cx';
+import { Photo } from '@bliss/ui/components/photo';
 import { IconArrowRight, IconCheck } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { handOverTabs } from '@/lib/pos/actions';
 import type { StaffDirectoryEntry } from '@/lib/pos/db';
 import type { SeatedTab, TabListItem } from '@/lib/pos/queries';
-import { staffPhoto } from '@/lib/pos/staff-photos';
+import { useStaffPhotos } from '@/lib/pos/staff-photos';
 
 export interface ShiftHandoverSheetProps {
   open: boolean;
@@ -39,6 +40,7 @@ interface Row {
  * section goes to someone who can take it. Undo, on the notice that follows, hands every table back.
  */
 export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues, allTabs }: ShiftHandoverSheetProps) {
+  const photoOf = useStaffPhotos();
   const rows: Row[] = [
     ...myTabs.map((t) => ({ id: t.tab.id, label: t.label, total: t.total, seated: false })),
     ...mySeated.map((t) => ({ id: t.tab.id, label: t.label, total: t.paid, seated: true })),
@@ -104,13 +106,17 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
               Tables · {selected.length} of {rows.length}
             </h3>
             {rows.length > 1 ? (
-              <button type="button" onClick={() => setChosen(allChosen ? [] : rows.map((r) => r.id))} className="h-control-sm rounded-[10px] px-12 text-label font-medium text-accent-text press-feedback hover:bg-accent/10">
+              <button
+                type="button"
+                onClick={() => setChosen(allChosen ? [] : rows.map((r) => r.id))}
+                className="h-control-sm rounded-md px-12 text-label font-medium text-accent-text press-feedback hover:bg-accent/10"
+              >
                 {allChosen ? 'Choose none' : 'Choose all'}
               </button>
             ) : null}
           </div>
           {rows.length === 0 ? (
-            <p className="rounded-[16px] bg-sunken/60 px-16 py-16 text-body text-ink-muted">You have no tables to hand over.</p>
+            <p className="rounded-lg bg-control px-16 py-16 text-body text-ink-muted">You have no tables to hand over.</p>
           ) : (
             <ul className="grid grid-cols-1 gap-6 pad:grid-cols-2">
               {rows.map((r) => {
@@ -123,11 +129,14 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
                       aria-checked={on}
                       onClick={() => toggle(r.id)}
                       className={cx(
-                        'flex min-h-row-floor w-full items-center gap-12 rounded-[16px] px-12 text-left press-feedback',
-                        on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-sunken/50 hover:bg-control/60',
+                        'flex min-h-row-floor w-full items-center gap-12 rounded-card px-12 text-left press-feedback',
+                        on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-control hover:bg-control-hover',
                       )}
                     >
-                      <span aria-hidden="true" className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-[7px]', on ? 'bg-accent text-accent-ink' : 'ring-1 ring-inset ring-rule-raised text-transparent')}>
+                      <span
+                        aria-hidden="true"
+                        className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-sm', on ? 'bg-accent text-accent-ink' : 'bg-control-hover text-transparent')}
+                      >
                         <IconCheck size={14} stroke={ICON_STROKE} />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -148,13 +157,13 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
             To
           </h3>
           {colleagues.length === 0 ? (
-            <p className="rounded-[16px] bg-sunken/60 px-16 py-16 text-body text-ink-muted">Nobody else works the floor right now.</p>
+            <p className="rounded-lg bg-control px-16 py-16 text-body text-ink-muted">Nobody else works the floor right now.</p>
           ) : (
             <ul role="radiogroup" aria-labelledby="handover-to" className="grid grid-cols-1 gap-6 pad:grid-cols-2">
               {colleagues.map((c) => {
                 const theirs = allTabs.filter((t) => t.tab.assignedTo === c.id);
                 const on = targetId === c.id;
-                const photo = staffPhoto(c.displayName);
+                const photo = photoOf(c.id);
                 return (
                   <li key={c.id}>
                     <button
@@ -163,17 +172,12 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
                       aria-checked={on}
                       onClick={() => setTargetId(c.id)}
                       className={cx(
-                        'flex min-h-[64px] w-full items-center gap-12 rounded-[16px] px-12 text-left press-feedback',
-                        on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-sunken/50 hover:bg-control/60',
+                        'flex min-h-[64px] w-full items-center gap-12 rounded-card px-12 text-left press-feedback',
+                        on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-control hover:bg-control-hover',
                       )}
                     >
                       <span aria-hidden="true" className="flex size-[40px] shrink-0 items-center justify-center overflow-hidden rounded-dot bg-accent-wash text-label font-medium text-accent-text">
-                        {photo ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={photo} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          c.displayName.slice(0, 1)
-                        )}
+                        {photo ? <Photo src={photo} className="h-full w-full object-cover" /> : c.displayName.slice(0, 1)}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-body text-ink">
@@ -191,7 +195,10 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
                           )}
                         </span>
                       </span>
-                      <span aria-hidden="true" className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-dot', on ? 'bg-accent text-accent-ink' : 'ring-1 ring-inset ring-rule-raised text-transparent')}>
+                      <span
+                        aria-hidden="true"
+                        className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-dot', on ? 'bg-accent text-accent-ink' : 'bg-control-hover text-transparent')}
+                      >
                         <IconCheck size={14} stroke={ICON_STROKE} />
                       </span>
                     </button>

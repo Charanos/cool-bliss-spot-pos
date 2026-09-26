@@ -32,6 +32,7 @@ import { isSeated } from '@bliss/shared/trade';
 import { notify } from '@bliss/ui/components/notices';
 import { PANE, Quiet } from '../../../_components/parts';
 import { TENDER_ICON, TENDER_WORD, TenderPanel } from '../../../_components/tender-panel';
+import { printUrl } from '@/lib/pos/api';
 
 type Scope = 'tab' | 'seat' | 'even_split';
 
@@ -222,7 +223,7 @@ export default function SettleTabPage() {
           {view === undefined ? (
             <div className="flex flex-col gap-12">
               {Array.from({ length: 3 }, (_, i) => (
-                <Skeleton key={i} className="h-[160px] rounded-[20px]" />
+                <Skeleton key={i} className="h-[160px] rounded-sheet" />
               ))}
             </div>
           ) : view.groups.length === 0 ? (
@@ -323,7 +324,7 @@ export default function SettleTabPage() {
       >
         {result ? (
           <div className="flex flex-col gap-16">
-            <div className="flex flex-col gap-12 rounded-[20px] bg-poured-wash p-16 tablet:p-20">
+            <div className="flex flex-col gap-12 rounded-sheet bg-poured-wash p-16 tablet:p-20">
               <p className="flex items-center gap-8 text-body-lg text-poured">
                 <IconCheck size={20} stroke={ICON_STROKE} aria-hidden="true" />
                 Bill settled · {formatKes(result.paid, { decimals: 'whole' })}
@@ -341,7 +342,7 @@ export default function SettleTabPage() {
               variant="secondary"
               size="xl"
               icon={IconPrinter}
-              onClick={() => window.open(`/print/bill/${result.billId}`, '_blank')}
+              onClick={() => window.open(printUrl(`/print/bill/${result.billId}`), '_blank')}
             >
               Print Final Receipt
             </Button>

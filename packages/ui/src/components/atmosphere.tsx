@@ -2,6 +2,7 @@ import { IconArrowRight } from '@tabler/icons-react';
 import Link, { type LinkProps } from 'next/link';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { cx } from '../lib/cx';
+import { Photo } from './photo';
 import { ICON_STROKE, type TablerIcon } from './icon';
 
 /**
@@ -26,13 +27,7 @@ export function glassClass({ interactive = false, padding = 'md' }: { interactiv
   return cx('surface-glass relative overflow-hidden', interactive && 'surface-glass-interactive group', PADDING[padding]);
 }
 
-export function GlassPane({
-  as: Tag = 'div',
-  padding = 'md',
-  className,
-  children,
-  ...rest
-}: HTMLAttributes<HTMLElement> & { as?: 'div' | 'section' | 'article' | 'li'; padding?: Padding }) {
+export function GlassPane({ as: Tag = 'div', padding = 'md', className, children, ...rest }: HTMLAttributes<HTMLElement> & { as?: 'div' | 'section' | 'article' | 'li'; padding?: Padding }) {
   return (
     <Tag {...rest} className={cx(glassClass({ padding }), className)}>
       {children}
@@ -116,25 +111,18 @@ export function FadeRule({ orientation = 'x', className }: { orientation?: 'x' |
 
 export function VeilButton({ icon: Glyph, children, className, type = 'button', ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { icon?: TablerIcon }) {
   return (
-    <button 
-      {...rest} 
-      type={type} 
+    <button
+      {...rest}
+      type={type}
       className={cx(
-        'surface-veil group inline-flex h-control-md items-center gap-10 rounded-dot px-20 text-ink-subtle',
+        'surface-veil group inline-flex h-control-md items-center gap-8 rounded-dot px-20 text-ink-subtle',
         'transition-all duration-[400ms] ease-out',
-        'hover:text-ink hover:shadow-sm hover:-translate-y-[1px]',
+        'hover:text-ink hover:shadow-raised hover:-translate-y-[1px]',
         'active:scale-[0.98] active:translate-y-0 active:duration-75',
-        className
+        className,
       )}
     >
-      {Glyph ? (
-        <Glyph 
-          size={16} 
-          stroke={ICON_STROKE} 
-          aria-hidden="true" 
-          className="transition-transform duration-[400ms] ease-out group-hover:-translate-x-2 group-hover:scale-110" 
-        />
-      ) : null}
+      {Glyph ? <Glyph size={16} stroke={ICON_STROKE} aria-hidden="true" className="transition-transform duration-[400ms] ease-out group-hover:-translate-x-2 group-hover:scale-110" /> : null}
       <span className="eyebrow tracking-[0.15em] transition-colors duration-[400ms]">{children}</span>
     </button>
   );
@@ -164,16 +152,11 @@ export function Avatar({ src, name, size = 'md', className }: { src?: string | n
         className,
       )}
     >
-      {src ? (
-        // eslint-disable-next-line @next/next/no-img-element -- a staff photograph from the asset store, cached for offline sign-in
-        <img
-          src={src}
-          alt=""
-          className="size-full object-cover grayscale-[15%] transition-[filter,transform] duration-[var(--bliss-duration-surface)] ease-out group-hover:scale-105 group-hover:grayscale-0"
-        />
-      ) : (
-        <span className={cx('font-mono text-ink-muted', size === 'lg' ? 'text-num-lg' : size === 'sm' ? 'text-num-sm' : 'text-num')}>{initials}</span>
-      )}
+      <Photo
+        src={src}
+        className="size-full object-cover grayscale-[15%] transition-[filter,transform] duration-[var(--bliss-duration-surface)] ease-out group-hover:scale-105 group-hover:grayscale-0"
+        fallback={<span className={cx('font-mono text-ink-muted', size === 'lg' ? 'text-num-lg' : size === 'sm' ? 'text-num-sm' : 'text-num')}>{initials}</span>}
+      />
     </span>
   );
 }
@@ -185,8 +168,8 @@ export function Avatar({ src, name, size = 'md', className }: { src?: string | n
 export function PhotoBackdrop({ src, className }: { src: string; className?: string }) {
   return (
     <div aria-hidden="true" className={cx('pointer-events-none absolute inset-0 z-0', className)}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- decorative photography, sized by its container */}
-      <img src={src} alt="" className="size-full object-cover opacity-60 mix-blend-luminosity" />
+      {/* Decorative: offline or blocked, it simply is not there. */}
+      <Photo src={src} className="ambient-art size-full object-cover opacity-60 mix-blend-luminosity" />
       <div className="absolute inset-0 bg-gradient-to-b from-page/10 via-page/50 to-page" />
       <div className="absolute inset-0 bg-gradient-to-r from-transparent to-page" />
     </div>

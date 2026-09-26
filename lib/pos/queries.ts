@@ -10,9 +10,11 @@ import type { TicketLineState } from '@bliss/ui/components/floor/ticket';
 import type { TileGlyph } from '@bliss/ui/components/floor/product-tile';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
+import { assetUrl } from '../assets';
 import { META, type StaffDirectoryEntry, posDb, getMeta } from './db';
 import type { SeatSelection } from './mutations';
 import { usePricingIndex } from './pricing';
+import { useSync } from './sync';
 
 export interface OutletMeta {
   id: string;
@@ -25,11 +27,7 @@ export function useOutlet(): OutletMeta | undefined {
   return useLiveQuery(() => getMeta<OutletMeta>(META.outlet), []);
 }
 
-/** Catalogue photographs resolve through the asset store; the tablet caches them for offline use. */
-export function assetUrl(key: string | null, width = 320, height = 176): string | null {
-  if (!key) return null;
-  return `https://images.unsplash.com/photo-${key}?auto=format&fit=crop&w=${width}&h=${height}&q=70`;
-}
+export { assetUrl };
 
 const GLYPH_BY_CATEGORY: Record<string, TileGlyph> = { Beer: 'beer', Spirits: 'spirit', Wine: 'wine', 'Soft drinks': 'soft', Food: 'food' };
 
@@ -82,7 +80,7 @@ export function useGrid(now: number, timezone: string | undefined) {
       if (variant.status !== 'active') continue;
       const product = productById.get(variant.productId);
       const category = product ? categoryById.get(product.categoryId) : undefined;
-      if (!product || !category || product.status !== 'active') continue;
+      if (!product || !category || product.status !== 'active' || category.status !== 'active') continue;
       const entry = availabilityById.get(variant.id);
       const resolved = tryResolvePrice(index, { variantId: variant.id, qty: 1, at: now, timeZone: timezone });
       tiles.push({
@@ -105,7 +103,7 @@ export function useGrid(now: number, timezone: string | undefined) {
     const counts = new Map<string, number>();
     for (const t of tiles) counts.set(t.categoryId, (counts.get(t.categoryId) ?? 0) + 1);
     const activeRule = tiles.find((t) => t.ruleName)?.ruleName ?? null;
-    return { categories: data.categories.map((c) => ({ ...c, count: counts.get(c.id) ?? 0 })), tiles, activeRule };
+    return { categories: data.categories.filter((c) => c.status === 'active').map((c) => ({ ...c, count: counts.get(c.id) ?? 0 })), tiles, activeRule };
   }, [data, index, now, timezone]);
 }
 
@@ -311,6 +309,20 @@ export function useTab(tabId: string): TabDetail | null | undefined {
       blocked: rejected > 0,
     };
   }, [tabId]);
+}
+
+/**
+ * Whether this device knows which tables are taken. Tables travel with the catalogue, before anyone
+ * signs in; tabs only once a signed-in pull lands, and a pull cut short by a reload can leave the
+ * device's copy behind. So a free table is offered only after this page has heard from the server,
+ * or once it knows it cannot: offline, the tables it has are the best answer there is, and the server
+ * refuses a second tab on a table when the order gets through (TABLE_HAS_TAB).
+ */
+export function useTradeReady(): boolean {
+  const cursor = useLiveQuery(() => getMeta<number>(META.tradeCursor), []);
+  const { link, lastSyncedAt } = useSync();
+  if (link === 'offline' || link === 'unreachable') return true;
+  return typeof cursor === 'number' && cursor >= 0 && lastSyncedAt !== null;
 }
 
 export function useZonesAndTables() {

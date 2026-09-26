@@ -1,9 +1,15 @@
 import { jsxName, staticStrings } from '../utils.js';
 
-/** Utility classes that give an element a surface of its own. */
-const SURFACE_BG = /(^|\s|:)bg-(raised|sunken|overlay)(?=\s|$)/;
-/** Full box borders. Single-side hairlines (border-t, border-b) are grouping rules, not boxes. */
-const BOX_BORDER = /(^|\s|:)border(-[xy])?(-(2|4|8|\[[^\]]+\]))?(?=\s|$)/;
+/**
+ * Utility classes that give an element a surface of its own, at any opacity. A card's bands
+ * (card-band, card-band-strong) tint a strip of the card they sit in; they are not surfaces.
+ */
+const SURFACE_BG = /(^|\s|:)(bg-(raised|sunken|overlay|card)(\/\d+)?|card-surface)(?=\s|$)/;
+/**
+ * Full box borders, and rings used as borders. Single-side hairlines (border-t, border-b) are
+ * grouping rules, not boxes; a focus ring behind a variant (focus-visible:ring-2) is not a box.
+ */
+const BOX_BORDER = /(^|\s|:)(border(-[xy])?(-(2|4|8|\[[^\]]+\]))?|card-surface)(?=\s|$)|(^|\s)ring(-[1248])?(?=\s|$)/;
 
 /** Components that render a raised or bordered surface. */
 const SURFACE_COMPONENTS = new Set([
@@ -15,6 +21,8 @@ const SURFACE_COMPONENTS = new Set([
   'ProductTile',
   'TabCard',
   'MetricCard',
+  'Card',
+  'Metric',
 ]);
 
 function classOf(openingElement) {
@@ -37,6 +45,9 @@ function describe(openingElement) {
  * One level of depth, everywhere. docs/06-design-system.md section 1:
  * "No element with a background may contain another element with a background.
  *  No element with a border may contain another element with a border."
+ *
+ * The Console's Card family (docs/19) keeps the rule: a card is one surface, and nothing inside it is
+ * another. Its header and footer are bands, a tint on a strip of the same card.
  *
  * Static and per file: it follows the JSX tree written in one component. Seat chips, status dots
  * and category edges are marks, not surfaces, so they use their own colour utilities and are exempt.

@@ -40,10 +40,18 @@ export interface Reasoned {
   actor: Actor;
 }
 
+/** A reason that does not pass the rules. Its message is written for the person typing it. */
+export class ReasonError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ReasonError';
+  }
+}
+
 /** Guard used at every service boundary that writes a reasoned change. */
 export function requireReasoned(input: { reason: string; actor: Actor | null | undefined }): Reasoned {
   if (!input.actor?.staffId) throw new Error('A reasoned change needs an actor');
   const check = checkReason(input.reason);
-  if (!check.ok) throw new Error(check.message);
+  if (!check.ok) throw new ReasonError(check.message);
   return { reason: check.reason, actor: input.actor };
 }

@@ -2,24 +2,24 @@
 
 import type { CategoryColourToken } from '@bliss/shared/domain';
 import { type Cents, formatDecimal } from '@bliss/shared/money';
+import { Button, IconButton } from '@bliss/ui/components/button';
+import { Card, CardMedia, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
+import { categoryEdgeClass } from '@bliss/ui/lib/seat';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
-import { Metric } from '@bliss/ui/components/console/metric';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
-import { categoryEdgeClass } from '@bliss/ui/lib/seat';
-import { IconBottle, IconBuildingWarehouse, IconCategory, IconCheck, IconPlus } from '@tabler/icons-react';
-import Link from 'next/link';
+import { IconArchive, IconArrowBackUp, IconBottle, IconBuildingWarehouse, IconCategory, IconCheck, IconPencil, IconPlus } from '@tabler/icons-react';
+import { assetUrl } from '@/lib/assets';
+import { setProductStatus } from '../../_actions/menu';
+import { EntityLink } from '../../_components/entity-link';
+import { ReasonDialog, useCreateParam, useDialog } from '../../_components/forms';
+import { ProductThumb } from '../../_components/product-thumb';
+import { ProductDialog, type ProductDraft } from '../_parts/product-dialog';
 
-export interface ProductRow {
-  id: string;
-  name: string;
-  brand: string | null;
-  sku: string;
-  categoryId: string;
+export interface ProductRow extends ProductDraft {
   category: string;
   colour: CategoryColourToken;
-  imageKey: string | null;
-  container: number | null;
   serves: string[];
   fromPrice: Cents | null;
   threshold: number | null;
@@ -27,166 +27,180 @@ export interface ProductRow {
   effectiveThreshold: number;
   tracked: boolean;
   supplier: string | null;
+  onHand: number | null;
+  unit: string;
   status: 'active' | 'archived';
 }
 
-export function ProductsTable({ rows, categories }: { rows: ProductRow[]; categories: { value: string; label: string }[] }) {
+type Option = { value: string; label: string };
+
+/** Everything on the menu: how it is sold, from what price, and how its stock is watched. */
+export function ProductsTable({ rows, categories, suppliers, canEdit }: { rows: ProductRow[]; categories: Option[]; suppliers: Option[]; canEdit: boolean }) {
+  const dialog = useDialog<'edit' | 'status', ProductRow | null>();
+  useCreateParam(() => dialog.open('edit', null), canEdit);
+
   const activeCount = rows.filter((r) => r.status === 'active').length;
-  const archivedCount = rows.filter((r) => r.status === 'archived').length;
-  const trackedCount = rows.filter((r) => r.tracked).length;
-  const categoryCount = new Set(rows.map((r) => r.categoryId)).size;
+  const archivedCount = rows.length - activeCount;
+  const trackedCount = rows.filter((r) => r.tracked && r.status === 'active').length;
+  const categoryCount = new Set(rows.filter((r) => r.status === 'active').map((r) => r.categoryId)).size;
+  const noPrice = rows.filter((r) => r.status === 'active' && r.fromPrice === null).length;
+
   const columns: Column<ProductRow>[] = [
     {
       key: 'name',
       header: 'Product',
-      width: 'minmax(240px,2fr)',
+      width: 'minmax(220px,2fr)',
       fixed: true,
       sortValue: (r) => r.name,
       csv: (r) => r.name,
       cell: (r) => (
         <span className="flex min-w-0 items-center gap-12">
-          <span className="relative size-[36px] shrink-0 overflow-hidden rounded-sm bg-sunken">
-            {r.imageKey ? (
-              // eslint-disable-next-line @next/next/no-img-element -- a 36px catalogue thumbnail from the asset store
-              <img src={`https://images.unsplash.com/photo-${r.imageKey}?auto=format&fit=crop&w=72&h=72&q=60`} alt="" className="size-full object-cover" loading="lazy" />
-            ) : null}
-            <span aria-hidden="true" className={`absolute inset-y-0 left-0 w-[3px] ${categoryEdgeClass(r.colour)}`} />
-          </span>
-          <StackCell primary={r.name} secondary={`${r.category} · ${r.sku}`} />
+          <ProductThumb name={r.name} imageKey={r.imageKey} colour={r.colour} />
+          <StackCell primary={r.name} secondary={r.sku} />
         </span>
       ),
     },
-    { key: 'category', header: 'Category', width: '0px', exportOnly: true, csv: (r) => r.category, cell: () => null },
+    {
+      key: 'category',
+      header: 'Category',
+      width: 'minmax(110px,0.8fr)',
+      sortValue: (r) => r.category,
+      csv: (r) => r.category,
+      cell: (r) => (
+        <EntityLink kind="category" id={r.categoryId} muted className="truncate text-ui">
+          {r.category}
+        </EntityLink>
+      ),
+    },
     {
       key: 'serves',
       header: 'Sold as',
-      width: 'minmax(160px,1.4fr)',
+      width: 'minmax(140px,1.2fr)',
       csv: (r) => r.serves.join('; '),
-      cell: (r) => <span className="text-body text-ink-muted" title={r.serves.join(', ')}>{r.serves.join(', ')}</span>,
+      cell: (r) => (
+        <span className="truncate text-body-sm text-ink-muted" title={r.serves.join(', ')}>
+          {r.serves.join(', ') || 'Not sold yet'}
+        </span>
+      ),
     },
-    { key: 'container', header: 'Bottle', width: '80px', align: 'right', sortValue: (r) => r.container, csv: (r) => r.container ?? '', cell: (r) => <NumCell tone="muted">{r.container ? `${r.container}ml` : '··'}</NumCell> },
-    { key: 'price', header: 'From', width: '100px', align: 'right', sortValue: (r) => r.fromPrice, csv: (r) => (r.fromPrice === null ? '' : formatDecimal(r.fromPrice)), cell: (r) => (r.fromPrice === null ? <NumCell tone="muted">··</NumCell> : <Money value={r.fromPrice} currency={false} decimals="whole" />) },
     {
-      key: 'threshold',
-      header: 'Low at',
-      width: '90px',
+      key: 'price',
+      header: 'From',
+      width: '100px',
       align: 'right',
-      sortValue: (r) => r.effectiveThreshold,
-      csv: (r) => r.effectiveThreshold,
-      cell: (r) => (r.tracked ? <span title={r.thresholdIsDefault ? 'Outlet default' : 'Set for this product'}><NumCell tone={r.thresholdIsDefault ? 'muted' : 'default'}>{r.effectiveThreshold}</NumCell></span> : <NumCell tone="muted">··</NumCell>),
+      sortValue: (r) => r.fromPrice,
+      csv: (r) => (r.fromPrice === null ? '' : formatDecimal(r.fromPrice)),
+      cell: (r) => (r.fromPrice === null ? <NumCell tone="muted">No price</NumCell> : <Money value={r.fromPrice} currency={false} size="num-md" decimals="whole" />),
     },
-    { key: 'supplier', header: 'Supplier', width: 'minmax(140px,1fr)', sortValue: (r) => r.supplier, csv: (r) => r.supplier ?? '', cell: (r) => <span className="text-body text-ink-muted">{r.supplier ?? 'None'}</span> },
-    { key: 'status', header: 'State', width: '100px', sortValue: (r) => r.status, csv: (r) => r.status, cell: (r) => <StatusChip status={r.status === 'active' ? 'active' : 'retired'} label={r.status === 'active' ? 'On sale' : 'Archived'} /> },
+    {
+      key: 'onHand',
+      header: 'On hand',
+      width: '96px',
+      align: 'right',
+      sortValue: (r) => r.onHand,
+      csv: (r) => r.onHand ?? '',
+      cell: (r) => (r.onHand === null ? <NumCell tone="muted">Not kept</NumCell> : <NumCell tone={r.onHand <= r.effectiveThreshold ? 'low' : 'default'}>{r.onHand}</NumCell>),
+    },
+    {
+      key: 'supplier',
+      header: 'Supplier',
+      width: 'minmax(130px,1fr)',
+      sortValue: (r) => r.supplier,
+      csv: (r) => r.supplier ?? '',
+      cell: (r) =>
+        r.supplier ? (
+          <EntityLink kind="supplier" id={r.defaultSupplierId} muted className="truncate text-ui">
+            {r.supplier}
+          </EntityLink>
+        ) : (
+          <span className="text-ui text-ink-subtle">None set</span>
+        ),
+    },
+    { key: 'status', header: 'State', width: '112px', sortValue: (r) => r.status, csv: (r) => r.status, cell: (r) => <StatusChip status={r.status === 'active' ? 'active' : 'retired'} label={r.status === 'active' ? 'On sale' : 'Archived'} /> },
   ];
 
+  const target = dialog.target;
+
   return (
-    <div className="flex flex-col gap-24">
-      {/* Executive Catalogue Metrics */}
-      <div className="grid grid-cols-2 gap-16 desktop:grid-cols-4">
-        <Metric
-          label="Catalogued Products"
-          value={rows.length}
-          detail={`${activeCount} on sale · ${archivedCount} archived`}
-          icon={IconBottle}
-          tone="default"
-        />
-        <Metric
-          label="Active on Sale"
-          value={activeCount}
-          detail="Enabled across POS fleet"
-          icon={IconCheck}
-          tone="poured"
-        />
-        <Metric
-          label="Stock Tracked"
-          value={trackedCount}
-          detail="Automatic inventory deduct"
-          icon={IconBuildingWarehouse}
-          tone="default"
-        />
-        <Metric
-          label="Active Categories"
-          value={categoryCount}
-          detail="Assigned drink families"
-          icon={IconCategory}
-          tone="default"
-        />
-      </div>
+    <div className="flex flex-col gap-32">
+      <MetricGrid>
+        <Metric label="Products" icon={IconBottle} value={<CountUp value={rows.length} />} detail={archivedCount > 0 ? `${archivedCount} archived` : 'None archived'} />
+        <Metric label="On sale" icon={IconCheck} tone="poured" value={<CountUp value={activeCount} delayMs={60} />} detail={noPrice > 0 ? `${noPrice} without a price` : 'Every one priced'} />
+        <Metric label="Stock kept" icon={IconBuildingWarehouse} href="/console/inventory/stock" value={<CountUp value={trackedCount} delayMs={120} />} detail="Counted, and warned about when low" />
+        <Metric label="Categories" icon={IconCategory} href="/console/catalogue/categories" value={<CountUp value={categoryCount} delayMs={180} />} detail="The floor's tabs" />
+      </MetricGrid>
 
       <DataTable
         id="catalogue-products"
         caption="Products"
+        noun={['product', 'products']}
         rows={rows}
+        rowTone={(r) => (r.status === 'archived' ? 'muted' : 'default')}
         columns={columns}
-        leading={
-          <Link
-            href="/console/catalogue/products/new"
-            className="group relative inline-flex h-[32px] items-center gap-6 rounded-full bg-accent text-accent-ink px-16 text-[13px] font-medium shadow-[inset_0_1px_0_color-mix(in_oklab,white_20%,transparent),0_1px_3px_color-mix(in_oklab,var(--color-accent)_30%,transparent)] transition-all hover:-translate-y-[1px] hover:shadow-[inset_0_1px_0_color-mix(in_oklab,white_20%,transparent),0_3px_6px_color-mix(in_oklab,var(--color-accent)_40%,transparent)] active:scale-[0.98] active:translate-y-0"
-          >
-            <IconPlus size={14} stroke={2.5} className="transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
-            <span>Add product</span>
-          </Link>
-        }
         rowKey={(r) => r.id}
         rowHref={(r) => `/console/catalogue/products/${r.id}`}
         defaultSort={{ key: 'name', dir: 'asc' }}
+        defaultView="grid"
+        leading={
+          canEdit ? (
+            <Button variant="create" size="sm" icon={IconPlus} onClick={() => dialog.open('edit', null)}>
+              Add a product
+            </Button>
+          ) : null
+        }
+        rowActions={
+          canEdit
+            ? (r) => [
+                { key: 'edit', label: 'Edit details', icon: IconPencil, onSelect: () => dialog.open('edit', r) },
+                r.status === 'active'
+                  ? { key: 'archive', label: 'Take off sale', icon: IconArchive, destructive: true, onSelect: () => dialog.open('status', r) }
+                  : { key: 'restore', label: 'Put back on sale', icon: IconArrowBackUp, onSelect: () => dialog.open('status', r) },
+              ]
+            : undefined
+        }
         search={{ placeholder: 'Name, brand or SKU', test: (r, q) => r.name.toLowerCase().includes(q) || (r.brand ?? '').toLowerCase().includes(q) || r.sku.toLowerCase().includes(q) }}
         filters={[
           { kind: 'select', key: 'category', label: 'Category', options: categories, test: (r, v) => r.categoryId === v },
-          { kind: 'toggle', key: 'own-threshold', label: 'Own low threshold', test: (r) => !r.thresholdIsDefault },
+          { kind: 'toggle', key: 'archived', label: 'Archived', test: (r) => r.status === 'archived' },
+          { kind: 'toggle', key: 'no-price', label: 'No price', test: (r) => r.fromPrice === null },
         ]}
         exportName="products"
-        empty={{ title: 'Your catalogue is empty', body: 'Import a CSV, or add your first product by hand.' }}
+        empty={{ title: 'No products yet', body: 'Add the first product, and it goes on sale at the next sync.' }}
+        emptyFiltered={{ title: 'No products match', body: 'Clear the category, the toggles or the search to see every product.' }}
         renderGridCard={(r) => (
-          <Link href={`/console/catalogue/products/${r.id}`} className="text-left w-full h-[380px] bg-page rounded-[20px] border border-hairline/60 shadow-[0_4px_16px_rgba(0,0,0,0.02)] hover:border-hairline hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all flex flex-col group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2">
-            {/* Full Bleed Image Header */}
-            <div className={`relative h-[170px] w-full shrink-0 overflow-hidden ${categoryEdgeClass(r.colour)} bg-opacity-20`}>
-              {r.imageKey ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={`https://images.unsplash.com/photo-${r.imageKey}?auto=format&fit=crop&w=400&h=400&q=80`} alt="" className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" loading="lazy" />
-              ) : (
-                <div className="flex items-center justify-center w-full h-full text-[64px] font-mono text-ink-disabled/20">
-                  {r.name.slice(0, 2).toUpperCase()}
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-16 left-20 right-20 flex flex-col">
-                <span className="text-title font-medium text-[#fff] drop-shadow-md truncate">{r.name}</span>
-                <span className="text-body-sm text-[#fff]/80 drop-shadow-md truncate">{r.category} · {r.sku}</span>
-              </div>
-            </div>
-
-            {/* Tight Details Area */}
-            <div className="flex flex-col flex-1 p-20 text-body-sm bg-page w-full">
-              <div className="flex flex-col mt-auto">
-                <div className="flex justify-between items-center pb-8 border-b border-hairline/40">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Sold as</span>
-                  <span className="text-ink font-medium truncate ml-16" title={r.serves.join(', ')}>{r.serves.join(', ')}</span>
-                </div>
-                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Bottle</span>
-                  <span className="font-mono text-ink-muted tabular">{r.container ? `${r.container}ml` : '··'}</span>
-                </div>
-                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">From Price</span>
-                  <span>
-                    {r.fromPrice === null ? <span className="font-mono text-ink-muted">··</span> : <Money value={r.fromPrice} currency={false} decimals="whole" />}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-8 border-b border-hairline/40">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">Low Stock At</span>
-                  <span className="font-mono tabular" title={r.thresholdIsDefault ? 'Outlet default' : 'Set for this product'}>
-                    <span className={r.thresholdIsDefault ? 'text-ink-muted' : 'text-ink'}>{r.tracked ? r.effectiveThreshold : '··'}</span>
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-8">
-                  <span className="text-micro font-medium text-ink-subtle uppercase tracking-wider">State</span>
-                  <StatusChip status={r.status === 'active' ? 'active' : 'retired'} label={r.status === 'active' ? 'On sale' : 'Archived'} />
-                </div>
-              </div>
-            </div>
-          </Link>
+          <Card as="article" interactive className="group h-full" tone={r.status === 'archived' ? undefined : r.onHand !== null && r.onHand <= r.effectiveThreshold ? 'low' : undefined}>
+            <CardMedia
+              src={assetUrl(r.imageKey, 640, 340)}
+              tint={categoryEdgeClass(r.colour)}
+              title={r.name}
+              subtitle={`${r.category}, ${r.sku}`}
+              href={`/console/catalogue/products/${r.id}`}
+              meta={r.status === 'archived' ? <StatusChip status="retired" label="Archived" /> : r.onHand !== null && r.onHand <= r.effectiveThreshold ? <StatusChip status="low" label="Low" /> : null}
+              actions={canEdit ? <IconButton size="sm" variant="secondary" icon={IconPencil} label={`Edit ${r.name}`} onClick={() => dialog.open('edit', r)} /> : null}
+            />
+            <KeyRows>
+              <KeyRow label="Sold as">{r.serves.join(', ') || 'Not sold yet'}</KeyRow>
+              <KeyRow label="Bottle">{r.containerVolumeMl ? `${r.containerVolumeMl}ml` : 'Not a bottle'}</KeyRow>
+              <KeyRow label="From">{r.fromPrice === null ? 'No price' : <Money value={r.fromPrice} currency={false} size="num-md" decimals="whole" />}</KeyRow>
+              <KeyRow label="On hand" tone={r.onHand !== null && r.onHand <= r.effectiveThreshold ? 'low' : undefined}>
+                {r.onHand === null ? 'Not kept' : `${r.onHand} ${r.unit}`}
+              </KeyRow>
+              <KeyRow label="Low at">{r.tracked ? `${r.effectiveThreshold}${r.thresholdIsDefault ? ', the default' : ''}` : 'Not kept'}</KeyRow>
+            </KeyRows>
+          </Card>
         )}
+      />
+
+      <ProductDialog open={dialog.is('edit')} onClose={dialog.close} target={target} categories={categories} suppliers={suppliers} />
+      <ReasonDialog
+        open={dialog.is('status') && Boolean(target)}
+        onClose={dialog.close}
+        title={target?.status === 'active' ? `Take ${target?.name} off sale?` : `Put ${target?.name} back on sale?`}
+        description={target?.status === 'active' ? 'The floor stops offering it at the next sync. Its sales stay in every report.' : 'The floor offers it again at the next sync.'}
+        confirmLabel={target?.status === 'active' ? 'Take off sale' : 'Put back on sale'}
+        destructive={target?.status === 'active'}
+        quickReasons={target?.status === 'active' ? ['No longer stocked', 'Replaced by a new line', 'Seasonal, back later'] : ['Back in stock', 'Added by mistake before']}
+        run={(reason) => setProductStatus({ id: target!.id, status: target!.status === 'active' ? 'archived' : 'active', reason })}
       />
     </div>
   );

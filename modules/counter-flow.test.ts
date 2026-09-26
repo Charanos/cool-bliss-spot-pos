@@ -1,8 +1,9 @@
 import { variantIdFor } from '@bliss/db/seed/catalogue';
-import { deviceByKey, staffByKey, tableByLabel } from '@bliss/db/seed/organisation';
+import { deviceByKey, staffByKey } from '@bliss/db/seed/organisation';
 import { createUuidV7 } from '@bliss/shared/id';
 import { type Cents, add, shillings, toJSON } from '@bliss/shared/money';
 import { amountDue, evenShares } from '@bliss/shared/settlement';
+import { holdsTable } from '@bliss/shared/trade';
 import type { OutboxKind, OutboxPayload } from '@bliss/shared/sync';
 import { describe, expect, it } from 'vitest';
 import { toWire } from '@/lib/wire';
@@ -11,6 +12,7 @@ import * as pricing from './pricing/service';
 import * as settlementCommands from './settlement/commands';
 import * as settlement from './settlement/service';
 import { type IncomingEntry, applyEntry, bootstrap } from './sync/apply';
+import { tradeTables } from './trade/schema';
 import * as trade from './trade/service';
 
 /**
@@ -46,14 +48,17 @@ describe('floor to counter', () => {
   const lineA = id();
   const lineB = id();
   const at = Date.now();
+  // A table nobody is sitting at: the seeded night holds some, and a table takes one open tab.
+  const held = new Set(tradeTables().tabs.filter(holdsTable).map((t) => t.serviceTableId));
+  const table = trade.tables().find((t) => !held.has(t.id))!;
 
   it('opens a tab and fires an order that takes stock', () => {
     const opened = applyEntry(
       entry('tab.open', floor, amina, tabId, {
         v: 1,
         tabId,
-        serviceTableId: tableByLabel('T2').id,
-        zoneId: tableByLabel('T2').zoneId,
+        serviceTableId: table.id,
+        zoneId: table.zoneId,
         name: null,
         guestCount: 2,
         seats: [

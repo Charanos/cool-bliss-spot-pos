@@ -7,6 +7,7 @@ import { formatIsoDate, formatTime, formatWeekday, plural } from '@bliss/shared/
 import { dataset } from '../_data/source';
 import * as availability from '../availability/service';
 import * as catalogue from '../catalogue/service';
+import * as pins from '../identity/pins';
 import * as identity from '../identity/service';
 import * as inventory from '../inventory/service';
 import * as procurement from '../procurement/service';
@@ -24,20 +25,31 @@ export function clock() {
   return { now: d.now, lastNight: d.lastNight, current: d.currentBusinessDate, first: d.firstBusinessDate, tradingInProgress: d.tradingInProgress };
 }
 
-function exVat(amount: Cents): Cents {
+/** An amount with VAT taken out, when the outlet's prices include it. */
+export function exVat(amount: Cents): Cents {
   const outlet = identity.outlet();
   if (!outlet.pricesTaxInclusive) return amount;
   return scale(amount, 10_000n, BigInt(10_000 + outlet.taxRateBps));
 }
 
-/** Cost of goods for lines, from the sale movements they wrote, at the cost stored on each movement. */
-function costOfLines(lines: readonly OrderLine[]): Cents {
+/**
+ * Cost of goods per line, from the sale movements each line wrote, at the cost stored on each
+ * movement. A line that wrote no movement (food, an untracked category) is absent: it has no
+ * recorded cost, which is not the same as costing nothing.
+ */
+export function lineCosts(lines: readonly OrderLine[]): Map<string, Cents> {
   const ids = new Set(lines.map((l) => l.id));
-  let total = ZERO;
+  const out = new Map<string, Cents>();
   for (const m of inventory.movements({ type: 'sale' })) {
-    if (m.sourceId && ids.has(m.sourceId)) total = add(total, multiplyByQuantity(m.unitCostCents, -m.qtyDelta));
+    if (!m.sourceId || !ids.has(m.sourceId)) continue;
+    out.set(m.sourceId, add(out.get(m.sourceId) ?? ZERO, multiplyByQuantity(m.unitCostCents, -m.qtyDelta)));
   }
-  return total;
+  return out;
+}
+
+/** Cost of goods for lines, from the sale movements they wrote, at the cost stored on each movement. */
+export function costOfLines(lines: readonly OrderLine[]): Cents {
+  return sum([...lineCosts(lines).values()]);
 }
 
 function linesOn(date: IsoDate) {
@@ -127,7 +139,8 @@ export interface MoverRow {
   name: string;
   units: number;
   value: Cents;
-  marginBps: number;
+  /** Null when none of its sales carry a recorded cost: the margin is unknown, not 100%. */
+  marginBps: number | null;
 }
 
 export function topMovers(from: IsoDate, to: IsoDate, limit = 6): MoverRow[] {
@@ -142,12 +155,13 @@ export function topMovers(from: IsoDate, to: IsoDate, limit = 6): MoverRow[] {
     .map(([productId, own]) => {
       const value = sum(own.map((l) => l.lineTotalCents));
       const revenue = exVat(value);
+      const costs = lineCosts(own);
       return {
         productId,
         name: catalogue.productById(productId)?.name ?? '',
         units: own.reduce((a, l) => a + l.qty, 0),
         value,
-        marginBps: shareBps(subtract(revenue, costOfLines(own)), revenue),
+        marginBps: costs.size === 0 ? null : shareBps(subtract(revenue, costOfLines(own)), revenue),
       };
     })
     .sort((a, b) => compare(b.value, a.value))
@@ -167,7 +181,7 @@ export function needsAttention(): AttentionItem[] {
   const outlet = identity.outlet();
   const { current, lastNight } = clock();
 
-  // First principle: Time is: open tab ≠ closed sale. Tabs sleeping past close are unclosed sales — alert, not a report.
+  // First principle: Time is: open tab ≠ closed sale. Tabs open past close are unsettled sales: an alert, not a report.
   const openTabs = trade.openTabs();
   const sleepingTabs = openTabs.filter((t) => t.tab.businessDate < current);
   if (sleepingTabs.length > 0) {
@@ -175,9 +189,10 @@ export function needsAttention(): AttentionItem[] {
     items.push({
       rank: -1,
       tone: 'stop',
-      text: `${plural(sleepingTabs.length, 'sleeping tab')} from earlier shifts unclosed (${formatKes(sleepingExposure, { decimals: 'whole' })} unclosed sales risk)`,
-      href: '/console/trade/open',
-      cta: 'Audit & settle',
+      text: `${plural(sleepingTabs.length, 'tab')} still open from an earlier business day, ${formatKes(sleepingExposure, { decimals: 'whole' })} not settled`,
+      // One tab: straight to it, where it can be closed. More: the list of open tabs.
+      href: sleepingTabs.length === 1 ? `/console/trade/tabs/${sleepingTabs[0]!.tab.id}` : '/console/trade/open',
+      cta: sleepingTabs.length === 1 ? 'Open the tab' : 'See the tabs',
     });
   }
 
@@ -188,37 +203,60 @@ export function needsAttention(): AttentionItem[] {
   }
 
   const drawer = settlement.drawerFor(lastNight);
-  if (drawer?.stage === 'closed' && drawer.varianceCents && compare(abs(drawer.varianceCents), outlet.drawerVarianceThresholdCents) > 0) {
+  if (drawer?.stage === 'closed' && !drawer.reviewedAt && drawer.varianceCents && compare(abs(drawer.varianceCents), outlet.drawerVarianceThresholdCents) > 0) {
     const under = isNegative(drawer.varianceCents);
     items.push({
       rank: 1,
       tone: 'low',
       text: `Drawer closed ${formatKes(abs(drawer.varianceCents), { decimals: 'whole' })} ${under ? 'under' : 'over'} at ${drawer.closedAt ? formatTime(drawer.closedAt, outlet.timezone) : 'close'}`,
-      href: '/console/trade/drawers',
-      cta: 'Read the reason',
+      href: `/console/trade/drawers/${drawer.id}`,
+      cta: 'Review the drawer',
     });
   }
 
   for (const hold of inventory.activeHolds()) {
     const name = catalogue.productOfVariant(hold.productVariantId)?.name ?? 'An item';
-    items.push({ rank: 2, tone: 'low', text: `${name} has been on hold since ${formatWeekday(isoOf(hold.placedAt))}`, href: '/console/inventory/holds', cta: 'Review hold' });
+    const productId = catalogue.productOfVariant(hold.productVariantId)?.id;
+    items.push({
+      rank: 2,
+      tone: 'low',
+      text: `${name} has been on hold since ${formatWeekday(isoOf(hold.placedAt))}`,
+      href: productId ? `/console/catalogue/products/${productId}` : '/console/inventory/holds',
+      cta: 'Review hold',
+    });
   }
 
-  const finished = availability
-    .map()
-    .entries.filter((e) => e.state === 'finished' && e.reason === 'stock' && catalogue.variantById(e.productVariantId)?.isDefault);
+  const finished = availability.map().entries.filter((e) => e.state === 'finished' && e.reason === 'stock' && catalogue.variantById(e.productVariantId)?.isDefault);
   if (finished.length > 0) {
     const names = finished.map((e) => catalogue.productOfVariant(e.productVariantId)?.name ?? '').slice(0, 2);
     items.push({ rank: 3, tone: 'stop', text: `${names.join(' and ')} ${finished.length === 1 ? 'is' : 'are'} finished on the floor`, href: '/console/purchasing/reorder', cta: 'Reorder' });
   }
 
   const reorder = procurement.reorderSuggestions().length;
-  if (reorder > 0) items.push({ rank: 4, tone: 'info', text: `${plural(reorder, 'line')} below reorder point`, href: '/console/purchasing/reorder', cta: 'See suggestions' });
+  if (reorder > 0) items.push({ rank: 4, tone: 'info', text: `${plural(reorder, 'line')} below reorder point`, href: '/console/purchasing/reorder', cta: 'Reorder' });
+
+  // A PIN running out this week: someone will be asked for a new one mid-shift unless it is reset first.
+  const expiring = pins.expiringSoon(identity.staffList());
+  if (expiring.length > 0) {
+    items.push({
+      rank: 6,
+      tone: 'info',
+      text: expiring.length === 1 ? `${expiring[0]!.displayName}'s PIN runs out this week` : `${plural(expiring.length, 'PIN')} run out this week`,
+      href: expiring.length === 1 ? `/console/people/staff/${expiring[0]!.id}` : '/console/people/staff?pin=expiring',
+      cta: expiring.length === 1 ? 'See their sign-in' : 'See who',
+    });
+  }
 
   const variance = latestCommittedVariance();
   const worst = variance?.rows.find((r) => r.outside && isNegative(r.value));
   if (worst) {
-    items.push({ rank: 5, tone: 'low', text: `${worst.name} counted ${Math.abs(worst.variance).toFixed(1)} bottles short, ${formatKes(abs(worst.value), { decimals: 'whole' })} at cost`, href: '/console/reports/pour-variance', cta: 'See variance' });
+    items.push({
+      rank: 5,
+      tone: 'low',
+      text: `${worst.name} counted ${Math.abs(worst.variance).toFixed(1)} bottles short, ${formatKes(abs(worst.value), { decimals: 'whole' })} at cost`,
+      href: `/console/inventory/counts/${variance!.count.id}`,
+      cta: 'See the count',
+    });
   }
 
   return items.sort((a, b) => a.rank - b.rank).slice(0, 5);
@@ -318,7 +356,7 @@ export function voidsByStaff(from: IsoDate, to: IsoDate) {
         sales: sold,
         voidRateBps: shareBps(voidValue, add(sold, voidValue)),
         discounts: sum(shifts.filter((s) => s.staffId === staffId).map((s) => s.discountsCents)),
-        reasons: voided.slice(0, 4).map((l) => ({ reason: l.voidReason ?? '', at: l.voidedAt ?? 0 })),
+        reasons: voided.slice(0, 4).map((l) => ({ reason: l.voidReason ?? '', at: l.voidedAt ?? 0, tabId: l.tabId })),
       };
     })
     .sort((a, b) => b.voidRateBps - a.voidRateBps);
@@ -406,7 +444,8 @@ export function salesByCategory(from: IsoDate, to: IsoDate) {
       units: own.reduce((a, l) => a + l.qty, 0),
       value,
       shareBps: shareBps(value, total),
-      marginBps: shareBps(subtract(revenue, costOfLines(own)), revenue),
+      // Null when none of its sales carry a recorded cost: the margin is unknown, not 100%.
+      marginBps: own.length > 0 && lineCosts(own).size === 0 ? null : shareBps(subtract(revenue, costOfLines(own)), revenue),
     };
   });
 }
@@ -428,8 +467,8 @@ export interface SalesSummary {
 export function salesSummary(from: IsoDate, to: IsoDate, previous: { from: IsoDate; to: IsoDate }): SalesSummary {
   const settled = (a: IsoDate, b: IsoDate) => settlement.billsBetween(a, b).filter((bill) => bill.status !== 'open');
   const bills = settled(from, to);
-  const netSales = sum(bills.map((b) => b.totalCents));
-  const before = sum(settled(previous.from, previous.to).map((b) => b.totalCents));
+  const netSales = sum(bills.map(settlement.billNet));
+  const before = sum(settled(previous.from, previous.to).map(settlement.billNet));
   const lines = trade.linesBetween(from, to);
   const revenue = exVat(sum(lines.map((l) => l.lineTotalCents)));
   const voided = trade.voidedBetween(from, to);

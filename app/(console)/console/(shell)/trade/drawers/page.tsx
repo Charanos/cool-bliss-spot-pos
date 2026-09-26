@@ -3,6 +3,7 @@ import * as identity from '@/modules/identity/service';
 import * as settlement from '@/modules/settlement/service';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { type DrawerRow, DrawersTable } from './drawers-table';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Drawers' };
 
@@ -12,13 +13,13 @@ export const metadata: Metadata = { title: 'Drawers' };
  */
 export default async function DrawersPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
-  const range = businessRange(params.range, '7'); // Drawers default to 7 days
+  const range = businessRange(params.range, '7');
   const outlet = identity.outlet();
   const devices = identity.devices();
-  
+
   const rows: DrawerRow[] = settlement
     .drawerSessionsBetween(range.from, range.to)
-    .map((s) => settlement.drawerFor(s.businessDate))
+    .map((s) => settlement.drawerView(s.id))
     .filter((d): d is NonNullable<typeof d> => d !== null)
     .map((d) => ({
       id: d.id,
@@ -35,17 +36,23 @@ export default async function DrawersPage({ searchParams }: { searchParams: Prom
       reason: d.varianceReason,
       stage: d.stage,
       status: d.status,
+      reviewed: Boolean(d.reviewedAt),
+      bills: settlement.billsInDrawer(d.id).filter((b) => b.status !== 'voided').length,
     }));
 
   return (
-    <DrawersTable 
-      rows={rows} 
-      timezone={outlet.timezone} 
+    <>
+      <ViewHeader page="/console/trade/drawers" />
+
+    <DrawersTable
+      rows={rows}
+      timezone={outlet.timezone}
       threshold={outlet.drawerVarianceThresholdCents}
       rangeOptions={rangeOptions(true)}
       rangeKey={range.key}
       rangeLabel={range.label}
       exportDate={range.to}
     />
+    </>
   );
 }

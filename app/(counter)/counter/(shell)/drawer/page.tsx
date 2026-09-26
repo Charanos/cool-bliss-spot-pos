@@ -171,7 +171,7 @@ export default function DrawerPage() {
               <ul className="mt-8">
                 {blocks.map((b) => (
                   <li key={b.tabId} className="border-t border-rule-raised/20">
-                    <button type="button" onClick={() => router.push(`/counter/tabs/${b.tabId}`)} className="flex min-h-row-floor w-full items-center gap-12 px-16 text-left press-feedback hover:bg-sunken/60">
+                    <button type="button" onClick={() => router.push(`/counter/tabs/${b.tabId}`)} className="flex min-h-row-floor w-full items-center gap-12 px-16 text-left press-feedback hover:bg-control">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-body text-ink">{b.label}</span>
                         <span className="block text-body-sm text-ink-subtle">

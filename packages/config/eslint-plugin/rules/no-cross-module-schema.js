@@ -19,7 +19,8 @@ export default {
 
     function check(node, source) {
       if (typeof source !== 'string') return;
-      const target = source.match(/modules\/([a-z-]+)\/schema(?:\.[jt]s)?$/)?.[1];
+      // Absolute (@/modules/x/schema) and relative (../x/schema) imports both name the module.
+      const target = source.match(/(?:^|\/)([a-z_-]+)\/schema(?:\.[jt]s)?$/)?.[1];
       if (!target) return;
       if (own === target) return;
       context.report({ node, messageId: 'cross', data: { from: own ?? 'app', to: target } });

@@ -23,6 +23,7 @@ import { haptic } from '@/lib/pos/haptics';
 import { notify } from '@bliss/ui/components/notices';
 import { PANE, Quiet } from '../../_components/parts';
 import { TenderPanel } from '../../_components/tender-panel';
+import { printUrl } from '@/lib/pos/api';
 
 /** Whether the screen is at least this wide, following it as it turns. False until mounted. */
 function useMinWidth(px: number): boolean {
@@ -153,7 +154,7 @@ export default function QuickSalePage() {
 
   const doneCard = done ? (
     <div className="flex flex-col gap-16">
-      <div className="flex flex-col gap-12 rounded-[20px] bg-poured-wash p-16 tablet:p-20">
+      <div className="flex flex-col gap-12 rounded-sheet bg-poured-wash p-16 tablet:p-20">
         <p className="flex items-center gap-8 text-body-lg text-poured">
           <IconCheck size={20} stroke={ICON_STROKE} aria-hidden="true" />
           Sale recorded · {formatKes(done.paid, { decimals: 'whole' })}
@@ -171,7 +172,7 @@ export default function QuickSalePage() {
         variant="secondary"
         size="xl"
         icon={IconPrinter}
-        onClick={() => window.open(`/print/bill/${done.billId}`, '_blank')}
+        onClick={() => window.open(printUrl(`/print/bill/${done.billId}`), '_blank')}
       >
         Print Final Receipt
       </Button>

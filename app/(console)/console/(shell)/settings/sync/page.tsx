@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as sync from '@/modules/sync/service';
+import { ViewHeader } from '../../_components/workspace';
 import { type DeadLetterRow, SyncView } from './sync-view';
 
 export const metadata: Metadata = { title: 'Sync' };
@@ -38,6 +39,7 @@ export default async function SyncPage() {
     return {
       id: d.id,
       device: devices.find((x) => x.id === d.deviceId)?.label ?? 'A device',
+      deviceId: d.deviceId,
       kind: KIND[d.kind] ?? d.kind,
       what: [payload.tab ? `table ${payload.tab}` : null, payload.lines ? `${payload.lines} lines` : null].filter(Boolean).join(', '),
       code: CODE[d.rejectionCode] ?? d.rejectionCode,
@@ -48,5 +50,10 @@ export default async function SyncPage() {
       note: d.resolutionNote,
     };
   });
-  return <SyncView rows={rows} timezone={tz} canResolve={identity.can(actor.staffId, 'device.manage')} />;
+  return (
+    <>
+      <ViewHeader page="/console/settings/sync" />
+      <SyncView rows={rows} timezone={tz} canResolve={identity.can(actor.staffId, 'device.manage')} held={devices.reduce((n, d) => n + d.unsyncedCount, 0)} offline={devices.filter((d) => d.status === 'active' && !d.online).length} />
+    </>
+  );
 }

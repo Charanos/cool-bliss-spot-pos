@@ -3,8 +3,8 @@ import { memo } from 'react';
 /* ============================================================================
  * AmbientFloorArtwork — "Frost & Liquid Architecture"
  *
- * Combining the highly abstract, volumetric "Liquid Architecture" on the left 
- * flank (sweeping decanter, coupe, and vapor ribbon) with the generative 
+ * Combining the highly abstract, volumetric "Liquid Architecture" on the left
+ * flank (sweeping decanter, coupe, and vapor ribbon) with the generative
  * frost crystals on the right flank to tie the design language together beautifully.
  * ========================================================================== */
 
@@ -15,14 +15,14 @@ interface SnowflakePlan {
   width: number;
   core: number;
   rings?: number[];
-  plates?: { at: number; r: number; }[];
-  levels: { at: number; scale: number; }[][];
+  plates?: { at: number; r: number }[];
+  levels: { at: number; scale: number }[][];
 }
 
 interface OutData {
-  segments: { d: string; w: number; depth: number; }[];
-  nodes: { x: number; y: number; r: number; depth: number; }[];
-  joints: { x: number; y: number; r: number; }[];
+  segments: { d: string; w: number; depth: number }[];
+  nodes: { x: number; y: number; r: number; depth: number }[];
+  joints: { x: number; y: number; r: number }[];
 }
 
 function grow(x: number, y: number, ang: number, len: number, width: number, depth: number, plan: SnowflakePlan, out: OutData) {
@@ -62,24 +62,38 @@ const HABITS: Record<string, SnowflakePlan> = {
     width: 2.3,
     core: 13,
     levels: [
-      [{ at: 0.30, scale: 0.40 }, { at: 0.52, scale: 0.32 }, { at: 0.74, scale: 0.21 }],
+      [
+        { at: 0.3, scale: 0.4 },
+        { at: 0.52, scale: 0.32 },
+        { at: 0.74, scale: 0.21 },
+      ],
       [{ at: 0.46, scale: 0.34 }],
     ],
   },
   sectored: {
     width: 2.4,
     core: 22,
-    plates: [{ at: 0.45, r: 18 }, { at: 0.85, r: 10 }],
-    levels: [
-      [{ at: 0.25, scale: 0.50 }, { at: 0.55, scale: 0.35 }, { at: 0.80, scale: 0.20 }],
-      [{ at: 0.40, scale: 0.35 }, { at: 0.70, scale: 0.25 }],
+    plates: [
+      { at: 0.45, r: 18 },
+      { at: 0.85, r: 10 },
     ],
-  }
+    levels: [
+      [
+        { at: 0.25, scale: 0.5 },
+        { at: 0.55, scale: 0.35 },
+        { at: 0.8, scale: 0.2 },
+      ],
+      [
+        { at: 0.4, scale: 0.35 },
+        { at: 0.7, scale: 0.25 },
+      ],
+    ],
+  },
 };
 
 const FLAKES = [
   { id: 'f1', habit: 'dendrite', r: 170, x: 160, y: 210, rot: 15, o: 0.75 },
-  { id: 'f2', habit: 'sectored', r: 120, x: 530, y: 810, rot: -25, o: 0.5 }
+  { id: 'f2', habit: 'sectored', r: 120, x: 530, y: 810, rot: -25, o: 0.5 },
 ];
 
 const USED = new Set(FLAKES.map((f) => f.habit));
@@ -99,7 +113,7 @@ export const AmbientFloorArtwork = memo(function AmbientFloorArtwork() {
   const arms = ARMS;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-24 mix-blend-screen">
+    <div className="ambient-art pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-24 mix-blend-screen">
       <svg
         aria-hidden="true"
         focusable="false"
@@ -168,13 +182,19 @@ export const AmbientFloorArtwork = memo(function AmbientFloorArtwork() {
           {arms.map((arm) => (
             <g id={`frost-arm-${arm.name}`} key={arm.name}>
               <g stroke="url(#frost-halo)" strokeLinecap="round" strokeOpacity="0.3">
-                {arm.segments.map((s, i) => (<path key={`h${i}`} d={s.d} strokeWidth={s.w * 3.2} />))}
+                {arm.segments.map((s, i) => (
+                  <path key={`h${i}`} d={s.d} strokeWidth={s.w * 3.2} />
+                ))}
               </g>
               <g stroke="url(#frost-rib)" strokeLinecap="round">
-                {arm.segments.map((s, i) => (<path key={`r${i}`} d={s.d} strokeWidth={s.w} strokeOpacity={0.9 - s.depth * 0.12} />))}
+                {arm.segments.map((s, i) => (
+                  <path key={`r${i}`} d={s.d} strokeWidth={s.w} strokeOpacity={0.9 - s.depth * 0.12} />
+                ))}
               </g>
               <g stroke="var(--color-glint)" strokeLinecap="round">
-                {arm.segments.map((s, i) => (<path key={`c${i}`} d={s.d} strokeWidth={s.w * 0.3} strokeOpacity={1.0 - s.depth * 0.1} />))}
+                {arm.segments.map((s, i) => (
+                  <path key={`c${i}`} d={s.d} strokeWidth={s.w * 0.3} strokeOpacity={1.0 - s.depth * 0.1} />
+                ))}
               </g>
               {arm.plan.plates?.map((p, i) => (
                 <g key={`p${i}`} transform={`translate(${(100 * p.at).toFixed(2)} 0)`}>
@@ -184,10 +204,14 @@ export const AmbientFloorArtwork = memo(function AmbientFloorArtwork() {
               ))}
               <g>
                 <g fill="var(--color-accent)" fillOpacity="0.4" filter="url(#glow-arm)">
-                  {arm.nodes.map((n, i) => (<circle key={`ng${i}`} cx={n.x} cy={n.y} r={n.r * 1.8} />))}
+                  {arm.nodes.map((n, i) => (
+                    <circle key={`ng${i}`} cx={n.x} cy={n.y} r={n.r * 1.8} />
+                  ))}
                 </g>
                 <g fill="var(--color-glint)">
-                  {arm.nodes.map((n, i) => (<circle key={`nc${i}`} cx={n.x} cy={n.y} r={n.r * 0.8} />))}
+                  {arm.nodes.map((n, i) => (
+                    <circle key={`nc${i}`} cx={n.x} cy={n.y} r={n.r * 0.8} />
+                  ))}
                 </g>
               </g>
             </g>
@@ -230,12 +254,12 @@ export const AmbientFloorArtwork = memo(function AmbientFloorArtwork() {
             {/* Massive sweeping left profile */}
             <path d="M0 -450 C0 -250, -120 -150, -120 0" fill="none" stroke="url(#glass-curve)" strokeWidth="1.5" strokeLinecap="round" />
             <path d="M0 -450 C0 -250, -120 -150, -120 0" fill="none" stroke="var(--color-glint)" strokeWidth="5" strokeOpacity="0.1" strokeLinecap="round" filter="url(#floor-blur-medium)" />
-            
+
             {/* Intersecting Liquid Meniscus (Concentric ellipses) */}
             <ellipse cx="-65" cy="-180" rx="95" ry="26" fill="url(#liquid-glow)" stroke="var(--color-accent)" strokeWidth="1.5" strokeOpacity="0.6" />
             <ellipse cx="-65" cy="-180" rx="75" ry="18" fill="none" stroke="var(--color-glint)" strokeWidth="0.8" strokeOpacity="0.5" />
             <ellipse cx="-65" cy="-180" rx="40" ry="8" fill="none" stroke="var(--color-accent)" strokeWidth="0.5" strokeOpacity="0.4" />
-            
+
             {/* Decanter Base reflection */}
             <path d="M-120 0 C-60 15, 0 15, 60 0" fill="none" stroke="var(--color-glint)" strokeWidth="1" strokeOpacity="0.4" strokeLinecap="round" />
             <circle cx="-120" cy="0" r="2.5" fill="var(--color-glint)" fillOpacity="0.8" />
@@ -245,11 +269,11 @@ export const AmbientFloorArtwork = memo(function AmbientFloorArtwork() {
           <g transform="translate(40, -40) rotate(-14)">
             {/* Coupe Bowl Sweep */}
             <path d="M-100 -220 C-100 -80, 80 -80, 80 -220" fill="url(#liquid-glow)" fillOpacity="0.6" stroke="url(#glass-curve)" strokeWidth="1.5" strokeLinecap="round" />
-            
+
             {/* Coupe Stem & Geometric Foot */}
             <line x1="-10" y1="-115" x2="-10" y2="20" stroke="var(--color-glint)" strokeWidth="1.8" strokeOpacity="0.75" />
             <ellipse cx="-10" cy="20" rx="60" ry="14" fill="none" stroke="var(--color-glint)" strokeWidth="1" strokeOpacity="0.6" />
-            
+
             {/* Coupe Liquid Surface (Tilted for perspective) */}
             <g transform="translate(-10, -195) rotate(-4)">
               <ellipse cx="0" cy="0" rx="85" ry="22" fill="var(--color-accent)" fillOpacity="0.15" stroke="var(--color-accent)" strokeWidth="1.2" strokeOpacity="0.8" />

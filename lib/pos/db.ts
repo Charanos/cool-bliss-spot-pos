@@ -34,6 +34,10 @@ export interface StaffDirectoryEntry {
   roleKey: RoleKey;
   permissions: PermissionKey[];
   colourIndex: number;
+  /** Digits in their PIN, so the keypad completes at the right length. Six when absent. */
+  pinLength?: number;
+  /** Their photograph, uploaded in the Console; initials when absent. */
+  avatarUrl?: string | null;
 }
 
 export interface DeviceEntry {
@@ -41,6 +45,8 @@ export interface DeviceEntry {
   label: string;
   kind: string;
   status: string;
+  /** Registered in the Console and waiting for its pairing code. */
+  pairing?: boolean;
 }
 
 export interface RecipeEntry {
@@ -166,6 +172,8 @@ export const META = {
   deviceId: 'device.id',
   deviceSeq: 'device.outboxSeq',
   session: 'session',
+  /** The signed station token from the last sign-in on this device. */
+  stationToken: 'station.token',
   catalogueVersion: 'cursor.catalogueVersion',
   availabilityVersion: 'cursor.availabilityVersion',
   lastPulledAt: 'cursor.lastPulledAt',

@@ -5,8 +5,10 @@ import type { OutboxEntry } from '@bliss/shared/sync';
 import { useSyncExternalStore } from 'react';
 import { REJECTION_COPY, type RejectionCode } from '@bliss/shared/sync';
 import { notify } from '@bliss/ui/components/notices';
-import { NetworkUnavailable, api, isForcedOffline } from './api';
+import { NetworkUnavailable, SignInRequired, api, isForcedOffline } from './api';
 import { haptic } from './haptics';
+import { activeDisplay } from './display';
+import { capsForServer, readCaps } from './device-caps';
 import { META, posDb, getMeta, setMeta } from './db';
 
 /**
@@ -100,6 +102,10 @@ interface PullBody {
   staff?: unknown[];
   devices?: unknown[];
   availability?: AvailabilityEntry[];
+  /** No valid station token came with the pull: no trade rows, and the device asks for a PIN. */
+  authRequired?: boolean;
+  /** A renewed station token, when the one sent is getting old. */
+  stationToken?: string;
   trade: TradeRows;
 }
 
@@ -115,7 +121,18 @@ async function pendingAggregates(): Promise<Set<string>> {
 
 async function resetTrade() {
   const db = posDb();
-  await Promise.all([db.tabs.clear(), db.seats.clear(), db.orders.clear(), db.lines.clear(), db.lineModifiers.clear(), db.bills.clear(), db.billLines.clear(), db.tenders.clear(), db.drawers.clear(), db.outbox.clear()]);
+  await Promise.all([
+    db.tabs.clear(),
+    db.seats.clear(),
+    db.orders.clear(),
+    db.lines.clear(),
+    db.lineModifiers.clear(),
+    db.bills.clear(),
+    db.billLines.clear(),
+    db.tenders.clear(),
+    db.drawers.clear(),
+    db.outbox.clear(),
+  ]);
   await Promise.all([setMeta(META.tradeCursor, -1), setMeta(META.catalogueVersion, -1), setMeta(META.availabilityVersion, -1)]);
 }
 
@@ -136,22 +153,22 @@ async function applyTrade(rows: TradeRows, full: boolean) {
   }
 
   const lineTab = new Map(rows.lines.map((l) => [l.id, l.tabId]));
-  
+
   const tabs = rows.tabs.filter((t) => !held.has(t.id));
   if (tabs.length > 0) await db.tabs.bulkPut(tabs as AnyRows);
-  
+
   const seats = rows.seats.filter(keep);
   if (seats.length > 0) await db.seats.bulkPut(seats as AnyRows);
-  
+
   const orders = rows.orders.filter(keep);
   if (orders.length > 0) await db.orders.bulkPut(orders as AnyRows);
-  
+
   const lines = rows.lines.filter(keep);
   if (lines.length > 0) await db.lines.bulkPut(lines as AnyRows);
-  
+
   const lineModifiers = rows.lineModifiers.filter((m) => !held.has(lineTab.get(m.orderLineId) ?? ''));
   if (lineModifiers.length > 0) await db.lineModifiers.bulkPut(lineModifiers as AnyRows);
-  
+
   if (rows.bills.length > 0) await db.bills.bulkPut(rows.bills as AnyRows);
   if (rows.billLines.length > 0) await db.billLines.bulkPut(rows.billLines as AnyRows);
   if (rows.tenders.length > 0) await db.tenders.bulkPut(rows.tenders as AnyRows);
@@ -221,8 +238,11 @@ async function applyPull(body: PullBody) {
       await db.availability.bulkPut(body.availability);
       await setMeta(META.availabilityVersion, body.availabilityVersion);
     }
-    await applyTrade(body.trade, body.full || reset);
-    await setMeta(META.tradeCursor, body.cursor);
+    if (body.stationToken) await setMeta(META.stationToken, body.stationToken);
+    if (!body.authRequired) {
+      await applyTrade(body.trade, body.full || reset);
+      await setMeta(META.tradeCursor, body.cursor);
+    }
     await setMeta(META.bootstrapped, true);
     await setMeta(META.lastPulledAt, Date.now());
   });
@@ -241,15 +261,26 @@ export async function pull(): Promise<void> {
     getMeta<string>(META.epoch),
     getMeta<{ id: string }>(META.deviceId),
   ]);
+  const unsynced = await posDb().outbox.where('status').anyOf('pending', 'inflight', 'rejected').count();
   const query = new URLSearchParams({
     catalogue: String(catalogueVersion ?? -1),
     availability: String(availabilityVersion ?? -1),
     since: String(cursor ?? -1),
     epoch: epoch ?? '',
     device: device?.id ?? '',
+    // The pull is also the heartbeat: what waits to send, which build, and what this device is.
+    unsynced: String(unsynced),
+    app: process.env.NEXT_PUBLIC_BLISS_VERSION ?? '',
+    caps: capsForServer(readCaps(), activeDisplay()),
   });
-  const { body } = await api.get<PullBody>(`/api/dev/sync/pull?${query.toString()}`);
+  const { body } = await api.get<PullBody>(`/api/station/sync/pull?${query.toString()}`);
   await applyPull(body);
+  // A device still showing someone signed in, whose sign-in the server no longer accepts (from before
+  // station tokens, or withdrawn since), asks for the PIN again. Its outbox is kept and sends after.
+  if (body.authRequired && (await getMeta(META.session))) {
+    await setMeta(META.session, null);
+    await setMeta(META.stationToken, null);
+  }
   publish({ bootstrapped: true });
 }
 
@@ -265,6 +296,8 @@ let backoffUntil = 0;
 let failures = 0;
 
 export async function drain(): Promise<void> {
+  // Nothing is sent until someone has signed in on this device: the server needs the station token.
+  if (!(await getMeta<string>(META.stationToken))) return;
   const db = posDb();
   const pending = await db.outbox.where('status').anyOf('pending', 'inflight').sortBy('seq');
   if (pending.length === 0) return;
@@ -276,7 +309,7 @@ export async function drain(): Promise<void> {
   let results: PushResult[];
   const refused: PushResult[] = [];
   try {
-    const { body } = await api.post<{ results: PushResult[] }>('/api/dev/sync/push', { entries: batch });
+    const { body } = await api.post<{ results: PushResult[] }>('/api/station/sync/push', { entries: batch });
     results = body.results;
   } catch (error) {
     await db.outbox.bulkUpdate(batch.map((e) => ({ key: e.id, changes: { status: 'pending' as const } })));
@@ -353,6 +386,11 @@ export async function syncNow(): Promise<void> {
         notify({ tone: 'success', key: 'link', title: 'Back online', body: before > 0 ? `${before} held ${before === 1 ? 'change' : 'changes'} sent.` : 'Everything on this device is up to date.' });
       }
     } catch (error) {
+      if (error instanceof SignInRequired) {
+        // Not an outage: the PIN screen is already showing. Keep the outbox and wait for a sign-in.
+        await recount();
+        return;
+      }
       if (!(error instanceof NetworkUnavailable)) console.error('[sync]', error);
       failures += 1;
       backoffUntil = Date.now() + Math.min(30_000, 1000 * 2 ** Math.min(failures, 5));
@@ -408,7 +446,11 @@ export function forcedOfflineLabel() {
 export async function pruneAcked(): Promise<void> {
   const cutoff = Date.now() - 72 * 3_600_000;
   const db = posDb();
-  const old = await db.outbox.where('status').equals('acked').filter((e) => (e.ackedAt ?? 0) < cutoff).primaryKeys();
+  const old = await db.outbox
+    .where('status')
+    .equals('acked')
+    .filter((e) => (e.ackedAt ?? 0) < cutoff)
+    .primaryKeys();
   // The outbox is device transport, not a record: acknowledged entries leave once the server holds them.
   await db.outbox.bulkDelete(old);
 }

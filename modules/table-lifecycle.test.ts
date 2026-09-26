@@ -162,6 +162,17 @@ describe('the table lifecycle', () => {
     expect(undo).toMatchObject({ status: 'rejected', code: 'TABLE_TAKEN' });
   });
 
+  it('never puts a second open tab on a table, however sure a device is that it is free', () => {
+    const other = freeTable([table.id]);
+    open(other.id, other.zoneId);
+    const tabId2 = id();
+    const second = applyEntry(
+      entry('tab.open', counter, kevin, tabId2, { v: 1, tabId: tabId2, serviceTableId: other.id, zoneId: other.zoneId, name: null, guestCount: 1, seats: [{ seatId: id(), seatNo: 1 }], openedAt: Date.now() }),
+    );
+    expect(second).toMatchObject({ status: 'rejected', code: 'TABLE_HAS_TAB' });
+    expect(trade.tabById(tabId2)).toBeNull();
+  });
+
   it('closes an empty tab only with a reason, and records it', () => {
     const other = freeTable([table.id]);
     const empty = open(other.id, other.zoneId);

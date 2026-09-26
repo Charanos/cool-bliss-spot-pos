@@ -3,9 +3,19 @@
  * Money exports as a plain decimal with no grouping so a spreadsheet reads it as a number.
  */
 
+/**
+ * A cell a spreadsheet would read as a formula (=, +, -, @, or a tab or return first) is prefixed
+ * with an apostrophe, so a reason typed as "=HYPERLINK(...)" stays text. Numbers are left alone,
+ * including negative ones, so money still sums.
+ */
+function neutralise(text: string): string {
+  if (/^-?\d+(\.\d+)?$/.test(text)) return text;
+  return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+}
+
 function escape(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return '';
-  const text = String(value);
+  const text = typeof value === 'number' ? String(value) : neutralise(String(value));
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
@@ -24,7 +34,7 @@ export function exportFilename(base: string, params: URLSearchParams, date: stri
 }
 
 export function downloadCsv(filename: string, csv: string) {
-  const blob = new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

@@ -55,7 +55,7 @@ export function ModifierSheet({
     const groups: { group: ModifierGroup; modifiers: Modifier[] }[] = [];
     for (const link of links) {
       const group = await db.modifierGroups.get(link.modifierGroupId);
-      if (!group) continue;
+      if (!group || group.status !== 'active' || link.removed) continue;
       const modifiers = (await db.modifiers.where('modifierGroupId').equals(group.id).toArray()).filter((m) => m.status === 'active').sort((a, b) => a.sortOrder - b.sortOrder);
       groups.push({ group, modifiers });
     }
@@ -120,7 +120,7 @@ export function ModifierSheet({
             setPending(false);
           }
         }}
-        className="!rounded-full !bg-accent !text-accent-ink px-32 transition-all hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(0,0,0,0.2)] font-medium"
+        className="!rounded-full !bg-accent !text-accent-ink px-32 transition-all hover:scale-[1.02] hover:shadow-sheet font-medium"
       >
         {price ? `Add to ${target} · ${formatKes(price.lineTotalCents, { decimals: 'whole' })}` : `Add to ${target}`}
       </Button>
@@ -141,10 +141,10 @@ export function ModifierSheet({
         {data?.groups.map(({ group, modifiers }) => (
           <fieldset key={group.id} className="flex flex-col gap-8">
             <div className="flex items-center justify-between px-2">
-              <legend className="font-mono text-[11px] font-medium uppercase text-ink-subtle">
+              <legend className="font-mono text-label font-medium uppercase text-ink-subtle">
                 {group.name}
               </legend>
-              <span className="font-mono text-[10px] text-ink-disabled uppercase">
+              <span className="font-mono text-badge text-ink-disabled uppercase">
                 {group.maxSelect > 1 ? `choose up to ${group.maxSelect}` : 'choose one'}
               </span>
             </div>
@@ -160,8 +160,8 @@ export function ModifierSheet({
                     className={cx(
                       'inline-flex min-h-[44px] items-center gap-8 rounded-sm px-16 text-body transition-all press-feedback',
                       on
-                        ? 'bg-sunken/80 text-ink font-medium shadow-raised ring-1 ring-rule-raised/50'
-                        : 'bg-sunken/40 text-ink-muted ring-1 ring-transparent hover:bg-sunken/60 hover:text-ink',
+                        ? 'bg-control-pressed text-ink font-medium ring-1 ring-rule-raised/50'
+                        : 'bg-control text-ink-muted ring-1 ring-transparent hover:bg-control-hover hover:text-ink',
                     )}
                   >
                     <span>{m.name}</span>
@@ -178,7 +178,7 @@ export function ModifierSheet({
         ))}
 
         {/* Quantity in a sunken card */}
-        <div className="flex items-center justify-between rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-raised">
+        <div className="flex items-center justify-between rounded-lg bg-control px-16 py-12 ring-1 ring-rule-raised/20">
           <div className="flex flex-col gap-2">
             <span className="text-body font-medium text-ink">Quantity</span>
             <span className="text-body-sm text-ink-subtle">
@@ -202,7 +202,7 @@ export function ModifierSheet({
           <label htmlFor="modifier-note-input" className="px-2 text-body font-medium text-ink">
             Note for the bar (optional)
           </label>
-          <div className="flex h-[52px] items-center rounded-lg bg-sunken/60 px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50 shadow-raised">
+          <div className="flex h-[52px] items-center rounded-lg bg-control px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50">
             <input
               id="modifier-note-input"
               type="text"
@@ -261,7 +261,7 @@ export function FinishedSheet({ variantId, onClose }: { variantId: string | null
       footer={footerActions}
     >
       <div className="flex flex-col gap-16 py-4">
-        <div className="flex items-center gap-12 rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-raised">
+        <div className="flex items-center gap-12 rounded-lg bg-control px-16 py-12 ring-1 ring-rule-raised/20">
           <StatusChip status={held ? 'on_hold' : 'finished'} />
           <span className="text-body font-medium text-ink">
             {held ? 'Currently on hold' : 'Item is finished'}
@@ -317,7 +317,7 @@ export function SeatMenuSheet({
       footer={footerActions}
     >
       <div className="flex flex-col gap-16 py-2">
-        <div className="flex items-center justify-between rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-raised">
+        <div className="flex items-center justify-between rounded-lg bg-control px-16 py-12 ring-1 ring-rule-raised/20">
           <div className="flex items-center gap-12">
             <SeatChip seat={seat.seatNo} size="row" label={seat.label} />
             <span className="text-body font-medium text-ink">
@@ -325,7 +325,7 @@ export function SeatMenuSheet({
             </span>
           </div>
           <div className="text-right">
-            <span className="block font-mono text-[10px] uppercase text-ink-subtle">Seat Total</span>
+            <span className="block font-mono text-badge uppercase text-ink-subtle">Seat Total</span>
             <Money value={seat.total} size="num" tone="default" />
           </div>
         </div>
@@ -424,7 +424,7 @@ export function LabelSeatSheet({
             {value.length}/{SEAT_LABEL_MAX}
           </span>
         </div>
-        <div className="flex h-[52px] items-center rounded-lg bg-sunken/60 px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50 shadow-raised">
+        <div className="flex h-[52px] items-center rounded-lg bg-control px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50">
           <input
             id="seat-label-input"
             data-autofocus=""
@@ -502,12 +502,12 @@ export function LineSheet({
     >
       <div className="flex flex-col gap-16 py-2">
         {line && draft ? (
-          <div className="flex items-center justify-between rounded-lg bg-sunken/60 px-16 py-12 ring-1 ring-rule-raised/20 shadow-raised">
+          <div className="flex items-center justify-between rounded-lg bg-control px-16 py-12 ring-1 ring-rule-raised/20">
             <div className="flex flex-col gap-2">
               <span className="text-body font-medium text-ink">Quantity</span>
               <span className="text-body-sm text-ink-subtle">Not fired yet</span>
             </div>
-            <div className="inline-flex h-[40px] shrink-0 items-center rounded-full bg-sunken/60 ring-1 ring-rule-raised/30 select-none overflow-hidden">
+            <div className="inline-flex h-[40px] shrink-0 items-center rounded-full bg-control-hover select-none overflow-hidden">
               <button
                 type="button"
                 aria-label={line.qty === 1 ? 'Clear the line' : 'One fewer'}
@@ -581,7 +581,7 @@ export function MoveLineSheet({
       footer={footerActions}
     >
       <div className="py-4">
-        <div className="rounded-lg bg-sunken/60 p-16 shadow-raised ring-1 ring-rule-raised/20">
+        <div className="rounded-lg bg-control p-16 ring-1 ring-rule-raised/20">
           <div className="flex flex-wrap gap-16 justify-center" role="group" aria-label="Seats">
             {[
               ...detail.activeSeats.map((s) => ({ key: s.id as SeatSelection, seat: s.seatNo as number | 'shared', label: s.label })),
@@ -601,7 +601,7 @@ export function MoveLineSheet({
                     }}
                     className={cx(isCurrent && 'opacity-40')}
                   />
-                  <span className="max-w-full truncate font-mono text-[11px] text-ink-subtle">
+                  <span className="max-w-full truncate font-mono text-label text-ink-subtle">
                     {isCurrent ? 'Current' : option.seat === 'shared' ? 'Shared' : (displaySeatLabel(option.label) ?? `Seat ${option.seat}`)}
                   </span>
                 </div>
@@ -676,7 +676,7 @@ export function NoteSheet({
             {value.length}/140
           </span>
         </div>
-        <div className="flex h-[52px] items-center rounded-lg bg-sunken/60 px-16 shadow-raised ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50">
+        <div className="flex h-[52px] items-center rounded-lg bg-control px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50">
           <input
             id="line-note-input"
             data-autofocus=""
@@ -797,7 +797,7 @@ export function MoveTabSheet({
     >
       <div className="py-4">
         {freeTables.length === 0 ? (
-          <div className="rounded-lg bg-sunken/60 p-20 text-center shadow-raised ring-1 ring-rule-raised/20">
+          <div className="rounded-lg bg-control p-20 text-center ring-1 ring-rule-raised/20">
             <p className="text-body text-ink-muted">Every table is taken right now.</p>
           </div>
         ) : (
@@ -806,7 +806,7 @@ export function MoveTabSheet({
               <InviteButton
                 key={t.id}
                 onClick={() => void onMove(t.id).then(onClose)}
-                className="flex min-h-[76px] flex-col justify-center rounded-lg bg-sunken/60 px-16 shadow-raised ring-1 ring-rule-raised/20 transition-all hover:bg-sunken/80 hover:ring-rule-raised/40 press-feedback"
+                className="flex min-h-[76px] flex-col justify-center rounded-lg bg-control px-16 ring-1 ring-rule-raised/20 transition-all hover:bg-control-hover hover:ring-rule-raised/40 press-feedback"
               >
                 <span className="text-subtitle font-medium text-ink">{tableLabel(t)}</span>
                 <span className="mt-2 text-body-sm text-ink-subtle">{t.seats === 1 ? '1 seat' : `${t.seats} seats`}</span>

@@ -1,4 +1,11 @@
 @layer base {
+  /* Tailwind's own placeholder tint needs color-mix(); this one reads everywhere (docs/11 D-24). */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-ink-subtle);
+    opacity: 1;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
@@ -113,6 +120,8 @@
 @custom-variant short (@media (max-height: 34rem));
 /* Enough height for a header, a list that breathes and a dock. */
 @custom-variant tall (@media (min-height: 48rem));
+/* A laptop screen: the desk drops what it can live without so its foot never clips. */
+@custom-variant cramped (@media (max-height: 47.5rem));
 /* A finger, not a mouse: targets grow, hover styles are not the whole story. */
 @custom-variant touch (@media (pointer: coarse));
 @custom-variant mouse (@media (pointer: fine));
@@ -533,39 +542,601 @@
 }
 
 /*
- * A notice's surface: raised glass washed with its tone, a glow from the leading corner and a fine
- * dot grid in the same tone. The tone arrives as --notice-tone, set per notice.
+ * A notice's surface: raised, washed with its tone, a glow from the leading corner and a fine dot
+ * grid in the same tone. The tone arrives as channels, --notice-tone-rgb, set per notice by a
+ * notice-tone-* utility, so it reads in every browser Bliss supports (docs/11 D-24).
  */
 @utility notice-surface {
-  background-color: color-mix(in oklab, var(--notice-tone, var(--color-accent)) 9%, var(--color-raised));
+  --notice-wash: rgb(var(--notice-tone-rgb, var(--bliss-accent-rgb)) / 9%);
+  background-color: var(--color-raised);
   background-image:
-    radial-gradient(ellipse at 0% 0%, color-mix(in oklab, var(--notice-tone, var(--color-accent)) 20%, transparent) 0%, transparent 70%),
-    radial-gradient(color-mix(in oklab, var(--notice-tone, var(--color-accent)) 18%, transparent) 1px, transparent 1.3px);
-  background-size: 100% 100%, 10px 10px;
-  background-position: 0 0, 5px 5px;
+    linear-gradient(var(--notice-wash), var(--notice-wash)),
+    radial-gradient(ellipse at 0% 0%, rgb(var(--notice-tone-rgb, var(--bliss-accent-rgb)) / 20%) 0%, transparent 70%),
+    radial-gradient(rgb(var(--notice-tone-rgb, var(--bliss-accent-rgb)) / 18%) 1px, transparent 1.3px);
+  background-size: 100% 100%, 100% 100%, 10px 10px;
+  background-position: 0 0, 0 0, 5px 5px;
+}
+
+@utility notice-tone-poured {
+  --notice-tone-rgb: var(--bliss-poured-rgb);
+}
+
+@utility notice-tone-info {
+  --notice-tone-rgb: var(--bliss-info-rgb);
+}
+
+@utility notice-tone-low {
+  --notice-tone-rgb: var(--bliss-low-rgb);
+}
+
+@utility notice-tone-stop {
+  --notice-tone-rgb: var(--bliss-stop-rgb);
 }
 
 /* An invitation rather than an object: a free table. Sleek solid glass, filled with a warm glow on hover. */
 @utility surface-invite {
-  background-color: color-mix(in oklab, var(--color-page) 10%, transparent);
-  border: 1px solid var(--color-rule-raised);
-  border-radius: 20px;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  box-shadow: inset 0 1px 1px color-mix(in oklab, var(--color-ink) 2%, transparent);
+  background-color: var(--color-sunken);
+  border: 1px dashed var(--color-rule-raised);
+  border-radius: var(--radius-control);
   transition:
     border-color var(--bliss-duration-hover) var(--bliss-ease-out),
-    background-color var(--bliss-duration-hover) var(--bliss-ease-out),
-    box-shadow var(--bliss-duration-hover) var(--bliss-ease-out),
-    transform var(--bliss-duration-press) var(--bliss-ease-out);
+    background-color var(--bliss-duration-hover) var(--bliss-ease-out);
+
+  &:hover {
+    border-color: var(--color-attention);
+  }
+
+  &:active {
+    background-color: var(--color-control);
+  }
+}
+
+/*
+ * ---------------------------------------------------------------------------------------------
+ * Console system, docs/19-console-system.md.
+ *
+ * `dark:` follows the product's theme, not the operating system: the Console chooses light, dark
+ * or system, and the Floor and Counter are dark by design. Without this, Tailwind's default `dark:`
+ * would follow the OS and disagree with the page it sits on.
+ * ---------------------------------------------------------------------------------------------
+ */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-theme='system'], [data-theme='system'] *) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * The Card family's surface: one step off the page, an edge, and a shadow in light only. A card
+ * never sits inside a card; bands head and foot it instead (card-band, card-band-strong).
+ */
+@utility card-surface {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* A card that is a link or a control: the edge firms, the shadow deepens and the card lifts 2px. */
+@utility card-interactive {
+  transition:
+    transform var(--bliss-duration-card) var(--bliss-ease-out),
+    box-shadow var(--bliss-duration-card) var(--bliss-ease-out),
+    border-color var(--bliss-duration-card) var(--bliss-ease-out);
   @media (hover: hover) {
     &:hover {
-      border-color: var(--color-attention-subtle);
-      background-color: color-mix(in oklab, var(--color-attention) 8%, transparent);
-      box-shadow: 0 8px 24px -8px color-mix(in oklab, var(--color-attention) 30%, transparent), inset 0 1px 1px color-mix(in oklab, var(--color-ink) 8%, transparent);
+      border-color: var(--color-edge-strong);
+      box-shadow: var(--shadow-card-hover);
+      transform: translateY(-2px);
     }
   }
   &:active {
+    transform: translateY(0) scale(var(--bliss-scale-press));
+  }
+}
+
+/* The header and footer strips of a card: a tint and one rule, not a nested box. */
+@utility card-band {
+  background-color: var(--color-band);
+}
+
+@utility card-band-strong {
+  background-color: var(--color-band-strong);
+}
+
+/*
+ * Capitals over a value, and rail group names. The source string stays sentence case, per docs/08;
+ * the capitals are presentation, so a screen reader reads words, not letters.
+ */
+@utility label-caps {
+  font-family: var(--font-sans);
+  font-size: var(--text-overline);
+  line-height: var(--text-overline--line-height);
+  letter-spacing: var(--text-overline--letter-spacing);
+  font-weight: var(--text-overline--font-weight);
+  text-transform: uppercase;
+}
+
+/* A readable line: descriptions and help text stop at about 68 characters. */
+@utility measure {
+  max-width: 68ch;
+}
+
+/* The two Console transitions: colour on hover, and the heavier card move. */
+@utility transition-hover {
+  transition-property: color, background-color, border-color, opacity, box-shadow;
+  transition-duration: var(--bliss-duration-hover);
+  transition-timing-function: var(--bliss-ease-out);
+}
+
+@utility transition-card {
+  transition-property: transform, box-shadow, border-color, background-color, width, opacity;
+  transition-duration: var(--bliss-duration-card);
+  transition-timing-function: var(--bliss-ease-out);
+}
+
+/* A transform on its own, for a chevron that turns or a row that slides back. */
+@utility transition-move {
+  transition-property: transform;
+  transition-duration: var(--bliss-duration-hover);
+  transition-timing-function: var(--bliss-ease-out);
+}
+
+/* A status glow under a station card, so an order that needs someone reads from across the room.
+   Built on channel variables (Safari 15 has no color-mix); Clarity swaps it for the card's border. */
+@utility glow-stop {
+  box-shadow: 0 8px 32px -8px rgb(var(--bliss-stop-rgb) / 25%);
+}
+@utility glow-low {
+  box-shadow: 0 8px 32px -8px rgb(var(--bliss-low-rgb) / 22%);
+}
+@utility glow-poured {
+  box-shadow: 0 8px 32px -8px rgb(var(--bliss-poured-rgb) / 20%);
+}
+@utility glow-served {
+  box-shadow: 0 8px 32px -8px rgb(var(--bliss-served-rgb) / 20%);
+}
+
+/* Stacking, named, so a popover never loses to a sticky bar by accident. */
+@utility z-base {
+  z-index: 0;
+}
+@utility z-raised {
+  z-index: 10;
+}
+@utility z-sticky {
+  z-index: 20;
+}
+@utility z-bar {
+  z-index: 30;
+}
+@utility z-rail {
+  z-index: 40;
+}
+@utility z-popover {
+  z-index: 50;
+}
+@utility z-overlay {
+  z-index: 60;
+}
+@utility z-toast {
+  z-index: 70;
+}
+
+/* A scroll container for a wide table: scrolls sideways, never clips, keeps its own scrollbar thin. */
+@utility scroll-x {
+  /* A containing block, so an absolutely placed child (a screen-reader label) scrolls with it
+     instead of widening the page. */
+  position: relative;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-interactive:hover,
+  .card-interactive:active {
+    transform: none;
+  }
+}
+
+/* The press on a control: a small, quick scale. Reduced motion keeps the colour change only. */
+@utility press-scale {
+  &:active {
     transform: scale(var(--bliss-scale-press));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:active {
+      transform: none;
+    }
+  }
+}
+
+/*
+ * A stretched link: the link covers its whole card, so the card is one tab stop and middle click
+ * opens it, while buttons inside the card sit above it (z-raised) and stay their own targets.
+ */
+@utility link-stretched {
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+}
+
+/* The Console dialog surface: solid, one edge, the popover shadow. Floor sheets keep their glass. */
+@utility overlay-solid {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-edge);
+  box-shadow: var(--shadow-popover);
+}
+
+/* The Floor and Counter sheet surface: frosted glass over the working surface. */
+@utility overlay-glass {
+  background-color: color-mix(in srgb, var(--color-raised) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 4%, transparent);
+  box-shadow:
+    0 24px 48px -12px color-mix(in srgb, var(--color-ink) 12%, transparent),
+    0 8px 24px -4px color-mix(in srgb, var(--color-ink) 4%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-glint) 20%, transparent);
+  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(40px);
+}
+
+@utility scrim-glass {
+  background-color: color-mix(in oklab, var(--color-page) 40%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* A key and its value on one row: a fixed label column that stays readable, the value takes the rest. */
+@utility grid-cols-kv {
+  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+}
+
+/* The Console sheet, docs/19 section 4: inside it the page is the sheet's surface, so every
+ * `bg-page` (a sticky header, a table head) matches the sheet it sits on, in both themes. */
+@utility sheet-scope {
+  --bliss-page: var(--bliss-sheet);
+  /* In the Console a chip's word says its state; the dot beside it is one mark too many. */
+  & [data-chip-dot] {
+    display: none;
+  }
+}
+
+/*
+ * The expressive layer, docs/19 section 3: the touches the Console's first revamp introduced, on
+ * tokens. A card's top line in its tone, a hairline that fades at both ends, a photograph's scrim,
+ * and the quarter turn of a create button's plus.
+ */
+@utility card-topline {
+  &::after {
+    content: '';
+    position: absolute;
+    inset-inline: 16px;
+    top: 0;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, var(--topline, var(--color-hairline)) 30%, var(--topline, var(--color-hairline)) 70%, transparent);
+  }
+}
+
+@utility topline-* {
+  --topline: --value(--color-*);
+}
+
+@utility rule-fade {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-hairline) 20%, var(--color-hairline) 80%, transparent);
+}
+
+@utility media-scrim {
+  background: linear-gradient(to top, var(--color-scrim-media), transparent 72%);
+}
+
+/* A photograph that leans in, slowly, under the pointer. Still under reduced motion. */
+@utility media-zoom {
+  transition: transform 700ms var(--bliss-ease-out);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :where(.group):hover & {
+      transform: scale(1.04);
+    }
+  }
+}
+
+/* The plus on a create button turns a quarter under the pointer. */
+@utility turn-on-hover {
+  transition: transform var(--bliss-duration-card) var(--bliss-ease-out);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :where(button, a):hover > & {
+      transform: rotate(90deg);
+    }
+  }
+}
+
+/* An arrow that nudges toward where it leads when its row or card is hovered. */
+@utility nudge-on-hover {
+  transition: transform var(--bliss-duration-hover) var(--bliss-ease-out);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :where(.group):hover & {
+      transform: translateX(4px);
+    }
+  }
+}
+
+/* An icon tile that swells a little when its card is hovered. */
+@utility swell-on-hover {
+  transition: transform var(--bliss-duration-card) var(--bliss-ease-snap);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :where(.group):hover & {
+      transform: scale(1.06);
+    }
+  }
+}
+
+/* The create pill's rise: a pixel up under the pointer, back down when pressed. Still under reduced motion. */
+@utility lift-on-hover {
+  transition:
+    transform 160ms var(--bliss-ease-out),
+    box-shadow 160ms var(--bliss-ease-out),
+    background-color 160ms var(--bliss-ease-out);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+/* A row of a record card: an uppercase label on the left, its value on the right, a hairline between rows. */
+@utility kv-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 8px;
+  border-bottom: 1px solid var(--color-rule);
+  &:first-child {
+    padding-top: 0;
+  }
+  &:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+}
+
+/* The sheet header once the page scrolls under it: the page, frosted. */
+@utility glass-header {
+  background-color: color-mix(in oklab, var(--color-page) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+
+/* The desk's reading of the night: a card of the sheet's surface, fading into the desk. */
+@utility tonight-surface {
+  background-image: linear-gradient(to bottom, var(--color-desk-active), color-mix(in oklab, var(--color-desk-active) 40%, var(--color-desk)));
+  box-shadow: var(--shadow-chip);
+}
+
+/* Focus on the desk: a ring in the focus colour, offset so it sits on the desk, keyboard only. */
+@utility focus-ring-desk {
+  outline: none;
+  &:focus-visible {
+    box-shadow:
+      0 0 0 2px var(--color-desk),
+      0 0 0 4px var(--color-focus);
+  }
+}
+
+/* A list that opens to its own height: grid rows from nothing to one fraction. */
+@utility grid-rows-open {
+  grid-template-rows: 1fr;
+}
+
+@utility grid-rows-shut {
+  grid-template-rows: 0fr;
+}
+
+/*
+ * A card that needs a second look: its edge takes the tone and its head a faint wash of it, fading
+ * down the card. Never a bar down one side.
+ */
+@utility card-tone-stop {
+  --card-tone-rgb: var(--bliss-stop-rgb);
+  border-color: rgb(var(--card-tone-rgb) / 45%);
+  background-image: linear-gradient(to bottom, rgb(var(--card-tone-rgb) / 8%), transparent 112px);
+}
+
+@utility card-tone-poured {
+  --card-tone-rgb: var(--bliss-poured-rgb);
+  border-color: rgb(var(--card-tone-rgb) / 45%);
+  background-image: linear-gradient(to bottom, rgb(var(--card-tone-rgb) / 8%), transparent 112px);
+}
+
+@utility card-tone-low {
+  --card-tone-rgb: var(--bliss-low-rgb);
+  border-color: rgb(var(--card-tone-rgb) / 45%);
+  background-image: linear-gradient(to bottom, rgb(var(--card-tone-rgb) / 8%), transparent 112px);
+}
+
+@utility card-tone-accent {
+  --card-tone-rgb: var(--bliss-accent-rgb);
+  border-color: rgb(var(--card-tone-rgb) / 45%);
+  background-image: linear-gradient(to bottom, rgb(var(--card-tone-rgb) / 8%), transparent 112px);
+}
+
+/* A scrolling list whose foot fades into the desk, so a cut-off row reads as "more below". */
+@utility fade-foot {
+  mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent);
+}
+
+/* A toast rises into place. Still under reduced motion. */
+@utility toast-in {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: toast-rise 220ms var(--bliss-ease-out) both;
+  }
+}
+
+@keyframes toast-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Ambient artwork: decoration behind a station's working surfaces. Contained so it never reflows them. */
+@utility ambient-art {
+  contain: layout paint;
+}
+
+/*
+ * Display profiles, per device. docs/06, display profiles; docs/11 D-25. The device sets them as
+ * data-display on <html> (lib/pos/display.ts); they combine.
+ *
+ * Lite, for slower devices such as the iPad mini 4, and Clarity, for screens that wash colour out,
+ * share their plainness: no frosted glass (a blur is the most expensive thing a tablet draws, and on a
+ * weak panel it only muddies), no ambient artwork, no dot textures. Clarity's colours are in tokens.css.
+ */
+[data-display~='lite'],
+[data-display~='clarity'] {
+  --bliss-glass: var(--bliss-raised);
+  --bliss-glass-hover: var(--bliss-control-hover);
+  --bliss-glass-strong: var(--bliss-raised);
+  --bliss-glass-strong-hover: var(--bliss-control-hover);
+}
+
+:is([data-display~='lite'], [data-display~='clarity']) :is(*, *::before, *::after) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+:is([data-display~='lite'], [data-display~='clarity']) .ambient-art {
+  display: none;
+}
+
+/* Without the blur, a see-through sheet only muddies: sheets and their scrim are solid. */
+:is([data-display~='lite'], [data-display~='clarity']) .overlay-glass {
+  background-color: var(--color-overlay);
+}
+
+:is([data-display~='lite'], [data-display~='clarity']) .scrim-glass {
+  background-color: var(--color-scrim);
+}
+
+:is([data-display~='lite'], [data-display~='clarity']) :is(.texture-dots-accent, .texture-dots-stop) {
+  background-image: none;
+}
+
+/* Lite: nothing loops. A pulse or a breathing label costs a tablet frames it needs for scrolling. */
+[data-display~='lite'] :is(*, *::before, *::after) {
+  animation-iteration-count: 1 !important;
+}
+
+/* Clarity: no text smaller than 12px, so meta survives a soft, low-resolution panel. */
+[data-display~='clarity'] {
+  --text-micro: 12px;
+  --text-micro--line-height: 15px;
+  --text-eyebrow: 12px;
+  --text-caps: 12px;
+  --text-badge: 11px;
+}
+
+/* Clarity: a soft glow only muddies a weak panel, so a status card carries its tone as a crisp edge. */
+[data-display~='clarity'] .glow-stop {
+  box-shadow: inset 0 0 0 1px rgb(var(--bliss-stop-rgb) / 70%);
+}
+[data-display~='clarity'] .glow-low {
+  box-shadow: inset 0 0 0 1px rgb(var(--bliss-low-rgb) / 70%);
+}
+[data-display~='clarity'] .glow-poured {
+  box-shadow: inset 0 0 0 1px rgb(var(--bliss-poured-rgb) / 70%);
+}
+[data-display~='clarity'] .glow-served {
+  box-shadow: inset 0 0 0 1px rgb(var(--bliss-served-rgb) / 70%);
+}
+
+/* The product grid: as many 160px columns as fit, so a tablet upright shows four and on its side four beside the ticket. */
+@utility grid-cols-tiles {
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+}
+
+/* A bottom sheet arriving: a short rise, as an iPad sheet does. Nothing moves with reduced motion. */
+@keyframes bliss-sheet-rise {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@utility sheet-rise {
+  animation: bliss-sheet-rise 220ms var(--bliss-ease-out) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+/* Tab cards: as many 240px columns as fit. */
+@utility grid-cols-cards {
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+}
+
+/*
+ * Touch, the way an iPad app behaves. docs/16 section 2.
+ *  - A tap is a tap: no double-tap-to-zoom wait, no grey flash; our own pressed states answer.
+ *  - A long press on a tile opens its choices, never the system's copy and look-up callout.
+ *  - Fields are 16px or more, so Safari never zooms the page when one takes focus.
+ *  - The page itself never rubber-bands; panes scroll inside it.
+ */
+:is([data-surface='floor'], [data-surface='counter']) {
+  -webkit-tap-highlight-color: transparent;
+
+  & body {
+    overscroll-behavior: none;
+  }
+
+  & :is(button, a, [role='button'], [role='radio'], [role='tab'], label, summary) {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  & :is(input, select, textarea) {
+    font-size: max(16px, 1em);
+  }
+}
+
+/*
+ * The top bar's controls draw at 32px, as an iPad's navigation bar does, and take a finger at 44:
+ * a transparent layer around each one, inside the bar's own height. Scoped to the bar, so a
+ * scrolling row of chips never gains overflow from it. :where keeps it below any utility.
+ */
+@media (pointer: coarse) {
+  :where([data-topbar]) :where(a[href], button) {
+    position: relative;
+  }
+
+  :where([data-topbar]) :where(a[href], button)::before {
+    content: '';
+    position: absolute;
+    inset-block: min(0px, calc((100% - 44px) / 2));
+    inset-inline: min(0px, calc((100% - 44px) / 2));
   }
 }

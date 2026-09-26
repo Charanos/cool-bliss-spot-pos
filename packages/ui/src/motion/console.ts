@@ -33,12 +33,7 @@ export function sectionReveal(el: Element) {
     {
       ...vars('section.reveal', { y: 0, opacity: 1 }),
       delay: Math.min(Math.max(index, 0), 2) * 0.04,
-      scrollTrigger: { 
-        trigger: el, 
-        start: 'top 85%', 
-        once: true,
-        scroller: document.getElementById('sheet-scroll-container') || window
-      },
+      scrollTrigger: { trigger: el, start: 'top 85%', once: true },
     },
   );
 }

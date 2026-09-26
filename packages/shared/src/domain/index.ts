@@ -43,14 +43,19 @@ export interface Outlet {
   lowStockDefault: number;
   drawerVarianceThresholdCents: Cents;
   status: 'active' | 'archived';
+  /** Absent until set: the defaults in `modules/identity/pins.ts` apply. */
+  pinPolicy?: PinPolicy;
 }
 
 export interface Role {
   id: Id;
+  /** Where the role signs in and how senior it is. A role made in the Console takes its base role's key. */
   key: RoleKey;
   name: string;
   isSystem: boolean;
   permissions: PermissionKey[];
+  /** Deleted in the Console. The row stays, since stored rows are never deleted. */
+  archived?: boolean;
 }
 
 export type EmploymentStatus = 'active' | 'suspended' | 'left';
@@ -67,6 +72,33 @@ export interface Staff {
   avatarUrl: string | null;
   contactNumber: string | null;
   pinLockedUntil: EpochMs | null;
+  /** Digits in this person's PIN, 4 to 8. Absent on rows from before lengths could vary: six. */
+  pinLength?: number;
+  /** When the PIN was last set, and when it stops working unless changed. */
+  pinSetAt?: EpochMs | null;
+  pinExpiresAt?: EpochMs | null;
+  /** Set by a manager's reset: at the next sign-in the person chooses their own PIN. */
+  pinMustChange?: boolean;
+  /** Hashes of the last PINs, so none is used again. Newest first. */
+  pinHistory?: string[];
+  /** Bumped on every PIN change; a session signed before it no longer counts. */
+  pinVersion?: number;
+  /** When a manager took the PIN away. Nobody signs in as them, development PIN included, until a new one is set. */
+  pinClearedAt?: EpochMs | null;
+}
+
+/** How PINs work at this outlet, set by an owner or manager in Settings. */
+export interface PinPolicy {
+  /** Digits in a new PIN, 4 to 8. */
+  length: number;
+  /** Days a PIN lasts before it must be changed; null for never. */
+  expiryDays: number | null;
+  /** Wrong tries before a PIN locks for fifteen minutes. */
+  lockAttempts: number;
+  /** How many earlier PINs cannot be used again. */
+  history: number;
+  /** After a manager sets someone's PIN, they choose their own at the next sign-in. */
+  ownPinAfterReset: boolean;
 }
 
 export type DeviceKind = 'floor' | 'counter' | 'bar' | 'console';
@@ -85,6 +117,9 @@ export interface Device {
   status: DeviceStatus;
   revokedAt: EpochMs | null;
   revokedReason: string | null;
+  /** A one-time pairing code, hashed, set when the device is registered or reinstated in the Console. */
+  pairingHash?: string | null;
+  pairingExpiresAt?: EpochMs | null;
 }
 
 /* ------------------------------------------------------- catalogue and pricing */
@@ -173,6 +208,8 @@ export interface VariantModifierGroup {
   productVariantId: Id;
   modifierGroupId: Id;
   sortOrder: number;
+  /** Unlinked in the Console. The row stays, since stored rows are never deleted. */
+  removed?: boolean;
 }
 
 export interface PriceList {
@@ -277,14 +314,17 @@ export interface GoodsReceivedNote {
   outletId: Id;
   purchaseOrderId: Id | null;
   supplierId: Id;
+  /** The receipt this note documents. Absent on notes written before the link existed. */
+  goodsReceiptId?: Id | null;
   invoiceNumber: string | null;
-  etimsInvoiceRef: string | null;
+  /** Photos and scans of the delivery note and invoice, as Console upload paths. */
   mediaUrls: string[];
   status: GrnStatus;
   receivedBy: Id;
   receivedAt: EpochMs;
   deviceTime: EpochMs;
-  gpsLocation: string | null;
+  varianceApprovedBy?: Id | null;
+  varianceApprovedAt?: EpochMs | null;
 }
 
 export interface StockMovement {
@@ -362,6 +402,8 @@ export interface ServiceTable {
   positionX: number;
   positionY: number;
   status: TableStatus;
+  /** Removed in the Console, never having held a tab. The row stays. */
+  archived?: boolean;
 }
 
 export type TabStatus = 'open' | 'part_settled' | 'settling' | 'settled' | 'voided' | 'merged_into';
@@ -523,6 +565,12 @@ export interface Bill {
   settledAt: EpochMs | null;
   settledBy: Id | null;
   deviceId: Id;
+  /** Set when a manager voids the bill in the Console: its lines go back on the tab. */
+  voidedAt?: EpochMs | null;
+  voidedBy?: Id | null;
+  voidReason?: string | null;
+  /** What has been given back so far. The bill's net is its total less this. */
+  refundedCents?: Cents;
 }
 
 /** A tender is a record of what the cashier observed. Bliss never processes a payment. */
@@ -539,6 +587,8 @@ export interface Tender {
   createdBy: Id;
   deviceId: Id;
   createdAt: EpochMs;
+  /** A refund: the amount is negative, and these are the bill lines it gave back. */
+  refundOfLineIds?: Id[];
 }
 
 /* ---------------------------------------------------------------- platform */

@@ -1,11 +1,13 @@
 import { formatBps, plural } from '@bliss/shared/format';
 import { ShareBars } from '@bliss/ui/components/console/bar-chart';
-import { RevealSection } from '@bliss/ui/components/console/shell';
+import { Card, CardBody, CardHeader } from '@bliss/ui/components/console/card';
+import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Money } from '@bliss/ui/components/money';
 import type { Metadata } from 'next';
 import * as reporting from '@/modules/reporting/service';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { UrlSelect } from '../../_components/url-select';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Seats' };
 
@@ -18,69 +20,64 @@ export default async function SeatsPage({ searchParams }: { searchParams: Promis
   const range = businessRange(params.range, '28');
   const data = reporting.seatComposition(range.from, range.to);
 
+  const head = 'px-12 py-12 text-label text-ink-subtle';
   return (
     <>
-      <div className="mb-24 flex flex-wrap items-end justify-between gap-16">
-        <UrlSelect param="range" label="Range" options={rangeOptions(false)} allLabel={null} fallback={range.key} />
-        <p className="max-w-[60ch] text-body-sm text-ink-subtle">Seat 1 is whoever the waiter took first. Positions describe the order people ordered in, not where they sat.</p>
-      </div>
+      <ViewHeader page="/console/reports/seats" actions={<UrlSelect param="range" label="Range" options={rangeOptions(false)} allLabel={null} fallback={range.key} />} />
 
-      <RevealSection className="mb-16 flex flex-wrap gap-x-40 gap-y-16 border-b border-hairline pb-20">
-        <div>
-          <span className="text-label text-ink-subtle">Lines on a seat, tables of two or more</span>
-          <p className="font-mono tabular text-num-lg text-ink">{formatBps(data.attributionBps)}</p>
-        </div>
-        <div>
-          <span className="text-label text-ink-subtle">Shared</span>
-          <p className="flex items-baseline gap-8">
-            <Money value={data.shared} size="num-lg" decimals="whole" />
-            <span className="font-mono tabular text-num-sm text-ink-subtle">{formatBps(data.sharedShareBps)}</span>
-          </p>
-        </div>
-        <div>
-          <span className="text-label text-ink-subtle">All seated sales</span>
-          <p>
-            <Money value={data.total} size="num-lg" decimals="whole" />
-          </p>
-        </div>
-      </RevealSection>
+    <div className="flex flex-col gap-32">
 
-      <div className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
-        <RevealSection className="rounded-md border border-hairline bg-raised p-20 shadow-raised">
-          <h2 className="text-subtitle text-ink">By seat position</h2>
-          <div className="mt-12">
-            <ShareBars rows={data.seats.map((s) => ({ key: s.seat, label: `Seat ${s.seat}`, value: s.total, detail: `${formatBps(s.shareBps)} · ${plural(s.lines, 'line')}` }))} />
-          </div>
-        </RevealSection>
-        <RevealSection className="rounded-md border border-hairline bg-raised p-20 shadow-raised">
-          <h2 className="text-subtitle text-ink">By party size</h2>
-          <div role="table" aria-label="Sales by party size" className="mt-12">
-            <div role="row" className="grid grid-cols-[minmax(100px,1fr)_80px_120px_120px] gap-16 border-b border-hairline py-8">
-              {['Party', 'Tabs', 'Sales', 'Per guest'].map((h, i) => (
-                <span key={h} role="columnheader" className={i > 0 ? 'text-right text-label text-ink-subtle' : 'text-label text-ink-subtle'}>
-                  {h}
-                </span>
+      <MetricGrid columns={3}>
+        <Metric label="Lines on a seat" value={formatBps(data.attributionBps)} detail="At tables of two or more. The rest were left shared." />
+        <Metric label="Shared" value={<Money value={data.shared} size="num-kpi" decimals="whole" />} detail={`${formatBps(data.sharedShareBps)} of seated sales`} />
+        <Metric label="All seated sales" value={<Money value={data.total} size="num-kpi" decimals="whole" />} detail="Every line on a tab at a table" />
+      </MetricGrid>
+
+      <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-2">
+        <Card aria-labelledby="seats-position">
+          <CardHeader band level="h2" titleId="seats-position" title="By seat position" />
+          <CardBody className="pt-12">
+            <ShareBars rows={data.seats.map((s) => ({ key: s.seat, label: `Seat ${s.seat}`, value: s.total, detail: `${formatBps(s.shareBps)}, ${plural(s.lines, 'line')}` }))} />
+          </CardBody>
+        </Card>
+        <Card aria-labelledby="seats-party">
+          <CardHeader band level="h2" titleId="seats-party" title="By party size" />
+          <table className="w-full border-collapse">
+            <caption className="sr-only">Sales by party size</caption>
+            <thead>
+              <tr className="border-b border-rule">
+                <th scope="col" className={`${head} pl-20 text-left`}>
+                  Party
+                </th>
+                <th scope="col" className={`${head} text-right`}>
+                  Tabs
+                </th>
+                <th scope="col" className={`${head} text-right`}>
+                  Sales
+                </th>
+                <th scope="col" className={`${head} pr-20 text-right`}>
+                  A guest
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.guests.map((g) => (
+                <tr key={g.guestCount} className="border-b border-rule last:border-b-0">
+                  <td className="py-12 pl-20 pr-12 text-ui text-ink">{g.guestCount === 1 ? 'On their own' : `${g.guestCount} guests`}</td>
+                  <td className="px-12 py-12 text-right font-mono tabular text-num-md text-ink-muted">{g.tabs}</td>
+                  <td className="px-12 py-12 text-right">
+                    <Money value={g.total} currency={false} size="num-md" decimals="whole" />
+                  </td>
+                  <td className="py-12 pl-12 pr-20 text-right">
+                    <Money value={g.perSeat} currency={false} size="num-md" decimals="whole" tone="muted" />
+                  </td>
+                </tr>
               ))}
-            </div>
-            {data.guests.map((g) => (
-              <div key={g.guestCount} role="row" className="grid min-h-row grid-cols-[minmax(100px,1fr)_80px_120px_120px] items-center gap-16 border-b border-rule last:border-b-0">
-                <span role="cell" className="text-body text-ink">
-                  {g.guestCount === 1 ? 'On their own' : `${g.guestCount} guests`}
-                </span>
-                <span role="cell" className="text-right font-mono tabular text-num text-ink-muted">
-                  {g.tabs}
-                </span>
-                <span role="cell" className="text-right">
-                  <Money value={g.total} currency={false} decimals="whole" />
-                </span>
-                <span role="cell" className="text-right">
-                  <Money value={g.perSeat} currency={false} decimals="whole" tone="muted" />
-                </span>
-              </div>
-            ))}
-          </div>
-        </RevealSection>
+            </tbody>
+          </table>
+        </Card>
       </div>
+    </div>
     </>
   );
 }

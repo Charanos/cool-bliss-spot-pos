@@ -1,13 +1,11 @@
 'use client';
 
 import type { Cents } from '@bliss/shared/money';
-import { formatFigure } from '@bliss/shared/money';
 import { displaySeatLabel } from '@bliss/shared/seats';
 import { IconPlus } from '@tabler/icons-react';
 import { memo, useEffect, useRef } from 'react';
 import { useLongPress } from '../../hooks';
 import { cx } from '../../lib/cx';
-import { useCountTo } from '../../motion/hooks';
 import { ICON_STROKE } from '../icon';
 import { seatBgClass } from '../../lib/seat';
 
@@ -39,7 +37,8 @@ const SeatColumn = memo(function SeatColumn({
   selected,
   label,
   settled,
-  total,
+  // The seat's total is shown in the ticket, not on the chip; kept in the props for callers.
+  total: _total,
   onSelect,
   onMenu,
 }: {
@@ -70,23 +69,15 @@ const SeatColumn = memo(function SeatColumn({
       aria-label={label ? `Seat ${seat}, ${displaySeatLabel(label)}${settled ? ', settled' : ''}` : shared ? `Shared${settled ? ', settled' : ''}` : `Seat ${seat}${settled ? ', settled' : ''}`}
       title={label ?? undefined}
       className={cx(
-        'relative flex shrink-0 size-[40px] flex-col items-center justify-center rounded-full outline-none transition-all duration-[250ms] ease-out',
-        shared ? 'border border-dashed border-shared text-shared bg-transparent' : cx(seatBgClass(seat as number), 'text-[#0B1015]'),
-        settled && 'opacity-40'
+        'relative flex shrink-0 size-[40px] flex-col items-center justify-center rounded-full outline-none transition-card',
+        shared ? 'border border-dashed border-shared text-shared bg-transparent' : cx(seatBgClass(seat as number), 'text-seat-ink'),
+        settled && 'opacity-40',
       )}
-      style={
-        selected
-          ? { boxShadow: `0 0 0 2px #0B1015, 0 0 0 4px ${shared ? 'rgba(255,255,255,0.5)' : '#FFFFFF'}` }
-          : undefined
-      }
+      style={selected ? { boxShadow: `0 0 0 2px var(--color-page), 0 0 0 4px ${shared ? 'rgb(var(--bliss-glint-rgb) / 50%)' : 'var(--color-glint)'}` } : undefined}
       {...press}
     >
-      <span className="font-mono tabular font-medium text-[14px] leading-none">{shared ? '··' : seat}</span>
-      {label || shared ? (
-        <span className="mt-4 max-w-full truncate px-4 text-[8.5px] font-medium leading-none opacity-90">
-          {shared ? 'Shared' : displaySeatLabel(label!)}
-        </span>
-      ) : null}
+      <span className="font-mono tabular font-medium text-ui leading-none">{shared ? '··' : seat}</span>
+      {label || shared ? <span className="mt-4 max-w-full truncate px-4 text-badge font-medium leading-none opacity-90">{shared ? 'Shared' : displaySeatLabel(label!)}</span> : null}
     </button>
   );
 });
@@ -127,16 +118,7 @@ export function SeatSelector({ seats, sharedTotal, selected, onSelect, onSeatMen
             onMenu={() => onSeatMenu(s.id)}
           />
         ))}
-        <SeatColumn
-          ref={refFor('shared')}
-          seat="shared"
-          selected={selected === 'shared'}
-          label={null}
-          settled={false}
-          total={sharedTotal}
-          onSelect={() => onSelect('shared')}
-          onMenu={null}
-        />
+        <SeatColumn ref={refFor('shared')} seat="shared" selected={selected === 'shared'} label={null} settled={false} total={sharedTotal} onSelect={() => onSelect('shared')} onMenu={null} />
         <div className="flex shrink-0 flex-col items-center justify-center">
           <button
             type="button"

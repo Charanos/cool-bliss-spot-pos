@@ -1,10 +1,21 @@
 import 'server-only';
 
 import type { Bill, TenderKind } from '@bliss/shared/domain';
-import { type Cents, ZERO, add, sum } from '@bliss/shared/money';
+import { type Cents, ZERO, add, isPositive, subtract, sum } from '@bliss/shared/money';
 import type { IsoDate } from '@bliss/shared/time';
 import type { DrawerSession } from '@bliss/db/seed/types';
 import { settlementTables } from './schema';
+
+/** Read-only views of settlement's tables, for another module's report. Reads go through the service. */
+export function readTables() {
+  const t = settlementTables();
+  return {
+    bills: t.bills as readonly (typeof t.bills)[number][],
+    tenders: t.tenders as readonly (typeof t.tenders)[number][],
+    billLines: t.billLines as readonly (typeof t.billLines)[number][],
+    cashMovements: t.cashMovements as readonly (typeof t.cashMovements)[number][],
+  };
+}
 
 export function billsBetween(from: IsoDate, to: IsoDate): Bill[] {
   return settlementTables().bills.filter((b) => b.businessDate >= from && b.businessDate <= to && b.status !== 'voided');
@@ -37,8 +48,20 @@ export function tendersByBill() {
   return byBill;
 }
 
+/** What a bill brought in: its total less anything given back. */
+export function billNet(bill: Pick<Bill, 'totalCents' | 'refundedCents'>): Cents {
+  return subtract(bill.totalCents, bill.refundedCents ?? ZERO);
+}
+
 export function netSales(date: IsoDate): Cents {
-  return sum(billsOn(date).map((b) => b.totalCents));
+  return sum(billsOn(date).map(billNet));
+}
+
+/** Bill lines already refunded, so none is given back twice. */
+export function refundedLineIds(billId: string): Set<string> {
+  const ids = new Set<string>();
+  for (const x of settlementTables().tenders) if (x.billId === billId && x.refundOfLineIds) for (const id of x.refundOfLineIds) ids.add(id);
+  return ids;
 }
 
 export function tenderMix(from: IsoDate, to: IsoDate): { kind: TenderKind; amount: Cents; count: number }[] {
@@ -76,19 +99,26 @@ export function drawerFor(date: IsoDate) {
   return { ...session, stage: 'closed' as const };
 }
 
-let billedIndex: { source: unknown[]; length: number; ids: Set<string> } | null = null;
+let billedIndex: { source: unknown[]; length: number; voided: number; ids: Set<string> } | null = null;
 
-/** Order lines already on a bill. A line is billed once, ever. */
+/** Order lines on a bill that stands. A line is billed once; a voided bill gives its lines back. */
 export function billedLineIds(): Set<string> {
-  const { billLines } = settlementTables();
-  if (billedIndex && billedIndex.source === billLines && billedIndex.length === billLines.length) return billedIndex.ids;
+  const { billLines, bills } = settlementTables();
+  const voidedBills = bills.filter((b) => b.status === 'voided');
+  if (billedIndex && billedIndex.source === billLines && billedIndex.length === billLines.length && billedIndex.voided === voidedBills.length) return billedIndex.ids;
+  const voided = new Set(voidedBills.map((b) => b.id));
   const ids = new Set<string>();
-  for (const l of billLines) if (l.orderLineId) ids.add(l.orderLineId);
-  billedIndex = { source: billLines, length: billLines.length, ids };
+  for (const l of billLines) if (l.orderLineId && !voided.has(l.billId)) ids.add(l.orderLineId);
+  billedIndex = { source: billLines, length: billLines.length, voided: voidedBills.length, ids };
   return ids;
 }
 
 export function billsForTab(tabId: string): Bill[] {
+  return settlementTables().bills.filter((b) => b.tabId === tabId && b.status !== 'voided');
+}
+
+/** Every bill a tab has had, voided ones included, for its record. */
+export function allBillsForTab(tabId: string): Bill[] {
   return settlementTables().bills.filter((b) => b.tabId === tabId);
 }
 
@@ -102,7 +132,7 @@ export function openDrawerFor(deviceId: string) {
  * figure, the counted figure and the variance are absent from the object, not merely null.
  */
 export function drawerProjection(session: DrawerSession) {
-  const drops = settlementTables().cashMovements.filter((m) => m.drawerSessionId === session.id && m.kind === 'drop_to_safe');
+  const drops = settlementTables().cashMovements.filter((m) => m.drawerSessionId === session.id && (m.kind === 'drop_to_safe' || m.kind === 'payout'));
   const base = {
     id: session.id,
     businessDate: session.businessDate,
@@ -134,19 +164,55 @@ function sessionWindow(sessionId: string) {
   return { session, until: session.closedAt ?? Number.POSITIVE_INFINITY };
 }
 
+/** The drawer session that was open on the bill's device when it was settled, if any. */
+export function drawerForBill(bill: Pick<Bill, 'deviceId' | 'settledAt'>) {
+  if (!bill.settledAt) return null;
+  const at = bill.settledAt;
+  return settlementTables().drawerSessions.find((s) => s.deviceId === bill.deviceId && s.openedAt <= at && (s.closedAt ?? Number.POSITIVE_INFINITY) >= at) ?? null;
+}
+
 /** Cash tender amounts on bills settled on the session's device while it was open. */
 export function cashTakenIn(sessionId: string): Cents[] {
   const w = sessionWindow(sessionId);
   if (!w) return [];
   const t = settlementTables();
-  const bills = new Set(t.bills.filter((b) => b.deviceId === w.session.deviceId && b.status === 'settled' && (b.settledAt ?? 0) >= w.session.openedAt && (b.settledAt ?? 0) <= w.until).map((b) => b.id));
-  return t.tenders.filter((x) => x.kind === 'cash' && bills.has(x.billId)).map((x) => x.amountCents);
+  const bills = new Set(t.bills.filter((b) => b.deviceId === w.session.deviceId && b.status !== 'voided' && b.status !== 'open' && (b.settledAt ?? 0) >= w.session.openedAt && (b.settledAt ?? 0) <= w.until).map((b) => b.id));
+  // A refund is paid out of whichever drawer is open when it happens, as a payout: not here.
+  return t.tenders.filter((x) => x.kind === 'cash' && isPositive(x.amountCents) && bills.has(x.billId)).map((x) => x.amountCents);
 }
 
 function cashBillCount(sessionId: string): number {
   const w = sessionWindow(sessionId);
   if (!w) return 0;
   const t = settlementTables();
-  const bills = new Set(t.bills.filter((b) => b.deviceId === w.session.deviceId && b.status === 'settled' && (b.settledAt ?? 0) >= w.session.openedAt && (b.settledAt ?? 0) <= w.until).map((b) => b.id));
-  return new Set(t.tenders.filter((x) => x.kind === 'cash' && bills.has(x.billId)).map((x) => x.billId)).size;
+  const bills = new Set(t.bills.filter((b) => b.deviceId === w.session.deviceId && b.status !== 'voided' && b.status !== 'open' && (b.settledAt ?? 0) >= w.session.openedAt && (b.settledAt ?? 0) <= w.until).map((b) => b.id));
+  return new Set(t.tenders.filter((x) => x.kind === 'cash' && isPositive(x.amountCents) && bills.has(x.billId)).map((x) => x.billId)).size;
+}
+
+/**
+ * One drawer session as the Console may read it: blind until it is closed, like drawerFor, but for
+ * the session itself, so two counters trading the same night each show as their own drawer.
+ */
+export function drawerView(sessionId: string) {
+  const session = settlementTables().drawerSessions.find((s) => s.id === sessionId);
+  if (!session) return null;
+  if (session.status !== 'closed') {
+    const { expectedCashCents: _withheld, countedCashCents: _notYet, varianceCents: _none, ...blind } = session;
+    return { ...blind, stage: 'blind' as const };
+  }
+  return { ...session, stage: 'closed' as const };
+}
+
+/** Bills settled on a drawer's device while it was open: the ones whose cash went into it. */
+export function billsInDrawer(sessionId: string): Bill[] {
+  const w = sessionWindow(sessionId);
+  if (!w) return [];
+  return settlementTables().bills.filter((b) => b.deviceId === w.session.deviceId && b.status !== 'open' && (b.settledAt ?? 0) >= w.session.openedAt && (b.settledAt ?? 0) <= w.until);
+}
+
+/** Cash in and out of a drawer that is not a sale: its float, drops to the safe, refunds paid out. */
+export function cashMovementsFor(sessionId: string) {
+  return settlementTables()
+    .cashMovements.filter((m) => m.drawerSessionId === sessionId)
+    .sort((a, b) => a.occurredAt - b.occurredAt);
 }

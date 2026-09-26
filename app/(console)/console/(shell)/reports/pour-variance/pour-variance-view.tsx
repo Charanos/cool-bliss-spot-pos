@@ -1,9 +1,11 @@
 'use client';
 
 import { formatQty } from '@bliss/shared/format';
-import { type Cents, formatDecimal } from '@bliss/shared/money';
+import { type Cents, formatDecimal, formatKes, isPositive } from '@bliss/shared/money';
 import { type Column, DataTable, NumCell } from '@bliss/ui/components/console/data-table';
-import { RevealSection } from '@bliss/ui/components/console/shell';
+import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
+import { Callout } from '@bliss/ui/components/console/section';
+import { IconAlertTriangle, IconBottle, IconCheck, IconDroplet, IconGlassFull } from '@tabler/icons-react';
 import { Money } from '@bliss/ui/components/money';
 import { StatusChip } from '@bliss/ui/components/status';
 import type { PourVarianceRow } from '@/modules/reporting/service';
@@ -15,6 +17,7 @@ import type { PourVarianceRow } from '@/modules/reporting/service';
 export function PourVarianceView({
   period,
   rows,
+  products,
   lost,
   outside,
   worst,
@@ -22,13 +25,15 @@ export function PourVarianceView({
 }: {
   period: string;
   rows: PourVarianceRow[];
+  /** Product for each variant, for the row link. */
+  products: Record<string, string>;
   lost: Cents;
   outside: number;
   worst: { name: string; ml: number } | null;
   canSeeCost: boolean;
 }) {
   const columns: Column<PourVarianceRow>[] = [
-    { key: 'name', header: 'Product', width: 'minmax(160px,1.5fr)', fixed: true, sortValue: (r) => r.name, csv: (r) => r.name, cell: (r) => <span className="text-body text-ink">{r.name}</span> },
+    { key: 'name', header: 'Product', width: 'minmax(160px,1.5fr)', fixed: true, sortValue: (r) => r.name, csv: (r) => r.name, cell: (r) => <span className="truncate text-ui text-ink">{r.name}</span> },
     { key: 'sold', header: 'Sold, bottles', width: '110px', align: 'right', sortValue: (r) => r.theoreticalUnits, csv: (r) => r.theoreticalUnits.toFixed(3), cell: (r) => <NumCell tone="muted">{formatQty(r.theoreticalUnits, 2)}</NumCell> },
     { key: 'used', header: 'Counted out', width: '110px', align: 'right', sortValue: (r) => r.actualUnits, csv: (r) => r.actualUnits.toFixed(3), cell: (r) => <NumCell tone="muted">{formatQty(r.actualUnits, 2)}</NumCell> },
     {
@@ -49,7 +54,7 @@ export function PourVarianceView({
       sortValue: (r) => Math.abs(r.variancePct),
       csv: (r) => r.variancePct.toFixed(2),
       cell: (r) => (
-        <span className="flex flex-col items-end ">
+        <span className="flex flex-col items-end">
           <NumCell tone={r.outside ? 'stop' : 'muted'}>{`${r.variancePct > 0 ? '+' : ''}${r.variancePct.toFixed(1)}%`}</NumCell>
           <span className="font-mono tabular text-num-sm text-ink-subtle">allow {r.tolerancePct}%</span>
         </span>
@@ -64,7 +69,7 @@ export function PourVarianceView({
             align: 'right' as const,
             sortValue: (r: PourVarianceRow) => r.varianceCents,
             csv: (r: PourVarianceRow) => formatDecimal(r.varianceCents),
-            cell: (r: PourVarianceRow) => <Money value={r.varianceCents} currency={false} decimals="whole" tone={r.outside ? 'attention' : 'muted'} />,
+            cell: (r: PourVarianceRow) => <Money value={r.varianceCents} currency={false} size="num-md" decimals="whole" tone={r.outside ? 'attention' : 'muted'} />,
           },
         ]
       : []),
@@ -72,44 +77,45 @@ export function PourVarianceView({
   ];
 
   return (
-    <>
-      <RevealSection className="mb-24 flex flex-wrap items-end gap-x-40 gap-y-16 border-b border-hairline pb-20">
-        <div>
-          <span className="text-label text-ink-subtle">Between counts</span>
-          <p className="font-mono tabular text-num text-ink">{period}</p>
-        </div>
-        {canSeeCost ? (
-          <div>
-            <span className="text-label text-ink-subtle">Lost at cost</span>
-            <p>
-              <Money value={lost} size="num-lg" tone="attention" decimals="whole" />
-            </p>
-          </div>
-        ) : null}
-        <div>
-          <span className="text-label text-ink-subtle">Outside tolerance</span>
-          <p className="font-mono tabular text-num-lg text-ink">
-            {outside} <span className="text-body text-ink-subtle">of {rows.length}</span>
-          </p>
-        </div>
-        {worst ? (
-          <p className="max-w-[40ch] text-body text-ink-muted">
-            {worst.name} is the largest, {Math.abs(worst.ml).toLocaleString('en-KE')}ml {worst.ml > 0 ? 'more out than sold' : 'less out than sold'}.
-          </p>
-        ) : null}
-      </RevealSection>
+    <div className="flex flex-col gap-32">
+      <p className="measure text-ui text-ink-muted">Between the last two full counts of the bar shelf, {period}: what sold serves say should have gone, against what the counts say went.</p>
+      {outside > 0 ? (
+        <Callout
+          size="hero"
+          tone="stop"
+          icon={<IconGlassFull size={22} stroke={1.5} />}
+          title={`${outside} ${outside === 1 ? 'product poured' : 'products poured'} outside tolerance`}
+          aside={canSeeCost && isPositive(lost) ? <span className="font-mono tabular text-num-lg">{formatKes(lost, { decimals: 'whole' })}</span> : undefined}
+        >
+          {worst ? `${worst.name} is furthest out, ${Math.abs(worst.ml).toLocaleString('en-KE')}ml ${worst.ml > 0 ? 'more out than sold' : 'less out than sold'}. ` : ''}Check the measures, then the count.
+        </Callout>
+      ) : null}
+      <MetricGrid columns={canSeeCost ? 4 : 3}>
+        {canSeeCost ? <Metric label="Lost at cost" icon={IconDroplet} tone={isPositive(lost) ? 'attention' : 'default'} value={<Money value={lost} size="num-kpi" decimals="whole" />} detail="More out than sold, at average cost" /> : null}
+        <Metric label="Outside tolerance" icon={IconAlertTriangle} tone={outside > 0 ? 'stop' : 'poured'} value={<CountUp value={outside} />} detail={`Of ${rows.length} products poured by the serve`} />
+        <Metric
+          label="Largest gap"
+          icon={IconBottle}
+          value={worst ? `${Math.abs(worst.ml).toLocaleString('en-KE')}ml` : 'None'}
+          detail={worst ? `${worst.name}, ${worst.ml > 0 ? 'more out than sold' : 'less out than sold'}` : 'Every product within tolerance'}
+        />
+        <Metric label="Within tolerance" icon={IconCheck} tone="poured" value={<CountUp value={rows.length - outside} delayMs={60} />} detail="Poured as sold" />
+      </MetricGrid>
       <DataTable
         id="report-pour-variance"
         caption="Pour variance by product"
+        noun={['product', 'products']}
         rows={rows}
         columns={columns}
         rowKey={(r) => r.variantId}
-        defaultSort={{ key: 'value', dir: 'desc' }}
+        rowHref={(r) => (products[r.variantId] ? `/console/catalogue/products/${products[r.variantId]}` : '/console/inventory/stock')}
+        defaultSort={{ key: canSeeCost ? 'value' : 'pct', dir: 'desc' }}
         filters={[{ kind: 'toggle', key: 'outside', label: 'Outside tolerance only', test: (r) => r.outside }]}
         rowTone={(r) => (r.outside ? 'attention' : 'default')}
         exportName="pour-variance"
         empty={{ title: 'No spirits or wine counted', body: 'Pour variance covers products poured by the serve.' }}
+        emptyFiltered={{ title: 'Everything is within tolerance', body: 'Turn off the toggle to see every product.' }}
       />
-    </>
+    </div>
   );
 }

@@ -1,16 +1,20 @@
 import type { Metadata } from 'next';
+import { tabLabel } from '@bliss/shared/trade';
 import * as identity from '@/modules/identity/service';
+import * as reporting from '@/modules/reporting/service';
 import * as settlement from '@/modules/settlement/service';
 import * as trade from '@/modules/trade/service';
 import { businessRange, rangeOptions } from '../../_lib/range';
 import { BillsView, type BillRow } from './bills-view';
+import { ViewHeader } from '../../_components/workspace';
 
 export const metadata: Metadata = { title: 'Bills' };
 
 /** Settled bills for a range of business days, with how they were paid as the cashier recorded it. */
 export default async function BillsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
-  const range = businessRange(params.range, 'tonight');
+  // Tonight while the bar is trading; last night once it has closed, when "tonight" is not a choice.
+  const range = businessRange(params.range, reporting.clock().tradingInProgress ? 'tonight' : '1');
   const outlet = identity.outlet();
   const tenders = settlement.tendersByBill();
 
@@ -26,7 +30,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
         number: b.billNumber,
         businessDate: b.businessDate,
         settledAt: b.settledAt,
-        table: tab ? (trade.tableById(tab.serviceTableId)?.label ?? tab.name ?? 'Walk up') : 'Quick sale',
+        table: tab ? tabLabel({ tableLabel: trade.tableById(tab.serviceTableId)?.label, name: tab.name }) : 'Quick sale',
         tabId: tab?.id ?? null,
         scope: b.scope,
         seatNo: seat?.seatNo ?? null,
@@ -41,6 +45,9 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
     });
 
   return (
+    <>
+      <ViewHeader page="/console/trade/bills" />
+
     <BillsView
       rows={rows}
       timezone={outlet.timezone}
@@ -51,5 +58,6 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
       cashiers={[...new Map(rows.map((r) => [r.settledById, r.settledBy])).entries()].filter(([id]) => id).map(([value, label]) => ({ value, label }))}
       exportDate={range.to}
     />
+    </>
   );
 }

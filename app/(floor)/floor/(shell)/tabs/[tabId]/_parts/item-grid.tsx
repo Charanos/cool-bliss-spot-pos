@@ -29,7 +29,17 @@ const VIEWS: readonly View[] = ['grid', 'list'];
  * a waiter finds a drink they only know by sight, and a list, which fits twice as many rows on a
  * phone and is what someone who knows the menu wants. The choice is remembered per device.
  */
-export function ItemGrid({ grid, onAdd, onLongPress, inCart }: { grid: Grid | undefined; onAdd: (variantId: string) => void; onLongPress: (variantId: string) => void; inCart?: ReadonlyMap<string, number> }) {
+export function ItemGrid({
+  grid,
+  onAdd,
+  onLongPress,
+  inCart,
+}: {
+  grid: Grid | undefined;
+  onAdd: (variantId: string) => void;
+  onLongPress: (variantId: string) => void;
+  inCart?: ReadonlyMap<string, number>;
+}) {
   const [category, setCategory] = useState('all');
   const [view, setView] = usePersistentState<View>('floor.items.view', 'grid', VIEWS);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -91,15 +101,11 @@ export function ItemGrid({ grid, onAdd, onLongPress, inCart }: { grid: Grid | un
         </p>
       ) : null}
 
-      <div
-        ref={scrollRef}
-        className="relative z-0 min-h-0 flex-1 overflow-y-auto overscroll-contain p-12 pad:p-16"
-        onScroll={(e) => positions.current.set(category, e.currentTarget.scrollTop)}
-      >
+      <div ref={scrollRef} className="relative z-0 min-h-0 flex-1 overflow-y-auto overscroll-contain p-12 pad:p-16" onScroll={(e) => positions.current.set(category, e.currentTarget.scrollTop)}>
         {!grid ? (
-          <div className="grid grid-cols-2 gap-8 pb-24 pad:grid-cols-[repeat(auto-fill,minmax(168px,1fr))] pad:gap-12">
+          <div className="grid grid-cols-2 gap-8 pb-24 pad:grid-cols-tiles pad:gap-12">
             {Array.from({ length: 12 }, (_, i) => (
-              <Skeleton key={i} className="h-[192px] rounded-md" />
+              <Skeleton key={i} className="h-tile rounded-card" />
             ))}
           </div>
         ) : visible.length === 0 ? (
@@ -119,10 +125,7 @@ export function ItemGrid({ grid, onAdd, onLongPress, inCart }: { grid: Grid | un
                       onLongPress(t.variantId);
                     }}
                     aria-label={`Add ${t.name}${t.price ? `, ${t.price}` : ''}`}
-                    className={cx(
-                      'flex min-h-row-floor w-full items-center gap-12 px-4 text-left press-feedback',
-                      finished ? 'opacity-40' : 'hover:bg-control active:bg-control-hover',
-                    )}
+                    className={cx('flex min-h-row-floor w-full items-center gap-12 px-4 text-left press-feedback', finished ? 'opacity-40' : 'hover:bg-control active:bg-control-hover')}
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-body-lg text-ink">{t.name}</span>
@@ -135,7 +138,11 @@ export function ItemGrid({ grid, onAdd, onLongPress, inCart }: { grid: Grid | un
                     {t.price ? <Money value={t.price} size="num" tone={finished ? 'disabled' : 'default'} decimals="whole" /> : null}
                     {(inCart?.get(t.variantId) ?? 0) > 0 ? (
                       // The count replaces the plus once something is on the seat, and bumps as it grows.
-                      <span key={inCart!.get(t.variantId)} aria-hidden="true" className="bump flex size-control-md shrink-0 items-center justify-center rounded-sm bg-accent font-mono tabular text-num-sm text-accent-ink">
+                      <span
+                        key={inCart!.get(t.variantId)}
+                        aria-hidden="true"
+                        className="bump flex size-control-md shrink-0 items-center justify-center rounded-sm bg-accent font-mono tabular text-num-sm text-accent-ink"
+                      >
                         ×{inCart!.get(t.variantId)}
                       </span>
                     ) : (
@@ -149,7 +156,7 @@ export function ItemGrid({ grid, onAdd, onLongPress, inCart }: { grid: Grid | un
             })}
           </ul>
         ) : (
-          <div className="grid grid-cols-2 gap-8 pb-24 pad:grid-cols-[repeat(auto-fill,minmax(168px,1fr))] pad:gap-12">
+          <div className="grid grid-cols-2 gap-8 pb-24 pad:grid-cols-tiles pad:gap-12">
             {visible.map((t) => (
               <ProductTile
                 key={t.variantId}

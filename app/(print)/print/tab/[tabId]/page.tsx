@@ -1,6 +1,7 @@
 import { formatDateTime, formatQty } from '@bliss/shared/format';
-import { cents, formatDecimal } from '@bliss/shared/money';
+import { formatDecimal, sum } from '@bliss/shared/money';
 import { notFound } from 'next/navigation';
+import { assertPrintAccess } from '@/lib/print-access';
 import * as identity from '@/modules/identity/service';
 import * as trade from '@/modules/trade/service';
 import * as catalogue from '@/modules/catalogue/service';
@@ -20,7 +21,8 @@ import {
  * 1. Customer Copy (Proforma)
  * 2. Counter / Bar Copy
  */
-export default async function PrintTabPage({ params }: { params: Promise<{ tabId: string }> }) {
+export default async function PrintTabPage({ params, searchParams }: { params: Promise<{ tabId: string }>; searchParams: Promise<{ t?: string }> }) {
+  await assertPrintAccess(searchParams);
   const { tabId } = await params;
   const tab = trade.tabById(tabId);
   if (!tab) notFound();
@@ -36,8 +38,8 @@ export default async function PrintTabPage({ params }: { params: Promise<{ tabId
   const server = identity.displayName(tab.assignedTo);
   const lines = trade.linesFor(tab.id).filter(l => l.status !== 'voided');
   
-  const subtotal = lines.reduce((acc, l) => acc + (l.unitPriceCents * BigInt(l.qty)), 0n);
-  const total = subtotal; // Assuming no custom modifiers or discounts are applied before billing.
+  // Each line's stored total, which carries its modifiers; a printed tab is a running bill, before any discount.
+  const total = sum(lines.map((l) => l.lineTotalCents));
 
   const renderContent = () => (
     <Receipt className="mb-16">
@@ -63,24 +65,22 @@ export default async function PrintTabPage({ params }: { params: Promise<{ tabId
       {lines.map((l) => {
         const variant = catalogue.variantById(l.productVariantId);
         const name = variant ? variant.name : l.productVariantId;
-        const lineTotal = l.unitPriceCents * BigInt(l.qty);
+        const lineTotal = l.lineTotalCents;
         return (
           <ReceiptItemRow 
             key={l.id}
             qty={formatQty(l.qty)}
             description={name}
-            total={formatDecimal(cents(lineTotal))}
+            total={formatDecimal(lineTotal)}
           />
         );
       })}
       
       <ReceiptRule />
       
-      <ReceiptTotalRow label="Subtotal" value={formatDecimal(cents(subtotal))} />
-      
       <ReceiptTotalRow 
         label="TOTAL DUE" 
-        value={formatDecimal(cents(total))} 
+        value={formatDecimal(total)} 
         bold 
         large 
       />
@@ -88,15 +88,15 @@ export default async function PrintTabPage({ params }: { params: Promise<{ tabId
       <ReceiptRule />
       
       <ReceiptFooter>
-        <div className="font-semibold">PROFORMA BILL · NOT A FISCAL RECEIPT</div>
+        <div className="font-medium">PROFORMA BILL · NOT A FISCAL RECEIPT</div>
       </ReceiptFooter>
     </Receipt>
   );
 
   return (
-    <div className="flex flex-col items-center bg-gray-100 min-h-screen py-8 print:bg-white print:py-0">
+    <div className="flex flex-col items-center bg-paper-desk min-h-screen py-8 print:bg-paper print:py-0">
       <script dangerouslySetInnerHTML={{ __html: `window.onload = function() { window.print(); }` }} />
-      <div className="bg-white shadow-lg print:shadow-none mb-8 print:mb-0">
+      <div className="bg-paper shadow-raised print:shadow-none mb-8 print:mb-0">
         {renderContent()}
       </div>
     </div>

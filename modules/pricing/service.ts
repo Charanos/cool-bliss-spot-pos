@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { DomainError } from '../_data/errors';
+
 import type { PriceListItem } from '@bliss/shared/domain';
 import { createUuidV7 } from '@bliss/shared/id';
 import { type Cents, formatKes, isNegative } from '@bliss/shared/money';
@@ -58,14 +60,14 @@ export function setPrice(input: { listId: string; variantId: string; priceCents:
   identity.assertCan(actor.staffId, 'price.write', 'changing prices');
   const t = pricingTables();
   const list = t.priceLists.find((l) => l.id === input.listId && l.status === 'active');
-  if (!list) throw new Error('That price list is not active.');
+  if (!list) throw new DomainError('That price list is not active.');
   const variant = catalogue.variantById(input.variantId);
-  if (!variant) throw new Error('That item is not in the catalogue.');
-  if (input.priceCents !== null && isNegative(input.priceCents)) throw new Error('A price cannot be below zero.');
+  if (!variant) throw new DomainError('That item is not in the catalogue.');
+  if (input.priceCents !== null && isNegative(input.priceCents)) throw new DomainError('A price cannot be below zero.');
   const current = t.items.find((i) => i.priceListId === list.id && i.productVariantId === variant.id && i.status === 'active') ?? null;
-  if (input.priceCents === null && list.kind === 'base') throw new Error('Every item needs a base price. Archive the item instead.');
-  if (current && input.priceCents !== null && current.priceCents === input.priceCents) throw new Error(`${variant.name} is already ${formatKes(input.priceCents)} on ${list.name}.`);
-  if (!current && input.priceCents === null) throw new Error(`${list.name} does not price ${variant.name}.`);
+  if (input.priceCents === null && list.kind === 'base') throw new DomainError('Every item needs a base price. Archive the item instead.');
+  if (current && input.priceCents !== null && current.priceCents === input.priceCents) throw new DomainError(`${variant.name} is already ${formatKes(input.priceCents)} on ${list.name}.`);
+  if (!current && input.priceCents === null) throw new DomainError(`${list.name} does not price ${variant.name}.`);
 
   if (current) current.status = 'archived';
   const next: PriceListItem | null =

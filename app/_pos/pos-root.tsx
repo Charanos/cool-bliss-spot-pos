@@ -3,12 +3,14 @@
 import { NoticeViewport } from '@bliss/ui/components/notices';
 import { initMotion } from '@bliss/ui/motion';
 import { type ReactNode, useEffect } from 'react';
-import { setForcedOffline } from '@/lib/pos/api';
+import { primeStationToken, setForcedOffline } from '@/lib/pos/api';
 import { META, getMeta } from '@/lib/pos/db';
 import { ensureDevice } from '@/lib/pos/session';
 import { pruneAcked, startSync, useSync } from '@/lib/pos/sync';
 import { startUpdates } from '@/lib/pos/updates';
 import { refreshHaptics } from '@/lib/pos/haptics';
+import { initDisplay } from '@/lib/pos/display';
+import { useKeepAwake } from '@/lib/pos/wake';
 
 /**
  * The client root for a staff device, Floor or Counter: motion defaults once, the sync cycle once, and
@@ -17,14 +19,18 @@ import { refreshHaptics } from '@/lib/pos/haptics';
  */
 export function PosRoot({ children }: { children: ReactNode }) {
   const sync = useSync();
+  useKeepAwake();
 
   useEffect(() => {
     initMotion();
+    // After motion: a Lite device then turns the motion engine's low power on.
+    initDisplay();
     let stop: (() => void) | undefined;
     const stopUpdates = startUpdates();
     void (async () => {
       setForcedOffline(Boolean(await getMeta<boolean>(META.forceOffline)));
       await refreshHaptics();
+      await primeStationToken();
       stop = startSync();
       await pruneAcked();
     })();

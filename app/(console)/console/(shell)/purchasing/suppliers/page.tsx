@@ -1,19 +1,32 @@
 import { formatBps, formatDate, plural } from '@bliss/shared/format';
 import { formatKes, sum } from '@bliss/shared/money';
-import { RevealSection } from '@bliss/ui/components/console/shell';
+import { ButtonLink } from '@bliss/ui/components/button-link';
+import { Card, CardBand, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
+import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
+import { Section } from '@bliss/ui/components/console/section';
 import { Money } from '@bliss/ui/components/money';
+import { StatusChip } from '@bliss/ui/components/status';
+import { IconPlus, IconTrendingUp, IconTruck, IconTruckDelivery, IconWallet } from '@tabler/icons-react';
 import type { Metadata } from 'next';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as procurement from '@/modules/procurement/service';
-import { CostChangesTable, type CostChangeRow } from './cost-changes-table';
+import { ViewHeader } from '../../_components/workspace';
+import { type CostChangeRow, CostChangesTable } from './cost-changes-table';
+import { SuppliersCreate } from './suppliers-client';
 
 export const metadata: Metadata = { title: 'Suppliers' };
 
+const DAY = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 /** Who supplies what, on what terms, and where their prices have moved. */
-export default function SuppliersPage() {
+export default async function SuppliersPage() {
+  const actor = await identity.currentConsoleActor();
+  const canEdit = identity.can(actor.staffId, 'cost.read');
   const tz = identity.outlet().timezone;
   const orders = procurement.purchaseOrders();
+  const open = orders.filter((o) => o.status === 'draft' || o.status === 'sent' || o.status === 'partially_received');
+  const suppliers = [...procurement.suppliers()].sort((a, b) => (a.status === b.status ? a.name.localeCompare(b.name) : a.status === 'active' ? -1 : 1));
   const changes: CostChangeRow[] = procurement.costChanges().map((c) => ({
     id: c.supplierProduct.id,
     item: catalogue.variantById(c.supplierProduct.productVariantId)?.name ?? '',
@@ -25,51 +38,65 @@ export default function SuppliersPage() {
     changeBps: c.changeBps,
     at: c.at,
   }));
+  const rises = changes.filter((c) => c.changeBps > 0);
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-16 tablet:grid-cols-3">
-        {procurement.suppliers().map((s) => {
-          const own = orders.filter((o) => o.supplierId === s.id && o.status !== 'cancelled');
-          const last = own[0];
-          const products = procurement.supplierProducts(s.id).length;
-          return (
-            <RevealSection key={s.id} className="flex flex-col gap-12 rounded-md border border-hairline bg-raised p-20 shadow-raised">
-              <div>
-                <h2 className="text-subtitle text-ink">{s.name}</h2>
-                <p className="text-body-sm text-ink-muted">{s.contactName}</p>
-              </div>
-              <dl className="grid grid-cols-2 gap-x-16 gap-y-8 text-body-sm">
-                <dt className="text-ink-subtle">Delivers in</dt>
-                <dd className="text-right font-mono tabular text-num-sm text-ink">{plural(s.leadTimeDays, 'day')}</dd>
-                <dt className="text-ink-subtle">Pays in</dt>
-                <dd className="text-right font-mono tabular text-num-sm text-ink">{plural(s.paymentTermsDays, 'day')}</dd>
-                <dt className="text-ink-subtle">Minimum order</dt>
-                <dd className="text-right font-mono tabular text-num-sm text-ink">{formatKes(s.minOrderCents, { decimals: 'whole' })}</dd>
-                <dt className="text-ink-subtle">Items supplied</dt>
-                <dd className="text-right font-mono tabular text-num-sm text-ink">{products}</dd>
-                <dt className="text-ink-subtle">Ordered in 56 days</dt>
-                <dd className="text-right">
-                  <Money value={sum(own.map((o) => o.totalCents))} currency={false} decimals="whole" size="num-sm" />
-                </dd>
-              </dl>
-              <p className="mt-auto border-t border-rule pt-12 text-body-sm text-ink-muted">{last ? `Last order PO ${last.poNumber} on ${formatDate(last.raisedAt, tz)}` : 'No orders yet'}</p>
-            </RevealSection>
-          );
-        })}
-      </div>
+      <ViewHeader
+        page="/console/purchasing/suppliers"
+        actions={
+          canEdit ? (
+            <ButtonLink href="/console/purchasing/suppliers?new=1" variant="create" icon={IconPlus}>
+              Add a supplier
+            </ButtonLink>
+          ) : null
+        }
+      />
+      <div className="flex flex-col gap-32">
+        <MetricGrid>
+          <Metric label="Suppliers" icon={IconTruck} value={String(suppliers.filter((s) => s.status === 'active').length)} detail={suppliers.some((s) => s.status === 'archived') ? `${suppliers.filter((s) => s.status === 'archived').length} no longer used` : 'All in use'} />
+          <Metric label="Open orders" icon={IconTruckDelivery} href="/console/purchasing/orders" value={String(open.length)} detail={open.length > 0 ? formatKes(sum(open.map((o) => o.totalCents)), { decimals: 'whole' }) + ' on its way' : 'Nothing on its way'} />
+          <Metric label="Costs gone up" icon={IconTrendingUp} tone={rises.length > 0 ? 'attention' : 'default'} value={String(rises.length)} detail={rises.length > 0 ? `Largest ${formatBps(Math.max(...rises.map((c) => c.changeBps)), { signed: true })}` : 'No rises on the last delivery'} />
+          <Metric label="Spent with them" icon={IconWallet} value={<Money value={sum(orders.filter((o) => o.status !== 'cancelled').map((o) => o.totalCents))} size="num-kpi" decimals="whole" />} detail="Every order raised" />
+        </MetricGrid>
 
-      <RevealSection className="mt-40" aria-labelledby="cost-changes">
-        <div className="mb-12 flex flex-wrap items-baseline justify-between gap-16">
-          <h2 id="cost-changes" className="text-subtitle text-ink">
-            Cost changes
-          </h2>
-          <p className="text-body-sm text-ink-muted">
-            {changes.length > 0 ? `Largest rise ${formatBps(Math.max(...changes.map((c) => c.changeBps)), { signed: true })}. Check prices still carry their margin.` : ''}
-          </p>
+        <div className="grid grid-cols-1 gap-16 pad:grid-cols-2 desktop:grid-cols-3">
+          {suppliers.map((s) => {
+            const own = orders.filter((o) => o.supplierId === s.id && o.status !== 'cancelled');
+            const openHere = own.filter((o) => open.includes(o));
+            const last = own[0];
+            return (
+              <Card key={s.id} as="article" interactive className="group h-full" tone={openHere.length > 0 ? 'accent' : undefined}>
+                <CardBand
+                  eyebrow={s.status === 'archived' ? 'Not used' : `${procurement.supplierProducts(s.id).length} items`}
+                  status={s.status === 'archived' ? <StatusChip status="retired" label="Not used" /> : openHere.length > 0 ? <StatusChip status="sent" label={`${openHere.length} open`} /> : null}
+                  title={s.name}
+                  subtitle={[s.contactName, s.phone].filter(Boolean).join(', ') || 'No contact set'}
+                  href={`/console/purchasing/suppliers/${s.id}`}
+                />
+                <KeyRows>
+                  <KeyRow label="Delivers in">{plural(s.leadTimeDays, 'day')}</KeyRow>
+                  <KeyRow label="Delivers on">{s.deliveryDays && s.deliveryDays.length > 0 ? s.deliveryDays.map((d) => DAY[d]).join(', ') : 'Any day'}</KeyRow>
+                  <KeyRow label="Pays in">{plural(s.paymentTermsDays, 'day')}</KeyRow>
+                  <KeyRow label="Last order">{last ? `PO ${last.poNumber}, ${formatDate(last.raisedAt, tz)}` : 'None yet'}</KeyRow>
+                  <KeyRow label="Ordered in all">
+                    <Money value={sum(own.map((o) => o.totalCents))} currency={false} size="num-md" decimals="whole" />
+                  </KeyRow>
+                </KeyRows>
+              </Card>
+            );
+          })}
         </div>
-        <CostChangesTable rows={changes} timezone={tz} />
-      </RevealSection>
+
+        <Section
+          id="cost-changes"
+          title="Cost changes"
+          description={changes.length > 0 ? `Largest rise ${formatBps(Math.max(...changes.map((c) => c.changeBps)), { signed: true })}. Check the sell prices still carry their margin.` : 'What each supplier charged on the last delivery against the one before.'}
+        >
+          <CostChangesTable rows={changes} timezone={tz} />
+        </Section>
+      </div>
+      <SuppliersCreate canEdit={canEdit} />
     </>
   );
 }

@@ -228,7 +228,7 @@ export function HistoryView({ surface, staffId, onOpenTab }: HistoryViewProps) {
       <div className="scroll-region px-12 pb-24 pt-16 pad:px-24 pad:pt-24">
         <div className="flex flex-col gap-16 tablet:gap-24">
           {state.status === 'saved' && !state.refreshing ? (
-            <div className="flex items-start gap-12 rounded-[18px] border border-low/30 bg-low/[0.08] px-16 py-12">
+            <div className="flex items-start gap-12 rounded-sheet border border-low/30 bg-low/[0.08] px-16 py-12">
               <IconCloudOff size={18} stroke={ICON_STROKE} aria-hidden="true" className="mt-2 shrink-0 text-low" />
               <p className="min-w-0 flex-1 text-body-sm text-ink">
                 Saved on this device at {formatTime(state.fetchedAt, tz)}. The record could not be read just now, so anything since then is not shown.
@@ -315,7 +315,7 @@ export function HistoryView({ surface, staffId, onOpenTab }: HistoryViewProps) {
                     const poured = day.tabs.reduce((n, t) => n + t.lines.filter((l) => l.status === 'served').reduce((q, l) => q + l.qty, 0), 0);
                     return (
                       <section key={day.businessDate} aria-label={`${dayName(day.businessDate, state.data.currentBusinessDate)}, ${formatIsoDate(day.businessDate)}`}>
-                        <header className="sticky top-0 z-[1] -mx-12 mb-8 flex items-baseline justify-between gap-12 bg-page/85 px-12 py-8 backdrop-blur-glass pad:top-[-24px] pad:-mx-24 pad:px-24">
+                        <header className="sticky top-0 z-raised -mx-12 mb-8 flex items-baseline justify-between gap-12 bg-page/85 px-12 py-8 backdrop-blur-glass pad:top-[-24px] pad:-mx-24 pad:px-24">
                           <h2 className="flex min-w-0 items-baseline gap-8">
                             <span className="text-title text-ink">{dayName(day.businessDate, state.data.currentBusinessDate)}</span>
                             <span className="truncate font-mono text-micro text-ink-subtle">{formatIsoDate(day.businessDate)}</span>
@@ -361,7 +361,7 @@ function Loading() {
       <Skeleton className="h-24 w-[160px]" />
       <div className="flex flex-col gap-8">
         {Array.from({ length: 6 }, (_, i) => (
-          <Skeleton key={i} className="h-row-floor rounded-[18px]" />
+          <Skeleton key={i} className="h-row-floor rounded-sheet" />
         ))}
       </div>
     </div>
@@ -394,7 +394,7 @@ function Summary({ data, surface }: { data: HistoryResult; surface: 'floor' | 'c
       </div>
 
       {split.length > 0 && isPositive(total) ? (
-        <div className="rounded-[18px] border border-rule-raised/40 bg-raised/60 px-16 py-12 backdrop-blur-glass">
+        <div className="rounded-sheet border border-rule-raised/40 bg-raised/60 px-16 py-12 backdrop-blur-glass">
           <div className="flex h-8 w-full gap-2 overflow-hidden rounded-dot" role="img" aria-label={split.map((t) => `${TENDER_WORD[t.kind]} ${formatKes(t.amountCents, { decimals: 'whole' })}`).join(', ')}>
             {split.map((t) => (
               <span key={t.kind} className={cx('h-full min-w-[4px] first:rounded-l-dot last:rounded-r-dot', TENDER_FILL[t.kind])} style={{ flexGrow: Math.max(1, shareBps(t.amountCents, total)) }} />

@@ -58,6 +58,17 @@ is tonight.
   project's environment variables in production. TLS is verified in full.
 - `BLISS_STORE=memory`: run on a dataset generated in memory instead (the tests set this).
 - Without `DATABASE_URL` the app falls back to memory, as before this existed.
+- `BLISS_SESSION_SECRET`: at least 32 characters, the key that signs Console sessions, station
+  tokens and void approvals. Without it, a deployment with a database derives a stable key from
+  `DATABASE_URL`; set it explicitly in production so rotating the database password does not end
+  every session.
+- `BLISS_DEV_DATA=1`: serve the development-only routes (the stock simulator) in a production build,
+  for a review environment. Off in production otherwise. The station API is always on and always
+  authenticated.
+- Uploads (delivery photos, scans, staff photos) are stored in the `bliss_upload` table beside the
+  outlet's data, so every instance serves them; in memory without a database.
+- Seeded staff sign in with the development PINs until a manager sets a PIN in People. A PIN set
+  in the Console is hashed with scrypt and replaces the development one for that person.
 
 ## 5. Limits worth knowing
 
@@ -65,4 +76,5 @@ is tonight.
   Warm instances answer in milliseconds.
 - Writes are serialised outlet-wide. At one venue's volume that is invisible; a multi-outlet
   deployment would shard the lock per outlet.
-- PIN lockouts are per instance.
+- PIN lockouts are per instance: five wrong PINs lock that PIN for 15 minutes on the instance that
+  saw them, and an address that keeps guessing is paused the same way.

@@ -1,5 +1,6 @@
 'use client';
 
+import { Photo } from '@bliss/ui/components/photo';
 import { formatTime, plural } from '@bliss/shared/format';
 import { formatKes, sum } from '@bliss/shared/money';
 import { Badge } from '@bliss/ui/components/badge';
@@ -10,18 +11,8 @@ import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Money } from '@bliss/ui/components/money';
 import { Dot } from '@bliss/ui/components/status';
 import { MetaLine, SectionHeader } from '@bliss/ui/components/working';
-import { staffPhoto } from '@/lib/pos/staff-photos';
-import {
-  IconAlertCircle,
-  IconCash,
-  IconCheck,
-  IconCloudCheck,
-  IconCoffee,
-  IconFlame,
-  IconLogout,
-  IconReceipt2,
-  IconUsers,
-} from '@tabler/icons-react';
+import { useStaffPhotos } from '@/lib/pos/staff-photos';
+import { IconAlertCircle, IconCash, IconCheck, IconCloudCheck, IconCoffee, IconFlame, IconLogout, IconReceipt2, IconUsers } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -44,6 +35,7 @@ import { ShiftTabCard } from './_components/shift-tab-card';
  * page happens to be scrolled.
  */
 export default function ShiftPage() {
+  const photoOf = useStaffPhotos();
   const router = useRouter();
   const session = useSession();
   const outlet = useOutlet();
@@ -72,7 +64,7 @@ export default function ShiftPage() {
   const totalGuests = myTabs.reduce((acc, t) => acc + (t.tab.guestCount ?? t.seats.length), 0);
   const colleagues = (staff ?? []).filter((s) => s.id !== session.staffId && (s.roleKey === 'waiter' || s.roleKey === 'supervisor'));
   const firedCount = firedOrders?.length ?? 0;
-  const photoUrl = staffPhoto(session.displayName);
+  const photoUrl = photoOf(session.staffId);
   const role = session.roleKey === 'supervisor' ? 'Supervisor' : 'Floor waiter';
 
   return (
@@ -81,13 +73,11 @@ export default function ShiftPage() {
         <div className="flex flex-col gap-12">
           <div className="flex items-start justify-between gap-12">
             <div className="flex min-w-0 items-center gap-12">
-              <span aria-hidden="true" className="flex size-40 shrink-0 items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-label font-medium text-accent-text pad:size-control-lg">
-                {photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photoUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  session.displayName.slice(0, 1)
-                )}
+              <span
+                aria-hidden="true"
+                className="flex size-40 shrink-0 items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-label font-medium text-accent-text pad:size-control-lg"
+              >
+                {photoUrl ? <Photo src={photoUrl} className="h-full w-full object-cover" /> : session.displayName.slice(0, 1)}
               </span>
 
               <div className="min-w-0">
@@ -102,13 +92,7 @@ export default function ShiftPage() {
               </div>
             </div>
 
-            <Button
-              variant={onBreak ? 'primary' : 'secondary'}
-              size="md"
-              icon={onBreak ? IconCheck : IconCoffee}
-              onClick={() => setOnBreak((prev) => !prev)}
-              className="shrink-0"
-            >
+            <Button variant={onBreak ? 'primary' : 'secondary'} size="md" icon={onBreak ? IconCheck : IconCoffee} onClick={() => setOnBreak((prev) => !prev)} className="shrink-0">
               <span className="hidden compact:inline">{onBreak ? 'Resume floor duty' : 'Take a break'}</span>
               <span className="compact:hidden">{onBreak ? 'Resume' : 'Break'}</span>
             </Button>
@@ -206,7 +190,10 @@ export default function ShiftPage() {
           )}
         </section>
 
-        <section aria-labelledby="sign-out" className="flex flex-col gap-12 rounded-md border border-rule-raised/40 bg-raised/70 p-12 backdrop-blur-glass pad:flex-row pad:items-center pad:justify-between pad:gap-24 pad:rounded-lg pad:p-24">
+        <section
+          aria-labelledby="sign-out"
+          className="flex flex-col gap-12 rounded-md border border-rule-raised/40 bg-raised/70 p-12 backdrop-blur-glass pad:flex-row pad:items-center pad:justify-between pad:gap-24 pad:rounded-lg pad:p-24"
+        >
           <div className="flex min-w-0 items-start gap-12">
             <span
               className={
@@ -222,9 +209,7 @@ export default function ShiftPage() {
                 {myTabs.length > 0 ? `You have ${plural(myTabs.length, 'table')} open` : 'Ready to sign out'}
               </h2>
               <p className="max-w-[62ch] text-body-sm text-ink-subtle">
-                {myTabs.length > 0
-                  ? 'Hand these over before you sign out, so someone is looking after the guests.'
-                  : 'Everything you fired has reached the server and no table is in your name.'}
+                {myTabs.length > 0 ? 'Hand these over before you sign out, so someone is looking after the guests.' : 'Everything you fired has reached the server and no table is in your name.'}
               </p>
             </div>
           </div>
@@ -235,12 +220,7 @@ export default function ShiftPage() {
                 Hand over tables
               </Button>
             ) : null}
-            <Button
-              variant={myTabs.length > 0 ? 'quiet-destructive' : 'destructive'}
-              size="md"
-              icon={IconLogout}
-              onClick={() => void signOut().then(() => router.replace('/counter/sign-in'))}
-            >
+            <Button variant={myTabs.length > 0 ? 'quiet-destructive' : 'destructive'} size="md" icon={IconLogout} onClick={() => void signOut().then(() => router.replace('/counter/sign-in'))}>
               Sign out
             </Button>
           </div>
@@ -253,14 +233,7 @@ export default function ShiftPage() {
         </Button>
       </BaseAction>
 
-      <ShiftHandoverSheet
-        open={handoverOpen}
-        onClose={() => setHandoverOpen(false)}
-        myTabs={myTabs}
-        allTabs={allTabs ?? []}
-        mySeated={mySeated}
-        colleagues={colleagues}
-      />
+      <ShiftHandoverSheet open={handoverOpen} onClose={() => setHandoverOpen(false)} myTabs={myTabs} allTabs={allTabs ?? []} mySeated={mySeated} colleagues={colleagues} />
     </div>
   );
 }

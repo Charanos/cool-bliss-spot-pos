@@ -76,7 +76,7 @@ export function ShiftTabCard({ label, zoneName, seats, showSeats, openedAt, tota
           ) : null}
         </div>
 
-        <span className="flex shrink-0 items-center gap-4 rounded-sm bg-sunken px-8 py-2 font-mono text-micro text-ink-subtle">
+        <span className="flex shrink-0 items-center gap-4 rounded-sm bg-neutral-wash px-8 py-2 font-mono text-micro text-ink-subtle">
           <IconClockHour4 size={12} stroke={ICON_STROKE} aria-hidden="true" className="text-ink-muted" />
           <Elapsed since={openedAt} />
         </span>

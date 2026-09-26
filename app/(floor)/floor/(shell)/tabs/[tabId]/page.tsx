@@ -9,38 +9,29 @@ import { MetaLine } from '@bliss/ui/components/working';
 import { SeatSelector } from '@bliss/ui/components/floor/seat-selector';
 import { useNow } from '@bliss/ui/hooks';
 import { orderFire } from '@bliss/ui/motion/floor';
-import { IconArrowBackUp, IconArrowLeft, IconArrowsRightLeft, IconCheck, IconDoorExit, IconFlame, IconReceipt, IconReceipt2, IconUserPlus, IconPrinter } from '@tabler/icons-react';
+import { IconArrowBackUp, IconArrowLeft, IconArrowsRightLeft, IconCheck, IconChevronDown, IconDoorExit, IconFlame, IconReceipt, IconReceipt2, IconUserPlus, IconPrinter } from '@tabler/icons-react';
+import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams, useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { posDb } from '@/lib/pos/db';
 import { notify } from '@bliss/ui/components/notices';
 import { addItem, askBill, clear, closeEmpty, deliverTable, fire, takeBackBill } from '@/lib/pos/actions';
 import { STAGE } from '@/app/_pos/table-stage';
 import { StatePill } from '@bliss/ui/components/status';
-import { FloorDialog } from '@bliss/ui/components/floor/sheet';
+import { FloorDialog, Sheet } from '@bliss/ui/components/floor/sheet';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { holdsTable, isOrdering, isSeated, placeLabel } from '@bliss/shared/trade';
-import {
-  addLine,
-  addSeat,
-  labelSeat,
-  moveLine,
-  moveTab,
-  removeSeat,
-  selectSeat,
-  setDraftQty,
-  setLineNote,
-  voidLine,
-} from '@/lib/pos/mutations';
-import { type TabDetail, useGrid, useOpenTabs, useOutlet, useTab } from '@/lib/pos/queries';
+import { addLine, addSeat, labelSeat, moveLine, moveTab, removeSeat, selectSeat, setDraftQty, setLineNote, voidLine } from '@/lib/pos/mutations';
+import { type TabDetail, useGrid, useOpenTabs, useOutlet, useTab, useTradeReady } from '@/lib/pos/queries';
 import { useSession } from '@/lib/pos/session';
 import { ItemGrid } from './_parts/item-grid';
 import { FinishedSheet, LabelSeatSheet, LineSheet, ModifierSheet, MoveLineSheet, MoveTabSheet, NoteSheet, SeatMenuSheet, VoidDialog } from './_parts/sheets';
 import { TablesRail } from './_parts/tables-rail';
 import { TicketColumn, type TicketColumnHandle } from './_parts/ticket-column';
 import type { RowAction } from './_parts/ticket-row';
+import { printUrl } from '@/lib/pos/api';
 
 type Overlay =
   | { kind: 'none' }
@@ -74,9 +65,16 @@ export default function TabScreen() {
   const [firing, setFiring] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileTicketOpen, setMobileTicketOpen] = useState(false);
+  const [tablesOpen, setTablesOpen] = useState(false);
+  // Another table was chosen: the list and the ticket sheet close behind it.
+  useEffect(() => {
+    setTablesOpen(false);
+    setMobileTicketOpen(false);
+  }, [tabId]);
   const tables = useLiveQuery(() => posDb().serviceTables.toArray(), []);
   // Every tab that still holds a table, including paid ones whose guests have not left.
   const holding = useLiveQuery(async () => (await posDb().tabs.toArray()).filter((t) => holdsTable(t)), []);
+  const tradeReady = useTradeReady();
 
   const close = () => setOverlay({ kind: 'none' });
   const timezone = outlet?.timezone ?? 'Africa/Nairobi';
@@ -167,7 +165,7 @@ export default function TabScreen() {
       setTimeout(() => setNotice(null), 2000);
     });
 
-  const freeTables = (tables ?? []).filter((t) => !(holding ?? []).some((x) => x.serviceTableId === t.id) && t.status !== 'out_of_service');
+  const freeTables = tradeReady ? (tables ?? []).filter((t) => !(holding ?? []).some((x) => x.serviceTableId === t.id) && t.status !== 'out_of_service') : [];
   // waiterName comes from the TabListItem (which has the staff map join), not TabDetail.
   const tabListItem = (tabs ?? []).find((t) => t.tab.id === tabId);
   const waiterName = tabListItem?.waiterName ?? null;
@@ -181,9 +179,7 @@ export default function TabScreen() {
         detail.tab.tabNumber ? { key: 'num', text: `Tab ${detail.tab.tabNumber}` } : null,
         detail.zone?.name ? { key: 'zone', text: detail.zone.name } : null,
         { key: 'elapsed', text: `open ${formatElapsed(now - detail.tab.openedAt)}`, mono: true },
-        detail.tab.assignedTo !== session?.staffId && waiterName
-          ? { key: 'waiter', text: waiterName }
-          : null,
+        detail.tab.assignedTo !== session?.staffId && waiterName ? { key: 'waiter', text: waiterName } : null,
         detail.tab.name ? { key: 'name', text: detail.tab.name } : null,
       ]
     : [];
@@ -191,16 +187,32 @@ export default function TabScreen() {
   return (
     <div className="flex h-full min-h-0 bg-page">
       {/* ── Left Rail Sidebar (180px) ────────────────────────────────────── */}
-      {session && tabs ? <TablesRail tabs={tabs} currentTabId={tabId} currentZoneId={detail?.tab.zoneId ?? null} staffId={session.staffId} selectedSeatId={detail?.selected} /> : <div className="hidden tablet:block w-rail-tables shrink-0" />}
+      {session && tabs ? (
+        <TablesRail tabs={tabs} currentTabId={tabId} currentZoneId={detail?.tab.zoneId ?? null} staffId={session.staffId} selectedSeatId={detail?.selected} />
+      ) : (
+        <div className="hidden w-rail-tables shrink-0 desktop:block" />
+      )}
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col shadow-[inset_1px_0_8px_rgba(0,0,0,0.2)] bg-page/50">
-        <header className="z-10 flex shrink-0 flex-col gap-8 border-b border-rule px-12 py-8 pad:flex-row pad:items-center pad:justify-between pad:gap-16 pad:px-24 pad:py-12">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="z-10 flex shrink-0 flex-col gap-8 border-b border-rule px-12 py-8 pad:gap-12 pad:px-24 pad:py-12 desktop:flex-row desktop:items-center desktop:justify-between desktop:gap-16">
           {/* Which table this is, and what it has run up. The ticket is a drawer on a phone, so
               without this the waiter cannot see either without opening it. */}
           <div className="flex min-w-0 items-baseline justify-between gap-12 pad:justify-start">
             <div className="min-w-0">
               <div className="flex min-w-0 items-center gap-8">
-                <h1 className="truncate text-title font-medium text-ink">{detail?.label ?? 'Tab'}</h1>
+                {/* Below a wide screen the table list is a sheet, opened from the table's own name. */}
+                <h1 className="min-w-0 text-title font-medium text-ink">
+                  <button
+                    type="button"
+                    onClick={() => setTablesOpen(true)}
+                    aria-haspopup="dialog"
+                    className="-my-8 flex min-w-0 items-center gap-4 rounded-md py-8 press-feedback desktop:pointer-events-none"
+                  >
+                    <span className="truncate">{detail?.label ?? 'Tab'}</span>
+                    <span className="sr-only desktop:hidden">, switch table</span>
+                    <IconChevronDown size={18} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0 text-ink-muted desktop:hidden" />
+                  </button>
+                </h1>
                 {stage && stage !== 'empty' ? (
                   <StatePill tone={STAGE[stage].tone} more={STAGE[stage].more} live={STAGE[stage].live}>
                     {STAGE[stage].word}
@@ -212,19 +224,23 @@ export default function TabScreen() {
             {detail ? <Money value={detail.total} size="num-lg" decimals="whole" className="shrink-0 pad:hidden" /> : null}
           </div>
 
-          <div className="flex h-full min-w-0 items-center gap-12 pad:shrink-0">
-            {detail?.showControls ? (
-              <SeatSelector
-                seats={detail.seats.filter((s) => s.status !== 'removed').map((s) => ({ id: s.id, seatNo: s.seatNo, label: s.label, status: s.status === 'settled' ? 'settled' : 'active', total: s.total }))}
-                sharedTotal={detail.sharedTotal}
-                selected={detail.selected}
-                onSelect={(seat) => void selectSeat(tabId, seat)}
-                onSeatMenu={(seatId) => setOverlay({ kind: 'seat', seatId })}
-                onAddSeat={onAddSeat}
-                notice={notice}
-              />
-            ) : null}
-            
+          <div className="flex min-w-0 items-center gap-12">
+            <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain no-scrollbar desktop:flex-none">
+              {detail?.showControls ? (
+                <SeatSelector
+                  seats={detail.seats
+                    .filter((s) => s.status !== 'removed')
+                    .map((s) => ({ id: s.id, seatNo: s.seatNo, label: s.label, status: s.status === 'settled' ? 'settled' : 'active', total: s.total }))}
+                  sharedTotal={detail.sharedTotal}
+                  selected={detail.selected}
+                  onSelect={(seat) => void selectSeat(tabId, seat)}
+                  onSeatMenu={(seatId) => setOverlay({ kind: 'seat', seatId })}
+                  onAddSeat={onAddSeat}
+                  notice={notice}
+                />
+              ) : null}
+            </div>
+
             {detail ? (
               <OverflowMenu
                 label="Tab actions"
@@ -236,12 +252,12 @@ export default function TabScreen() {
                   ...(stage === 'bill'
                     ? [
                         { key: 'bill', label: 'Take back the bill request', icon: IconArrowBackUp, onSelect: () => void takeBackBill(tabId, label) },
-                        { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => window.open(`/print/tab/${tabId}`, '_blank') }
+                        { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => window.open(printUrl(`/print/tab/${tabId}`), '_blank') },
                       ]
                     : stage && stage !== 'empty'
                       ? [
                           { key: 'bill', label: 'Ask for the bill', icon: IconReceipt, onSelect: () => void askBill(tabId, label) },
-                          { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => window.open(`/print/tab/${tabId}`, '_blank') }
+                          { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => window.open(printUrl(`/print/tab/${tabId}`), '_blank') },
                         ]
                       : []),
                   // Only while nothing has been fired: a tab with something on it is paid, not closed.
@@ -259,7 +275,15 @@ export default function TabScreen() {
           </InlineNotice>
         ) : null}
         {error ? (
-          <InlineNotice tone="low" className="px-16 shadow-raised z-10 relative" action={<Button variant="ghost" size="md" onClick={() => setError(null)}>Dismiss</Button>}>
+          <InlineNotice
+            tone="low"
+            className="px-16 shadow-raised z-10 relative"
+            action={
+              <Button variant="ghost" size="md" onClick={() => setError(null)}>
+                Dismiss
+              </Button>
+            }
+          >
             {error}
           </InlineNotice>
         ) : null}
@@ -281,13 +305,7 @@ export default function TabScreen() {
       )}
 
       <BaseAction>
-        <Button
-          variant="secondary"
-          size="xl"
-          icon={IconReceipt2}
-          onClick={() => setMobileTicketOpen(!mobileTicketOpen)}
-          className="tablet:hidden"
-        >
+        <Button variant="secondary" size="xl" icon={IconReceipt2} onClick={() => setMobileTicketOpen(!mobileTicketOpen)} className="tablet:hidden">
           {detail && detail.groups.length > 0 ? `Ticket · ${detail.groups.reduce((n, g) => n + g.lines.length, 0)}` : 'Ticket'}
         </Button>
         {idle && stage === 'to_serve' ? (
@@ -309,6 +327,12 @@ export default function TabScreen() {
         )}
       </BaseAction>
 
+      {session && tabs ? (
+        <Sheet open={tablesOpen} onClose={() => setTablesOpen(false)} title="Your tables" description="Switch table, or filter by zone.">
+          <TablesRail variant="sheet" tabs={tabs} currentTabId={tabId} currentZoneId={detail?.tab.zoneId ?? null} staffId={session.staffId} selectedSeatId={detail?.selected} />
+        </Sheet>
+      ) : null}
+
       {detail ? (
         <>
           <ModifierSheet
@@ -320,7 +344,8 @@ export default function TabScreen() {
               await run(async () => {
                 const lineId = await addLine({ tabId, seat: detail.selected, ...input });
                 const name = grid?.tiles.find((t) => t.variantId === input.variantId)?.name ?? 'Item';
-                if (lineId) notify({ key: `add:${tabId}:${String(detail.selected)}:${input.variantId}:with`, count: true, title: `${name} added`, body: `With its choices, on ${seatName}. Not fired yet.` });
+                if (lineId)
+                  notify({ key: `add:${tabId}:${String(detail.selected)}:${input.variantId}:with`, count: true, title: `${name} added`, body: `With its choices, on ${seatName}. Not fired yet.` });
               });
               close();
             }}
@@ -395,7 +420,12 @@ export default function TabScreen() {
               const lineId = overlayLineId;
               const before = active?.line.note ?? null;
               await setLineNote(lineId, note);
-              notify({ key: `note:${lineId}`, title: note ? 'Note saved' : 'Note removed', body: note ? `"${note}" on ${active?.name ?? 'the line'}.` : undefined, undo: () => setLineNote(lineId, before) });
+              notify({
+                key: `note:${lineId}`,
+                title: note ? 'Note saved' : 'Note removed',
+                body: note ? `"${note}" on ${active?.name ?? 'the line'}.` : undefined,
+                undo: () => setLineNote(lineId, before),
+              });
             }}
           />
           <VoidDialog
@@ -464,8 +494,15 @@ function SettledTab({ detail, timezone }: { detail: TabDetail; timezone: string 
 
   return (
     <div className="flex h-full min-h-0 items-center justify-center p-16 pad:p-40">
-      <section aria-labelledby="settled-title" className="flex w-full max-w-[480px] flex-col items-center gap-16 rounded-[22px] border border-rule-raised/40 bg-raised/70 p-24 text-center backdrop-blur-glass">
-        <span className={seated ? 'flex size-avatar items-center justify-center rounded-dot bg-poured/15 text-poured' : 'flex size-avatar items-center justify-center rounded-dot bg-control text-ink-subtle'}>
+      <section
+        aria-labelledby="settled-title"
+        className="flex w-full max-w-[480px] flex-col items-center gap-16 rounded-sheet border border-rule-raised/40 bg-raised/70 p-24 text-center backdrop-blur-glass"
+      >
+        <span
+          className={
+            seated ? 'flex size-avatar items-center justify-center rounded-dot bg-poured/15 text-poured' : 'flex size-avatar items-center justify-center rounded-dot bg-control text-ink-subtle'
+          }
+        >
           {seated ? <IconCheck size={28} stroke={1.5} aria-hidden="true" /> : <IconDoorExit size={28} stroke={1.5} aria-hidden="true" />}
         </span>
         <div>

@@ -143,12 +143,12 @@ export function useNotices(): readonly Notice[] {
 
 /* ------------------------------------------------------------------- view */
 
-/** Each tone colours the whole notice: its wash and dot grid (via --notice-tone), its edge, its mark. */
+/** Each tone colours the whole notice: its wash and dot grid (via --notice-tone-rgb), its edge, its mark. */
 const TONE: Record<NoticeTone, { icon: TablerIcon; tile: string; bar: string; edge: string; surface: string }> = {
-  success: { icon: IconCheck, tile: 'bg-poured/20 text-poured', bar: 'bg-poured/60', edge: 'border-poured/30', surface: '[--notice-tone:var(--color-poured)]' },
-  info: { icon: IconInfoCircle, tile: 'bg-info/20 text-info', bar: 'bg-info/60', edge: 'border-info/30', surface: '[--notice-tone:var(--color-info)]' },
-  warning: { icon: IconAlertTriangle, tile: 'bg-low/20 text-low', bar: 'bg-low/60', edge: 'border-low/35', surface: '[--notice-tone:var(--color-low)]' },
-  error: { icon: IconAlertCircle, tile: 'bg-stop/20 text-stop', bar: 'bg-stop/60', edge: 'border-stop/40', surface: '[--notice-tone:var(--color-stop)]' },
+  success: { icon: IconCheck, tile: 'bg-poured/20 text-poured', bar: 'bg-poured/60', edge: 'border-poured/30', surface: 'notice-tone-poured' },
+  info: { icon: IconInfoCircle, tile: 'bg-info/20 text-info', bar: 'bg-info/60', edge: 'border-info/30', surface: 'notice-tone-info' },
+  warning: { icon: IconAlertTriangle, tile: 'bg-low/20 text-low', bar: 'bg-low/60', edge: 'border-low/35', surface: 'notice-tone-low' },
+  error: { icon: IconAlertCircle, tile: 'bg-stop/20 text-stop', bar: 'bg-stop/60', edge: 'border-stop/40', surface: 'notice-tone-stop' },
 };
 
 const TEXT_BUTTON = 'h-32 shrink-0 rounded-[10px] px-12 text-label font-medium press-feedback disabled:opacity-50';

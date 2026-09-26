@@ -78,16 +78,8 @@ const BUBBLES: readonly [number, number, number, number][] = [
 
 export const AmbientCounterArtwork = memo(function AmbientCounterArtwork() {
   return (
-    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-24 mix-blend-screen">
-      <svg
-        aria-hidden="true"
-        focusable="false"
-        className="absolute inset-0 h-full w-full"
-        viewBox="0 0 1600 960"
-        preserveAspectRatio="xMidYMid slice"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
+    <div className="ambient-art pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-24 mix-blend-screen">
+      <svg aria-hidden="true" focusable="false" className="absolute inset-0 h-full w-full" viewBox="0 0 1600 960" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="counter-flare-left" cx="6%" cy="78%" r="46%">
             <stop offset="0%" stopColor="var(--color-money)" stopOpacity="0.1" />
@@ -181,13 +173,7 @@ export const AmbientCounterArtwork = memo(function AmbientCounterArtwork() {
 
         {/* ── Right flank: the receipt and the crystal ─────────────────────── */}
         <g transform="translate(1330 -40) rotate(14)">
-          <path
-            d="M0 0 L180 0 L180 420 C180 520, 120 560, 60 600 C20 626, -10 660, -20 700 L-20 280 Z"
-            fill="url(#counter-receipt)"
-            stroke="var(--color-glint)"
-            strokeOpacity="0.28"
-            strokeWidth="1"
-          />
+          <path d="M0 0 L180 0 L180 420 C180 520, 120 560, 60 600 C20 626, -10 660, -20 700 L-20 280 Z" fill="url(#counter-receipt)" stroke="var(--color-glint)" strokeOpacity="0.28" strokeWidth="1" />
           {Array.from({ length: 9 }, (_, i) => (
             <path key={i} d={`M24 ${60 + i * 40} L${i % 3 === 2 ? 110 : 150} ${60 + i * 40}`} stroke="var(--color-glint)" strokeOpacity={0.3 - i * 0.025} strokeWidth="1" strokeLinecap="round" />
           ))}

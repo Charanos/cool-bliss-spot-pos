@@ -77,9 +77,9 @@ export function OverflowMenu({
           event.stopPropagation();
           setOpen((v) => !v);
         }}
-        className={cx(target, 'inline-flex shrink-0 items-center justify-center rounded-sm text-ink-subtle press-feedback hover:bg-control hover:text-ink')}
+        className={cx(target, 'inline-flex shrink-0 items-center justify-center rounded-md text-ink-subtle press-feedback hover:bg-control hover:text-ink aria-expanded:bg-control aria-expanded:text-ink')}
       >
-        {trigger ?? <IconDots size={20} stroke={ICON_STROKE} aria-hidden="true" />}
+        {trigger ?? <IconDots size={size === 'sm' ? 16 : 20} stroke={ICON_STROKE} aria-hidden="true" />}
       </button>
       {open && typeof document !== 'undefined'
         ? createPortal(
@@ -87,14 +87,15 @@ export function OverflowMenu({
               ref={menuRef}
               role="menu"
               aria-label={label}
+              tabIndex={-1}
               onKeyDown={onKeyDown}
               data-lenis-prevent=""
               style={{ top: position?.top ?? -9999, left: position?.left ?? -9999 }}
-              className="fixed z-50 min-w-[220px] rounded-md border border-hairline bg-overlay py-4 shadow-raised"
+              className="fixed z-popover min-w-popover-min rounded-md border border-edge bg-card p-4 shadow-popover"
             >
               {[safe, destructive].map((group, gi) =>
                 group.length === 0 ? null : (
-                  <div key={gi} className={cx(gi === 1 && safe.length > 0 && 'mt-4 border-t border-rule-raised pt-4')}>
+                  <div key={gi} className={cx(gi === 1 && safe.length > 0 && 'mt-4 border-t border-edge pt-4')}>
                     {group.map((item) => {
                       const Glyph = item.icon;
                       return (
@@ -109,7 +110,7 @@ export function OverflowMenu({
                             item.onSelect();
                           }}
                           className={cx(
-                            'flex min-h-row w-full items-center gap-12 px-12 text-left text-body-sm outline-offset-[-2px] hover:bg-control-hover focus-visible:bg-control-hover',
+                            'flex min-h-row-compact w-full items-center gap-8 rounded-sm px-8 text-left text-body-sm outline-offset-0 hover:bg-control focus-visible:bg-control',
                             item.destructive ? 'text-stop' : 'text-ink',
                             item.disabled && 'text-ink-disabled',
                           )}

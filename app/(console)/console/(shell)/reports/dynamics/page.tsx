@@ -1,20 +1,7 @@
-import type { Metadata } from 'next';
-import { dynamicsPnl } from '@/modules/reporting/dynamics';
-import { DynamicsDashboard } from './dynamics-dashboard';
+import { permanentRedirect } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Dynamics P&L',
-  description: 'Live executive P&L statement that updates as tabs close, with real COGS, Nairobi opex, and the Four Owner Questions.',
-};
-
-export default async function DynamicsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ filter?: 'today' | 'last_night' | 'week' | 'month' | 'event'; date?: string }>;
-}) {
-  const params = await searchParams;
-  const filter = params.filter ?? 'last_night';
-  const report = dynamicsPnl(filter, params.date);
-
-  return <DynamicsDashboard report={report} />;
+/** The report was called Dynamics; old links and bookmarks land on Performance. */
+export default async function DynamicsRedirect({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const { range } = await searchParams;
+  permanentRedirect(range ? `/console/reports/performance?range=${encodeURIComponent(range)}` : '/console/reports/performance');
 }
