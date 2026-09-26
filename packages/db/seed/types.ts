@@ -190,6 +190,23 @@ export interface DevicePresence {
   staffId: string | null;
   unsyncedCount: number;
   appVersion: string;
+  /** What the device reported about itself on its last pull: browser, screen, failed checks, display profile. */
+  capabilities?: DeviceCapabilities | null;
+}
+
+/** A station's own report, compact on the wire. lib/pos/device-caps.ts capsForServer. */
+export interface DeviceCapabilities {
+  browser: string;
+  system: string;
+  viewport: string;
+  dpr: number;
+  gamut: string;
+  pointer: string;
+  cores: number | null;
+  memory: number | null;
+  /** Checks that failed, by key. */
+  failed: string[];
+  display: string[];
 }
 
 export interface PourSpec {

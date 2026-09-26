@@ -10,7 +10,7 @@ import { Dot, type Tone } from '@bliss/ui/components/status';
 import { LiveRegion } from '@bliss/ui/components/surface';
 import { cx } from '@bliss/ui/lib/cx';
 import { Photo } from '@bliss/ui/components/photo';
-import { IconBeer, IconCash, IconHistory, IconReceipt2, IconSearch, IconShoppingBag } from '@tabler/icons-react';
+import { IconBeer, IconCash, IconHistory, IconReceipt2, IconSearch, IconSettings, IconShoppingBag } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
@@ -142,6 +142,13 @@ export function CounterShell({ children }: { children: ReactNode }) {
                 <ConnectionChip state={link} heldOrders={sync.heldOrders} compact />
               </span>
               <LiveClock timeZone={tz} />
+              <Link
+                href="/counter/settings"
+                aria-label="Settings for this counter"
+                className="flex size-control-sm shrink-0 items-center justify-center rounded-md text-ink-muted press-feedback hover:bg-control hover:text-ink"
+              >
+                <IconSettings size={18} stroke={ICON_STROKE} aria-hidden="true" />
+              </Link>
               <Link href="/counter/shift" aria-label={`${session.displayName}, view shift`} className="flex shrink-0 items-center gap-8 rounded-md p-2 press-feedback hover:bg-control/40">
                 <span
                   aria-hidden="true"

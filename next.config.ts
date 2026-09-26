@@ -14,8 +14,12 @@ const withSerwist = withSerwistInit({
   additionalPrecacheEntries: [{ url: '/offline', revision: process.env.VERCEL_GIT_COMMIT_SHA ?? String(Date.now()) }],
 });
 
+import { version } from './package.json';
+
 const config: NextConfig = {
   reactStrictMode: true,
+  // The version a station reports with its pull, so the Console shows which build each device runs.
+  env: { NEXT_PUBLIC_BLISS_VERSION: `${version}${process.env.VERCEL_GIT_COMMIT_SHA ? `+${process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7)}` : ''}` },
   poweredByHeader: false,
   // Workspace packages ship TypeScript source; one build, one deploy. ADR-004.
   transpilePackages: ['@bliss/ui', '@bliss/shared', '@bliss/db'],
@@ -47,4 +51,3 @@ const config: NextConfig = {
 };
 
 export default withSerwist(config);
-

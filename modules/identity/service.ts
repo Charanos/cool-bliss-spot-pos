@@ -13,6 +13,7 @@ import * as audit from '../audit/service';
 import * as credentials from './credentials';
 import { applyPin, checkPin, policy as pinPolicy } from './pins';
 import { identityTables } from './schema';
+import type { DeviceCapabilities } from '@bliss/db/seed/types';
 
 const createId = createUuidV7();
 
@@ -63,7 +64,11 @@ export interface DeviceRow extends Omit<Device, 'pairingHash'> {
   signedInStaffId: string | null;
   unsyncedCount: number;
   appVersion: string;
+  capabilities: DeviceCapabilities | null;
 }
+
+/** A station counts as online while it has pulled within this minute; it pulls every five seconds, so a brief Wi-Fi drop does not flicker it offline. */
+export const ONLINE_WINDOW_MS = 60_000;
 
 export function devices(): DeviceRow[] {
   const { devices: list, presence } = identityTables();
@@ -74,13 +79,77 @@ export function devices(): DeviceRow[] {
       ...d,
       // The code itself never leaves the server; only whether one is waiting to be used.
       pairingPending: Boolean(pairingHash) && (d.pairingExpiresAt ?? 0) > now,
-      online: d.status === 'active' && Boolean(p?.online),
+      online: d.status === 'active' && Boolean(p?.online) && now - (p?.lastSeenAt ?? 0) <= ONLINE_WINDOW_MS,
       lastSeenAt: p?.lastSeenAt ?? d.lastSeenAt,
       signedInStaffId: d.status === 'active' ? (p?.staffId ?? null) : null,
       unsyncedCount: p?.unsyncedCount ?? 0,
       appVersion: p?.appVersion ?? d.appVersion,
+      capabilities: p?.capabilities ?? null,
     };
   });
+}
+
+/** Parse the compact report a station sends with its pull. Null for anything malformed. */
+export function parseCapabilities(raw: string | null): DeviceCapabilities | null {
+  if (!raw || raw.length > 2000) return null;
+  try {
+    const c = JSON.parse(raw) as Record<string, unknown>;
+    const text = (v: unknown, max = 60) => (typeof v === 'string' ? v.slice(0, max) : '');
+    const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+    const list = (v: unknown) =>
+      Array.isArray(v)
+        ? v
+            .filter((x): x is string => typeof x === 'string')
+            .map((x) => x.slice(0, 20))
+            .slice(0, 10)
+        : [];
+    return {
+      browser: text(c.b),
+      system: text(c.s),
+      viewport: text(c.v, 20),
+      dpr: num(c.r) ?? 1,
+      gamut: text(c.g, 10),
+      pointer: text(c.p, 10),
+      cores: num(c.c),
+      memory: num(c.m),
+      failed: list(c.f),
+      display: list(c.d),
+    };
+  } catch {
+    return null;
+  }
+}
+
+type Sighting = { deviceId: string; staffId: string | null; unsyncedCount: number; appVersion: string; capabilities: DeviceCapabilities | null };
+
+/**
+ * Whether a station's pull tells the server anything new: someone else signed in, a different count
+ * waiting to send, a different report, or a last sighting older than a third of the online window. A
+ * device pulling every five seconds is then not a write every five seconds.
+ */
+export function presenceChanged(input: Sighting, now = Date.now()): boolean {
+  const current = identityTables().presence.find((p) => p.deviceId === input.deviceId);
+  if (!current || !current.online) return true;
+  if (current.staffId !== input.staffId || current.unsyncedCount !== input.unsyncedCount) return true;
+  if (input.capabilities && JSON.stringify(current.capabilities ?? null) !== JSON.stringify(input.capabilities)) return true;
+  return now - current.lastSeenAt >= ONLINE_WINDOW_MS / 3;
+}
+
+/** Record that a station was seen now. Runs inside the caller's write. */
+export function notePresence(input: Sighting, now = Date.now()): void {
+  const { presence } = identityTables();
+  const current = presence.find((p) => p.deviceId === input.deviceId);
+  const next = {
+    deviceId: input.deviceId,
+    online: true,
+    lastSeenAt: now,
+    staffId: input.staffId,
+    unsyncedCount: input.unsyncedCount,
+    appVersion: input.appVersion,
+    capabilities: input.capabilities ?? current?.capabilities ?? null,
+  };
+  if (current) Object.assign(current, next);
+  else presence.push(next);
 }
 
 /**

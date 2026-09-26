@@ -7,18 +7,13 @@ import { Switch } from '@bliss/ui/components/fields';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { motionStore, useMotionState } from '@bliss/ui/motion';
 import { cx } from '@bliss/ui/lib/cx';
-import {
-  IconBug,
-  IconBuildingStore,
-  IconDeviceTablet,
-  IconRefresh,
-} from '@tabler/icons-react';
+import { IconBug, IconBuildingStore, IconDeviceTablet, IconRefresh } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useOutlet } from '@/lib/pos/queries';
 import { useDevice } from '@/lib/pos/session';
 import { syncNow, useSync } from '@/lib/pos/sync';
 import { AboutBlissCard } from './_components/about-bliss-card';
-import { DisplayMotionCard } from './_components/display-motion-card';
+import { DeviceCard } from '@/app/_pos/device-card';
 import { SettingsCard } from './_components/settings-card';
 import { TabletStationCard } from './_components/tablet-station-card';
 
@@ -63,31 +58,15 @@ export default function SettingsPage() {
             {/* Left: Icon + Title + Operational Status Badge */}
             <div className="flex items-center gap-16 min-w-0">
               <div className="flex items-center gap-8 min-w-0 flex-wrap">
-                <h1 className="text-title-lg font-medium text-ink truncate leading-none">
-                  Settings
-                </h1>
+                <h1 className="text-title-lg font-medium text-ink truncate leading-none">Settings</h1>
 
-                <Badge
-                  tone="neutral"
-                  className="!rounded-dot px-8 py-4 font-mono text-micro uppercase "
-                >
+                <Badge tone="neutral" className="!rounded-dot px-8 py-4 font-mono text-micro uppercase ">
                   Tablet Node
                 </Badge>
 
                 {/* Connection Live Chip */}
                 <div className="hidden tablet:flex items-center px-8 py-4 rounded-dot bg-control border border-rule-raised/30 font-mono text-micro">
-                  <ConnectionChip
-                    state={
-                      sync.link === 'synced'
-                        ? 'synced'
-                        : sync.link === 'sending'
-                          ? 'sending'
-                          : sync.link === 'offline'
-                            ? 'offline'
-                            : 'unreachable'
-                    }
-                    heldOrders={sync.heldOrders}
-                  />
+                  <ConnectionChip state={sync.link === 'synced' ? 'synced' : sync.link === 'sending' ? 'sending' : sync.link === 'offline' ? 'offline' : 'unreachable'} heldOrders={sync.heldOrders} />
                 </div>
               </div>
             </div>
@@ -102,9 +81,7 @@ export default function SettingsPage() {
                 onClick={() => void handleSync()}
                 className="!rounded-dot px-16 text-body-sm font-medium border border-rule-raised/40 hover:border-accent/40 transition-all shadow-raised"
               >
-                <span className={cx(isSyncing && 'spin inline-block')}>
-                  {isSyncing ? 'Syncing...' : 'Sync now'}
-                </span>
+                <span className={cx(isSyncing && 'spin inline-block')}>{isSyncing ? 'Syncing...' : 'Sync now'}</span>
               </Button>
             </div>
           </div>
@@ -115,38 +92,32 @@ export default function SettingsPage() {
               <IconDeviceTablet size={12} stroke={ICON_STROKE} className="text-ink-muted shrink-0" />
               <span>Device: {device?.label ?? 'Not registered'}</span>
             </span>
-            <span aria-hidden="true" className="text-ink-disabled">·</span>
+            <span aria-hidden="true" className="text-ink-disabled">
+              ·
+            </span>
             <span className="inline-flex items-center gap-4 text-ink-subtle">
               <IconBuildingStore size={12} stroke={ICON_STROKE} className="text-ink-muted shrink-0" />
               <span>Outlet: {outlet?.name ?? 'Cool Bliss Spot'}</span>
             </span>
-            <span aria-hidden="true" className="text-ink-disabled">·</span>
-            <span className="text-ink-muted">
-              Prices & catalogue configured in Console
+            <span aria-hidden="true" className="text-ink-disabled">
+              ·
             </span>
+            <span className="text-ink-muted">Prices & catalogue configured in Console</span>
           </div>
         </div>
       </header>
 
       {/* ── Scrollable Body: Responsive Bento Panels ────────────────── */}
-      <div
-        className="min-h-0 flex-1 overflow-y-auto px-16 tablet:px-24 desktop:px-32 py-24 tablet:py-32 flex flex-col gap-24 tablet:gap-32"
-        style={{ paddingBottom: '120px' }}
-      >
+      <div className="min-h-0 flex-1 overflow-y-auto px-16 tablet:px-24 desktop:px-32 py-24 tablet:py-32 flex flex-col gap-24 tablet:gap-32" style={{ paddingBottom: '120px' }}>
         <div className="grid grid-cols-1 desktop:grid-cols-2 gap-16 tablet:gap-24 desktop:gap-32 max-w-full">
           {/* ── Panel 1: Device & Station Identity (Full CRUD) ────────── */}
           <TabletStationCard />
 
           {/* ── Panel 2: Display & Motion Preferences ─────────────────── */}
-          <DisplayMotionCard />
+          <DeviceCard />
 
           {/* ── Panel 3: Revamped Full-Width About Bliss System Panel ─── */}
-          <AboutBlissCard
-            outletName={outlet?.name}
-            taps={taps}
-            onTapVersion={() => setTaps((t) => t + 1)}
-            className="desktop:col-span-2"
-          />
+          <AboutBlissCard outletName={outlet?.name} taps={taps} onTapVersion={() => setTaps((t) => t + 1)} className="desktop:col-span-2" />
 
           {/* ── Panel 4: Motion Debug Console (5-tap easter egg) ───────── */}
           {debugOpen ? (
@@ -164,9 +135,7 @@ export default function SettingsPage() {
               >
                 <div className="flex flex-col gap-16">
                   <label className="flex items-center gap-16 min-h-row-floor flex-wrap">
-                    <span className="w-[180px] text-body font-medium text-ink-muted">
-                      Global time scale
-                    </span>
+                    <span className="w-[180px] text-body font-medium text-ink-muted">Global time scale</span>
                     <input
                       type="range"
                       min={0.05}
@@ -176,55 +145,34 @@ export default function SettingsPage() {
                       onChange={(e) => motionStore.set({ timeScale: Number(e.target.value) })}
                       className="flex-1 accent-[var(--color-accent)] cursor-pointer"
                     />
-                    <span className="w-[48px] text-right font-mono tabular text-num font-medium text-ink">
-                      {motion.timeScale.toFixed(2)}
-                    </span>
+                    <span className="w-[48px] text-right font-mono tabular text-num font-medium text-ink">{motion.timeScale.toFixed(2)}</span>
                   </label>
 
                   <div className="grid grid-cols-1 tablet:grid-cols-3 gap-12">
                     <div className="p-16 tablet:p-20 rounded-lg bg-sunken/60 border border-rule-raised/30 flex items-center justify-between">
                       <span className="text-body-sm text-ink font-medium">Turn all motion off</span>
-                      <Switch
-                        label=""
-                        checked={motion.off}
-                        onChange={(v) => motionStore.set({ off: v })}
-                      />
+                      <Switch label="" checked={motion.off} onChange={(v) => motionStore.set({ off: v })} />
                     </div>
 
                     <div className="p-16 tablet:p-20 rounded-lg bg-sunken/60 border border-rule-raised/30 flex items-center justify-between">
                       <span className="text-body-sm text-ink font-medium">Outline animating</span>
-                      <Switch
-                        label=""
-                        checked={motion.highlight}
-                        onChange={(v) => motionStore.set({ highlight: v })}
-                      />
+                      <Switch label="" checked={motion.highlight} onChange={(v) => motionStore.set({ highlight: v })} />
                     </div>
 
                     <div className="p-16 tablet:p-20 rounded-lg bg-sunken/60 border border-rule-raised/30 flex items-center justify-between">
                       <span className="text-body-sm text-ink font-medium">Force reduced motion</span>
-                      <Switch
-                        label=""
-                        checked={motion.forcedReduced}
-                        onChange={(v) => motionStore.set({ forcedReduced: v })}
-                      />
+                      <Switch label="" checked={motion.forcedReduced} onChange={(v) => motionStore.set({ forcedReduced: v })} />
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-8 pt-8">
-                    <span className="font-mono text-micro uppercase text-ink-subtle">
-                      Last {Math.min(50, motion.log.length)} animations
-                    </span>
+                    <span className="font-mono text-micro uppercase text-ink-subtle">Last {Math.min(50, motion.log.length)} animations</span>
                     <ul className="max-h-[220px] overflow-y-auto rounded-lg bg-sunken/60 border border-rule-raised/30 p-12 tablet:p-16 divide-y divide-rule-raised/20">
                       {motion.log.map((entry, i) => (
-                        <li
-                          key={`${entry.at}-${i}`}
-                          className="flex items-center justify-between gap-16 py-6 px-8 font-mono tabular text-num-sm"
-                        >
+                        <li key={`${entry.at}-${i}`} className="flex items-center justify-between gap-16 py-6 px-8 font-mono tabular text-num-sm">
                           <span className="text-ink font-medium">{entry.name}</span>
                           <span className="text-ink-subtle">{entry.ms}ms</span>
-                          <span className={cx(entry.longestFrameMs > 17 ? 'text-attention font-medium' : 'text-ink-subtle')}>
-                            longest {entry.longestFrameMs}ms
-                          </span>
+                          <span className={cx(entry.longestFrameMs > 17 ? 'text-attention font-medium' : 'text-ink-subtle')}>longest {entry.longestFrameMs}ms</span>
                         </li>
                       ))}
                     </ul>

@@ -9,6 +9,7 @@ import { ensureDevice } from '@/lib/pos/session';
 import { pruneAcked, startSync, useSync } from '@/lib/pos/sync';
 import { startUpdates } from '@/lib/pos/updates';
 import { refreshHaptics } from '@/lib/pos/haptics';
+import { initDisplay } from '@/lib/pos/display';
 
 /**
  * The client root for a staff device, Floor or Counter: motion defaults once, the sync cycle once, and
@@ -20,6 +21,8 @@ export function PosRoot({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     initMotion();
+    // After motion: a Lite device then turns the motion engine's low power on.
+    initDisplay();
     let stop: (() => void) | undefined;
     const stopUpdates = startUpdates();
     void (async () => {

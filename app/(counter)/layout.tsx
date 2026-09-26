@@ -2,6 +2,7 @@ import { colour } from '@bliss/ui/tokens';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { SWRegister } from '../_components/sw-register';
+import { DISPLAY_BOOT } from '@/lib/pos/display-boot';
 import { fontVariables } from '../fonts';
 import '../globals.css';
 
@@ -31,7 +32,11 @@ export const viewport: Viewport = {
  */
 export default function CounterRootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en-KE" data-theme="dark" data-surface="counter" className={fontVariables}>
+    <html lang="en-KE" data-theme="dark" data-surface="counter" className={fontVariables} suppressHydrationWarning>
+      <head>
+        {/* The device's display profile, before first paint: a Clarity counter never flashes the standard palette. */}
+        <script dangerouslySetInnerHTML={{ __html: DISPLAY_BOOT }} />
+      </head>
       <body className="min-h-dvh overflow-hidden bg-page text-ink antialiased" suppressHydrationWarning>
         <SWRegister />
         {children}

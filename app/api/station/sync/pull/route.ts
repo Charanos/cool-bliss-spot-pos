@@ -2,7 +2,7 @@ import { businessDate } from '@bliss/shared/time';
 import { stationAuth } from '@/lib/station';
 import { wireResponse } from '@/lib/wire';
 import { dataset } from '@/modules/_data/source';
-import { fresh } from '@/modules/_data/store';
+import { fresh, withWrite } from '@/modules/_data/store';
 import * as availability from '@/modules/availability/service';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
@@ -82,6 +82,16 @@ export async function GET(request: Request) {
     return wireResponse(body);
   }
   if (Date.now() - auth.issuedAt > RENEW_AFTER_MS) body.stationToken = identity.issueStationToken(auth.staff.id, auth.device.id);
+
+  // The pull doubles as the station's heartbeat: the Console's device list is live, not a guess.
+  const sighting = {
+    deviceId: auth.device.id,
+    staffId: auth.staff.id,
+    unsyncedCount: Math.max(0, Math.min(10_000, Number(url.searchParams.get('unsynced') ?? 0) || 0)),
+    appVersion: (url.searchParams.get('app') ?? '').slice(0, 20) || 'unknown',
+    capabilities: identity.parseCapabilities(url.searchParams.get('caps')),
+  };
+  if (identity.presenceChanged(sighting)) await withWrite(() => identity.notePresence(sighting));
 
   const feed = reset || since < 0 ? bootstrap(deviceId) : changesSince(since, deviceId);
   body.cursor = feed.cursor;

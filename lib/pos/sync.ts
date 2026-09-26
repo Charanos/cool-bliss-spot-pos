@@ -7,6 +7,8 @@ import { REJECTION_COPY, type RejectionCode } from '@bliss/shared/sync';
 import { notify } from '@bliss/ui/components/notices';
 import { NetworkUnavailable, SignInRequired, api, isForcedOffline } from './api';
 import { haptic } from './haptics';
+import { activeDisplay } from './display';
+import { capsForServer, readCaps } from './device-caps';
 import { META, posDb, getMeta, setMeta } from './db';
 
 /**
@@ -119,7 +121,18 @@ async function pendingAggregates(): Promise<Set<string>> {
 
 async function resetTrade() {
   const db = posDb();
-  await Promise.all([db.tabs.clear(), db.seats.clear(), db.orders.clear(), db.lines.clear(), db.lineModifiers.clear(), db.bills.clear(), db.billLines.clear(), db.tenders.clear(), db.drawers.clear(), db.outbox.clear()]);
+  await Promise.all([
+    db.tabs.clear(),
+    db.seats.clear(),
+    db.orders.clear(),
+    db.lines.clear(),
+    db.lineModifiers.clear(),
+    db.bills.clear(),
+    db.billLines.clear(),
+    db.tenders.clear(),
+    db.drawers.clear(),
+    db.outbox.clear(),
+  ]);
   await Promise.all([setMeta(META.tradeCursor, -1), setMeta(META.catalogueVersion, -1), setMeta(META.availabilityVersion, -1)]);
 }
 
@@ -140,22 +153,22 @@ async function applyTrade(rows: TradeRows, full: boolean) {
   }
 
   const lineTab = new Map(rows.lines.map((l) => [l.id, l.tabId]));
-  
+
   const tabs = rows.tabs.filter((t) => !held.has(t.id));
   if (tabs.length > 0) await db.tabs.bulkPut(tabs as AnyRows);
-  
+
   const seats = rows.seats.filter(keep);
   if (seats.length > 0) await db.seats.bulkPut(seats as AnyRows);
-  
+
   const orders = rows.orders.filter(keep);
   if (orders.length > 0) await db.orders.bulkPut(orders as AnyRows);
-  
+
   const lines = rows.lines.filter(keep);
   if (lines.length > 0) await db.lines.bulkPut(lines as AnyRows);
-  
+
   const lineModifiers = rows.lineModifiers.filter((m) => !held.has(lineTab.get(m.orderLineId) ?? ''));
   if (lineModifiers.length > 0) await db.lineModifiers.bulkPut(lineModifiers as AnyRows);
-  
+
   if (rows.bills.length > 0) await db.bills.bulkPut(rows.bills as AnyRows);
   if (rows.billLines.length > 0) await db.billLines.bulkPut(rows.billLines as AnyRows);
   if (rows.tenders.length > 0) await db.tenders.bulkPut(rows.tenders as AnyRows);
@@ -248,12 +261,17 @@ export async function pull(): Promise<void> {
     getMeta<string>(META.epoch),
     getMeta<{ id: string }>(META.deviceId),
   ]);
+  const unsynced = await posDb().outbox.where('status').anyOf('pending', 'inflight', 'rejected').count();
   const query = new URLSearchParams({
     catalogue: String(catalogueVersion ?? -1),
     availability: String(availabilityVersion ?? -1),
     since: String(cursor ?? -1),
     epoch: epoch ?? '',
     device: device?.id ?? '',
+    // The pull is also the heartbeat: what waits to send, which build, and what this device is.
+    unsynced: String(unsynced),
+    app: process.env.NEXT_PUBLIC_BLISS_VERSION ?? '',
+    caps: capsForServer(readCaps(), activeDisplay()),
   });
   const { body } = await api.get<PullBody>(`/api/station/sync/pull?${query.toString()}`);
   await applyPull(body);
@@ -428,7 +446,11 @@ export function forcedOfflineLabel() {
 export async function pruneAcked(): Promise<void> {
   const cutoff = Date.now() - 72 * 3_600_000;
   const db = posDb();
-  const old = await db.outbox.where('status').equals('acked').filter((e) => (e.ackedAt ?? 0) < cutoff).primaryKeys();
+  const old = await db.outbox
+    .where('status')
+    .equals('acked')
+    .filter((e) => (e.ackedAt ?? 0) < cutoff)
+    .primaryKeys();
   // The outbox is device transport, not a record: acknowledged entries leave once the server holds them.
   await db.outbox.bulkDelete(old);
 }

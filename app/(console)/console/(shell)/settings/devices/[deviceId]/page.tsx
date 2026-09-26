@@ -1,13 +1,13 @@
 import { formatAgo, formatDate, formatDateTime, formatIsoDate, plural } from '@bliss/shared/format';
 import { sum } from '@bliss/shared/money';
 import { addDays } from '@bliss/shared/time';
-import { Card, CardHeader } from '@bliss/ui/components/console/card';
+import { Card, CardHeader, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Callout, DetailHeader, LedgerItem, LedgerList, MetaRow } from '@bliss/ui/components/console/section';
 import { EmptyState } from '@bliss/ui/components/feedback';
 import { Money } from '@bliss/ui/components/money';
 import { StatusChip, ToneChip } from '@bliss/ui/components/status';
-import { IconCalendar, IconCash, IconCloudOff, IconReceipt, IconUser, IconVersions, IconWifi } from '@tabler/icons-react';
+import { IconCalendar, IconCash, IconCloudOff, IconDeviceAnalytics, IconReceipt, IconUser, IconVersions, IconWifi } from '@tabler/icons-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -152,6 +152,8 @@ export default async function DevicePage({ params }: { params: Promise<{ deviceI
         )}
       </MetricGrid>
 
+      <DeviceReport caps={device.capabilities} />
+
       <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-2">
         {isCounter ? (
           <Card aria-labelledby="device-drawers">
@@ -235,5 +237,48 @@ export default async function DevicePage({ params }: { params: Promise<{ deviceI
         </Card>
       </div>
     </div>
+  );
+}
+
+const CHECK_WORDS: Record<string, string> = {
+  modern: 'runs Bliss',
+  storage: 'keeps orders on the device',
+  offline: 'opens without a connection',
+  tint: 'soft colour tints',
+  blur: 'frosted glass',
+  wakeLock: 'keeps the screen awake',
+};
+const NEEDED = new Set(['modern', 'storage', 'offline']);
+
+/** What the station said about itself on its last pull: browser, screen, checks and display profile. */
+function DeviceReport({ caps }: { caps: identity.DeviceRow['capabilities'] }) {
+  const failedNeeded = caps?.failed.filter((f) => NEEDED.has(f)) ?? [];
+  return (
+    <Card aria-labelledby="device-report" tone={failedNeeded.length > 0 ? 'stop' : undefined}>
+      <CardHeader
+        band
+        level="h2"
+        titleId="device-report"
+        icon={IconDeviceAnalytics}
+        title="What it reports"
+        subtitle={caps ? 'From its last sync' : 'Nothing yet. It reports once someone signs in on it.'}
+        meta={failedNeeded.length > 0 ? <ToneChip tone="stop">Cannot run Bliss fully</ToneChip> : caps ? <ToneChip tone="poured">Runs Bliss</ToneChip> : null}
+      />
+      {caps ? (
+        <KeyRows>
+          <KeyRow label="Browser">
+            {caps.browser} on {caps.system}
+          </KeyRow>
+          <KeyRow label="Screen">
+            {caps.viewport} at {caps.dpr}×, {caps.gamut === 'srgb' ? 'standard colour' : 'wide colour'}, {caps.pointer === 'touch' ? 'touch' : 'mouse and keyboard'}
+          </KeyRow>
+          <KeyRow label="Hardware">{[caps.cores ? `${caps.cores} cores` : null, caps.memory ? `${caps.memory} GB memory` : null].filter(Boolean).join(', ') || 'Not reported'}</KeyRow>
+          <KeyRow label="Draws with">{caps.display.length > 0 ? caps.display.map((d) => (d === 'lite' ? 'Lite' : d === 'clarity' ? 'Clarity' : d)).join(' and ') : 'Standard'}</KeyRow>
+          <KeyRow label="Missing" tone={failedNeeded.length > 0 ? 'stop' : undefined}>
+            {caps.failed.length > 0 ? caps.failed.map((f) => CHECK_WORDS[f] ?? f).join(', ') : 'Nothing'}
+          </KeyRow>
+        </KeyRows>
+      ) : null}
+    </Card>
   );
 }
