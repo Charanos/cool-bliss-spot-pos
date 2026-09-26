@@ -92,13 +92,14 @@ export const themes = {
     sunken: f[900],
     overlay: f[800],
     hairline: f[700],
-    rule: f[800],
+    /* Half a step above raised, so a rule drawn on a raised card is seen (it was the card's own colour). */
+    rule: '#2C363F',
     'rule-raised': f[700],
     ink: f[50],
     'ink-muted': f[300],
     'ink-subtle': f[400],
     'ink-disabled': f[600],
-    'control': f[800],
+    control: f[800],
     'control-hover': f[700],
     'control-pressed': f[600],
     accent: g[300],
@@ -186,7 +187,7 @@ export const themes = {
     'ink-muted': f[700],
     'ink-subtle': f[600],
     'ink-disabled': f[300],
-    'control': f[100],
+    control: f[100],
     'control-hover': f[200],
     'control-pressed': f[300],
     accent: g[600],
@@ -335,7 +336,7 @@ export const size = {
   'control-xl': 56,
   'target-floor': 48,
   'target-counter': 44,
-  'row': 44,
+  row: 44,
   'row-compact': 36,
   'row-floor': 48,
   keypad: 72,
@@ -491,6 +492,117 @@ export const motion = {
 export const breakpoints = { compact: 480, pad: 768, tablet: 960, desktop: 1280, wide: 1440 } as const;
 
 /**
+ * Clarity: the dark theme for a screen that washes colour out, such as a budget laptop's TN panel
+ * with lifted blacks and a flat gamma. docs/06, display profiles; docs/11 D-25.
+ *
+ * Three moves, measured in packages/ui/src/tokens/clarity.test.ts through a weak-panel simulation:
+ *  - wider steps between page, sunken and raised, and a rule that is never the same as a surface;
+ *  - status colours with more chroma, still sRGB, still 4.5:1 on every surface, and apart from one
+ *    another after the panel has flattened them;
+ *  - ink tiers lifted, so muted and subtle text survive the lift in the blacks.
+ * Everything else, including the tints, follows from these. A device chooses it; nothing forces it.
+ */
+export const clarityColour = {
+  page: '#05080B',
+  card: '#10171D',
+  sunken: '#141C23',
+  raised: '#27323C',
+  hairline: '#56636F',
+  rule: '#3E4A56',
+  control: '#2B3741',
+  controlHover: '#3A4854',
+  controlPressed: '#4B5966',
+  ink: '#FFFFFF',
+  inkMuted: '#D3DCE3',
+  inkSubtle: '#AEBBC6',
+  inkDisabled: '#77848F',
+  accent: '#3CD3EA',
+  accentHover: '#22BCD6',
+  accentPressed: '#159AB2',
+  accentSubtle: '#0F5F6E',
+  poured: '#45DC92',
+  served: '#A0A6FF',
+  low: '#FFC44D',
+  stop: '#FF8FA5',
+  money: '#FFD68A',
+} as const;
+
+const c = clarityColour;
+
+/** The dark theme's roles, overridden for Clarity. Roles not named keep their dark value. */
+export const clarity: Partial<Record<keyof typeof themes.dark, string>> = {
+  page: c.page,
+  raised: c.raised,
+  sunken: c.sunken,
+  overlay: c.raised,
+  hairline: c.hairline,
+  rule: c.rule,
+  'rule-raised': c.hairline,
+  ink: c.ink,
+  'ink-muted': c.inkMuted,
+  'ink-subtle': c.inkSubtle,
+  'ink-disabled': c.inkDisabled,
+  control: c.control,
+  'control-hover': c.controlHover,
+  'control-pressed': c.controlPressed,
+  accent: c.accent,
+  'accent-hover': c.accentHover,
+  'accent-pressed': c.accentPressed,
+  'accent-ink': c.page,
+  'accent-text': c.accent,
+  'accent-subtle': c.accentSubtle,
+  attention: c.low,
+  'attention-subtle': c.money,
+  money: c.money,
+  poured: c.poured,
+  served: c.served,
+  low: c.low,
+  stop: c.stop,
+  'stop-ink': c.page,
+  info: c.accent,
+  focus: c.accent,
+  shared: c.inkMuted,
+  skeleton: c.raised,
+  chart: c.accent,
+  grid: c.rule,
+  /* No glass on a weak panel: every pane is solid, with an edge you can see. */
+  glass: c.raised,
+  'glass-hover': c.controlHover,
+  'glass-strong': c.raised,
+  'glass-strong-hover': c.controlHover,
+  'glass-edge': c.hairline,
+  'glass-edge-hover': c.inkDisabled,
+  veil: c.control,
+  'veil-hover': c.controlHover,
+  'veil-edge': c.hairline,
+  'veil-edge-hover': c.inkDisabled,
+  /* Tints a step stronger, so a marked row still reads as marked. */
+  'accent-wash': alpha(c.accent, 18),
+  'stop-wash': alpha(c.stop, 18),
+  'poured-wash': alpha(c.poured, 18),
+  'served-wash': alpha(c.served, 18),
+  'attention-wash': alpha(c.low, 20),
+  'low-wash': alpha(c.low, 20),
+  'info-wash': alpha(c.accent, 18),
+  'neutral-wash': c.control,
+  card: c.card,
+  edge: c.hairline,
+  'edge-strong': c.inkDisabled,
+  band: c.sunken,
+  'band-strong': c.raised,
+  rail: c.card,
+  'rail-hover': c.control,
+  'rail-active': c.raised,
+  desk: c.page,
+  sheet: c.card,
+  'desk-hover': c.control,
+  'desk-active': c.sunken,
+  'desk-well': c.sunken,
+  'desk-chip': c.raised,
+  thumb: c.hairline,
+};
+
+/**
  * Every text on surface pair used in the product, with its use and the measured WCAG ratio.
  * packages/ui/src/tokens/contrast.test.ts recomputes each ratio, fails below the floor for its
  * use (4.5 body, 3 large text and UI boundaries) and fails if a comment here drifts from reality.
@@ -589,6 +701,7 @@ export const contrastPairs: ContrastPair[] = [
 export const tokens = {
   colour,
   themes,
+  clarity,
   type,
   weight,
   fontFamily,

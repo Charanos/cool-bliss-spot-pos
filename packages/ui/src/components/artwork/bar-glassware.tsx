@@ -7,16 +7,8 @@
  */
 export function AmbientBarArtwork() {
   return (
-    <div className="pointer-events-none absolute inset-0 z-[-1] overflow-hidden">
-      <svg
-        aria-hidden="true"
-        focusable="false"
-        className="absolute inset-0 h-full w-full"
-        viewBox="0 0 1600 960"
-        preserveAspectRatio="xMidYMid slice"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
+    <div className="ambient-art pointer-events-none absolute inset-0 z-[-1] overflow-hidden">
+      <svg aria-hidden="true" focusable="false" className="absolute inset-0 h-full w-full" viewBox="0 0 1600 960" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           {/* Glass edge highlight */}
           <linearGradient id="bliss-bar-highlight" x1="0" y1="0" x2="1" y2="1">
@@ -70,7 +62,7 @@ export function AmbientBarArtwork() {
 
           {/* Back Rim of the Coupe Bowl */}
           <ellipse cx="150" cy="60" rx="140" ry="25" stroke="var(--color-ink)" strokeOpacity="0.15" strokeWidth="4" />
-          
+
           {/* Liquid Body */}
           <path d="M 30 90 C 30 160, 120 180, 150 180 C 180 180, 270 160, 270 90 Z" fill="url(#bliss-bar-liquid-teal-body)" />
           {/* Liquid Surface */}
@@ -80,7 +72,7 @@ export function AmbientBarArtwork() {
           <path d="M 10 60 C 10 160, 100 200, 150 200 C 200 200, 290 160, 290 60" fill="url(#bliss-bar-glass-dark)" />
           {/* Front Rim Highlight */}
           <path d="M 10 60 C 10 160, 100 200, 150 200 C 200 200, 290 160, 290 60" stroke="url(#bliss-bar-highlight)" strokeWidth="6" strokeLinecap="round" />
-          
+
           {/* Side Highlight Curve for volume */}
           <path d="M 25 75 C 25 140, 80 180, 140 190" stroke="url(#bliss-bar-highlight)" strokeWidth="3" strokeLinecap="round" />
 
@@ -91,17 +83,16 @@ export function AmbientBarArtwork() {
         {/* ===================== RIGHT FLANK: HIGH FIDELITY ROCKS & SHAKER ===================== */}
         {/* Placed gracefully at middle-right. Tilted elegantly outward. */}
         <g transform="translate(1300, 120) scale(1.6) rotate(10, 100, 150)">
-          
           {/* High Fidelity Rocks Glass */}
           <g transform="translate(0, 0)">
             {/* Back Rim */}
             <ellipse cx="100" cy="20" rx="80" ry="15" stroke="var(--color-ink)" strokeOpacity="0.15" strokeWidth="4" />
-            
+
             {/* Liquid Body */}
             <path d="M 32 100 L 40 220 C 45 230, 155 230, 160 220 L 168 100 Z" fill="url(#bliss-bar-liquid-amber-body)" />
             {/* Liquid Surface */}
             <ellipse cx="100" cy="100" rx="68" ry="12" fill="url(#bliss-bar-liquid-amber-surface)" />
-            
+
             {/* High Fidelity Ice Block */}
             <g transform="translate(60, 60)">
               {/* Top Face */}
@@ -113,17 +104,17 @@ export function AmbientBarArtwork() {
               {/* Highlight Edges */}
               <path d="M 0 15 L 40 30 L 40 80 M 40 30 L 80 15" stroke="var(--color-glint)" strokeOpacity="0.3" strokeWidth="2" strokeLinejoin="round" />
             </g>
-            
+
             {/* Glass Front Body & Sham */}
             {/* Left Wall */}
             <path d="M 20 20 L 35 260" stroke="url(#bliss-bar-highlight)" strokeWidth="6" strokeLinecap="round" />
             {/* Right Wall */}
             <path d="M 180 20 L 165 260" stroke="url(#bliss-bar-highlight)" strokeWidth="6" strokeLinecap="round" />
-            
+
             {/* Bottom Sham Curve */}
             <path d="M 35 260 C 70 275, 130 275, 165 260" stroke="url(#bliss-bar-highlight)" strokeWidth="8" strokeLinecap="round" />
             <path d="M 35 260 C 70 275, 130 275, 165 260" fill="url(#bliss-bar-glass-dark)" />
-            
+
             {/* Inner Sham line */}
             <path d="M 40 220 C 75 235, 125 235, 160 220" stroke="var(--color-ink)" strokeOpacity="0.2" strokeWidth="4" />
           </g>
@@ -134,10 +125,10 @@ export function AmbientBarArtwork() {
             <path d="M 0 0 L 20 240 C 40 255, 80 255, 100 240 L 120 0 Z" fill="url(#bliss-bar-glass-dark)" />
             <path d="M 0 0 C 40 20, 80 20, 120 0" stroke="url(#bliss-bar-highlight)" strokeWidth="4" />
             <path d="M 20 240 C 40 255, 80 255, 100 240" stroke="url(#bliss-bar-highlight)" strokeWidth="6" strokeLinecap="round" />
-            
+
             {/* Side Highlights */}
             <path d="M 15 30 L 25 220" stroke="url(#bliss-bar-highlight)" strokeWidth="4" strokeLinecap="round" />
-            
+
             {/* Small Tin Nested */}
             <g transform="rotate(12, 60, 0)">
               <path d="M 15 -100 L 0 0 C 40 15, 80 15, 120 0 L 105 -100 Z" fill="var(--color-ink)" fillOpacity="0.15" />

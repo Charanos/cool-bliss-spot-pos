@@ -9,7 +9,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { atmosphere, breakpoints, colour, consoleElevation, elevation, fontFamily, motion, radius, size, space, themes, type, weight } from '../packages/ui/src/tokens/tokens';
+import { atmosphere, breakpoints, clarity, colour, consoleElevation, elevation, fontFamily, motion, radius, size, space, themes, type, weight } from '../packages/ui/src/tokens/tokens';
 
 const OUT = resolve(import.meta.dirname, '../packages/ui/src/styles/tokens.css');
 
@@ -117,6 +117,15 @@ function themeBlock(selector: string, name: keyof typeof themes, scheme: 'light'
 
 themeBlock(":root,\n[data-theme='light'],\n[data-theme='system']", 'light', 'light');
 themeBlock("[data-theme='dark']", 'dark', 'dark');
+// Clarity, per device, on the dark stations: the overridden roles and their channels. docs/11 D-25.
+push("[data-theme='dark'][data-display~='clarity'] {");
+for (const [key, value] of Object.entries(clarity)) {
+  push(`  --bliss-${key}: ${value};`);
+  const rgb = channels(value as string);
+  if (rgb) push(`  --bliss-${key}-rgb: ${rgb};`);
+}
+push('}');
+push();
 // The Console's System choice follows the device.
 push('@media (prefers-color-scheme: dark) {');
 themeBlock("[data-theme='system']", 'dark', 'dark', '  ');

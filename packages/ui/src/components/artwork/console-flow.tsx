@@ -5,7 +5,7 @@ import { memo } from 'react';
  *
  * This version uses pure SVG to construct the champagne bottle and shisha,
  * ensuring high-fidelity rendering at any resolution with complex gradients
- * to simulate reflections, glass, and liquid accurately, replacing the static 
+ * to simulate reflections, glass, and liquid accurately, replacing the static
  * image assets while preserving the exact layout constraints.
  */
 
@@ -22,7 +22,7 @@ function ChampagneSVG({ className, style }: { className?: string; style?: React.
           <stop offset="95%" stopColor="#1e3820" />
           <stop offset="100%" stopColor="#050a05" />
         </linearGradient>
-        
+
         <linearGradient id="foil" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#5E4E1C" />
           <stop offset="15%" stopColor="#B89947" />
@@ -32,12 +32,12 @@ function ChampagneSVG({ className, style }: { className?: string; style?: React.
           <stop offset="90%" stopColor="#D4B65B" />
           <stop offset="100%" stopColor="#3B2E09" />
         </linearGradient>
-        
+
         <linearGradient id="foil-bottom" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgba(255,255,255,0)" />
           <stop offset="100%" stopColor="rgba(0,0,0,0.6)" />
         </linearGradient>
-        
+
         <linearGradient id="glass-highlight" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="rgba(255,255,255,0)" />
           <stop offset="50%" stopColor="rgba(255,255,255,0.7)" />
@@ -50,7 +50,7 @@ function ChampagneSVG({ className, style }: { className?: string; style?: React.
           <stop offset="100%" stopColor="#9C7E2E" />
         </linearGradient>
       </defs>
-      
+
       {/* 
         Champagne Silhouette:
         Neck: x=66 to 94. 
@@ -58,7 +58,8 @@ function ChampagneSVG({ className, style }: { className?: string; style?: React.
         Body: straight down to y=470
         Base: curved bottom
       */}
-      <path d="
+      <path
+        d="
         M 66 10 
         C 66 80, 68 130, 68 140 
         C 68 200, 25 220, 25 280 
@@ -69,10 +70,15 @@ function ChampagneSVG({ className, style }: { className?: string; style?: React.
         C 135 220, 92 200, 92 140
         C 92 130, 94 80, 94 10
         Z
-      " fill="url(#bottle-glass)" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
-      
+      "
+        fill="url(#bottle-glass)"
+        stroke="rgba(255,255,255,0.15)"
+        strokeWidth="1.5"
+      />
+
       {/* Strong left highlight for thick glossy glass */}
-      <path d="
+      <path
+        d="
         M 71 140 
         C 71 200, 32 220, 32 280 
         L 32 465
@@ -81,10 +87,14 @@ function ChampagneSVG({ className, style }: { className?: string; style?: React.
         L 38 280
         C 38 220, 77 200, 77 140
         Z
-      " fill="url(#glass-highlight)" opacity="0.75" />
-      
+      "
+        fill="url(#glass-highlight)"
+        opacity="0.75"
+      />
+
       {/* Subtle right highlight */}
-      <path d="
+      <path
+        d="
         M 90 140
         C 90 200, 128 220, 128 280
         L 128 465
@@ -92,7 +102,9 @@ function ChampagneSVG({ className, style }: { className?: string; style?: React.
         L 125 280
         C 125 220, 87 200, 87 140
         Z
-      " fill="rgba(255,255,255,0.15)" />
+      "
+        fill="rgba(255,255,255,0.15)"
+      />
 
       {/* Punt (bottom indentation shadow) */}
       <path d="M 40 493 C 60 483, 100 483, 120 493 C 100 497, 60 497, 40 493 Z" fill="rgba(0,0,0,0.8)" />
@@ -103,7 +115,8 @@ function ChampagneSVG({ className, style }: { className?: string; style?: React.
       <path d="M 66 25 Q 80 30, 94 25 L 94 20 Q 80 25, 66 20 Z" fill="rgba(0,0,0,0.4)" />
 
       {/* Main Foil Cover (Capsule) */}
-      <path d="
+      <path
+        d="
         M 66 20
         C 66 80, 68 130, 68 140
         C 68 160, 60 175, 52 190
@@ -111,32 +124,42 @@ function ChampagneSVG({ className, style }: { className?: string; style?: React.
         C 100 175, 92 160, 92 140
         C 92 130, 94 80, 94 20
         Z
-      " fill="url(#foil)" />
-      
+      "
+        fill="url(#foil)"
+      />
+
       {/* Foil shadow at the cut */}
-      <path d="
+      <path
+        d="
         M 52 190
         Q 80 220, 108 190
         L 105 185
         Q 80 213, 55 185 Z
-      " fill="url(#foil-bottom)" />
-      
+      "
+        fill="url(#foil-bottom)"
+      />
+
       {/* Foil Neck Details (Creases and Wire outline) */}
       <path d="M 66 40 Q 80 43, 94 40" fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="2" />
       <path d="M 66 45 Q 80 48, 94 45" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1" />
-      
+
       {/* Foil sweeping creases */}
       <path d="M 72 45 C 70 80, 78 120, 65 170" fill="none" stroke="rgba(0,0,0,0.25)" strokeWidth="1" />
       <path d="M 85 45 C 87 80, 80 120, 90 165" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
 
       {/* Neck Label (Collar) */}
-      <path d="
+      <path
+        d="
         M 36 235
         Q 80 255, 124 235
         L 128 265
         Q 80 295, 32 265
         Z
-      " fill="#111" stroke="url(#label-gold)" strokeWidth="2" />
+      "
+        fill="#111"
+        stroke="url(#label-gold)"
+        strokeWidth="2"
+      />
       <path d="M 45 250 Q 80 272, 115 250" fill="none" stroke="url(#label-gold)" strokeWidth="1" opacity="0.8" />
       <path d="M 50 255 Q 80 275, 110 255" fill="none" stroke="url(#label-gold)" strokeWidth="1" opacity="0.5" />
 
@@ -146,7 +169,7 @@ function ChampagneSVG({ className, style }: { className?: string; style?: React.
         <path d="M -30 -40 L 30 -40 L 35 0 C 35 30, 10 45, 0 55 C -10 45, -35 30, -35 0 Z" fill="#111" stroke="url(#label-gold)" strokeWidth="3" />
         {/* Inner gold line */}
         <path d="M -26 -35 L 26 -35 L 31 0 C 31 26, 8 38, 0 46 C -8 38, -31 26, -31 0 Z" fill="none" stroke="url(#label-gold)" strokeWidth="1" opacity="0.6" />
-        
+
         {/* Faux elegant typography / crest */}
         <circle cx="0" cy="-15" r="8" fill="url(#label-gold)" />
         <path d="M -15 5 L 15 5 L 10 7 L -10 7 Z" fill="url(#label-gold)" />
@@ -177,7 +200,7 @@ function ShishaSVG({ className, style }: { className?: string; style?: React.CSS
           <stop offset="90%" stopColor="rgba(180, 220, 255, 0.4)" />
           <stop offset="100%" stopColor="rgba(10, 15, 30, 0.9)" />
         </linearGradient>
-        
+
         <linearGradient id="vase-water" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="rgba(20, 60, 100, 0.9)" />
           <stop offset="20%" stopColor="rgba(60, 140, 220, 0.8)" />
@@ -194,7 +217,7 @@ function ShishaSVG({ className, style }: { className?: string; style?: React.CSS
           <stop offset="80%" stopColor="#BBB" />
           <stop offset="100%" stopColor="#222" />
         </linearGradient>
-        
+
         <linearGradient id="gold-accent" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#8A6B22" />
           <stop offset="30%" stopColor="#E6C261" />
@@ -221,10 +244,10 @@ function ShishaSVG({ className, style }: { className?: string; style?: React.CSS
 
       {/* Water Body */}
       <path d="M70 410 C100 420, 200 420, 230 410 C235 440, 220 485, 150 485 C80 485, 65 440, 70 410 Z" fill="url(#vase-water)" />
-      
+
       {/* Water Meniscus */}
       <ellipse cx="150" cy="412" rx="80" ry="8" fill="rgba(60, 180, 255, 0.3)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
-      
+
       {/* Bubbles */}
       <circle cx="130" cy="450" r="3" fill="rgba(255,255,255,0.6)" />
       <circle cx="160" cy="430" r="4" fill="rgba(255,255,255,0.5)" />
@@ -233,11 +256,16 @@ function ShishaSVG({ className, style }: { className?: string; style?: React.CSS
       <circle cx="180" cy="460" r="3" fill="rgba(255,255,255,0.6)" />
 
       {/* Vase */}
-      <path d="M120 320 C120 320, 60 380, 60 460 C60 490, 90 495, 150 495 C210 495, 240 490, 240 460 C240 380, 180 320, 180 320 Z" fill="url(#vase-glass)" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
-      
+      <path
+        d="M120 320 C120 320, 60 380, 60 460 C60 490, 90 495, 150 495 C210 495, 240 490, 240 460 C240 380, 180 320, 180 320 Z"
+        fill="url(#vase-glass)"
+        stroke="rgba(255,255,255,0.2)"
+        strokeWidth="1.5"
+      />
+
       {/* Left strong glass reflection */}
       <path d="M70 450 C70 410, 115 350, 125 330 C128 325, 125 340, 115 360 C100 390, 85 430, 85 460 C85 470, 95 480, 110 485 C90 480, 70 470, 70 450 Z" fill="rgba(255,255,255,0.4)" />
-      
+
       {/* Right subtle reflection */}
       <path d="M225 450 C225 410, 180 350, 170 330 C167 325, 170 340, 180 360 C195 390, 210 430, 210 460 C210 470, 200 480, 185 485 C205 480, 225 470, 225 450 Z" fill="rgba(255,255,255,0.15)" />
 
@@ -254,7 +282,7 @@ function ShishaSVG({ className, style }: { className?: string; style?: React.CSS
       <rect x="135" y="150" width="30" height="140" fill="url(#chrome)" />
       <path d="M120 250 L180 250 L175 220 L125 220 Z" fill="url(#gold-accent)" />
       <path d="M125 180 L175 180 L170 150 L130 150 Z" fill="url(#gold-accent)" />
-      
+
       {/* Tray */}
       <path d="M70 150 L230 150 C235 155, 235 160, 230 165 L70 165 C65 160, 65 155, 70 150 Z" fill="url(#chrome)" />
       <ellipse cx="150" cy="150" rx="80" ry="10" fill="url(#chrome)" opacity="0.8" />
@@ -263,11 +291,11 @@ function ShishaSVG({ className, style }: { className?: string; style?: React.CSS
       <path d="M130 145 L170 145 L175 100 L125 100 Z" fill="#4A2F1D" />
       <path d="M110 100 C110 60, 190 60, 190 100 Z" fill="#6A4228" />
       <ellipse cx="150" cy="65" rx="36" ry="6" fill="#8C5836" />
-      
+
       {/* Heat Management / Coils (Top) */}
       <rect x="120" y="45" width="60" height="20" rx="2" fill="url(#chrome)" />
       <path d="M125 45 L140 30 L160 30 L175 45 Z" fill="url(#chrome)" opacity="0.9" />
-      
+
       {/* Glowing Coals */}
       <circle cx="140" cy="38" r="4" fill="#FF5500" />
       <circle cx="155" cy="39" r="5" fill="#FF3300" />
@@ -278,7 +306,7 @@ function ShishaSVG({ className, style }: { className?: string; style?: React.CSS
 
 export const AmbientConsoleArtwork = memo(function AmbientConsoleArtwork() {
   return (
-    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+    <div className="ambient-art pointer-events-none absolute inset-0 z-0 overflow-hidden">
       {/* Keypad-proximity falloff: a radial mask centered near where the PIN
           pad sits, shared by both wrappers below via CSS mask. Objects
           fade to ~15% opacity as they approach that center, full strength
@@ -286,10 +314,8 @@ export const AmbientConsoleArtwork = memo(function AmbientConsoleArtwork() {
       <div
         className="absolute inset-0"
         style={{
-          maskImage:
-            'radial-gradient(circle at 46% 60%, transparent 0%, rgba(0,0,0,0.35) 55%, black 100%)',
-          WebkitMaskImage:
-            'radial-gradient(circle at 46% 60%, transparent 0%, rgba(0,0,0,0.35) 55%, black 100%)',
+          maskImage: 'radial-gradient(circle at 46% 60%, transparent 0%, rgba(0,0,0,0.35) 55%, black 100%)',
+          WebkitMaskImage: 'radial-gradient(circle at 46% 60%, transparent 0%, rgba(0,0,0,0.35) 55%, black 100%)',
         }}
       >
         {/* ── Top-right: shisha ── */}

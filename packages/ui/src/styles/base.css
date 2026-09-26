@@ -980,3 +980,51 @@
     transform: none;
   }
 }
+
+/* Ambient artwork: decoration behind a station's working surfaces. Contained so it never reflows them. */
+@utility ambient-art {
+  contain: layout paint;
+}
+
+/*
+ * Display profiles, per device. docs/06, display profiles; docs/11 D-25. The device sets them as
+ * data-display on <html> (lib/pos/display.ts); they combine.
+ *
+ * Lite, for slower devices such as the iPad mini 4, and Clarity, for screens that wash colour out,
+ * share their plainness: no frosted glass (a blur is the most expensive thing a tablet draws, and on a
+ * weak panel it only muddies), no ambient artwork, no dot textures. Clarity's colours are in tokens.css.
+ */
+[data-display~='lite'],
+[data-display~='clarity'] {
+  --bliss-glass: var(--bliss-raised);
+  --bliss-glass-hover: var(--bliss-control-hover);
+  --bliss-glass-strong: var(--bliss-raised);
+  --bliss-glass-strong-hover: var(--bliss-control-hover);
+}
+
+:is([data-display~='lite'], [data-display~='clarity']) :is(*, *::before, *::after) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+:is([data-display~='lite'], [data-display~='clarity']) .ambient-art {
+  display: none;
+}
+
+:is([data-display~='lite'], [data-display~='clarity']) :is(.texture-dots-accent, .texture-dots-stop) {
+  background-image: none;
+}
+
+/* Lite: nothing loops. A pulse or a breathing label costs a tablet frames it needs for scrolling. */
+[data-display~='lite'] :is(*, *::before, *::after) {
+  animation-iteration-count: 1 !important;
+}
+
+/* Clarity: no text smaller than 12px, so meta survives a soft, low-resolution panel. */
+[data-display~='clarity'] {
+  --text-micro: 12px;
+  --text-micro--line-height: 15px;
+  --text-eyebrow: 12px;
+  --text-caps: 12px;
+  --text-badge: 11px;
+}
