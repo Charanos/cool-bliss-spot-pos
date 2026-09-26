@@ -3,6 +3,7 @@
 import { Button } from '@bliss/ui/components/button';
 import type { ButtonVariant } from '@bliss/ui/components/button';
 import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
+import { type ToastInput, useToast } from '@bliss/ui/components/console/toast';
 import { InlineNotice } from '@bliss/ui/components/feedback';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { cx } from '@bliss/ui/lib/cx';
@@ -11,6 +12,66 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { type ChangeEvent, type FormEvent, type ReactNode, useEffect, useState, useTransition } from 'react';
 import type { ActionResult } from '../_lib/action-result';
 import { uploadFiles } from '../_lib/upload';
+
+
+const PAST: Record<string, string> = {
+  add: 'added',
+  save: 'saved',
+  remove: 'removed',
+  delete: 'deleted',
+  void: 'voided',
+  refund: 'refunded',
+  close: 'closed',
+  mark: 'marked',
+  take: 'taken',
+  put: 'put',
+  stop: 'stopped',
+  archive: 'archived',
+  rename: 'renamed',
+  register: 'registered',
+  move: 'moved',
+  hand: 'handed',
+  end: 'ended',
+  bring: 'brought',
+  raise: 'raised',
+  cancel: 'cancelled',
+  approve: 'approved',
+  receive: 'received',
+  reset: 'reset',
+  set: 'set',
+  change: 'changed',
+  copy: 'copied',
+  sell: 'selling',
+  use: 'used',
+  withdraw: 'withdrawn',
+  show: 'shown',
+};
+const PARTICLES = new Set(['off', 'back', 'over', 'on', 'out', 'up', 'reviewed', 'resolved', 'as', 'in', 'from', 'again']);
+
+/**
+ * The confirmation a button's own words imply: "Add product" is "Product added", "Void the bill" is
+ * "Bill voided", "Take off sale" is "Taken off sale". A label it cannot read becomes "Done".
+ */
+export function doneFrom(label: string): string {
+  const words = label.replace(/\s+KES\s+[\d,.]+$/, '').trim().split(/\s+/);
+  const verb = words[0]?.toLowerCase() ?? '';
+  const past = PAST[verb];
+  if (!past) return 'Done';
+  const rest = words.slice(1);
+  if (rest.length === 0) return past.charAt(0).toUpperCase() + past.slice(1);
+  if (PARTICLES.has(rest[0]!.toLowerCase())) return `${past.charAt(0).toUpperCase()}${past.slice(1)} ${rest.join(' ')}`;
+  const subject = (rest[0]!.toLowerCase() === 'the' || rest[0]!.toLowerCase() === 'a' ? rest.slice(1) : rest).join(' ');
+  return `${subject.charAt(0).toUpperCase()}${subject.slice(1)} ${past}`;
+}
+
+type ToastOption<R> = false | string | ToastInput | ((result: R) => string | ToastInput | false);
+
+function toToast<R>(option: ToastOption<R> | undefined, fallback: string, result: R): ToastInput | null {
+  const value = typeof option === 'function' ? option(result) : option;
+  if (value === false) return null;
+  if (value === undefined) return { title: fallback };
+  return typeof value === 'string' ? { title: value } : value;
+}
 
 /**
  * The Console's form dialogs, docs/19 section 3. One shape for every create and edit: a title that
@@ -27,6 +88,7 @@ export function FormDialog<R extends object>({
   width = 'lg',
   onSubmit,
   onDone,
+  toast,
   children,
 }: {
   open: boolean;
@@ -40,9 +102,12 @@ export function FormDialog<R extends object>({
   onSubmit: () => Promise<ActionResult<R>>;
   /** After success, before the page refreshes: go to the new record, show a one-time code. */
   onDone?: (result: ActionResult<R> & { ok: true }) => void;
+  /** What the toast says on success: by default the button's words, done. `false` for none. */
+  toast?: ToastOption<ActionResult<R> & { ok: true }>;
   children: ReactNode;
 }) {
   const router = useRouter();
+  const notify = useToast();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
 
@@ -61,6 +126,8 @@ export function FormDialog<R extends object>({
       }
       onClose();
       onDone?.(result as ActionResult<R> & { ok: true });
+      const done = toToast(toast, doneFrom(submitLabel), result as ActionResult<R> & { ok: true });
+      if (done) notify({ tone: 'success', ...done });
       router.refresh();
     });
   }
@@ -106,6 +173,7 @@ export function ReasonDialog({
   quickReasons = [],
   destructive = true,
   run,
+  toast,
   children,
 }: {
   open: boolean;
@@ -116,9 +184,11 @@ export function ReasonDialog({
   quickReasons?: readonly string[];
   destructive?: boolean;
   run: (reason: string) => Promise<ActionResult<object>>;
+  toast?: ToastOption<ActionResult<object> & { ok: true }>;
   children?: ReactNode;
 }) {
   const router = useRouter();
+  const notify = useToast();
   return (
     <ConsoleOverlay open={open} onClose={onClose} title={title} description={description} width="md">
       {open ? (
@@ -131,6 +201,8 @@ export function ReasonDialog({
             const result = await run(reason);
             if (!result.ok) throw new Error(result.message);
             onClose();
+            const done = toToast(toast, doneFrom(confirmLabel), result as ActionResult<object> & { ok: true });
+            if (done) notify({ tone: 'success', ...done });
             router.refresh();
           }}
         >

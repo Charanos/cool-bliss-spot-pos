@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { setPrice } from '../../_actions/catalogue';
 import { EntityLink } from '../../_components/entity-link';
+import { useToast } from '@bliss/ui/components/console/toast';
 
 export interface PriceRow {
   variantId: string;
@@ -221,6 +222,7 @@ export function PriceListView({
 
 function PriceDialog({ target, list, onClose }: { target: { row: PriceRow; remove: boolean } | null; list: { id: string; name: string }; onClose: () => void }) {
   const router = useRouter();
+  const notify = useToast();
   const [value, setValue] = useState('');
   const row = target?.row;
   let parsed: Cents | null = null;
@@ -261,6 +263,7 @@ function PriceDialog({ target, list, onClose }: { target: { row: PriceRow; remov
             if (!r.ok) throw new Error(r.message);
             setValue('');
             onClose();
+            notify({ title: target.remove ? 'Price removed from the list' : 'Price saved', body: 'The floor charges it from the next sync.' });
             router.refresh();
           }}
         >

@@ -6,6 +6,7 @@ import { TextField } from '@bliss/ui/components/fields';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { updateStockSettings } from '../../../_actions/catalogue';
+import { useToast } from '@bliss/ui/components/console/toast';
 
 interface Settings {
   lowStockThreshold: number | null;
@@ -23,6 +24,7 @@ const digits = (s: string) => s.replace(/[^\d]/g, '');
  */
 export function StockSettingsForm({ productId, initial, outletDefault, unit }: { productId: string; initial: Settings; outletDefault: number; unit: string }) {
   const router = useRouter();
+  const notify = useToast();
   const [values, setValues] = useState({ low: toText(initial.lowStockThreshold), point: toText(initial.reorderPoint), qty: toText(initial.reorderQty), lead: toText(initial.leadTimeDays) });
   const [message, setMessage] = useState<{ tone: 'stop' | 'poured'; text: string } | null>(null);
   const [pending, start] = useTransition();
@@ -49,6 +51,7 @@ export function StockSettingsForm({ productId, initial, outletDefault, unit }: {
           if (!r.ok) setMessage({ tone: 'stop', text: r.message });
           else {
             setMessage({ tone: 'poured', text: 'Saved. The floor picks this up with its next snapshot.' });
+            notify({ title: 'Stock settings saved' });
             router.refresh();
           }
         });

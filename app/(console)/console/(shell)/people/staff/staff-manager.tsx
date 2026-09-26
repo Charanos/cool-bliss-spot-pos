@@ -2,6 +2,7 @@
 
 import type { EmploymentStatus } from '@bliss/shared/domain';
 import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
+import { useToast } from '@bliss/ui/components/console/toast';
 import { SelectField } from '@bliss/ui/components/fields';
 import type { ActionItem } from '@bliss/ui/components/action-list';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
@@ -26,6 +27,7 @@ export function useStaffManager({ roles, canManage, createParam = false }: { rol
   dialogs: ReactNode;
 } {
   const router = useRouter();
+  const notify = useToast();
   const [pending, setPending] = useState<Pending | null>(null);
   const [editing, setEditing] = useState<StaffRow | 'new' | null>(null);
   useCreateParam(() => setEditing('new'), canManage && createParam);
@@ -46,7 +48,10 @@ export function useStaffManager({ roles, canManage, createParam = false }: { rol
         label: 'Unlock their PIN',
         icon: IconLockOpen,
         onSelect: () => {
-          void unlockPin({ staffId: r.id }).then(() => router.refresh());
+          void unlockPin({ staffId: r.id }).then((result) => {
+            notify(result.ok ? { title: `${r.displayName}'s PIN unlocked` } : { tone: 'stop', title: 'The PIN is still locked', body: result.message });
+            router.refresh();
+          });
         },
       });
     }

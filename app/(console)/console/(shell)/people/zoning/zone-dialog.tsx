@@ -8,10 +8,12 @@ import { SelectField, TextField } from '@bliss/ui/components/fields';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState, useTransition } from 'react';
 import { createZone, updateZone } from '../../_actions/people';
+import { useToast } from '@bliss/ui/components/console/toast';
 
 /** Add or edit a zone. The form resets to the zone being edited each time it opens. */
 export function ZoneDialog({ target, priceLists, open, onClose }: { target: Zone | null; priceLists: { value: string; label: string }[]; open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const notify = useToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
   const [name, setName] = useState('');
@@ -44,6 +46,7 @@ export function ZoneDialog({ target, priceLists, open, onClose }: { target: Zone
         return;
       }
       onClose();
+      notify({ title: target ? 'Zone saved' : 'Zone added' });
       router.refresh();
     });
   }

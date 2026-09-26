@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { setRolePermission } from '../../_actions/people';
 import type { RoleView } from './permissions';
+import { useToast } from '@bliss/ui/components/console/toast';
 
 type RoleColumn = Pick<RoleView, 'id' | 'key' | 'name' | 'permissions' | 'people' | 'locked' | 'lockedReason'>;
 
@@ -21,6 +22,7 @@ type RoleColumn = Pick<RoleView, 'id' | 'key' | 'name' | 'permissions' | 'people
  */
 export function RolesMatrix({ roles, permissions, canManage, label = 'Permissions by role' }: { roles: RoleColumn[]; permissions: { key: PermissionKey; label: string; detail: string }[]; canManage: boolean; label?: string }) {
   const router = useRouter();
+  const notify = useToast();
   const [pending, setPending] = useState<{
     role: RoleColumn;
     permission: { key: PermissionKey; label: string };
@@ -127,6 +129,7 @@ export function RolesMatrix({ roles, permissions, canManage, label = 'Permission
               });
               if (!r.ok) throw new Error(r.message);
               setPending(null);
+              notify({ title: pending.granted ? `${pending.permission.label} given to ${pending.role.name.toLowerCase()}s` : `${pending.permission.label} taken from ${pending.role.name.toLowerCase()}s` });
               router.refresh();
             }}
           />

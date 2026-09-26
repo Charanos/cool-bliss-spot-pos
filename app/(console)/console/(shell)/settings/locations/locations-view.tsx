@@ -13,6 +13,7 @@ import { IconArchive, IconArrowBackUp, IconBuildingWarehouse, IconGlassFull, Ico
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { saveLocation, setDefaultLocation, setLocationStatus } from '../../_actions/venue';
+import { useToast } from '@bliss/ui/components/console/toast';
 import { FormDialog, ReasonDialog, useCreateParam, useDialog } from '../../_components/forms';
 
 export interface LocationRow {
@@ -39,6 +40,7 @@ const KIND: Record<StockLocationKind, { label: string; icon: typeof IconBuilding
 export function LocationsView({ rows, canEdit }: { rows: LocationRow[]; canEdit: boolean }) {
   const router = useRouter();
   const [, start] = useTransition();
+  const notify = useToast();
   const dialog = useDialog<'edit' | 'status', LocationRow | null>();
   useCreateParam(() => dialog.open('edit', null), canEdit);
   const active = rows.filter((r) => r.status === 'active');
@@ -49,7 +51,8 @@ export function LocationsView({ rows, canEdit }: { rows: LocationRow[]; canEdit:
 
   const makeDefault = (r: LocationRow, use: 'receipt' | 'sale') =>
     start(async () => {
-      await setDefaultLocation({ id: r.id, use });
+      const result = await setDefaultLocation({ id: r.id, use });
+      notify(result.ok ? { title: use === 'receipt' ? `Deliveries now land in ${r.name}` : `The floor now sells from ${r.name}` } : { tone: 'stop', title: 'That did not change', body: result.message });
       router.refresh();
     });
 

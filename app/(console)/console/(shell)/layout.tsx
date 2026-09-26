@@ -1,16 +1,7 @@
 import { formatDayShort } from '@bliss/shared/format';
 import { ConsoleMotionRoot, ConsolePage, ConsoleSheet } from '@bliss/ui/components/console/shell';
-import {
-  IconBuildingStore,
-  IconChartBar,
-  IconLayoutDashboard,
-  IconPackage,
-  IconReceipt2,
-  IconSettings,
-  IconTags,
-  IconTruckDelivery,
-  IconUsers,
-} from '@tabler/icons-react';
+import { Toaster } from '@bliss/ui/components/console/toast';
+import { IconBuildingStore, IconChartBar, IconLayoutDashboard, IconPackage, IconReceipt2, IconSettings, IconTags, IconTruckDelivery, IconUsers } from '@tabler/icons-react';
 import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
 import { fresh } from '@/modules/_data/store';
@@ -93,39 +84,44 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
 
   return (
     <ConsoleMotionRoot scrollerId={SHEET_SCROLL_ID}>
-      <CrumbProvider>
-        <a href="#content" className="sr-only focus:not-sr-only focus:fixed focus:left-16 focus:top-12 focus:z-toast focus:rounded-md focus:bg-card focus:px-12 focus:py-8 focus:text-body-sm focus:text-ink focus:shadow-popover">
-          Skip to content
-        </a>
-        <div className="flex h-dvh min-w-frame-min overflow-hidden bg-desk">
-          <DeskNav
-            venue={{ name: outlet.name, day: formatDayShort(clock.current), trading: clock.tradingInProgress }}
-            groups={groups}
-            settings={item('settings')}
-            account={{ name: actor.staff.displayName, role: actor.role.name, photo: actor.staff.avatarUrl, theme }}
-            tonight={tonight}
-            initialCollapsed={jar.get('bliss-console-rail')?.value === 'collapsed'}
-          />
-          <ConsoleSheet
-            scrollerId={SHEET_SCROLL_ID}
-            header={
-              <SheetHeader
-                timezone={outlet.timezone}
-                icons={icons}
-                day={formatDayShort(clock.current)}
-                trading={clock.tradingInProgress}
-                theme={theme}
-                stations={devices.map((d) => ({ id: d.id, label: d.label, kind: d.kind, online: d.online, lastSeenAt: d.lastSeenAt, unsynced: d.unsyncedCount }))}
-              />
-            }
+      <Toaster>
+        <CrumbProvider>
+          <a
+            href="#content"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-16 focus:top-12 focus:z-toast focus:rounded-md focus:bg-card focus:px-12 focus:py-8 focus:text-body-sm focus:text-ink focus:shadow-popover"
           >
-            <main id="content" tabIndex={-1} className="flex-1 outline-none">
-              <ConsolePage scrollerId={SHEET_SCROLL_ID}>{children}</ConsolePage>
-            </main>
-          </ConsoleSheet>
-        </div>
-        <CommandMenu theme={theme} />
-      </CrumbProvider>
+            Skip to content
+          </a>
+          <div className="flex h-dvh min-w-frame-min overflow-hidden bg-desk">
+            <DeskNav
+              venue={{ name: outlet.name, day: formatDayShort(clock.current), trading: clock.tradingInProgress }}
+              groups={groups}
+              settings={item('settings')}
+              account={{ name: actor.staff.displayName, role: actor.role.name, photo: actor.staff.avatarUrl, theme }}
+              tonight={tonight}
+              initialCollapsed={jar.get('bliss-console-rail')?.value === 'collapsed'}
+            />
+            <ConsoleSheet
+              scrollerId={SHEET_SCROLL_ID}
+              header={
+                <SheetHeader
+                  timezone={outlet.timezone}
+                  icons={icons}
+                  day={formatDayShort(clock.current)}
+                  trading={clock.tradingInProgress}
+                  theme={theme}
+                  stations={devices.map((d) => ({ id: d.id, label: d.label, kind: d.kind, online: d.online, lastSeenAt: d.lastSeenAt, unsynced: d.unsyncedCount }))}
+                />
+              }
+            >
+              <main id="content" tabIndex={-1} className="flex-1 outline-none">
+                <ConsolePage scrollerId={SHEET_SCROLL_ID}>{children}</ConsolePage>
+              </main>
+            </ConsoleSheet>
+          </div>
+          <CommandMenu theme={theme} />
+        </CrumbProvider>
+      </Toaster>
     </ConsoleMotionRoot>
   );
 }

@@ -131,7 +131,12 @@ the same way. Each is decoration beside something a page already says in words a
 | `InlineBar` | A 3px bar inside a figure's cell: a share, days of cover, how much of an order has come |
 | `ChartCaption` | The line above a chart that says what to look at |
 | `Sparkline` | A small trend in bars or a line, labelled for a screen reader |
-| `Button variant="create"` | The one way to make something new on a page: the primary as a pill, its plus turning a quarter |
+| `Button variant="create"` | The one way to make something new on a page: the accent pill, lit from above with a glow in its colour, rising a pixel under the pointer, its plus turning a quarter |
+| `KeyRows`, `KeyRow` | A record card's facts as rows: an uppercase label, its value on the right, a hairline between |
+| `CardBand` | The head of a record card with no photograph: the record's number or kind as a mono eyebrow, its state, its name and one line |
+| `PillTabs` | A workspace's pages at the head of each page: a track, the current page a raised chip, counts inside |
+| `Toaster`, `useToast` | The confirmation of a finished action, at the foot of the sheet. `FormDialog` and `ReasonDialog` toast in the words of their button unless told otherwise (docs/11 D-22) |
+| `Pagination` | The foot of a long table or grid: the range shown, numbered pages and a page size, all in the address |
 
 ## 4. The shell: a desk and a sheet
 

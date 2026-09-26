@@ -84,6 +84,7 @@ export function BillActions({
         confirmLabel="Void the bill"
         quickReasons={['Settled on the wrong tab', 'Wrong tender recorded', 'Split wrongly']}
         run={(reason) => voidBill({ billId, reason })}
+        toast={{ title: `Bill ${billNumber} voided`, body: 'Its lines are back on the tab.' }}
       />
 
       <ReasonDialog
@@ -105,6 +106,7 @@ export function BillActions({
             requestId,
           })
         }
+        toast={{ title: `Bill ${billNumber} refunded`, body: `${formatKes(amount, { decimals: 'whole' })} given back.` }}
       >
         <div className="flex flex-col gap-16 pb-16">
           <fieldset className="flex flex-col">

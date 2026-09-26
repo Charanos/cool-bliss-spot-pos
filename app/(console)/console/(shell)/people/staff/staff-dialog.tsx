@@ -10,6 +10,7 @@ import { type ChangeEvent, type FormEvent, useEffect, useState, useTransition } 
 import { createStaff, updateStaff } from '../../_actions/people';
 import { uploadFiles } from '../../_lib/upload';
 import type { StaffRow } from './staff-table';
+import { useToast } from '@bliss/ui/components/console/toast';
 
 const PIN_HELP: Record<StaffRow['pinState'], string> = {
   set: 'Leave empty to keep their current PIN.',
@@ -24,6 +25,7 @@ const PIN_HELP: Record<StaffRow['pinState'], string> = {
  */
 export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRow | null; roles: { value: string; label: string }[]; open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const notify = useToast();
   const [pending, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -70,6 +72,7 @@ export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRo
         return;
       }
       onClose();
+      notify({ title: target ? `${displayName || 'Their'} details saved` : `${displayName || 'The person'} added`, body: target ? undefined : 'They can sign in once their PIN is set.' });
       router.refresh();
     });
   }

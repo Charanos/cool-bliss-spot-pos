@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { approvePurchaseOrder, cancelPurchaseOrder, updatePurchaseOrder } from '../../../_actions/purchasing';
 import { type OrderDraftLine, OrderForm, type OrderStockItem, type OrderSupplier } from '../../_parts/order-form';
+import { useToast } from '@bliss/ui/components/console/toast';
 
 /** What can be done with an order in its state: approve a draft, receive against it, cancel the rest. */
 export function OrderActions({
@@ -26,6 +27,7 @@ export function OrderActions({
   editable: { suppliers: OrderSupplier[]; stock: OrderStockItem[]; initial: { supplierId: string; lines: OrderDraftLine[]; expectedAt: string | null; notes: string | null } } | null;
 }) {
   const router = useRouter();
+  const notify = useToast();
   const [cancelling, setCancelling] = useState(false);
   const [editing, setEditing] = useState(false);
   const [approving, startApprove] = useTransition();
@@ -57,7 +59,10 @@ export function OrderActions({
               setError('');
               const r = await approvePurchaseOrder({ purchaseOrderId: orderId });
               if (!r.ok) setError(r.message);
-              else router.refresh();
+              else {
+                notify({ title: 'Order approved', body: 'Send it to the supplier when you are ready.' });
+                router.refresh();
+              }
             })
           }
         >
@@ -84,6 +89,7 @@ export function OrderActions({
                 const result = await updatePurchaseOrder({ id: orderId, lines: v.lines, expectedAt: v.expectedAt, notes: v.notes });
                 if (result.ok) {
                   setEditing(false);
+                  notify({ title: 'Order saved' });
                   router.refresh();
                 }
                 return result;
@@ -104,6 +110,7 @@ export function OrderActions({
               const r = await cancelPurchaseOrder({ purchaseOrderId: orderId, reason });
               if (!r.ok) throw new Error(r.message);
               setCancelling(false);
+              notify({ title: 'Order cancelled' });
               router.refresh();
             }}
           />

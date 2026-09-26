@@ -16,6 +16,7 @@ import { IconArrowBackUp } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import { commitCount, recordCounted, recountLine, submitForReview } from '../../../_actions/inventory';
+import { useToast } from '@bliss/ui/components/console/toast';
 
 interface BlindLine {
   id: string;
@@ -31,6 +32,7 @@ interface BlindLine {
  */
 export function CountBlind({ countId, lines }: { countId: string; lines: BlindLine[] }) {
   const router = useRouter();
+  const notify = useToast();
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(lines.map((l) => [l.id, l.countedQty === null ? '' : String(l.countedQty)])));
   const [saving, setSaving] = useState<Record<string, 'saving' | 'saved' | 'error'>>({});
   const [error, setError] = useState<string | null>(null);
@@ -99,7 +101,10 @@ export function CountBlind({ countId, lines }: { countId: string; lines: BlindLi
               setError(null);
               const result = await submitForReview({ countId });
               if (!result.ok) setError(result.message);
-              else router.refresh();
+              else {
+                notify({ title: 'Sent for review', body: 'The variance shows once a manager opens it.' });
+                router.refresh();
+              }
             })
           }
         >
@@ -129,6 +134,7 @@ const QUICK = ['Breakage not recorded', 'Delivery short', 'Miscount, recounted',
 /** Review: expected appears now. Lines outside tolerance need a reason before the count commits. */
 export function CountReview({ countId, status, lines }: { countId: string; status: CountStatus; lines: ReviewLine[] }) {
   const router = useRouter();
+  const notify = useToast();
   const editable = status === 'review';
   const [reasons, setReasons] = useState<Record<string, string>>(() => Object.fromEntries(lines.filter((l) => l.outside).map((l) => [l.id, l.reason ?? ''])));
   const [confirm, setConfirm] = useState(false);
@@ -288,6 +294,7 @@ export function CountReview({ countId, status, lines }: { countId: string; statu
             const result = await commitCount({ countId, reasons, reason });
             if (!result.ok) throw new Error(result.message);
             setConfirm(false);
+            notify({ title: 'Count committed', body: 'Stock now reads as counted.' });
             router.refresh();
           }}
         />

@@ -7,10 +7,12 @@ import { IconArrowBackUp, IconCheck } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { approveReceiptVariance, reverseGoodsReceipt } from '../../../_actions/purchasing';
+import { useToast } from '@bliss/ui/components/console/toast';
 
 /** Accept a short delivery's difference, or reverse the delivery. Each asks for a reason and is audited. */
 export function ReceiptActions({ receiptId, title, canApprove, canReverse }: { receiptId: string; title: string; canApprove: boolean; canReverse: boolean }) {
   const router = useRouter();
+  const notify = useToast();
   const [open, setOpen] = useState<'approve' | 'reverse' | null>(null);
   if (!canApprove && !canReverse) return null;
   return (
@@ -37,6 +39,7 @@ export function ReceiptActions({ receiptId, title, canApprove, canReverse }: { r
               const r = await approveReceiptVariance({ receiptId, note: reason });
               if (!r.ok) throw new Error(r.message);
               setOpen(null);
+              notify({ title: 'Short delivery approved' });
               router.refresh();
             }}
           />
@@ -54,6 +57,7 @@ export function ReceiptActions({ receiptId, title, canApprove, canReverse }: { r
               const r = await reverseGoodsReceipt({ receiptId, reason });
               if (!r.ok) throw new Error(r.message);
               setOpen(null);
+              notify({ title: 'Delivery reversed', body: 'Its stock is taken back off the shelf.' });
               router.refresh();
             }}
           />

@@ -82,6 +82,7 @@ export function useDeviceManager({ canManage, createParam = false }: { canManage
           submitLabel="Register"
           onSubmit={() => registerDevice({ label, kind })}
           onDone={(r) => show(label.trim(), r.pairingCode)}
+          toast={false}
         >
           <TextField label="Called" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Floor 4" required maxLength={30} />
           <SelectField label="Kind" value={kind} onChange={(e) => setKind(e.target.value as DeviceKind)} options={KIND_OPTIONS} helper="Where it is used decides who can sign in on it." />
@@ -108,6 +109,7 @@ export function useDeviceManager({ canManage, createParam = false }: { canManage
           submitLabel="Show a new code"
           onSubmit={() => newPairingCode({ deviceId: device!.id })}
           onDone={(r) => show(device!.label, r.pairingCode)}
+          toast={false}
         >
           <p className="text-body-sm text-ink-muted">A device already paired keeps working. It only asks for the code the next time it is chosen.</p>
         </FormDialog>

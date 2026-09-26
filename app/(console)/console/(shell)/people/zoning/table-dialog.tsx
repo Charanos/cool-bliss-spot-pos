@@ -8,6 +8,7 @@ import { SelectField, TextField } from '@bliss/ui/components/fields';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState, useTransition } from 'react';
 import { createServiceTable, updateServiceTable } from '../../_actions/people';
+import { useToast } from '@bliss/ui/components/console/toast';
 
 /**
  * Add or edit a table. Occupied is not a choice: a table is occupied while a tab is open on it, and
@@ -15,6 +16,7 @@ import { createServiceTable, updateServiceTable } from '../../_actions/people';
  */
 export function TableDialog({ target, zones, open, onClose }: { target: ServiceTable | null; zones: Zone[]; open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const notify = useToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
   const [label, setLabel] = useState('');
@@ -52,6 +54,7 @@ export function TableDialog({ target, zones, open, onClose }: { target: ServiceT
         return;
       }
       onClose();
+      notify({ title: target ? 'Table saved' : 'Table added' });
       router.refresh();
     });
   }
