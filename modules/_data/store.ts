@@ -253,9 +253,13 @@ function unwrap<T>(value: T): T {
     if (raw) return raw as T;
     // A literal built by spreading a tracked row carries tracked nested values; store their raw forms.
     if (Array.isArray(value)) {
-      for (let i = 0; i < value.length; i += 1) value[i] = unwrap(value[i]);
+      if (Object.isExtensible(value)) {
+        for (let i = 0; i < value.length; i += 1) value[i] = unwrap(value[i]);
+      }
     } else if (Object.getPrototypeOf(value) === Object.prototype) {
-      for (const k of Object.keys(value)) (value as Record<string, unknown>)[k] = unwrap((value as Record<string, unknown>)[k]);
+      if (Object.isExtensible(value)) {
+        for (const k of Object.keys(value)) (value as Record<string, unknown>)[k] = unwrap((value as Record<string, unknown>)[k]);
+      }
     }
   }
   return value;

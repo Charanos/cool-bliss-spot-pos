@@ -139,7 +139,7 @@ function rounds(lines: readonly HistoryLine[]) {
   return [...map.values()].sort((a, b) => (a.firedAt ?? 0) - (b.firedAt ?? 0));
 }
 
-export function TabRecord({ tab, tz, now, onOpen }: { tab: HistoryTab; tz: string; now: number; onOpen?: (tabId: string) => void }) {
+export function TabRecord({ tab, tz, now, staffId, onOpen }: { tab: HistoryTab; tz: string; now: number; staffId?: string | null; onOpen?: (tabId: string) => void }) {
   const [open, setOpen] = useState(false);
   const panel = useId();
   const live = tab.state === 'ordering' || tab.state === 'seated';
@@ -167,7 +167,11 @@ export function TabRecord({ tab, tz, now, onOpen }: { tab: HistoryTab; tz: strin
           </span>
           <span className="block truncate text-body-sm text-ink-subtle">
             <span className="compact:hidden">{formatTime(tab.openedAt, tz)} · </span>
-            {tab.waiter} · {plural(tab.guests, 'guest')} · {plural(items, 'item')}
+            <span className={cx(tab.waiterId === staffId ? 'text-accent-text font-medium' : 'text-ink-subtle')}>
+              {tab.waiterId === staffId ? 'Me' : tab.waiter}
+            </span>
+            {' · '}
+            {plural(tab.guests, 'guest')} · {plural(items, 'item')}
             {voided > 0 ? ` · ${voided} voided` : ''}
           </span>
         </span>
@@ -197,7 +201,9 @@ export function TabRecord({ tab, tz, now, onOpen }: { tab: HistoryTab; tz: strin
 
           <ol aria-label={`${tab.label}, the night in order`}>
             <Moment icon={IconDoorEnter} at={tab.openedAt} tz={tz} tone="accent">
-              <span className="text-body text-ink">Opened by {tab.waiter}</span>
+              <span className="text-body text-ink">
+                Opened by <span className={cx(tab.waiterId === staffId ? 'text-accent-text' : '')}>{tab.waiterId === staffId ? 'Me' : tab.waiter}</span>
+              </span>
               <span className="text-body-sm text-ink-subtle"> · {plural(tab.guests, 'guest')}</span>
             </Moment>
 

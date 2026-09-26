@@ -75,7 +75,7 @@ export function BillsView({
     {
       key: 'table',
       header: 'Table',
-      width: 'minmax(140px,1fr)',
+      width: 'minmax(150px,1.2fr)',
       sortValue: (r) => r.table,
       csv: (r) => r.table,
       cell: (r) => (
@@ -213,7 +213,7 @@ export function BillsView({
                   {r.number}
                 </span>
                 <span className="text-[12px] font-medium text-ink-muted mt-[2px]">
-                  {formatIsoDate(r.businessDate)}
+                  {r.settledAt ? formatDateTime(r.settledAt, timezone) : formatIsoDate(r.businessDate)}
                 </span>
               </div>
               <div className="shrink-0">

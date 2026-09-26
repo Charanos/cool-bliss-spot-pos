@@ -305,7 +305,7 @@ export function HistoryView({ surface, staffId, onOpenTab }: HistoryViewProps) {
                   {filtered.map((day) => {
                     if (budget <= 0) return null;
                     const entries = [
-                      ...day.tabs.map((t) => ({ at: t.openedAt, key: t.id, node: <TabRecord key={t.id} tab={t} tz={tz} now={now} onOpen={onOpenTab} /> })),
+                      ...day.tabs.map((t) => ({ at: t.openedAt, key: t.id, node: <TabRecord key={t.id} tab={t} tz={tz} now={now} staffId={staffId} onOpen={onOpenTab} /> })),
                       ...day.sales.map((s) => ({ at: s.bill.settledAt ?? 0, key: s.bill.id, node: <SaleRecord key={s.bill.id} sale={s} tz={tz} /> })),
                     ]
                       .sort((a, b) => b.at - a.at)

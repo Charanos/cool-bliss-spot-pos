@@ -141,24 +141,20 @@ export function CounterShell({ children }: { children: ReactNode }) {
                 <ConnectionChip state={link} heldOrders={sync.heldOrders} compact />
               </span>
               <LiveClock timeZone={tz} />
-              <OverflowMenu
-                label={`${session.displayName}, account`}
-                align="end"
-                trigger={
-                  <span aria-hidden="true" className="flex size-control-sm items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-label font-medium text-accent-text">
-                    {photo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={photo} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      firstName.slice(0, 1)
-                    )}
-                  </span>
-                }
-                items={[
-                  { key: 'floor', label: 'Switch to the Floor', icon: IconLayoutGrid, onSelect: () => router.push('/floor/tabs') },
-                  { key: 'out', label: `Sign ${firstName} out`, icon: IconLogout, destructive: true, onSelect: () => void signOut().then(() => router.replace('/counter/sign-in')) },
-                ]}
-              />
+              <Link href="/counter/shift" aria-label={`${session.displayName}, view shift`} className="flex shrink-0 items-center gap-8 rounded-md p-2 press-feedback hover:bg-control/40">
+                <span aria-hidden="true" className="flex size-control-sm items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-label font-medium text-accent-text">
+                  {photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={photo} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    firstName.slice(0, 1)
+                  )}
+                </span>
+                <span className="hidden min-w-0 text-left tablet:block">
+                  <span className="block max-w-[120px] truncate text-body-sm font-medium text-ink">{firstName}</span>
+                  <span className="block max-w-[120px] truncate text-micro text-ink-subtle">{session.roleKey}</span>
+                </span>
+              </Link>
             </>
           }
         />
