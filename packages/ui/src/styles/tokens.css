@@ -279,6 +279,9 @@
   --color-veil-edge: var(--bliss-veil-edge);
   --color-veil-edge-hover: var(--bliss-veil-edge-hover);
   --color-glint: var(--bliss-glint);
+  --color-paper: var(--bliss-paper);
+  --color-paper-ink: var(--bliss-paper-ink);
+  --color-paper-desk: var(--bliss-paper-desk);
   --color-accent-wash: var(--bliss-accent-wash);
   --color-stop-wash: var(--bliss-stop-wash);
   --color-poured-wash: var(--bliss-poured-wash);
@@ -359,6 +362,9 @@
   --bliss-veil-edge: color-mix(in oklab, #D4DCE3 60%, transparent);
   --bliss-veil-edge-hover: #D4DCE3;
   --bliss-glint: #FBFCFD;
+  --bliss-paper: #FFFFFF;
+  --bliss-paper-ink: #000000;
+  --bliss-paper-desk: #E7ECF0;
   --bliss-accent-wash: color-mix(in oklab, #1F6E82 8%, transparent);
   --bliss-stop-wash: color-mix(in oklab, #A33232 8%, transparent);
   --bliss-poured-wash: color-mix(in oklab, #2E7D52 8%, transparent);
@@ -437,6 +443,9 @@
   --bliss-veil-edge: color-mix(in oklab, #38424B 20%, transparent);
   --bliss-veil-edge-hover: color-mix(in oklab, #38424B 40%, transparent);
   --bliss-glint: #FBFCFD;
+  --bliss-paper: #FFFFFF;
+  --bliss-paper-ink: #000000;
+  --bliss-paper-desk: #E7ECF0;
   --bliss-accent-wash: color-mix(in oklab, #6FC6D6 10%, transparent);
   --bliss-stop-wash: color-mix(in oklab, #E08585 10%, transparent);
   --bliss-poured-wash: color-mix(in oklab, #63B98A 10%, transparent);
@@ -516,6 +525,9 @@
     --bliss-veil-edge: color-mix(in oklab, #38424B 20%, transparent);
     --bliss-veil-edge-hover: color-mix(in oklab, #38424B 40%, transparent);
     --bliss-glint: #FBFCFD;
+    --bliss-paper: #FFFFFF;
+    --bliss-paper-ink: #000000;
+    --bliss-paper-desk: #E7ECF0;
     --bliss-accent-wash: color-mix(in oklab, #6FC6D6 10%, transparent);
     --bliss-stop-wash: color-mix(in oklab, #E08585 10%, transparent);
     --bliss-poured-wash: color-mix(in oklab, #63B98A 10%, transparent);

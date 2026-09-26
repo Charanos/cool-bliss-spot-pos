@@ -13,11 +13,8 @@ import {
   IconBatteryCharging,
   IconBolt,
   IconCheck,
-  IconClock,
-  IconDeviceTablet,
   IconGauge,
   IconPlayerPlay,
-  IconSun,
 } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import { SettingsCard } from './settings-card';
@@ -59,7 +56,7 @@ export function DisplayMotionCard() {
   // Screen Wake Lock
   const [wakeLockActive, setWakeLockActive] = useState(false);
   const [wakeLockSupported, setWakeLockSupported] = useState(false);
-  const wakeLockRef = useRef<any>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   // High Contrast Mode
   const [highContrast, setHighContrast] = useState(false);
@@ -139,7 +136,7 @@ export function DisplayMotionCard() {
   const requestWakeLock = async () => {
     try {
       if ('wakeLock' in navigator) {
-        const sentinel = await (navigator as any).wakeLock.request('screen');
+        const sentinel = await navigator.wakeLock.request('screen');
         wakeLockRef.current = sentinel;
         setWakeLockActive(true);
         sentinel.addEventListener('release', () => {
@@ -356,25 +353,25 @@ export function DisplayMotionCard() {
 
           {/* Shift Pacing Selector (Fluid vs Rush vs Instant) */}
           <div className="flex flex-col gap-8">
-            <label className="text-body-sm font-medium text-ink-subtle">
-              Shift Motion Cadence Preset
-            </label>
-            <div className="grid grid-cols-1 tablet:grid-cols-3 gap-8">
+            <p id="motion-pacing" className="text-body-sm font-medium text-ink-subtle">
+              Motion pace
+            </p>
+            <div role="group" aria-labelledby="motion-pacing" className="grid grid-cols-1 tablet:grid-cols-3 gap-8">
               {[
                 {
-                  id: 'fluid',
+                  id: 'fluid' as const,
                   label: 'Fluid (Standard)',
                   sub: '140ms budget · Tactile curves',
                   active: currentPacing === 'fluid',
                 },
                 {
-                  id: 'rush',
+                  id: 'rush' as const,
                   label: 'High-Speed Rush',
                   sub: '70ms budget · Rapid tweens',
                   active: currentPacing === 'rush',
                 },
                 {
-                  id: 'instant',
+                  id: 'instant' as const,
                   label: 'Instant (Zero Motion)',
                   sub: '0ms budget · Immediate cuts',
                   active: currentPacing === 'instant',
@@ -383,12 +380,11 @@ export function DisplayMotionCard() {
                 <button
                   key={preset.id}
                   type="button"
-                  onClick={() => setPacing(preset.id as any)}
+                  aria-pressed={preset.active}
+                  onClick={() => setPacing(preset.id)}
                   className={cx(
-                    'flex flex-col items-start p-12 rounded-md border text-left transition-all cursor-pointer select-none',
-                    preset.active
-                      ? 'bg-accent/15 border-accent/60 shadow-raised'
-                      : 'bg-raised/70 border-rule-raised/30 hover:bg-raised hover:border-rule-raised/60',
+                    'flex flex-col items-start p-12 rounded-md text-left transition-all cursor-pointer select-none',
+                    preset.active ? 'bg-accent-wash text-ink' : 'bg-control hover:bg-control-hover',
                   )}
                 >
                   <div className="flex items-center justify-between w-full gap-8">
@@ -510,7 +506,7 @@ export function DisplayMotionCard() {
                 icon={IconPlayerPlay}
                 disabled={benchmarking}
                 onClick={runBenchmark}
-                className="!rounded-dot px-16 text-body-sm font-medium border border-rule-raised/40 hover:border-accent/40"
+                className="!rounded-dot px-16 text-body-sm font-medium"
               >
                 {benchmarking ? 'Testing...' : 'Test Touch Response'}
               </Button>
@@ -518,7 +514,7 @@ export function DisplayMotionCard() {
           </div>
 
           {/* Visual Benchmark Pulse Bar */}
-          <div className="relative h-12 w-full rounded-md bg-control overflow-hidden border border-rule-raised/30 mt-4">
+          <div className="relative h-12 w-full rounded-md bg-control overflow-hidden mt-4">
             <div
               className={cx(
                 'h-full bg-accent rounded-md',

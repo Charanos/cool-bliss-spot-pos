@@ -48,9 +48,9 @@ export default async function PrintKotPage({ params, searchParams }: { params: P
   const tableLabel = table ? `Table ${table.label}` : tab.name ? `Walk-up: ${tab.name}` : `Tab #${tab.tabNumber}`;
 
   return (
-    <div className="flex flex-col items-center bg-gray-100 min-h-screen py-8 print:bg-white print:py-0">
+    <div className="flex flex-col items-center bg-paper-desk min-h-screen py-8 print:bg-paper print:py-0">
       <script dangerouslySetInnerHTML={{ __html: `window.onload = function() { window.print(); }` }} />
-      <div className="bg-white shadow-lg print:shadow-none mb-8 print:mb-0">
+      <div className="bg-paper shadow-raised print:shadow-none mb-8 print:mb-0">
         <Receipt className="mb-16">
           <ReceiptHeader
             venueName={venueName || 'COOL BLISS SPOT'}
@@ -71,14 +71,14 @@ export default async function PrintKotPage({ params, searchParams }: { params: P
           <ReceiptRule />
 
           {/* Ticket Items */}
-          <div className="flex justify-between w-full font-bold border-b border-black pb-2 mb-2">
+          <div className="flex justify-between w-full font-medium border-b border-paper-ink pb-2 mb-2">
             <span className="w-[15%]">QTY</span>
             <span className="w-[60%]">ITEM / MODIFIERS</span>
             <span className="w-[25%] text-right">SEAT / NOTE</span>
           </div>
 
           {lines.length === 0 ? (
-            <div className="py-4 text-center italic text-black/70">No pending or fired lines on ticket</div>
+            <div className="py-4 text-center italic text-paper-ink">No pending or fired lines on ticket</div>
           ) : (
             lines.map((l) => {
               const variant = catalogue.variantById(l.productVariantId);
@@ -87,21 +87,21 @@ export default async function PrintKotPage({ params, searchParams }: { params: P
               const seatNo = l.tabSeatId ? seatMap.get(l.tabSeatId) : null;
 
               return (
-                <div key={l.id} className="flex flex-col w-full py-1.5 border-b border-dashed border-black/30">
+                <div key={l.id} className="flex flex-col w-full py-6 border-b border-dashed border-paper-ink/30">
                   <div className="flex justify-between w-full items-start">
-                    <span className="w-[15%] text-[14px] font-bold">{formatQty(l.qty)}</span>
-                    <span className="w-[60%] text-[13px] font-bold pr-2 break-words leading-tight">{name}</span>
-                    <span className="w-[25%] text-right text-[11px] font-semibold">
+                    <span className="w-[15%] text-[14px] font-medium">{formatQty(l.qty)}</span>
+                    <span className="w-[60%] text-[13px] font-medium pr-2 break-words">{name}</span>
+                    <span className="w-[25%] text-right text-[11px] font-medium">
                       {seatNo ? `Seat ${seatNo}` : 'Shared'}
                     </span>
                   </div>
                   {modifiers.length > 0 ? (
-                    <div className="pl-[15%] text-[11px] text-black/80 font-mono">
+                    <div className="pl-[15%] text-[11px] text-paper-ink font-mono">
                       {modifiers.map((m) => `+ ${m.name}`).join(', ')}
                     </div>
                   ) : null}
                   {l.note ? (
-                    <div className="pl-[15%] text-[11px] font-semibold uppercase text-black/90">
+                    <div className="pl-[15%] text-[11px] font-medium uppercase text-paper-ink">
                       &gt;&gt; NOTE: {l.note}
                     </div>
                   ) : null}
@@ -113,11 +113,11 @@ export default async function PrintKotPage({ params, searchParams }: { params: P
           <ReceiptRule />
 
           <ReceiptFooter>
-            <div className="font-bold text-[12px] uppercase tracking-wider">NO TICKET, NO POUR</div>
-            <div className="text-[10px] text-black/70">
+            <div className="font-medium text-[12px] uppercase">NO TICKET, NO POUR</div>
+            <div className="text-[10px] text-paper-ink">
               Ghost Service Guard: Server [{server}] · Tab [{tab.tabNumber ?? tab.id.slice(0, 8)}]
             </div>
-            <div className="text-[10px] text-black/60">
+            <div className="text-[10px] text-paper-ink">
               Printed: {formatDateTime(Date.now(), tz)}
             </div>
           </ReceiptFooter>

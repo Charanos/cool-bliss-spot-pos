@@ -110,7 +110,7 @@ export default async function PrintBillPage({ params, searchParams }: { params: 
 
       {/* Payment Instruments / Tenders */}
       <div className="w-full mb-2">
-        <div className="text-[11px] font-bold uppercase tracking-wider mb-2 text-black/70">Payment Instruments</div>
+        <div className="text-[11px] font-medium uppercase mb-2 text-paper-ink">Payment Instruments</div>
         {tenders.length === 0 ? (
           <div className="text-[11px] italic">No tender rows recorded</div>
         ) : (
@@ -135,9 +135,9 @@ export default async function PrintBillPage({ params, searchParams }: { params: 
   );
 
   return (
-    <div className="flex flex-col items-center bg-gray-100 min-h-screen py-8 print:bg-white print:py-0">
+    <div className="flex flex-col items-center bg-paper-desk min-h-screen py-8 print:bg-paper print:py-0">
       <script dangerouslySetInnerHTML={{ __html: `window.onload = function() { window.print(); }` }} />
-      <div className="bg-white shadow-lg print:shadow-none mb-8 print:mb-0">
+      <div className="bg-paper shadow-raised print:shadow-none mb-8 print:mb-0">
         {renderContent()}
       </div>
     </div>

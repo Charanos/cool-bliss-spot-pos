@@ -8,6 +8,8 @@
  */
 
 export const colour = {
+  /** Printed output: thermal paper and its one ink. Never used on a screen surface. */
+  paper: { white: '#FFFFFF', ink: '#000000' },
   frost: {
     0: '#FBFCFD',
     50: '#F4F7F9',
@@ -129,6 +131,10 @@ export const themes = {
     'veil-edge': alpha(f[700], 20),
     'veil-edge-hover': alpha(f[700], 40),
     glint: f[0],
+    /* Print, docs/08 section 7: the page is paper and the ink is black, in either theme. */
+    paper: colour.paper.white,
+    'paper-ink': colour.paper.ink,
+    'paper-desk': f[100],
     /* Working surfaces, docs/13-floor-tabs-revamp.md: a tint on the row it marks, never a nested box. */
     'accent-wash': alpha(g[300], 10),
     'stop-wash': alpha(s.stop.dark, 10),
@@ -203,6 +209,10 @@ export const themes = {
     'veil-edge': alpha(f[200], 60),
     'veil-edge-hover': f[200],
     glint: f[0],
+    /* Print, docs/08 section 7: the page is paper and the ink is black, in either theme. */
+    paper: colour.paper.white,
+    'paper-ink': colour.paper.ink,
+    'paper-desk': f[100],
     'accent-wash': alpha(g[600], 8),
     'stop-wash': alpha(s.stop.light, 8),
     'poured-wash': alpha(s.poured.light, 8),

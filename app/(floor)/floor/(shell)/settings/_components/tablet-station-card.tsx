@@ -18,7 +18,6 @@ import {
   IconLogout,
   IconMapPin,
   IconRefresh,
-  IconSun,
   IconDeviceMobileVibration,
   IconChevronDown,
   IconX,
@@ -199,7 +198,7 @@ export function TabletStationCard() {
   const [showUnbindModal, setShowUnbindModal] = useState(false);
   const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
   const [isCharging, setIsCharging] = useState(false);
-  const [dimensions, setDimensions] = useState({ w: 0, h: 0 });
+  const [, setDimensions] = useState({ w: 0, h: 0 });
 
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
@@ -422,7 +421,9 @@ export function TabletStationCard() {
                     hideLabel
                     value={nicknameDraft}
                     onChange={(e) => setNicknameDraft(e.target.value)}
-                    placeholder="e.g. Patio Handheld 1, Station A South"
+                    placeholder="Patio handheld 1"
+                    // The field appears because the person tapped Edit; focus goes where they are about to type.
+                    // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') void handleSaveNickname();
@@ -458,7 +459,7 @@ export function TabletStationCard() {
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-between gap-12 bg-raised/50 border border-rule-raised/20 rounded-md p-16">
+              <div className="flex items-center justify-between gap-12 bg-control rounded-md p-16">
                 <span className="text-body-sm text-ink truncate font-medium">
                   {nickname ? nickname : 'No station alias set (tap edit to assign)'}
                 </span>
@@ -510,7 +511,7 @@ export function TabletStationCard() {
           <div className="flex items-center gap-12 min-w-0">
             <div
               aria-hidden="true"
-              className="flex size-[40px] items-center justify-center overflow-hidden rounded-dot border border-accent/40 bg-accent-wash text-body-sm font-medium text-accent-text select-none shrink-0 shadow-raised"
+              className="flex size-[40px] items-center justify-center overflow-hidden rounded-dot bg-accent-wash text-body-sm font-medium text-accent-text select-none shrink-0"
             >
               {photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -547,7 +548,7 @@ export function TabletStationCard() {
               size="sm"
               icon={IconRefresh}
               onClick={() => router.push('/floor/sign-in')}
-              className="!rounded-dot px-16 text-body-sm font-medium border border-rule-raised/40 hover:border-accent/40"
+              className="!rounded-dot px-16 text-body-sm font-medium"
             >
               Switch operator
             </Button>
@@ -557,7 +558,7 @@ export function TabletStationCard() {
               size="sm"
               icon={IconLogout}
               onClick={() => void handleSignOut()}
-              className="!rounded-dot px-12 text-stop hover:bg-stop/10 border border-stop/20 hover:border-stop/40 text-body-sm font-medium"
+              className="!rounded-dot px-12 text-stop hover:bg-stop/10 text-body-sm font-medium"
             >
               Sign out
             </Button>

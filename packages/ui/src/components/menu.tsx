@@ -87,6 +87,7 @@ export function OverflowMenu({
               ref={menuRef}
               role="menu"
               aria-label={label}
+              tabIndex={-1}
               onKeyDown={onKeyDown}
               data-lenis-prevent=""
               style={{ top: position?.top ?? -9999, left: position?.left ?? -9999 }}

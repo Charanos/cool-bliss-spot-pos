@@ -202,7 +202,7 @@ export default function TabsPage() {
         </div>
 
         {/* ── Right Rail: Open Tabs ────────────────────────────────── */}
-        <aside className="order-1 w-full shrink-0 px-12 pb-16 pt-16 no-scrollbar tablet:order-2 tablet:w-[360px] tablet:overflow-y-auto tablet:border-l tablet:border-rule-raised/30 tablet:bg-sunken/30 tablet:px-16 tablet:pb-24 tablet:pt-24 tablet:backdrop-blur-glass">
+        <aside className="order-1 w-full shrink-0 px-12 pb-16 pt-16 no-scrollbar tablet:order-2 tablet:w-[360px] tablet:overflow-y-auto tablet:border-l tablet:border-rule-raised/30 tablet:bg-band tablet:px-16 tablet:pb-24 tablet:pt-24 tablet:backdrop-blur-glass">
           {loading ? (
             <div className="grid grid-cols-2 gap-8 tablet:flex tablet:flex-col tablet:gap-12">
               {Array.from({ length: 4 }, (_, i) => (

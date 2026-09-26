@@ -17,3 +17,4 @@ either a correction the documents should adopt, or a deliberate exception; each 
 | D-16 | Radius | `control` 12, `card` 16, `overlay` 20, `pill` for counts and segmented controls | Buttons were 10 to 16 by hand; dialogs 28 by hand | Adopted in docs/06 section 5 |
 | D-17 | Status chip | On a wash of its tone, radius sm | The chip needs to read on a card surface; the dot and word still carry it in greyscale | Adopted |
 | D-18 | Printed bill | No fiscal wording; "This bill is not a tax invoice" | KRA eTIMS is out of scope (docs/00); an invented fiscal footer was a false claim | Correction |
+| D-19 | Console sign-in artwork | `artwork/console-flow.tsx` keeps literal gradient colours; `bliss/no-raw-hex` is off for that one file | It is a photographic illustration (a bottle's glass and foil, a pipe's brass): pigment stops, not interface colour. The other artworks draw from tokens | Accepted exception |

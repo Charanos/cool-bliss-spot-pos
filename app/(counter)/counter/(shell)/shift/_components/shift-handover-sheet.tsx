@@ -110,7 +110,7 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
             ) : null}
           </div>
           {rows.length === 0 ? (
-            <p className="rounded-[16px] bg-sunken/60 px-16 py-16 text-body text-ink-muted">You have no tables to hand over.</p>
+            <p className="rounded-lg bg-control px-16 py-16 text-body text-ink-muted">You have no tables to hand over.</p>
           ) : (
             <ul className="grid grid-cols-1 gap-6 pad:grid-cols-2">
               {rows.map((r) => {
@@ -124,10 +124,10 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
                       onClick={() => toggle(r.id)}
                       className={cx(
                         'flex min-h-row-floor w-full items-center gap-12 rounded-[16px] px-12 text-left press-feedback',
-                        on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-sunken/50 hover:bg-control/60',
+                        on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-control hover:bg-control-hover',
                       )}
                     >
-                      <span aria-hidden="true" className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-[7px]', on ? 'bg-accent text-accent-ink' : 'ring-1 ring-inset ring-rule-raised text-transparent')}>
+                      <span aria-hidden="true" className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-[7px]', on ? 'bg-accent text-accent-ink' : 'bg-control-hover text-transparent')}>
                         <IconCheck size={14} stroke={ICON_STROKE} />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -148,7 +148,7 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
             To
           </h3>
           {colleagues.length === 0 ? (
-            <p className="rounded-[16px] bg-sunken/60 px-16 py-16 text-body text-ink-muted">Nobody else works the floor right now.</p>
+            <p className="rounded-lg bg-control px-16 py-16 text-body text-ink-muted">Nobody else works the floor right now.</p>
           ) : (
             <ul role="radiogroup" aria-labelledby="handover-to" className="grid grid-cols-1 gap-6 pad:grid-cols-2">
               {colleagues.map((c) => {
@@ -164,7 +164,7 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
                       onClick={() => setTargetId(c.id)}
                       className={cx(
                         'flex min-h-[64px] w-full items-center gap-12 rounded-[16px] px-12 text-left press-feedback',
-                        on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-sunken/50 hover:bg-control/60',
+                        on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-control hover:bg-control-hover',
                       )}
                     >
                       <span aria-hidden="true" className="flex size-[40px] shrink-0 items-center justify-center overflow-hidden rounded-dot bg-accent-wash text-label font-medium text-accent-text">
@@ -191,7 +191,7 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
                           )}
                         </span>
                       </span>
-                      <span aria-hidden="true" className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-dot', on ? 'bg-accent text-accent-ink' : 'ring-1 ring-inset ring-rule-raised text-transparent')}>
+                      <span aria-hidden="true" className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-dot', on ? 'bg-accent text-accent-ink' : 'bg-control-hover text-transparent')}>
                         <IconCheck size={14} stroke={ICON_STROKE} />
                       </span>
                     </button>

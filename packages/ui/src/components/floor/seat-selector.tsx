@@ -1,13 +1,11 @@
 'use client';
 
 import type { Cents } from '@bliss/shared/money';
-import { formatFigure } from '@bliss/shared/money';
 import { displaySeatLabel } from '@bliss/shared/seats';
 import { IconPlus } from '@tabler/icons-react';
 import { memo, useEffect, useRef } from 'react';
 import { useLongPress } from '../../hooks';
 import { cx } from '../../lib/cx';
-import { useCountTo } from '../../motion/hooks';
 import { ICON_STROKE } from '../icon';
 import { seatBgClass } from '../../lib/seat';
 
@@ -39,7 +37,8 @@ const SeatColumn = memo(function SeatColumn({
   selected,
   label,
   settled,
-  total,
+  // The seat's total is shown in the ticket, not on the chip; kept in the props for callers.
+  total: _total,
   onSelect,
   onMenu,
 }: {
@@ -71,12 +70,12 @@ const SeatColumn = memo(function SeatColumn({
       title={label ?? undefined}
       className={cx(
         'relative flex shrink-0 size-[40px] flex-col items-center justify-center rounded-full outline-none transition-all duration-[250ms] ease-out',
-        shared ? 'border border-dashed border-shared text-shared bg-transparent' : cx(seatBgClass(seat as number), 'text-[#0B1015]'),
+        shared ? 'border border-dashed border-shared text-shared bg-transparent' : cx(seatBgClass(seat as number), 'text-seat-ink'),
         settled && 'opacity-40'
       )}
       style={
         selected
-          ? { boxShadow: `0 0 0 2px #0B1015, 0 0 0 4px ${shared ? 'rgba(255,255,255,0.5)' : '#FFFFFF'}` }
+          ? { boxShadow: `0 0 0 2px var(--color-page), 0 0 0 4px ${shared ? 'color-mix(in oklab, var(--color-glint) 50%, transparent)' : 'var(--color-glint)'}` }
           : undefined
       }
       {...press}

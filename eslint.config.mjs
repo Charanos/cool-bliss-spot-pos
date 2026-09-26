@@ -120,4 +120,12 @@ export default tseslint.config(
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
+  {
+    // D-19: the sign-in artwork is a photographic illustration; its gradient stops are pigments of a
+    // bottle and a pipe, not interface colours. Scoped to that one file; every other surface uses tokens.
+    files: ['packages/ui/src/components/artwork/console-flow.tsx'],
+    rules: {
+      'bliss/no-raw-hex': 'off',
+    },
+  },
 );
