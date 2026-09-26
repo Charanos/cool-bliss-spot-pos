@@ -66,7 +66,7 @@ export function SupplierDialog({ open, onClose, target }: { open: boolean; onClo
       }}
     >
       <Fieldset legend="Who" columns={2}>
-        <TextField label="Name" value={f.name} onChange={set('name')} placeholder="Kariuki Wines and Spirits" required />
+        <TextField label="Name" value={f.name} onChange={set('name')} placeholder="Kariuki wines" required />
         <TextField label="Contact" value={f.contact} onChange={set('contact')} placeholder="Wanjiru" />
         <TextField label="Phone" type="tel" value={f.phone} onChange={set('phone')} placeholder="0722 000 000" />
         <TextField label="Email" type="email" value={f.email} onChange={set('email')} placeholder="orders@supplier.co.ke" />
