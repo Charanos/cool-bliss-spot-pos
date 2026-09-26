@@ -1,5 +1,6 @@
 import { addDays } from '@bliss/shared/time';
 import type { Metadata } from 'next';
+import * as pins from '@/modules/identity/pins';
 import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
 import * as trade from '@/modules/trade/service';
@@ -17,10 +18,20 @@ export default async function StaffPage() {
 
   const rows: StaffRow[] = identity.staffList().map((s) => staffRow(s, shifts, devices, actor.staffId));
 
+  const rule = pins.policy();
+  const policy = { length: rule.length, expiryDays: rule.expiryDays, ownPinAfterReset: rule.ownPinAfterReset };
+
   return (
     <>
       <ViewHeader page="/console/people/staff" />
-      <StaffTable rows={rows} roles={identity.roles().map((r) => ({ value: r.id, label: r.name }))} canManage={identity.can(actor.staffId, 'staff.manage')} timezone={identity.outlet().timezone} />
+      <StaffTable
+        rows={rows}
+        roles={identity.roles().map((r) => ({ value: r.id, label: r.name }))}
+        canManage={identity.can(actor.staffId, 'staff.manage')}
+        timezone={identity.outlet().timezone}
+        policy={policy}
+        now={Date.now()}
+      />
     </>
   );
 }

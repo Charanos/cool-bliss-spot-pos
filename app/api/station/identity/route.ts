@@ -5,20 +5,33 @@ import { clientAddress } from '@/lib/station';
 import { wireResponse } from '@/lib/wire';
 import { fresh, withWrite } from '@/modules/_data/store';
 import * as credentials from '@/modules/identity/credentials';
+import { DomainError } from '@/modules/_data/errors';
+import * as pins from '@/modules/identity/pins';
 import * as identity from '@/modules/identity/service';
 import * as venue from '@/modules/identity/venue';
 
 export const dynamic = 'force-dynamic';
 
-const signIn = z.object({ action: z.literal('sign-in'), deviceId: z.string().max(64), staffId: z.string().max(64), pin: z.string().regex(/^\d{6}$/) });
+const signIn = z.object({ action: z.literal('sign-in'), deviceId: z.string().max(64), staffId: z.string().max(64), pin: z.string().regex(/^\d{4,8}$/) });
+const choosePin = z.object({ action: z.literal('choose-pin'), deviceId: z.string().max(64), token: z.string().max(2048), pin: z.string().regex(/^\d{4,8}$/) });
 const pair = z.object({ action: z.literal('pair'), deviceId: z.string().max(64), code: z.string().regex(/^\d{6}$/) });
-const approve = z.object({ action: z.literal('approve'), deviceId: z.string().max(64), pin: z.string().regex(/^\d{6}$/), permission: z.enum(['void.approve', 'discount.approve', 'hold.set']) });
+const approve = z.object({ action: z.literal('approve'), deviceId: z.string().max(64), pin: z.string().regex(/^\d{4,8}$/), permission: z.enum(['void.approve', 'discount.approve', 'hold.set']) });
 
 const lockedMessage = (until: number, timezone: string) => `This PIN is locked until ${formatTime(until, timezone)}. A manager can unlock it in the Console.`;
 
+/** A signed-in person, as every station sign-in answers. */
+function signedIn(staff: { id: string; displayName: string }, roleKey: string | undefined, permissions: readonly string[], deviceId: string) {
+  return wireResponse({
+    ok: true,
+    staff: { id: staff.id, displayName: staff.displayName, roleKey, permissions },
+    signedInAt: Date.now(),
+    token: identity.issueStationToken(staff.id, deviceId),
+  });
+}
+
 /**
- * Station identity: PIN plus device binding. A PIN is checked against its hash on the server; five
- * wrong attempts lock that PIN for 15 minutes, and an address that keeps guessing is slowed the same
+ * Station identity: PIN plus device binding. A PIN is checked against its hash on the server; the
+ * outlet's policy says how many wrong attempts lock that PIN for 15 minutes, and an address that keeps guessing is slowed the same
  * way. A correct PIN on a registered device returns a signed station token, which every other station
  * request carries. An approval returns a signed token for that one permission, which the server
  * checks when the void arrives. The copy never blames the person.
@@ -28,7 +41,7 @@ export async function POST(request: Request) {
   try {
     json = await request.json();
   } catch {
-    return wireResponse({ ok: false, message: 'Six digits are needed.' }, { status: 400 });
+    return wireResponse({ ok: false, message: 'A PIN is four to eight digits.' }, { status: 400 });
   }
   await fresh();
   const outlet = identity.outlet();
@@ -57,7 +70,10 @@ export async function POST(request: Request) {
     credentials.recordFailure(address);
     credentials.recordFailure(key);
     return wireResponse(
-      { ok: false, message: result === 'expired' ? 'That code has run out. A manager can make a new one in Console, Settings, Devices.' : 'That code does not match. Check the code shown in the Console.' },
+      {
+        ok: false,
+        message: result === 'expired' ? 'That code has run out. A manager can make a new one in Console, Settings, Devices.' : 'That code does not match. Check the code shown in the Console.',
+      },
       { status: 401 },
     );
   }
@@ -69,13 +85,17 @@ export async function POST(request: Request) {
   if (asSignIn.success) {
     const { staffId, pin } = asSignIn.data;
     const key = `pin:${staffId}`;
-    const state = credentials.attemptStatus(key);
+    const tries = pins.lockAttempts();
+    const state = credentials.attemptStatus(key, Date.now(), tries);
     if (state.locked) return wireResponse({ ok: false, message: lockedMessage(state.until, outlet.timezone) }, { status: 423 });
     if (!identity.verifyStaffPin(staffId, pin)) {
       credentials.recordFailure(address);
-      const after = credentials.recordFailure(key);
+      const after = credentials.recordFailure(key, Date.now(), tries);
       if (after.locked) return wireResponse({ ok: false, message: lockedMessage(after.until, outlet.timezone) }, { status: 423 });
-      return wireResponse({ ok: false, message: `That PIN was not recognised. ${after.remaining === 1 ? 'One attempt' : `${after.remaining} attempts`} left before this PIN locks for 15 minutes.` }, { status: 401 });
+      return wireResponse(
+        { ok: false, message: `That PIN was not recognised. ${after.remaining === 1 ? 'One attempt' : `${after.remaining} attempts`} left before this PIN locks for 15 minutes.` },
+        { status: 401 },
+      );
     }
     credentials.clearAttempts(key);
     const staff = identity.staffById(staffId)!;
@@ -89,12 +109,35 @@ export async function POST(request: Request) {
     }
     // A PIN stored before hashing existed is replaced with its hash the first time it is used.
     if (identity.pinState(staff) === 'needs_reset') await withWrite(() => identity.upgradePinHash(staff.id, pin));
-    return wireResponse({
-      ok: true,
-      staff: { id: staff.id, displayName: staff.displayName, roleKey: role?.key, permissions: role?.permissions ?? [] },
-      signedInAt: Date.now(),
-      token: identity.issueStationToken(staff.id, device.id),
-    });
+    // A reset or expired PIN is right, but its person chooses a new one before working.
+    if (pins.mustChangeAtSignIn(staff)) {
+      return wireResponse(
+        {
+          ok: false,
+          code: 'PIN_CHANGE_REQUIRED',
+          message: staff.pinMustChange ? 'A manager set this PIN for you. Choose one only you know.' : 'Your PIN has run out. Choose a new one.',
+          token: identity.issuePinChangeToken(staff.id),
+          length: pins.policy().length,
+        },
+        { status: 409 },
+      );
+    }
+    return signedIn(staff, role?.key, role?.permissions ?? [], device.id);
+  }
+
+  const asChoose = choosePin.safeParse(json);
+  if (asChoose.success) {
+    const staff = identity.staffFromPinChangeToken(asChoose.data.token);
+    if (!staff) return wireResponse({ ok: false, code: 'PIN_CHANGE_EXPIRED', message: 'That took too long. Sign in again with the PIN you were given.' }, { status: 401 });
+    const role = identity.roleFor(staff.id);
+    if (!isStaffSurface(device.kind) || !canSignInOn(device.kind, role?.key)) return wireResponse({ ok: false, message: 'Staff do not sign in on this device.' }, { status: 403 });
+    try {
+      await withWrite(() => pins.chooseOwnPin({ staffId: staff.id, next: asChoose.data.pin, viaSignIn: true }));
+    } catch (error) {
+      if (error instanceof DomainError) return wireResponse({ ok: false, message: error.message }, { status: 422 });
+      throw error;
+    }
+    return signedIn(staff, role?.key, role?.permissions ?? [], device.id);
   }
 
   const asApprove = approve.safeParse(json);
@@ -112,5 +155,5 @@ export async function POST(request: Request) {
     return wireResponse({ ok: true, approverId: approver.id, approverName: approver.displayName, token: identity.issueApprovalToken(approver.id, asApprove.data.permission) });
   }
 
-  return wireResponse({ ok: false, message: 'Six digits are needed.' }, { status: 400 });
+  return wireResponse({ ok: false, message: 'A PIN is four to eight digits.' }, { status: 400 });
 }

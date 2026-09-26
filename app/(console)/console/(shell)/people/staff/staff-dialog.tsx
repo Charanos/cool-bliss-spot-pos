@@ -12,18 +12,23 @@ import { uploadFiles } from '../../_lib/upload';
 import type { StaffRow } from './staff-table';
 import { useToast } from '@bliss/ui/components/console/toast';
 
-const PIN_HELP: Record<StaffRow['pinState'], string> = {
-  set: 'Leave empty to keep their current PIN.',
-  needs_reset: 'Their PIN is from before PINs were protected. Set a new one.',
-  development: 'They sign in with the development PIN until you set one.',
-  none: 'They cannot sign in until a PIN is set.',
-};
-
 /**
- * Add or edit a person. The PIN is never shown or sent back: typing six digits sets a new one, and
- * leaving the field empty keeps what they have. Role, details and PIN save together, in one write.
+ * Add or edit a person. A new person can be given a first PIN here, at the outlet's length; after
+ * that a PIN is set, reset or taken away from its own dialog, which keeps the reason on record.
  */
-export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRow | null; roles: { value: string; label: string }[]; open: boolean; onClose: () => void }) {
+export function StaffDialog({
+  target,
+  roles,
+  open,
+  onClose,
+  pinLength,
+}: {
+  target?: StaffRow | null;
+  roles: { value: string; label: string }[];
+  open: boolean;
+  onClose: () => void;
+  pinLength: number;
+}) {
   const router = useRouter();
   const notify = useToast();
   const [pending, startTransition] = useTransition();
@@ -65,14 +70,17 @@ export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRo
     event.preventDefault();
     setError('');
     startTransition(async () => {
-      const form = { fullName, displayName, roleId, pin: pin || null, avatarUrl: avatarUrl || null, contactNumber: contactNumber || null };
+      const form = { fullName, displayName, roleId, pin: editing ? null : pin || null, avatarUrl: avatarUrl || null, contactNumber: contactNumber || null };
       const result = editing && target ? await updateStaff({ staffId: target.id, ...form }) : await createStaff(form);
       if (!result.ok) {
         setError(result.message);
         return;
       }
       onClose();
-      notify({ title: target ? `${displayName || 'Their'} details saved` : `${displayName || 'The person'} added`, body: target ? undefined : 'They can sign in once their PIN is set.' });
+      notify({
+        title: target ? `${displayName || 'Their'} details saved` : `${displayName || 'The person'} added`,
+        body: target ? undefined : pin ? 'Hand them the PIN you set.' : 'They can sign in once their PIN is set.',
+      });
       router.refresh();
     });
   }
@@ -85,7 +93,7 @@ export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRo
       open={open}
       onClose={onClose}
       title={editing ? `Edit ${target?.displayName ?? 'person'}` : 'Add a person'}
-      description={editing ? 'Details, role and PIN save together.' : 'They can sign in once their PIN is set.'}
+      description={editing ? 'Details and role save together. Their PIN has its own dialog.' : 'They can sign in once their PIN is set.'}
       width="lg"
     >
       <form onSubmit={save} className="flex flex-col gap-24">
@@ -113,25 +121,43 @@ export function StaffDialog({ target, roles, open, onClose }: { target?: StaffRo
         <fieldset className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
           <legend className="mb-8 label-caps text-ink-subtle">Details</legend>
           <TextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Wanjiru" autoComplete="off" required />
-          <TextField label="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Jane" helper="What the floor and the bills show." autoComplete="off" required />
+          <TextField
+            label="Display name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Jane"
+            helper="What the floor and the bills show."
+            autoComplete="off"
+            required
+          />
           <TextField label="Contact number" type="tel" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="+254 712 345 678" autoComplete="off" />
         </fieldset>
 
         <fieldset className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
           <legend className="mb-8 label-caps text-ink-subtle">Access</legend>
-          <SelectField label="Role" value={roleId} onChange={(e) => setRoleId(e.target.value)} options={roles} required disabled={target?.isSelf} helper={target?.isSelf ? 'Another manager changes your role.' : undefined} />
-          <TextField
-            label={editing ? 'New PIN' : 'PIN'}
-            type="password"
-            inputMode="numeric"
-            autoComplete="new-password"
-            pattern="\d{6}"
-            maxLength={6}
-            value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="Six digits"
-            helper={editing && target ? PIN_HELP[target.pinState] : 'Six digits, not a run or a repeat.'}
+          <SelectField
+            label="Role"
+            value={roleId}
+            onChange={(e) => setRoleId(e.target.value)}
+            options={roles}
+            required
+            disabled={target?.isSelf}
+            helper={target?.isSelf ? 'Another manager changes your role.' : undefined}
           />
+          {editing ? null : (
+            <TextField
+              label="First PIN"
+              type="password"
+              inputMode="numeric"
+              autoComplete="new-password"
+              pattern={`\\d{${pinLength}}`}
+              maxLength={pinLength}
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, pinLength))}
+              placeholder={`${pinLength} digits`}
+              helper="Optional. Not a run or a repeat. Or set one after, typed or made at random."
+            />
+          )}
         </fieldset>
 
         <div className="flex justify-end gap-12 border-t border-rule pt-16">

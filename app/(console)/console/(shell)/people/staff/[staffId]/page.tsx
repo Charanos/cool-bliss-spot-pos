@@ -2,6 +2,7 @@ import { formatDate, formatDateTime, formatElapsed, formatIsoDate, formatTime, p
 import { type Cents, isPositive, sum } from '@bliss/shared/money';
 import { addDays } from '@bliss/shared/time';
 import { Card, CardHeader, CardMedia, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { Separator } from '@bliss/ui/components/console/section';
 import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { DetailHeader, LedgerItem, LedgerList, MetaRow } from '@bliss/ui/components/console/section';
 import { EmptyState } from '@bliss/ui/components/feedback';
@@ -12,6 +13,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import * as audit from '@/modules/audit/service';
+import * as pins from '@/modules/identity/pins';
 import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
 import * as settlement from '@/modules/settlement/service';
@@ -23,7 +25,7 @@ import { hrefForEntity } from '../../../_lib/nav';
 import { StaffAvatar } from '../avatar';
 import { staffRow } from '../staff-row';
 import { Access } from '../staff-table';
-import { StaffActions } from './staff-actions';
+import { SignInCard, StaffActions } from './staff-actions';
 
 export async function generateMetadata({ params }: { params: Promise<{ staffId: string }> }): Promise<Metadata> {
   const person = identity.staffById((await params).staffId);
@@ -67,6 +69,9 @@ export default async function StaffRecordPage({ params }: { params: Promise<{ st
     .slice(0, 12);
   const canManage = identity.can(actor.staffId, 'staff.manage');
   const roles = identity.roles().map((r) => ({ value: r.id, label: r.name }));
+  const rule = pins.policy();
+  const policy = { length: rule.length, expiryDays: rule.expiryDays, ownPinAfterReset: rule.ownPinAfterReset };
+  const now = Date.now();
   const tabLabel = (tabId: string) => {
     const tab = trade.tabById(tabId);
     if (!tab) return 'A tab';
@@ -90,30 +95,43 @@ export default async function StaffRecordPage({ params }: { params: Promise<{ st
         meta={
           <MetaRow
             items={[
-              { icon: IconShieldCheck, value: role ? <EntityLink kind="role" id={role.id} muted>{role.name}</EntityLink> : 'No role' },
+              {
+                icon: IconShieldCheck,
+                value: role ? (
+                  <EntityLink kind="role" id={role.id} muted>
+                    {role.name}
+                  </EntityLink>
+                ) : (
+                  'No role'
+                ),
+              },
               { value: `Shows as ${person.displayName}` },
               person.contactNumber ? { icon: IconPhone, value: person.contactNumber } : null,
               row.signedInOn.length > 0 ? { icon: IconDeviceTablet, value: `Signed in on ${row.signedInOn.join(', ')}` } : null,
             ]}
           />
         }
-        actions={<StaffActions row={row} roles={roles} canManage={canManage} />}
+        actions={<StaffActions row={row} roles={roles} canManage={canManage} policy={policy} timezone={tz} />}
       />
 
-      {person.avatarUrl ? (
-        <div className="grid grid-cols-1 gap-24 desktop:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+      <Figures shifts={own.length} minutes={minutes} sales={sales} voidsCents={voidsCents} voids={voids.length} holding={holding.length} />
+
+      <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        {person.avatarUrl ? (
           <Card as="section" aria-label={`${person.fullName}, photograph`} className="overflow-hidden">
             <CardMedia src={person.avatarUrl} title={person.fullName} subtitle={role?.name ?? ''} />
             <CardStats>
-              <Stat label="PIN">{row.pinLocked ? 'Locked' : row.pinState === 'none' ? 'Not set' : row.pinState === 'needs_reset' ? 'Needs a reset' : 'Set'}</Stat>
+              <Stat label="Role">{role?.name ?? 'No role'}</Stat>
               <Stat label="Last shift">{row.lastShiftAt ? formatDate(row.lastShiftAt, tz) : 'None yet'}</Stat>
             </CardStats>
           </Card>
-          <Figures shifts={own.length} minutes={minutes} sales={sales} voidsCents={voidsCents} voids={voids.length} holding={holding.length} />
+        ) : null}
+        <div className={person.avatarUrl ? 'min-w-0' : 'min-w-0 desktop:col-span-2'}>
+          <SignInCard row={row} roles={roles} canManage={canManage} policy={policy} timezone={tz} lockAttempts={rule.lockAttempts} now={now} />
         </div>
-      ) : (
-        <Figures shifts={own.length} minutes={minutes} sales={sales} voidsCents={voidsCents} voids={voids.length} holding={holding.length} />
-      )}
+      </div>
+
+      <Separator />
 
       <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-2">
         <Card aria-labelledby="person-shifts">
@@ -164,7 +182,14 @@ export default async function StaffRecordPage({ params }: { params: Promise<{ st
           </Card>
 
           <Card aria-labelledby="person-bills">
-            <CardHeader band level="h2" titleId="person-bills" title="Bills settled" subtitle={bills.length > 0 ? 'The last seven days' : 'None in the last seven days'} actions={bills.length > 0 ? <Money value={sum(bills.map(settlement.billNet))} size="num-md" decimals="whole" /> : null} />
+            <CardHeader
+              band
+              level="h2"
+              titleId="person-bills"
+              title="Bills settled"
+              subtitle={bills.length > 0 ? 'The last seven days' : 'None in the last seven days'}
+              actions={bills.length > 0 ? <Money value={sum(bills.map(settlement.billNet))} size="num-md" decimals="whole" /> : null}
+            />
             {bills.length > 0 ? (
               <LedgerList className="mx-8 my-8" label="Bills settled">
                 {bills.slice(0, 8).map((b) => (
@@ -275,7 +300,13 @@ function Figures({ shifts, minutes, sales, voidsCents, voids, holding }: { shift
     <MetricGrid>
       <Metric label="Shifts" icon={IconClock} value={shifts} detail={`${formatElapsed(minutes * 60_000)} worked, four weeks`} />
       <Metric label="Sales" icon={IconReceipt} tone="poured" value={<Money value={sales} size="num-kpi" decimals="whole" />} detail="On their shifts, four weeks" />
-      <Metric label="Voids" icon={IconBan} tone={isPositive(voidsCents) ? 'stop' : 'default'} value={<Money value={voidsCents} size="num-kpi" decimals="whole" />} detail={voids > 0 ? plural(voids, 'line') : 'Nothing voided'} />
+      <Metric
+        label="Voids"
+        icon={IconBan}
+        tone={isPositive(voidsCents) ? 'stop' : 'default'}
+        value={<Money value={voidsCents} size="num-kpi" decimals="whole" />}
+        detail={voids > 0 ? plural(voids, 'line') : 'Nothing voided'}
+      />
       <Metric label="Tabs held" icon={IconTable} tone={holding > 0 ? 'info' : 'default'} value={holding} detail={holding > 0 ? 'Open now, in their name' : 'None open now'} />
     </MetricGrid>
   );

@@ -12,7 +12,8 @@ import { IconArrowLeft } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useOutlet, useStaffDirectory } from '@/lib/pos/queries';
-import { pairDevice, signIn, useDevice, useSession } from '@/lib/pos/session';
+import { pinWeakness } from '@bliss/shared/pin';
+import { choosePin, pairDevice, signIn, useDevice, useSession } from '@/lib/pos/session';
 import { staffPhoto } from '@/lib/pos/staff-photos';
 import { useSync, wakeSync } from '@/lib/pos/sync';
 
@@ -67,6 +68,8 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
   const [pending, setPending] = useState(false);
   // A newly registered device asks for its pairing code once, before the first PIN.
   const [pairing, setPairing] = useState(false);
+  // After a reset or an expiry, the person chooses their own PIN: once, then again to confirm.
+  const [change, setChange] = useState<{ token: string; length: number; note: string; first: string | null } | null>(null);
   const backdrop = useBackdrop(surface);
   const roles = SURFACE_ROLES[surface];
 
@@ -74,9 +77,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
     if (session) router.replace(home);
   }, [session, router, home]);
 
-  const people = (staff ?? [])
-    .filter((s) => roles.includes(s.roleKey))
-    .sort((a, b) => roles.indexOf(a.roleKey) - roles.indexOf(b.roleKey) || a.displayName.localeCompare(b.displayName));
+  const people = (staff ?? []).filter((s) => roles.includes(s.roleKey)).sort((a, b) => roles.indexOf(a.roleKey) - roles.indexOf(b.roleKey) || a.displayName.localeCompare(b.displayName));
   const person = people.find((p) => p.id === chosen);
   const deviceWord = surface === 'floor' ? 'tablet' : 'counter';
   const teamId = `${surface}-team`;
@@ -85,6 +86,30 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
     setChosen(id);
     setPin('');
     setError(null);
+    setChange(null);
+  };
+
+  const submitNew = async (value: string) => {
+    if (!change) return;
+    setPin('');
+    if (change.first === null) {
+      const weak = pinWeakness(value);
+      if (weak) return setError(`That PIN is too easy to guess. ${weak}`);
+      setError(null);
+      return setChange({ ...change, first: value });
+    }
+    if (value !== change.first) {
+      setChange({ ...change, first: null });
+      return setError('The two PINs were not the same. Start again.');
+    }
+    setPending(true);
+    setError(null);
+    const result = await choosePin(change.token, value);
+    setPending(false);
+    if (!result.ok) {
+      setError(result.message);
+      setChange(result.restart ? null : { ...change, first: null });
+    }
   };
 
   const submit = async (value: string) => {
@@ -102,11 +127,31 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
     const result = await signIn(chosen, value);
     setPending(false);
     if (!result.ok) {
+      setPin('');
+      if (result.change) {
+        setError(null);
+        setChange({ ...result.change, note: result.message, first: null });
+        return;
+      }
       if (result.pairing) setPairing(true);
       setError(result.message);
-      setPin('');
     }
   };
+
+  const length = pairing ? 6 : change ? change.length : (person?.pinLength ?? 6);
+  const prompt = pairing
+    ? pending
+      ? 'Checking the code'
+      : 'Enter the pairing code from the Console'
+    : change
+      ? pending
+        ? 'Saving your PIN'
+        : change.first === null
+          ? `Choose a new ${change.length} digit PIN`
+          : 'Enter it once more'
+      : pending
+        ? 'Checking your PIN'
+        : `Enter your ${length} digit PIN`;
 
   return (
     <div className="relative flex h-dvh flex-col tablet:grid tablet:grid-cols-[minmax(320px,2fr)_3fr] bg-page">
@@ -135,14 +180,10 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
         {!person ? (
           <>
             <header className="relative z-10 flex flex-col gap-16 pad:gap-24 tablet:flex-row tablet:items-start tablet:justify-between tablet:gap-16">
-              <VeilButton 
-                icon={IconArrowLeft} 
-                onClick={() => router.push('/')} 
-                className="self-end origin-right scale-90 tablet:self-start tablet:origin-top-left"
-              >
+              <VeilButton icon={IconArrowLeft} onClick={() => router.push('/')} className="self-end origin-right scale-90 tablet:self-start tablet:origin-top-left">
                 Back to home
               </VeilButton>
-              
+
               <div className="flex flex-col items-end text-right">
                 <h1 className="font-mono text-title font-medium text-balance text-ink pad:text-title-lg tablet:text-heading">Sign in to {device?.label ?? SURFACE_NAME[surface]}</h1>
                 <p className="mt-8 tablet:mt-12 text-body text-ink-subtle">Choose your name, then enter your PIN.</p>
@@ -188,9 +229,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
               </ul>
               {!sync.bootstrapped && sync.link !== 'synced' ? (
                 <div className="mt-12 flex items-center justify-between gap-12 rounded-sm border border-low/20 bg-low/10 px-16 py-8">
-                  <p className="text-body text-low">
-                    No connection. This {deviceWord} needs the network once to fetch the menu and the team.
-                  </p>
+                  <p className="text-body text-low">No connection. This {deviceWord} needs the network once to fetch the menu and the team.</p>
                   <VeilButton onClick={() => wakeSync()} className="shrink-0">
                     Retry
                   </VeilButton>
@@ -201,11 +240,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
         ) : (
           <>
             <header className="relative z-20 flex items-start justify-end tablet:justify-start">
-              <VeilButton 
-                icon={IconArrowLeft} 
-                onClick={() => choose(null)}
-                className="origin-right scale-90 tablet:origin-top-left"
-              >
+              <VeilButton icon={IconArrowLeft} onClick={() => choose(null)} className="origin-right scale-90 tablet:origin-top-left">
                 Switch profile
               </VeilButton>
             </header>
@@ -214,10 +249,20 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
               <div className="pointer-events-auto mt-32 flex w-full max-w-[340px] flex-col items-center">
                 <Avatar src={staffPhoto(person.displayName)} name={person.displayName} size="lg" className="mb-24" />
                 <h1 className="ink-sheen font-mono text-persona">{person.displayName}</h1>
-                <Eyebrow as="p" tone={pending ? 'accent' : 'subtle'} aria-live="polite" className={cx('mb-16 mt-8', pending && 'animate-breathe')}>
-                  {pairing ? (pending ? 'Checking the code' : 'Enter the pairing code from the Console') : pending ? 'Checking your PIN' : 'Enter your 6 digit PIN'}
+                <Eyebrow as="p" tone={pending || change ? 'accent' : 'subtle'} aria-live="polite" className={cx('mt-8', pending && 'animate-breathe', change ? 'mb-8' : 'mb-16')}>
+                  {prompt}
                 </Eyebrow>
-                <PinPad value={pin} onChange={setPin} onComplete={(v) => void submit(v)} label={pairing ? 'Pairing code for this device' : `PIN for ${person.displayName}`} error={error} disabled={pending} />
+                {change ? <p className="mb-16 text-center text-body-sm text-ink-muted">{change.note} No runs, repeats or PINs you had before.</p> : null}
+                <PinPad
+                  key={pairing ? 'pair' : change ? `change-${change.first === null ? 1 : 2}` : 'sign-in'}
+                  value={pin}
+                  onChange={setPin}
+                  onComplete={(v) => void (change ? submitNew(v) : submit(v))}
+                  label={pairing ? 'Pairing code for this device' : change ? (change.first === null ? 'New PIN' : 'New PIN again') : `PIN for ${person.displayName}`}
+                  error={error}
+                  disabled={pending}
+                  length={length}
+                />
               </div>
             </div>
           </>

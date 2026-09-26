@@ -34,6 +34,8 @@ export interface StaffDirectoryEntry {
   roleKey: RoleKey;
   permissions: PermissionKey[];
   colourIndex: number;
+  /** Digits in their PIN, so the keypad completes at the right length. Six when absent. */
+  pinLength?: number;
 }
 
 export interface DeviceEntry {

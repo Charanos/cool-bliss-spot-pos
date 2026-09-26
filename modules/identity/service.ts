@@ -11,6 +11,7 @@ import { bumpCatalogueVersion } from '../_data/source';
 import { UPLOAD_PATH } from '../_data/uploads';
 import * as audit from '../audit/service';
 import * as credentials from './credentials';
+import { applyPin, checkPin, policy as pinPolicy } from './pins';
 import { identityTables } from './schema';
 
 const createId = createUuidV7();
@@ -130,7 +131,7 @@ export type PinState = 'set' | 'needs_reset' | 'development' | 'none';
 export function pinState(staff: Staff): PinState {
   if (credentials.isHashedPin(staff.pinHash)) return 'set';
   if (staff.pinHash) return 'needs_reset';
-  return DEV_PINS[staff.id] ? 'development' : 'none';
+  return DEV_PINS[staff.id] && !staff.pinClearedAt ? 'development' : 'none';
 }
 
 /** Whether this PIN is this person's. Constant time, and false for anyone who is not active. */
@@ -138,7 +139,7 @@ export function verifyStaffPin(staffId: string, pin: string): boolean {
   const staff = staffById(staffId);
   if (!staff) return false;
   if (staff.pinHash) return credentials.verifyPin(pin, staff.pinHash);
-  const development = DEV_PINS[staff.id];
+  const development = staff.pinClearedAt ? undefined : DEV_PINS[staff.id];
   return development ? credentials.verifyPin(pin, development) : false;
 }
 
@@ -165,10 +166,10 @@ export function approverByPin(pin: string, permission: PermissionKey): Staff | n
 
 /** Issue the signed Console session token for a person who has just proved their PIN. */
 export function issueConsoleSession(staffId: string): string {
-  return credentials.signToken({ k: 'console', sid: staffId, ttlMs: CONSOLE_SESSION_MS });
+  return credentials.signToken({ k: 'console', sid: staffId, pv: staffById(staffId)?.pinVersion ?? 0, ttlMs: CONSOLE_SESSION_MS });
 }
 
-export type ConsoleSessionCheck = { ok: true; staff: Staff; role: Role } | { ok: false; reason: 'missing' | 'invalid' | 'inactive' | 'wrong_surface' };
+export type ConsoleSessionCheck = { ok: true; staff: Staff; role: Role } | { ok: false; reason: 'missing' | 'invalid' | 'inactive' | 'wrong_surface' | 'pin_changed' };
 
 /**
  * Check a Console session token. Every call re-reads the person, so a suspension, a departure or a
@@ -182,6 +183,7 @@ export function checkConsoleSession(token: string | null | undefined): ConsoleSe
   const role = staff ? roleFor(staff.id) : null;
   if (!staff || !role) return { ok: false, reason: 'invalid' };
   if (staff.employmentStatus !== 'active') return { ok: false, reason: 'inactive' };
+  if ((claims.pv ?? 0) !== (staff.pinVersion ?? 0)) return { ok: false, reason: 'pin_changed' };
   if (!canSignInOn('console', role.key)) return { ok: false, reason: 'wrong_surface' };
   return { ok: true, staff, role };
 }
@@ -201,7 +203,7 @@ export async function currentConsoleActor(): Promise<Actor & { staff: Staff; rol
 
 /** Issue a station token after a PIN is proved on a registered device. */
 export function issueStationToken(staffId: string, deviceId: string): string {
-  return credentials.signToken({ k: 'station', sid: staffId, did: deviceId, ttlMs: STATION_TOKEN_MS });
+  return credentials.signToken({ k: 'station', sid: staffId, did: deviceId, pv: staffById(staffId)?.pinVersion ?? 0, ttlMs: STATION_TOKEN_MS });
 }
 
 export type StationCheck = { ok: true; staff: Staff; role: Role; device: DeviceRow; issuedAt: number } | { ok: false; status: 401 | 403; message: string };
@@ -220,6 +222,7 @@ export function checkStationToken(token: string | null | undefined, deviceId?: s
   const staff = staffById(claims.sid);
   const role = staff ? roleFor(staff.id) : null;
   if (!staff || !role || staff.employmentStatus !== 'active') return { ok: false, status: 401, message: 'This PIN no longer works. A manager can check your access in the Console.' };
+  if ((claims.pv ?? 0) !== (staff.pinVersion ?? 0)) return { ok: false, status: 401, message: 'Your PIN was changed. Sign in again with the new one.' };
   return { ok: true, staff, role, device, issuedAt: claims.iat };
 }
 
@@ -247,6 +250,8 @@ export interface StaffSummary {
   roleName: string;
   colourIndex: number;
   employmentStatus: EmploymentStatus;
+  /** Digits in their PIN, so a keypad completes at the right length. */
+  pinLength: number;
 }
 
 export function staffSummaries(filter: (s: Staff) => boolean = () => true): StaffSummary[] {
@@ -254,7 +259,16 @@ export function staffSummaries(filter: (s: Staff) => boolean = () => true): Staf
     .filter(filter)
     .map((s) => {
       const role = roleFor(s.id);
-      return { id: s.id, displayName: s.displayName, fullName: s.fullName, roleKey: role?.key ?? 'waiter', roleName: role?.name ?? 'No role', colourIndex: s.colourIndex, employmentStatus: s.employmentStatus };
+      return {
+        id: s.id,
+        displayName: s.displayName,
+        fullName: s.fullName,
+        roleKey: role?.key ?? 'waiter',
+        roleName: role?.name ?? 'No role',
+        colourIndex: s.colourIndex,
+        employmentStatus: s.employmentStatus,
+        pinLength: s.pinLength ?? 6,
+      };
     });
 }
 
@@ -313,11 +327,11 @@ function cleanContact(value: string | null | undefined): string | null {
   return contact;
 }
 
-function cleanPin(pin: string | null | undefined): string | null {
+/** A PIN typed while adding or editing someone: the outlet's length, and none of the easy ones. */
+function cleanPin(pin: string | null | undefined, person?: Staff | null): string | null {
   if (pin === null || pin === undefined || pin === '') return null;
-  if (!credentials.PIN_PATTERN.test(pin)) throw new DomainError('A PIN is six digits.');
-  if (/^(\d)\1{5}$/.test(pin) || pin === '123456' || pin === '654321') throw new DomainError('That PIN is too easy to guess. Choose six digits that are not a run or a repeat.');
-  return credentials.hashPin(pin);
+  checkPin(pin, pinPolicy().length, person);
+  return pin;
 }
 
 /**
@@ -346,7 +360,17 @@ export function setStaffRole(input: { staffId: string; roleId: string; reason: s
   if (before?.key === 'owner' && activeOwners().length <= 1) throw new DomainError('The outlet needs at least one active owner. Make someone else owner first.');
   person.roleId = role.id;
   bumpCatalogueVersion();
-  audit.record({ outletId: person.outletId, actorStaffId: actor.staffId, action: 'staff.role_changed', entityType: 'staff', entityId: person.id, before: { role: before?.name ?? null }, after: { role: role.name }, reason, severity: 'sensitive' });
+  audit.record({
+    outletId: person.outletId,
+    actorStaffId: actor.staffId,
+    action: 'staff.role_changed',
+    entityType: 'staff',
+    entityId: person.id,
+    before: { role: before?.name ?? null },
+    after: { role: role.name },
+    reason,
+    severity: 'sensitive',
+  });
   return person;
 }
 
@@ -366,7 +390,17 @@ export function setEmploymentStatus(input: { staffId: string; status: Employment
   const before = { employmentStatus: person.employmentStatus };
   person.employmentStatus = input.status;
   bumpCatalogueVersion();
-  audit.record({ outletId: person.outletId, actorStaffId: actor.staffId, action: `staff.${input.status === 'active' ? 'reinstated' : input.status}`, entityType: 'staff', entityId: person.id, before, after: { employmentStatus: input.status }, reason, severity: 'sensitive' });
+  audit.record({
+    outletId: person.outletId,
+    actorStaffId: actor.staffId,
+    action: `staff.${input.status === 'active' ? 'reinstated' : input.status}`,
+    entityType: 'staff',
+    entityId: person.id,
+    before,
+    after: { employmentStatus: input.status },
+    reason,
+    severity: 'sensitive',
+  });
   return person;
 }
 
@@ -387,7 +421,17 @@ export function setRolePermission(input: { roleId: string; permission: Permissio
   const before = [...role.permissions];
   role.permissions = input.granted ? [...role.permissions, input.permission] : role.permissions.filter((p) => p !== input.permission);
   bumpCatalogueVersion();
-  audit.record({ outletId: outlet().id, actorStaffId: actor.staffId, action: 'role.permission_changed', entityType: 'role', entityId: role.id, before: { permissions: before }, after: { permissions: role.permissions }, reason, severity: 'sensitive' });
+  audit.record({
+    outletId: outlet().id,
+    actorStaffId: actor.staffId,
+    action: 'role.permission_changed',
+    entityType: 'role',
+    entityId: role.id,
+    before: { permissions: before },
+    after: { permissions: role.permissions },
+    reason,
+    severity: 'sensitive',
+  });
   return role;
 }
 
@@ -416,11 +460,13 @@ export function createStaff(input: StaffInput & { actor: Actor }) {
     roleId: role.id,
     employmentStatus: 'active',
     colourIndex: staff.length % 7,
-    pinHash: cleanPin(input.pin),
+    pinHash: null,
     avatarUrl: cleanAvatar(input.avatarUrl),
     contactNumber: cleanContact(input.contactNumber),
     pinLockedUntil: null,
   };
+  const pin = cleanPin(input.pin);
+  if (pin) applyPin(person, pin, pinPolicy().length, pinPolicy().expiryDays, pinPolicy().ownPinAfterReset);
   staff.push(person);
   bumpCatalogueVersion();
   audit.record({
@@ -456,18 +502,15 @@ export function updateStaff(input: StaffInput & { staffId: string; actor: Actor 
     assertMayGrant(actor, role);
     if (roleFor(person.id)?.key === 'owner' && activeOwners().length <= 1) throw new DomainError('The outlet needs at least one active owner. Make someone else owner first.');
   }
-  const pinHash = cleanPin(input.pin);
+  const newPin = cleanPin(input.pin, person);
+  const pinHash = Boolean(newPin);
   const before = { fullName: person.fullName, displayName: person.displayName, contactNumber: person.contactNumber, avatarUrl: person.avatarUrl, role: roleFor(person.id)?.name ?? null };
   person.fullName = names.fullName;
   person.displayName = names.displayName;
   person.contactNumber = cleanContact(input.contactNumber);
   person.avatarUrl = cleanAvatar(input.avatarUrl, person.avatarUrl);
   if (roleChanges) person.roleId = role.id;
-  if (pinHash) {
-    person.pinHash = pinHash;
-    person.pinLockedUntil = null;
-    credentials.unlock(`pin:${person.id}`);
-  }
+  if (newPin) applyPin(person, newPin, pinPolicy().length, pinPolicy().expiryDays, !self && pinPolicy().ownPinAfterReset);
   bumpCatalogueVersion();
   audit.record({
     outletId: person.outletId,
@@ -496,6 +539,32 @@ export function unlockPin(input: { staffId: string; actor: Actor }) {
   if (!person) throw new DomainError('That person is not part of this outlet.');
   credentials.unlock(`pin:${person.id}`);
   person.pinLockedUntil = null;
-  audit.record({ outletId: person.outletId, actorStaffId: input.actor.staffId, action: 'staff.pin_unlocked', entityType: 'staff', entityId: person.id, before: null, after: null, reason: null, severity: 'sensitive' });
+  audit.record({
+    outletId: person.outletId,
+    actorStaffId: input.actor.staffId,
+    action: 'staff.pin_unlocked',
+    entityType: 'staff',
+    entityId: person.id,
+    before: null,
+    after: null,
+    reason: null,
+    severity: 'sensitive',
+  });
   return person;
+}
+
+/** A short-lived pass to choose a new PIN, after a correct but expired or reset one. */
+export const PIN_CHANGE_MS = 10 * 60_000;
+
+export function issuePinChangeToken(staffId: string): string {
+  return credentials.signToken({ k: 'pin_change', sid: staffId, pv: staffById(staffId)?.pinVersion ?? 0, ttlMs: PIN_CHANGE_MS });
+}
+
+/** The person a PIN-change pass speaks for, if it is genuine, unexpired and their PIN has not moved since. */
+export function staffFromPinChangeToken(token: string | null | undefined): Staff | null {
+  const claims = credentials.verifyToken(token, 'pin_change');
+  if (!claims) return null;
+  const staff = staffById(claims.sid);
+  if (!staff || staff.employmentStatus !== 'active' || (claims.pv ?? 0) !== (staff.pinVersion ?? 0)) return null;
+  return staff;
 }

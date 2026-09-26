@@ -6,11 +6,13 @@ import { ActionPill } from '@bliss/ui/components/console/action-pill';
 import { KeyValueList } from '@bliss/ui/components/console/section';
 import { IconAlertTriangle, IconBuildingStore, IconCash, IconClockHour4, IconCoins, IconLayoutDashboard, IconPackage, IconReceiptTax } from '@tabler/icons-react';
 import type { Metadata } from 'next';
+import * as pins from '@/modules/identity/pins';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import * as trade from '@/modules/trade/service';
 import { ViewHeader } from '../../_components/workspace';
 import { OutletActions } from './outlet-actions';
+import { PinPolicyCard } from './pin-policy';
 
 export const metadata: Metadata = { title: 'Outlet' };
 
@@ -54,6 +56,7 @@ export default async function OutletPage() {
           <Metric label="Low stock line" icon={IconAlertTriangle} tone="attention" value={outlet.lowStockDefault} detail="Units, unless an item sets its own" />
         </MetricGrid>
         <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-2">
+          <PinPolicyCard policy={pins.policy()} canManage={identity.can(actor.staffId, 'staff.manage')} />
           <Card aria-labelledby="outlet-profile">
             <CardHeader band level="h2" titleId="outlet-profile" icon={IconBuildingStore} title="The outlet" />
             <CardBody className="pt-4">

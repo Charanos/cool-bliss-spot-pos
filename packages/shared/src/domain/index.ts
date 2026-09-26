@@ -43,6 +43,8 @@ export interface Outlet {
   lowStockDefault: number;
   drawerVarianceThresholdCents: Cents;
   status: 'active' | 'archived';
+  /** Absent until set: the defaults in `modules/identity/pins.ts` apply. */
+  pinPolicy?: PinPolicy;
 }
 
 export interface Role {
@@ -70,6 +72,33 @@ export interface Staff {
   avatarUrl: string | null;
   contactNumber: string | null;
   pinLockedUntil: EpochMs | null;
+  /** Digits in this person's PIN, 4 to 8. Absent on rows from before lengths could vary: six. */
+  pinLength?: number;
+  /** When the PIN was last set, and when it stops working unless changed. */
+  pinSetAt?: EpochMs | null;
+  pinExpiresAt?: EpochMs | null;
+  /** Set by a manager's reset: at the next sign-in the person chooses their own PIN. */
+  pinMustChange?: boolean;
+  /** Hashes of the last PINs, so none is used again. Newest first. */
+  pinHistory?: string[];
+  /** Bumped on every PIN change; a session signed before it no longer counts. */
+  pinVersion?: number;
+  /** When a manager took the PIN away. Nobody signs in as them, development PIN included, until a new one is set. */
+  pinClearedAt?: EpochMs | null;
+}
+
+/** How PINs work at this outlet, set by an owner or manager in Settings. */
+export interface PinPolicy {
+  /** Digits in a new PIN, 4 to 8. */
+  length: number;
+  /** Days a PIN lasts before it must be changed; null for never. */
+  expiryDays: number | null;
+  /** Wrong tries before a PIN locks for fifteen minutes. */
+  lockAttempts: number;
+  /** How many earlier PINs cannot be used again. */
+  history: number;
+  /** After a manager sets someone's PIN, they choose their own at the next sign-in. */
+  ownPinAfterReset: boolean;
 }
 
 export type DeviceKind = 'floor' | 'counter' | 'bar' | 'console';

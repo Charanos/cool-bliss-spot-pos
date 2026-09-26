@@ -13,6 +13,7 @@ const ENDED: Record<string, string> = {
   invalid: 'Your session ended. Sign in again.',
   inactive: 'Your access was changed. A manager can check it in People.',
   wrong_surface: 'Your role no longer signs in to the Console.',
+  pin_changed: 'Your PIN was changed, so your session ended. Sign in with the new one.',
 };
 
 /**

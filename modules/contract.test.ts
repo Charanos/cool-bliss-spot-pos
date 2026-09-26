@@ -31,7 +31,12 @@ describe('blind count', () => {
   it('keeps expected hidden on a count opened now', async () => {
     const actor = ownerActor();
     // One running count per location: two would each adjust from their own snapshot and double count.
-    const busy = new Set(inventory.counts().filter((c) => c.status === 'counting' || c.status === 'review').map((c) => c.stockLocationId));
+    const busy = new Set(
+      inventory
+        .counts()
+        .filter((c) => c.status === 'counting' || c.status === 'review')
+        .map((c) => c.stockLocationId),
+    );
     const free = inventory.locations().find((l) => !busy.has(l.id))!;
     expect(() => inventory.openCount({ locationId: [...busy][0]!, kind: 'spot', categoryIds: [], notes: null, actor })).toThrow(/already running/);
     const opened = inventory.openCount({ locationId: free.id, kind: 'spot', categoryIds: [], notes: null, actor });
@@ -54,8 +59,10 @@ describe('drawer', () => {
 describe('availability', () => {
   it('lets a hold outrank a positive stock figure (R2)', async () => {
     const actor = ownerActor();
-    const tusker = catalogue.variants().find((v) => v.name === 'Tusker 500ml')!;
-    expect(inventory.onHand(tusker.id)).toBeGreaterThan(0);
+    // Any bottle in stock and not held: the seeded trade moves day to day, so none is named.
+    const held = new Set(inventory.activeHolds().map((h) => h.productVariantId));
+    const tusker = catalogue.variants().find((v) => inventory.onHand(v.id) > 0 && !held.has(v.id) && availability.evaluate(v.id).state !== 'finished')!;
+    expect(tusker).toBeDefined();
     const before = availability.evaluate(tusker.id);
     expect(before.state).not.toBe('finished');
     const hold = inventory.placeHold({ variantId: tusker.id, reason: 'Contract test, checking the hold wins', expectedBack: null, actor });

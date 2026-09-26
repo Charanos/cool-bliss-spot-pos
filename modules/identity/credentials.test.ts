@@ -23,8 +23,9 @@ describe('PIN hashing', () => {
     expect(verifyPin('730261', null)).toBe(false);
   });
 
-  it('refuses to hash anything but six digits', () => {
-    expect(() => hashPin('12345')).toThrow();
+  it('refuses to hash anything but four to eight digits', () => {
+    expect(() => hashPin('123')).toThrow();
+    expect(() => hashPin('123456789')).toThrow();
     expect(() => hashPin('abcdef')).toThrow();
   });
 });

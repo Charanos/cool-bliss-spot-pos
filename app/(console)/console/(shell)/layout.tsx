@@ -5,6 +5,7 @@ import { IconBuildingStore, IconChartBar, IconLayoutDashboard, IconPackage, Icon
 import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
 import { fresh } from '@/modules/_data/store';
+import { policy as pinPolicy } from '@/modules/identity/pins';
 import * as identity from '@/modules/identity/service';
 import * as reporting from '@/modules/reporting/service';
 import * as settlement from '@/modules/settlement/service';
@@ -97,7 +98,7 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
               venue={{ name: outlet.name, day: formatDayShort(clock.current), trading: clock.tradingInProgress }}
               groups={groups}
               settings={item('settings')}
-              account={{ name: actor.staff.displayName, role: actor.role.name, photo: actor.staff.avatarUrl, theme }}
+              account={{ name: actor.staff.displayName, role: actor.role.name, photo: actor.staff.avatarUrl, theme, pin: { current: actor.staff.pinLength ?? 6, next: pinPolicy().length } }}
               tonight={tonight}
               initialCollapsed={jar.get('bliss-console-rail')?.value === 'collapsed'}
             />

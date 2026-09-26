@@ -56,11 +56,12 @@ export async function GET(request: Request) {
     body.recipes = inventory.recipes();
     body.zones = trade.zones();
     body.tables = trade.tables();
-    body.staff = identity.staffList()
+    body.staff = identity
+      .staffList()
       .filter((s) => s.employmentStatus === 'active')
       .map((s) => {
         const role = identity.roleFor(s.id);
-        return { id: s.id, displayName: s.displayName, roleKey: role?.key ?? 'waiter', permissions: role?.permissions ?? [], colourIndex: s.colourIndex };
+        return { id: s.id, displayName: s.displayName, roleKey: role?.key ?? 'waiter', permissions: role?.permissions ?? [], colourIndex: s.colourIndex, pinLength: s.pinLength ?? 6 };
       });
     body.devices = identity.devices().map((d) => ({ id: d.id, label: d.label, kind: d.kind, status: d.status, pairing: d.pairingPending }));
   }

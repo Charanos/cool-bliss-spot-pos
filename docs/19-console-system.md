@@ -136,6 +136,7 @@ the same way. Each is decoration beside something a page already says in words a
 | `CardBand` | The head of a record card with no photograph: the record's number or kind as a mono eyebrow, its state, its name and one line |
 | `PillTabs` | A workspace's pages at the head of each page: a track, the current page a raised chip, counts inside |
 | `Toaster`, `useToast` | The confirmation of a finished action, at the foot of the sheet. `FormDialog` and `ReasonDialog` toast in the words of their button unless told otherwise (docs/11 D-22) |
+| `PinBoxes` | A PIN typed on a keyboard: one box per digit over one real input, so typing, paste and one-time-code fill work. Digits only; hidden until shown. Used by the PIN dialogs, never on the Floor or Counter, which keep `PinPad` |
 | `Pagination` | The foot of a long table or grid: the range shown, numbered pages and a page size, all in the address |
 
 ## 4. The shell: a desk and a sheet

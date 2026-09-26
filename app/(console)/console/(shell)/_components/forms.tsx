@@ -13,7 +13,6 @@ import { type ChangeEvent, type FormEvent, type ReactNode, useEffect, useState, 
 import type { ActionResult } from '../_lib/action-result';
 import { uploadFiles } from '../_lib/upload';
 
-
 const PAST: Record<string, string> = {
   add: 'added',
   save: 'saved',
@@ -53,7 +52,10 @@ const PARTICLES = new Set(['off', 'back', 'over', 'on', 'out', 'up', 'reviewed',
  * "Bill voided", "Take off sale" is "Taken off sale". A label it cannot read becomes "Done".
  */
 export function doneFrom(label: string): string {
-  const words = label.replace(/\s+KES\s+[\d,.]+$/, '').trim().split(/\s+/);
+  const words = label
+    .replace(/\s+KES\s+[\d,.]+$/, '')
+    .trim()
+    .split(/\s+/);
   const verb = words[0]?.toLowerCase() ?? '';
   const past = PAST[verb];
   if (!past) return 'Done';
@@ -264,7 +266,10 @@ export function DaysField({ label, value, onChange, helper }: { label: string; v
               type="button"
               aria-pressed={on}
               onClick={() => onChange(on ? value.filter((x) => x !== d.value) : [...value, d.value].sort())}
-              className={cx('h-control-sm min-w-control-md rounded-md px-8 text-body-sm font-medium transition-hover', on ? 'bg-ink text-page' : 'bg-control text-ink-muted hover:bg-control-hover hover:text-ink')}
+              className={cx(
+                'h-control-sm min-w-control-md rounded-md px-8 text-body-sm font-medium transition-hover',
+                on ? 'bg-ink text-page' : 'bg-control text-ink-muted hover:bg-control-hover hover:text-ink',
+              )}
             >
               {d.label}
             </button>
@@ -318,11 +323,17 @@ export function PhotoField({ value, onChange, name, disabled }: { value: string 
   );
 }
 
+/** Digits in two halves when they split evenly past four, so a code is read aloud without losing place. */
+export function groupDigits(code: string): string {
+  if (code.length < 6 || code.length % 2 !== 0) return code;
+  return `${code.slice(0, code.length / 2)} ${code.slice(code.length / 2)}`;
+}
+
 /** A one-time secret shown once, large and spaced, with what to do with it. */
 export function OneTimeCode({ code, children }: { code: string; children: ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-12 rounded-card bg-band px-24 py-24 text-center">
-      <span className="font-mono tabular text-num-kpi text-ink">{code.replace(/(\d{3})(\d{3})/, '$1 $2')}</span>
+      <span className="font-mono tabular text-num-kpi text-ink">{groupDigits(code)}</span>
       <p className="measure text-body-sm text-ink-muted">{children}</p>
     </div>
   );

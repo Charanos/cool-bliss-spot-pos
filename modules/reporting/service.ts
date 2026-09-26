@@ -7,6 +7,7 @@ import { formatIsoDate, formatTime, formatWeekday, plural } from '@bliss/shared/
 import { dataset } from '../_data/source';
 import * as availability from '../availability/service';
 import * as catalogue from '../catalogue/service';
+import * as pins from '../identity/pins';
 import * as identity from '../identity/service';
 import * as inventory from '../inventory/service';
 import * as procurement from '../procurement/service';
@@ -216,12 +217,16 @@ export function needsAttention(): AttentionItem[] {
   for (const hold of inventory.activeHolds()) {
     const name = catalogue.productOfVariant(hold.productVariantId)?.name ?? 'An item';
     const productId = catalogue.productOfVariant(hold.productVariantId)?.id;
-    items.push({ rank: 2, tone: 'low', text: `${name} has been on hold since ${formatWeekday(isoOf(hold.placedAt))}`, href: productId ? `/console/catalogue/products/${productId}` : '/console/inventory/holds', cta: 'Review hold' });
+    items.push({
+      rank: 2,
+      tone: 'low',
+      text: `${name} has been on hold since ${formatWeekday(isoOf(hold.placedAt))}`,
+      href: productId ? `/console/catalogue/products/${productId}` : '/console/inventory/holds',
+      cta: 'Review hold',
+    });
   }
 
-  const finished = availability
-    .map()
-    .entries.filter((e) => e.state === 'finished' && e.reason === 'stock' && catalogue.variantById(e.productVariantId)?.isDefault);
+  const finished = availability.map().entries.filter((e) => e.state === 'finished' && e.reason === 'stock' && catalogue.variantById(e.productVariantId)?.isDefault);
   if (finished.length > 0) {
     const names = finished.map((e) => catalogue.productOfVariant(e.productVariantId)?.name ?? '').slice(0, 2);
     items.push({ rank: 3, tone: 'stop', text: `${names.join(' and ')} ${finished.length === 1 ? 'is' : 'are'} finished on the floor`, href: '/console/purchasing/reorder', cta: 'Reorder' });
@@ -230,10 +235,28 @@ export function needsAttention(): AttentionItem[] {
   const reorder = procurement.reorderSuggestions().length;
   if (reorder > 0) items.push({ rank: 4, tone: 'info', text: `${plural(reorder, 'line')} below reorder point`, href: '/console/purchasing/reorder', cta: 'Reorder' });
 
+  // A PIN running out this week: someone will be asked for a new one mid-shift unless it is reset first.
+  const expiring = pins.expiringSoon(identity.staffList());
+  if (expiring.length > 0) {
+    items.push({
+      rank: 6,
+      tone: 'info',
+      text: expiring.length === 1 ? `${expiring[0]!.displayName}'s PIN runs out this week` : `${plural(expiring.length, 'PIN')} run out this week`,
+      href: expiring.length === 1 ? `/console/people/staff/${expiring[0]!.id}` : '/console/people/staff?pin=expiring',
+      cta: expiring.length === 1 ? 'See their sign-in' : 'See who',
+    });
+  }
+
   const variance = latestCommittedVariance();
   const worst = variance?.rows.find((r) => r.outside && isNegative(r.value));
   if (worst) {
-    items.push({ rank: 5, tone: 'low', text: `${worst.name} counted ${Math.abs(worst.variance).toFixed(1)} bottles short, ${formatKes(abs(worst.value), { decimals: 'whole' })} at cost`, href: `/console/inventory/counts/${variance!.count.id}`, cta: 'See the count' });
+    items.push({
+      rank: 5,
+      tone: 'low',
+      text: `${worst.name} counted ${Math.abs(worst.variance).toFixed(1)} bottles short, ${formatKes(abs(worst.value), { decimals: 'whole' })} at cost`,
+      href: `/console/inventory/counts/${variance!.count.id}`,
+      cta: 'See the count',
+    });
   }
 
   return items.sort((a, b) => a.rank - b.rank).slice(0, 5);

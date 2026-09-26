@@ -39,13 +39,14 @@ export function resetSecretForTests() {
 
 /* -------------------------------------------------------------------- PINs */
 
-export const PIN_PATTERN = /^\d{6}$/;
+/** A PIN is four to eight digits; the outlet's policy says how many a new one has. */
+export const PIN_PATTERN = /^\d{4,8}$/;
 const SCRYPT = { N: 16384, r: 8, p: 1, keylen: 32 } as const;
 const PREFIX = 'scrypt';
 
 /** Hash a PIN for storage: `scrypt$N$r$p$salt$hash`, salt and hash in base64url. */
 export function hashPin(pin: string): string {
-  if (!PIN_PATTERN.test(pin)) throw new Error('A PIN is six digits.');
+  if (!PIN_PATTERN.test(pin)) throw new Error('A PIN is four to eight digits.');
   const salt = randomBytes(16);
   const hash = scryptSync(pin, salt, SCRYPT.keylen, { N: SCRYPT.N, r: SCRYPT.r, p: SCRYPT.p });
   return [PREFIX, SCRYPT.N, SCRYPT.r, SCRYPT.p, salt.toString('base64url'), hash.toString('base64url')].join('$');
@@ -80,7 +81,7 @@ function safeEqual(a: Buffer, b: Buffer): boolean {
 
 /* ------------------------------------------------------------------ tokens */
 
-export type TokenKind = 'console' | 'station' | 'approval';
+export type TokenKind = 'console' | 'station' | 'approval' | 'pin_change';
 
 export interface TokenClaims {
   /** What the token is for. A token of one kind is never accepted as another. */
@@ -95,6 +96,8 @@ export interface TokenClaims {
   did?: string;
   /** The permission approved, for approval tokens. */
   perm?: string;
+  /** The person's PIN version when it was signed: a later PIN change ends it. */
+  pv?: number;
 }
 
 /** A compact signed token: base64url(JSON claims) + '.' + base64url(HMAC-SHA256). */
@@ -145,23 +148,23 @@ export const LOCK_MS = 15 * 60_000;
 export type AttemptCheck = { locked: false; remaining: number } | { locked: true; until: number };
 
 /** Whether a key (a person, or an address) may try again. */
-export function attemptStatus(key: string, now = Date.now()): AttemptCheck {
+export function attemptStatus(key: string, now = Date.now(), max = MAX_ATTEMPTS): AttemptCheck {
   const state = store.get(key);
-  if (!state) return { locked: false, remaining: MAX_ATTEMPTS };
+  if (!state) return { locked: false, remaining: max };
   if (state.lockedUntil > now) return { locked: true, until: state.lockedUntil };
   if (now - state.windowStart > ATTEMPT_WINDOW_MS) {
     store.delete(key);
-    return { locked: false, remaining: MAX_ATTEMPTS };
+    return { locked: false, remaining: max };
   }
-  return { locked: false, remaining: Math.max(0, MAX_ATTEMPTS - state.failures) };
+  return { locked: false, remaining: Math.max(0, max - state.failures) };
 }
 
 /** Record a failure. Returns the new status: locked once the budget in the window is spent. */
-export function recordFailure(key: string, now = Date.now()): AttemptCheck {
+export function recordFailure(key: string, now = Date.now(), max = MAX_ATTEMPTS): AttemptCheck {
   const current = store.get(key);
   const state: AttemptState = current && now - current.windowStart <= ATTEMPT_WINDOW_MS && current.lockedUntil <= now ? current : { failures: 0, lockedUntil: 0, windowStart: now };
   state.failures += 1;
-  if (state.failures >= MAX_ATTEMPTS) {
+  if (state.failures >= max) {
     state.lockedUntil = now + LOCK_MS;
     state.failures = 0;
     state.windowStart = now;
@@ -169,7 +172,7 @@ export function recordFailure(key: string, now = Date.now()): AttemptCheck {
     return { locked: true, until: state.lockedUntil };
   }
   store.set(key, state);
-  return { locked: false, remaining: MAX_ATTEMPTS - state.failures };
+  return { locked: false, remaining: max - state.failures };
 }
 
 export function clearAttempts(key: string) {

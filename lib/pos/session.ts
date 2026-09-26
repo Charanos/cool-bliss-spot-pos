@@ -57,42 +57,63 @@ export function useSession(): StaffSession | null | undefined {
   return useLiveQuery(async () => (await getMeta<StaffSession>(META.session)) ?? null, []);
 }
 
-export type SignInResult = { ok: true } | { ok: false; message: string; pairing?: boolean };
+export type SignInResult = { ok: true } | { ok: false; message: string; pairing?: boolean; change?: { token: string; length: number }; restart?: boolean };
+
+interface SignInBody {
+  ok: boolean;
+  code?: string;
+  message?: string;
+  staff?: { id: string; displayName: string; roleKey: StaffSession['roleKey']; permissions: StaffSession['permissions'] };
+  signedInAt?: number;
+  token?: string;
+  length?: number;
+}
 
 export async function signIn(staffId: string, pin: string): Promise<SignInResult> {
   const device = await ensureDevice();
   if (!device) return { ok: false, message: 'This device is not registered to Cool Bliss Spot. A manager needs to add it in Console, Settings, Devices.' };
   try {
-    const { body } = await api.post<{
-      ok: boolean;
-      code?: string;
-      message?: string;
-      staff?: { id: string; displayName: string; roleKey: StaffSession['roleKey']; permissions: StaffSession['permissions'] };
-      signedInAt?: number;
-      token?: string;
-    }>('/api/station/identity', {
+    const { body } = await api.post<SignInBody>('/api/station/identity', {
       action: 'sign-in',
       deviceId: device.id,
       staffId,
       pin,
     });
-    if (body.code === 'PAIRING_REQUIRED') return { ok: false, message: body.message ?? 'This device needs pairing first.', pairing: true };
-    if (!body.ok || !body.staff || !body.token) return { ok: false, message: body.message ?? 'That PIN was not recognised.' };
-    await setMeta(META.stationToken, body.token);
-    const session: StaffSession = {
-      staffId: body.staff.id,
-      displayName: body.staff.displayName,
-      roleKey: body.staff.roleKey,
-      permissions: body.staff.permissions,
-      signedInAt: body.signedInAt ?? Date.now(),
-    };
-    await setMeta(META.session, session);
-    // The first pull after a sign-in carries this device's trade, which needs the token.
-    wakeSync();
-    return { ok: true };
+    return await settle(body);
   } catch {
     return { ok: false, message: 'No connection. Signing in needs the network once; orders already on this tablet are safe.' };
   }
+}
+
+/** After a reset or an expiry: choose a new PIN with the pass the sign-in gave, and sign in with it. */
+export async function choosePin(token: string, pin: string): Promise<SignInResult> {
+  const device = await ensureDevice();
+  if (!device) return { ok: false, message: 'This device is not registered to Cool Bliss Spot. A manager needs to add it in Console, Settings, Devices.' };
+  try {
+    const { body } = await api.post<SignInBody>('/api/station/identity', { action: 'choose-pin', deviceId: device.id, token, pin });
+    return await settle(body);
+  } catch {
+    return { ok: false, message: 'No connection. Choosing a PIN needs the network.' };
+  }
+}
+
+async function settle(body: SignInBody): Promise<SignInResult> {
+  if (body.code === 'PAIRING_REQUIRED') return { ok: false, message: body.message ?? 'This device needs pairing first.', pairing: true };
+  if (body.code === 'PIN_CHANGE_REQUIRED' && body.token) return { ok: false, message: body.message ?? 'Choose a new PIN.', change: { token: body.token, length: body.length ?? 6 } };
+  if (body.code === 'PIN_CHANGE_EXPIRED') return { ok: false, message: body.message ?? 'Sign in again.', restart: true };
+  if (!body.ok || !body.staff || !body.token) return { ok: false, message: body.message ?? 'That PIN was not recognised.' };
+  await setMeta(META.stationToken, body.token);
+  const session: StaffSession = {
+    staffId: body.staff.id,
+    displayName: body.staff.displayName,
+    roleKey: body.staff.roleKey,
+    permissions: body.staff.permissions,
+    signedInAt: body.signedInAt ?? Date.now(),
+  };
+  await setMeta(META.session, session);
+  // The first pull after a sign-in carries this device's trade, which needs the token.
+  wakeSync();
+  return { ok: true };
 }
 
 /** Pair this device with the six-digit code shown in the Console when it was registered. */

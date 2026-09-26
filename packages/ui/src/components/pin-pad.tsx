@@ -8,7 +8,8 @@ import { ICON_STROKE } from './icon';
 export const PIN_LENGTH = 6;
 
 /**
- * Six digit PIN entry: six underlined positions and a keypad. The digits are never shown, only that
+ * PIN entry: one underlined position per digit (six unless the person's PIN is longer or shorter)
+ * and a keypad. The digits are never shown, only that
  * a position is filled. Hardware keyboards type straight in.
  */
 export function PinPad({
@@ -19,6 +20,7 @@ export function PinPad({
   error,
   size = 'lg',
   disabled,
+  length = PIN_LENGTH,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -27,12 +29,14 @@ export function PinPad({
   error?: string | null;
   size?: 'md' | 'lg';
   disabled?: boolean;
+  /** Digits in this PIN, 4 to 8. It completes on its own at this length. */
+  length?: number;
 }) {
   const push = (digit: string) => {
-    if (disabled || value.length >= PIN_LENGTH) return;
+    if (disabled || value.length >= length) return;
     const next = value + digit;
     onChange(next);
-    if (next.length === PIN_LENGTH) onComplete?.(next);
+    if (next.length === length) onComplete?.(next);
   };
   const pop = () => !disabled && onChange(value.slice(0, -1));
 
@@ -62,12 +66,13 @@ export function PinPad({
   return (
     <div role="group" aria-label={label} className="flex flex-col gap-24">
       <div className="flex items-end justify-center gap-12">
-        {Array.from({ length: PIN_LENGTH }, (_, i) => (
+        {Array.from({ length }, (_, i) => (
           <span
             key={i}
             aria-hidden="true"
             className={cx(
-              'flex h-control-xl w-[44px] items-center justify-center border-b-2',
+              'flex h-control-xl items-center justify-center border-b-2',
+              length > 6 ? 'w-[34px]' : 'w-[44px]',
               error ? 'border-stop' : i === value.length ? 'border-accent' : i < value.length ? 'border-ink-muted' : 'border-hairline',
             )}
           >
@@ -75,7 +80,7 @@ export function PinPad({
           </span>
         ))}
         <span className="sr-only" aria-live="polite">
-          {value.length} of {PIN_LENGTH} digits entered
+          {value.length} of {length} digits entered
         </span>
       </div>
       {error ? (
@@ -85,23 +90,12 @@ export function PinPad({
       ) : null}
       <div className="grid grid-cols-3 gap-8">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
-          <button
-            key={d}
-            type="button"
-            aria-disabled={disabled || undefined}
-            onClick={() => push(d)}
-            className={cx(key, 'surface-key flex items-center justify-center font-mono tabular text-ink')}
-          >
+          <button key={d} type="button" aria-disabled={disabled || undefined} onClick={() => push(d)} className={cx(key, 'surface-key flex items-center justify-center font-mono tabular text-ink')}>
             {d}
           </button>
         ))}
         <span aria-hidden="true" />
-        <button
-          type="button"
-          aria-disabled={disabled || undefined}
-          onClick={() => push('0')}
-          className={cx(key, 'surface-key flex items-center justify-center font-mono tabular text-ink')}
-        >
+        <button type="button" aria-disabled={disabled || undefined} onClick={() => push('0')} className={cx(key, 'surface-key flex items-center justify-center font-mono tabular text-ink')}>
           0
         </button>
         <button

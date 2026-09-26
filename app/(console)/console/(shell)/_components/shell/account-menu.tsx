@@ -1,19 +1,22 @@
 'use client';
 
 import { cx } from '@bliss/ui/lib/cx';
-import { IconCash, IconDeviceDesktop, IconDeviceTablet, IconLogout, IconMoon, IconSelector, IconSun } from '@tabler/icons-react';
+import { IconCash, IconDeviceDesktop, IconDeviceTablet, IconKey, IconLogout, IconMoon, IconSelector, IconSun } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useCallback, useLayoutEffect, useRef, useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useDismiss } from '@bliss/ui/hooks';
 import { signOutFromConsole } from '../../../sign-in/actions';
 import { type ThemePreference, setTheme } from '../../_actions/settings';
+import { ChangePinDialog } from './change-pin-dialog';
 
 export interface AccountProps {
   name: string;
   role: string;
   photo: string | null;
   theme: ThemePreference;
+  /** Digits in their PIN now, and in a new one under the outlet's rule. */
+  pin: { current: number; next: number };
   /** Folded rail: the avatar alone. */
   compact?: boolean;
 }
@@ -28,8 +31,9 @@ const THEMES: { value: ThemePreference; label: string; icon: typeof IconSun }[] 
  * The signed-in person, and what is theirs to change: the theme, a way onto a station, and signing
  * out. A menu (arrow keys, Home, End, Escape), opening upward from the foot of the rail.
  */
-export function AccountMenu({ name, role, photo, theme: initialTheme, compact }: AccountProps) {
+export function AccountMenu({ name, role, photo, theme: initialTheme, pin, compact }: AccountProps) {
   const [open, setOpen] = useState(false);
+  const [changing, setChanging] = useState(false);
   const [theme, setLocalTheme] = useState(initialTheme);
   const [position, setPosition] = useState<{ bottom: number; left: number } | null>(null);
   const [, start] = useTransition();
@@ -99,7 +103,13 @@ export function AccountMenu({ name, role, photo, theme: initialTheme, compact }:
           <span className="truncate text-ui font-medium text-ink">{name}</span>
           <span className="truncate text-body-sm text-ink-subtle transition-hover group-hover:text-ink-muted">{role}</span>
         </span>
-        <span aria-hidden="true" className={cx('size-row-compact shrink-0 items-center justify-center rounded-dot bg-desk-chip text-ink-subtle shadow-chip transition-hover group-hover:text-ink', compact ? 'hidden' : 'hidden desktop:flex')}>
+        <span
+          aria-hidden="true"
+          className={cx(
+            'size-row-compact shrink-0 items-center justify-center rounded-dot bg-desk-chip text-ink-subtle shadow-chip transition-hover group-hover:text-ink',
+            compact ? 'hidden' : 'hidden desktop:flex',
+          )}
+        >
           <IconSelector size={14} stroke={1.75} />
         </span>
         <span className="sr-only">Account and theme</span>
@@ -119,7 +129,21 @@ export function AccountMenu({ name, role, photo, theme: initialTheme, compact }:
                 <p className="truncate text-body-sm font-medium text-ink">{name}</p>
                 <p className="truncate text-body-sm text-ink-subtle">{role}</p>
               </div>
-              <div role="group" aria-label="Theme" className="border-t border-edge pt-4">
+              <div role="group" aria-label="You" className="border-t border-edge pt-4">
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={item}
+                  onClick={() => {
+                    close(false);
+                    setChanging(true);
+                  }}
+                >
+                  <IconKey size={16} stroke={1.5} aria-hidden="true" className="text-ink-subtle" />
+                  Change my PIN
+                </button>
+              </div>
+              <div role="group" aria-label="Theme" className="mt-4 border-t border-edge pt-4">
                 <p className="label-caps px-8 pb-4 pt-6 text-ink-subtle">Theme</p>
                 {THEMES.map((t) => (
                   <button key={t.value} type="button" role="menuitemradio" aria-checked={theme === t.value} onClick={() => chooseTheme(t.value)} className={item}>
@@ -149,6 +173,7 @@ export function AccountMenu({ name, role, photo, theme: initialTheme, compact }:
             document.body,
           )
         : null}
+      <ChangePinDialog open={changing} onClose={() => setChanging(false)} currentLength={pin.current} nextLength={pin.next} />
     </>
   );
 }

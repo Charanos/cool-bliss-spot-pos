@@ -1,15 +1,17 @@
 'use client';
 
 import type { EmploymentStatus } from '@bliss/shared/domain';
+import type { PinStatus } from '@/modules/identity/pins';
 import { formatDate, plural } from '@bliss/shared/format';
 import { Button } from '@bliss/ui/components/button';
 import { Card, CardBand, CardMedia, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { OverflowMenu } from '@bliss/ui/components/menu';
-import { StatusChip } from '@bliss/ui/components/status';
+import { StatusChip, ToneChip } from '@bliss/ui/components/status';
 import { IconDeviceTablet, IconLock, IconPlus, IconUserCheck, IconUsers } from '@tabler/icons-react';
 import { StaffAvatar } from './avatar';
+import type { PinPolicyView } from './pin-dialog';
 import { useStaffManager } from './staff-manager';
 
 export interface StaffRow {
@@ -24,6 +26,9 @@ export interface StaffRow {
   avatarUrl: string | null;
   contactNumber: string | null;
   pinLocked: boolean;
+  pin: { status: PinStatus; length: number; setAt: number | null; expiresAt: number | null };
+  /** Whether the viewer may set, reset or clear this PIN: rank decides. */
+  canSetPin: boolean;
   lastShiftAt: number | null;
   shifts: number;
   signedInOn: string[];
@@ -35,12 +40,42 @@ export function Access({ row }: { row: StaffRow }) {
   return <StatusChip status={row.status === 'suspended' ? 'suspended' : 'retired'} label={row.status === 'left' ? 'Left' : undefined} />;
 }
 
+const DAY = 24 * 60 * 60_000;
+
+/** Where a PIN stands, in a few words, or null when it is simply set and nothing is near. */
+export function PinChip({ row, now }: { row: StaffRow; now: number }) {
+  if (row.status !== 'active') return null;
+  const { status, expiresAt } = row.pin;
+  if (status === 'none') return <ToneChip tone="stop">No PIN</ToneChip>;
+  if (status === 'must_change') return <ToneChip tone="info">Chooses own PIN</ToneChip>;
+  if (status === 'expired') return <ToneChip tone="stop">PIN ran out</ToneChip>;
+  if (status === 'expiring' && expiresAt) {
+    const days = Math.max(0, Math.ceil((expiresAt - now) / DAY));
+    return <ToneChip tone="low">{days === 0 ? 'PIN runs out today' : `PIN runs out in ${plural(days, 'day')}`}</ToneChip>;
+  }
+  return null;
+}
+
 /**
  * Everyone who can sign in to Bliss: their role, whether they can get in, and when they last worked.
  * A person without staff.manage sees the list and changes nothing.
  */
-export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRow[]; roles: { value: string; label: string }[]; canManage: boolean; timezone: string }) {
-  const manager = useStaffManager({ roles, canManage, createParam: true });
+export function StaffTable({
+  rows,
+  roles,
+  canManage,
+  timezone,
+  policy,
+  now,
+}: {
+  rows: StaffRow[];
+  roles: { value: string; label: string }[];
+  canManage: boolean;
+  timezone: string;
+  policy: PinPolicyView;
+  now: number;
+}) {
+  const manager = useStaffManager({ roles, canManage, createParam: true, policy, timezone });
   const actions = manager.actions;
 
   const active = rows.filter((r) => r.status === 'active');
@@ -77,7 +112,12 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
       width: '136px',
       sortValue: (r) => r.status,
       csv: (r) => (r.pinLocked ? 'PIN locked' : r.status),
-      cell: (r) => <Access row={r} />,
+      cell: (r) => (
+        <span className="flex flex-col items-start gap-4">
+          <Access row={r} />
+          <PinChip row={r} now={now} />
+        </span>
+      ),
     },
     {
       key: 'on',
@@ -166,6 +206,23 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
             ],
             test: (r, v) => r.status === v,
           },
+          {
+            kind: 'chips',
+            key: 'pin',
+            label: 'PIN',
+            options: [
+              { value: 'attention', label: 'Needs a look' },
+              { value: 'expiring', label: 'Running out soon' },
+              { value: 'none', label: 'No PIN' },
+            ],
+            test: (r, v) =>
+              r.status === 'active' &&
+              (v === 'attention'
+                ? r.pinLocked || ['none', 'expired', 'expiring', 'must_change'].includes(r.pin.status)
+                : v === 'expiring'
+                  ? r.pin.status === 'expiring' || r.pin.status === 'expired'
+                  : r.pin.status === 'none'),
+          },
         ]}
         rowTone={(r) => (r.status === 'active' ? 'default' : 'muted')}
         rowActions={canManage ? actions : undefined}
@@ -206,6 +263,9 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
                 <KeyRow label="Signed in on">{r.signedInOn.length > 0 ? r.signedInOn.join(', ') : 'Not signed in'}</KeyRow>
                 <KeyRow label="Shifts, 28 days">{r.shifts}</KeyRow>
                 <KeyRow label="Last shift">{r.lastShiftAt ? formatDate(r.lastShiftAt, timezone) : 'None yet'}</KeyRow>
+                <KeyRow label="PIN">
+                  <PinChip row={r} now={now} /> {r.pin.status === 'set' || r.pin.status === 'locked' ? `${r.pin.length} digits` : null}
+                </KeyRow>
                 <KeyRow label="Contact">{r.contactNumber ?? 'Not given'}</KeyRow>
               </KeyRows>
             </Card>
@@ -216,4 +276,3 @@ export function StaffTable({ rows, roles, canManage, timezone }: { rows: StaffRo
     </div>
   );
 }
-

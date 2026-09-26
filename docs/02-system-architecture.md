@@ -250,7 +250,7 @@ The table above is the target. What runs now, and how it maps onto it:
 | Console session | An HMAC-signed, 12 hour token in an httpOnly cookie, naming the person. Every request re-reads the person, so a suspension, a departure or a role change ends the session. No fallback identity. Email, password and TOTP remain the target. |
 | Station token | A signed 30 day token bound to the person who entered the PIN and to the device; renewed on pull. Trade rows, pushes, history and the drawer require it. The catalogue a sign-in screen needs does not. |
 | Void approval | A signed 12 hour token bound to the approver and the permission; the server records the real approver. |
-| Rate limiting | Five wrong PINs lock that PIN for 15 minutes; an address that keeps guessing is paused the same way; approvals likewise. Per instance. |
+| Rate limiting | Wrong PINs lock that PIN for 15 minutes after the outlet's number of tries (five unless changed in Settings, Outlet); an address that keeps guessing is paused the same way; approvals likewise. Per instance. |
 | Uploads | Console session required, type sniffed from bytes, size and count capped, stored in Postgres, served with nosniff and a sandboxing CSP. |
 | Server actions | Every Console action parses its input with a schema, runs as the session actor inside one write, and returns a readable refusal or a generic sentence, never an internal message. |
 | Signing key | `BLISS_SESSION_SECRET`; see `17-persistence.md` section 4. |

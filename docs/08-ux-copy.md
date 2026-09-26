@@ -336,3 +336,37 @@ back for lines they paid for: the bill stays, with the refund against it.
 
 Every one of these asks for a reason, and the reason is kept in the audit trail beside who gave it.
 
+
+### PINs
+
+A PIN is four to eight digits. The outlet's rules (Settings, Outlet, Sign-in and PINs) set how many
+digits a new PIN has, when a PIN runs out, how many wrong tries lock it for 15 minutes, how many old
+PINs cannot come back, and whether a PIN a manager sets works once before the person chooses their
+own. A manager sets PINs for people below them; only an owner sets a manager's or an owner's. Nobody
+sets their own from People: they change it from the account menu, with the one they have.
+
+| Moment | Copy |
+|---|---|
+| Set, title | "Set Amina's PIN", or "Reset Amina's PIN" when she has one |
+| Reset, body | "Their current PIN stops working and every session they have ends." |
+| How | "Make one at random" or "Type one" |
+| Typed, rules | "6 digits", "Not a run, a repeat or a common PIN", "Typed the same twice", "Not one they had before, checked when you save" |
+| Too easy | "That PIN is too easy to guess. It is a run of digits." |
+| Used before | "That PIN was used before. Choose one they have not had." |
+| Hand over, title | "Hand this to Amina" |
+| Hand over, body | "Shown once. Nobody, you included, can see it again." |
+| Chooses own | "They choose their own at the next sign-in" |
+| Sign-in, prompt | "Enter your 4 digit PIN", the person's own length |
+| Sign-in, after a reset | "A manager set this PIN for you. Choose one only you know." |
+| Sign-in, expired | "Your PIN has run out. Choose a new one." |
+| Sign-in, mismatch | "The two PINs were not the same. Start again." |
+| Session ended by a change | "Your PIN was changed, so your session ended. Sign in with the new one." |
+| Take away, title | "Take Amina's PIN away?" |
+| Take away, body | "Nobody can sign in as them until a new PIN is set. Their sessions end now. Their history stays." |
+| End sessions, body | "Every device and browser they are signed in on asks for their PIN again. Their PIN does not change." |
+| Only an owner | "Only an owner sets the PIN of a manager or another owner." |
+| Staff list chips | "No PIN", "Chooses own PIN", "PIN ran out", "PIN runs out in 3 days" |
+| Overview | "3 PINs run out this week" |
+
+Every set, reset and removal asks for a reason and is kept in the audit trail as sensitive. The PIN
+itself is never written anywhere but as a hash.
