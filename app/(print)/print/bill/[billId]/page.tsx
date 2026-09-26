@@ -1,6 +1,7 @@
-import { formatDateTime, formatIsoDate, formatQty } from '@bliss/shared/format';
+import { formatDateTime, formatQty } from '@bliss/shared/format';
 import { formatDecimal, isPositive, isZero, subtract } from '@bliss/shared/money';
 import { notFound } from 'next/navigation';
+import { assertPrintAccess } from '@/lib/print-access';
 import * as identity from '@/modules/identity/service';
 import * as settlement from '@/modules/settlement/service';
 import * as trade from '@/modules/trade/service';
@@ -16,7 +17,6 @@ import {
   ReceiptFooter,
   ReceiptTaxBreakdown,
   ReceiptTenderRow,
-  ReceiptFiscalFooter,
 } from '@bliss/ui/components/thermal-receipt';
 
 /**
@@ -25,7 +25,8 @@ import {
  * 2. Counter / Bar Copy (with bold indicators)
  * Includes an auto-print script so it fires immediately upon loading.
  */
-export default async function PrintBillPage({ params }: { params: Promise<{ billId: string }> }) {
+export default async function PrintBillPage({ params, searchParams }: { params: Promise<{ billId: string }>; searchParams: Promise<{ t?: string }> }) {
+  await assertPrintAccess(searchParams);
   const { billId } = await params;
   const bill = settlement.billById(billId);
   if (!bill) notFound();
@@ -44,13 +45,7 @@ export default async function PrintBillPage({ params }: { params: Promise<{ bill
   const stationLabel = device?.label ?? bill.deviceId;
   const timestamp = bill.settledAt ?? (bill.businessDate ? Date.parse(bill.businessDate) : Date.now());
 
-  // KRA eTIMS Fiscal Data
-  const kraPin = 'P051982341Z';
-  const cuSerial = 'CU-BLISS-01';
-  const invoiceNumber = `KRA-ETIMS-${bill.businessDate.replace(/-/g, '')}-${String(bill.billNumber).padStart(6, '0')}`;
-  const controlCode = `SIGN:${bill.id.slice(0, 8).toUpperCase()}-${(bill.settledAt ?? Date.now()).toString(16).toUpperCase()}`;
-
-  // Fiscal Tax Base (16% VAT Inclusive)
+  // VAT is included in the prices; the bill shows the base it was worked out from.
   const taxableBase = subtract(bill.totalCents, bill.taxCents);
 
   const renderContent = () => (
@@ -58,7 +53,7 @@ export default async function PrintBillPage({ params }: { params: Promise<{ bill
       <ReceiptHeader 
         venueName={venueName || 'COOL BLISS SPOT'}
         logoUrl="/logo.png"
-        title="FISCAL RECEIPT"
+        title="BILL"
         subtitle={`Bill #${bill.billNumber}`}
       />
       
@@ -104,11 +99,11 @@ export default async function PrintBillPage({ params }: { params: Promise<{ bill
 
       <ReceiptRule />
 
-      {/* Tax Breakdown: KRA 16% VAT */}
+      {/* VAT included in the prices */}
       <ReceiptTaxBreakdown
         taxableAmount={formatDecimal(taxableBase)}
         taxAmount={formatDecimal(bill.taxCents)}
-        rateLabel="VAT (16% Included)"
+        rateLabel={`VAT (${outlet.taxRateBps / 100}% included)`}
       />
 
       <ReceiptRule />
@@ -133,7 +128,8 @@ export default async function PrintBillPage({ params }: { params: Promise<{ bill
       </div>
 
       <ReceiptFooter>
-        <div className="font-semibold">Thank you for visiting {venueName}!</div>
+        <div className="font-medium">Thank you for visiting {venueName}</div>
+        <div>This bill is not a tax invoice.</div>
       </ReceiptFooter>
     </Receipt>
   );

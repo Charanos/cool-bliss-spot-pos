@@ -258,7 +258,15 @@ export function voidLine(p: OutboxPayload<'line.void'>, actor: Actor): void {
   const line = lineOrThrow(p.lineId);
   if (line.status === 'voided') return;
   assertNotBilled(line);
-  if (line.status === 'served' && !p.approvalToken) throw new CommandRejected('APPROVAL_REQUIRED', 'This line was poured. A supervisor approves the void with their PIN.');
+  // A poured line needs an approval: a genuine, unexpired token from someone who can approve voids,
+  // unless the person voiding can approve it themselves. A made-up token is no approval at all.
+  let approverId: string | null = null;
+  if (line.status === 'served') {
+    const approver = identity.approverFromToken(p.approvalToken, 'void.approve');
+    if (approver) approverId = approver.id;
+    else if (identity.can(actor.staffId, 'void.approve')) approverId = actor.staffId;
+    else throw new CommandRejected('APPROVAL_REQUIRED', 'This line was poured. A supervisor approves the void with their PIN.');
+  }
   const before = line.status;
   line.status = 'voided';
   line.voidedBy = actor.staffId;
@@ -275,7 +283,7 @@ export function voidLine(p: OutboxPayload<'line.void'>, actor: Actor): void {
     entityType: 'order_line',
     entityId: line.id,
     before: { status: before },
-    after: { status: 'voided', approverId: p.approvalToken ?? actor.staffId, voidedBy: actor.staffId, voidedAt: line.voidedAt },
+    after: { status: 'voided', approverId, voidedBy: actor.staffId, voidedAt: line.voidedAt },
     reason: p.reason,
     severity: 'sensitive',
   });

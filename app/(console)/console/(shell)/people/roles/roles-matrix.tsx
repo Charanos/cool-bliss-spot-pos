@@ -9,7 +9,7 @@ import { cx } from '@bliss/ui/lib/cx';
 import { IconCheck, IconLock, IconMinus } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { setRolePermission } from '../../_actions';
+import { setRolePermission } from '../../_actions/people';
 
 interface RoleColumn {
   id: string;

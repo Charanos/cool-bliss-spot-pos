@@ -108,6 +108,7 @@ create index if not exists bliss_record_order on bliss_record (collection, ord);
 create table if not exists bliss_meta (key text primary key, value jsonb not null);
 create table if not exists bliss_change (seq bigint primary key, tbl text not null, id text not null);
 create table if not exists bliss_applied (id text primary key, version bigint not null);
+create table if not exists bliss_upload (id text primary key, mime text not null, bytes bytea not null, size integer not null, created_by text not null, created_at bigint not null);
 `;
 
 /** The advisory lock every write holds for its transaction, so writes apply one at a time. */

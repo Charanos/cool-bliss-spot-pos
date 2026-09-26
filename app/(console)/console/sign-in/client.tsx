@@ -1,7 +1,6 @@
 'use client';
 
 import { SURFACE_NAME, SURFACE_ROLES } from '@bliss/shared/identity';
-import type { RoleKey, Staff } from '@bliss/shared/domain';
 import { ActionNode, Avatar, Eyebrow, FadeRule, GlassButton, GlassPane, PhotoBackdrop, VeilButton } from '@bliss/ui/components/atmosphere';
 import { AtmosphereClock } from '@bliss/ui/components/atmosphere-clock';
 import { AmbientConsoleArtwork } from '@bliss/ui/components/artwork/console-flow';
@@ -13,6 +12,7 @@ import { IconArrowLeft } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { staffPhoto } from '@/lib/pos/staff-photos';
+import type { StaffSummary } from '@/modules/identity/service';
 import { signInToConsole } from './actions';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -26,10 +26,10 @@ const ROLE_LABEL: Record<string, string> = {
 
 const BACKDROP = '1621275471769-e6aa344546d5';
 
-export function ConsoleSignInClient({ staff, outlet }: { staff: (Staff & { roleKey: RoleKey })[]; outlet: { name: string; timezone: string } }) {
+export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSummary[]; outlet: { name: string; timezone: string }; notice: string | null }) {
   const [chosen, setChosen] = useState<string | null>(null);
   const [pin, setPin] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(notice);
   const [pending, setPending] = useState(false);
   const router = useRouter();
   const roles = SURFACE_ROLES['console'];

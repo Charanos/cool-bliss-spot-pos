@@ -80,6 +80,8 @@ export interface PurchaseOrder {
   approvedBy: string | null;
   approvedAt: number | null;
   notes: string | null;
+  /** The client's key for this submission, so a double submit raises one order. */
+  requestId?: string | null;
 }
 
 export interface PurchaseOrderLine {
@@ -104,6 +106,11 @@ export interface GoodsReceipt {
   stockLocationId: string;
   status: 'draft' | 'posted' | 'cancelled';
   varianceNote: string | null;
+  /** The client's key for this submission, so a double submit posts one receipt. */
+  requestId?: string | null;
+  cancelledBy?: string | null;
+  cancelledAt?: number | null;
+  cancelReason?: string | null;
 }
 
 export interface GoodsReceiptLine {

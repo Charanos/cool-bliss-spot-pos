@@ -98,10 +98,6 @@ export default async function ReceiptDetailPage({ params }: { params: Promise<{ 
             <span className="font-mono text-ink mt-2 block">{note?.invoiceNumber || '—'}</span>
           </div>
           <div>
-            <span className="text-ink-subtle block text-body-xs uppercase tracking-wider">eTIMS KRA Ref</span>
-            <span className="font-mono text-ink mt-2 block">{note?.etimsInvoiceRef || '—'}</span>
-          </div>
-          <div>
             <span className="text-ink-subtle block text-body-xs uppercase tracking-wider">PO Reference</span>
             <span className="font-mono text-ink mt-2 block">{order ? `PO #${order.poNumber}` : 'Direct Intake'}</span>
           </div>

@@ -6,7 +6,6 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
-import * as inventory from '@/modules/inventory/service';
 import * as procurement from '@/modules/procurement/service';
 import { ORDER_STATUS } from '../../../_lib/labels';
 import { OrderDetail } from './order-detail';
@@ -19,7 +18,6 @@ export default async function OrderPage({ params }: { params: Promise<{ poId: st
   if (!order) notFound();
   const tz = identity.outlet().timezone;
   const supplier = procurement.supplierById(order.supplierId);
-  const store = inventory.locations().find((l) => l.isDefaultReceipt);
   const receipts = procurement.receipts().filter((r) => r.purchaseOrderId === order.id);
 
   return (
@@ -46,7 +44,6 @@ export default async function OrderPage({ params }: { params: Promise<{ poId: st
 
       <OrderDetail
         order={{ id: order.id, number: order.poNumber, status: order.status, total: order.totalCents }}
-        storeName={store?.name ?? 'the store'}
         lines={procurement.purchaseOrderLines(order.id).map((l) => ({
           id: l.id,
           name: catalogue.variantById(l.productVariantId)?.name ?? '',

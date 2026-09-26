@@ -6,7 +6,7 @@ import { TextField, SelectField } from '@bliss/ui/components/fields';
 import { useRouter } from 'next/navigation';
 import React, { useState, useTransition } from 'react';
 import type { ServiceTable, Zone } from '@bliss/shared/domain';
-import { createServiceTable, updateServiceTable } from '../../_actions';
+import { createServiceTable, updateServiceTable } from '../../_actions/people';
 
 export function TableDialog({ target, zones, open, onClose }: { target?: ServiceTable | null; zones: Zone[]; open: boolean; onClose: () => void }) {
   const router = useRouter();

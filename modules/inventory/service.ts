@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { DomainError } from '../_data/errors';
+
 import type { CountKind, MovementType, StockBatch, StockCount, StockHold, StockMovement } from '@bliss/shared/domain';
 import { createUuidV7 } from '@bliss/shared/id';
 import { type Cents, ZERO, add, multiplyByQuantity, weightedAverage } from '@bliss/shared/money';
@@ -15,18 +17,49 @@ const nextId = createUuidV7();
 
 /* ------------------------------------------------------------------ ledger */
 
-let onHandCache: { source: StockMovement[]; length: number; byKey: Map<string, number> } | null = null;
+/**
+ * Indexes over the ledger, rebuilt when the ledger changes. The ledger is append-only in normal use,
+ * but a failed write is rolled back, so a cache also checks the last row it saw is still the last row.
+ */
+interface LedgerIndex {
+  source: StockMovement[];
+  length: number;
+  last: StockMovement | undefined;
+  onHand: Map<string, number>;
+  lastCost: Map<string, Cents>;
+  sales: Map<string, { at: number; qty: number }[]>;
+  lastAt: Map<string, Map<MovementType, number>>;
+}
 
-function onHandIndex(): Map<string, number> {
+let ledgerCache: LedgerIndex | null = null;
+
+function ledger(): LedgerIndex {
   const { movements } = inventoryTables();
-  if (onHandCache && onHandCache.source === movements && onHandCache.length === movements.length) return onHandCache.byKey;
-  const byKey = new Map<string, number>();
+  const last = movements[movements.length - 1];
+  if (ledgerCache && ledgerCache.source === movements && ledgerCache.length === movements.length && ledgerCache.last === last) return ledgerCache;
+  const onHandMap = new Map<string, number>();
+  const lastCost = new Map<string, Cents>();
+  const sales = new Map<string, { at: number; qty: number }[]>();
+  const lastAt = new Map<string, Map<MovementType, number>>();
   for (const m of movements) {
     const k = `${m.productVariantId}|${m.stockLocationId}`;
-    byKey.set(k, Math.round(((byKey.get(k) ?? 0) + m.qtyDelta) * 10_000) / 10_000);
+    onHandMap.set(k, Math.round(((onHandMap.get(k) ?? 0) + m.qtyDelta) * 10_000) / 10_000);
+    lastCost.set(m.productVariantId, m.unitCostCents);
+    if (m.movementType === 'sale') {
+      const list = sales.get(m.productVariantId) ?? [];
+      list.push({ at: m.occurredAt, qty: -m.qtyDelta });
+      sales.set(m.productVariantId, list);
+    }
+    const byType = lastAt.get(m.productVariantId) ?? new Map<MovementType, number>();
+    byType.set(m.movementType, Math.max(byType.get(m.movementType) ?? 0, m.occurredAt));
+    lastAt.set(m.productVariantId, byType);
   }
-  onHandCache = { source: movements, length: movements.length, byKey };
-  return byKey;
+  ledgerCache = { source: movements, length: movements.length, last, onHand: onHandMap, lastCost, sales, lastAt };
+  return ledgerCache;
+}
+
+function onHandIndex(): Map<string, number> {
+  return ledger().onHand;
 }
 
 /**
@@ -54,12 +87,7 @@ export function locations() {
 
 /** Moving average cost as of the latest movement, which stores the cost at the time it happened. */
 export function averageCost(variantId: string): Cents {
-  const { movements } = inventoryTables();
-  for (let i = movements.length - 1; i >= 0; i -= 1) {
-    const m = movements[i]!;
-    if (m.productVariantId === variantId) return m.unitCostCents;
-  }
-  return ZERO;
+  return ledger().lastCost.get(variantId) ?? ZERO;
 }
 
 export function valueAtCost(variantId: string, qty: number): Cents {
@@ -89,20 +117,19 @@ export function movements(filter: MovementFilter = {}): StockMovement[] {
 export function velocityPerDay(variantId: string, days = 28, now = Date.now()): number {
   const from = now - days * 86_400_000;
   let sold = 0;
-  for (const m of inventoryTables().movements) {
-    if (m.occurredAt < from || m.productVariantId !== variantId || m.movementType !== 'sale') continue;
-    sold -= m.qtyDelta;
-  }
+  for (const sale of ledger().sales.get(variantId) ?? []) if (sale.at >= from && sale.at <= now) sold += sale.qty;
   return sold / days;
 }
 
 export function lastMovementAt(variantId: string, types: MovementType[] = ['sale']): number | null {
-  const { movements: list } = inventoryTables();
-  for (let i = list.length - 1; i >= 0; i -= 1) {
-    const m = list[i]!;
-    if (m.productVariantId === variantId && types.includes(m.movementType)) return m.occurredAt;
+  const byType = ledger().lastAt.get(variantId);
+  if (!byType) return null;
+  let latest: number | null = null;
+  for (const type of types) {
+    const at = byType.get(type);
+    if (at !== undefined && (latest === null || at > latest)) latest = at;
   }
-  return null;
+  return latest;
 }
 
 /**
@@ -123,7 +150,7 @@ export function recordMovement(input: {
   unitCostCents?: Cents;
 }): StockMovement {
   const needsReason = input.type.startsWith('write_off') || input.type === 'count_adjustment' || input.type === 'comp' || input.type === 'staff_drink';
-  if (needsReason && !checkReason(input.reason ?? '').ok) throw new Error('Reason needs at least 10 characters. Say what happened, not just "mistake".');
+  if (needsReason && !checkReason(input.reason ?? '').ok) throw new DomainError('Reason needs at least 10 characters. Say what happened, not just "mistake".');
   const outlet = identity.outlet();
   const now = Date.now();
   const movement: StockMovement = {
@@ -207,7 +234,7 @@ export function placeHold(input: { variantId: string; reason: string; expectedBa
   identity.assertCan(actor.staffId, 'hold.set', 'putting items on hold');
   const stock = catalogue.stockVariantFor(input.variantId)?.stockVariantId ?? input.variantId;
   const existing = activeHolds().find((h) => h.productVariantId === stock);
-  if (existing) throw new Error(`${catalogue.productOfVariant(stock)?.name ?? 'This item'} is already on hold.`);
+  if (existing) throw new DomainError(`${catalogue.productOfVariant(stock)?.name ?? 'This item'} is already on hold.`);
   const hold: StockHold = {
     id: nextId(),
     outletId: identity.outlet().id,
@@ -240,8 +267,8 @@ export function placeHold(input: { variantId: string; reason: string; expectedBa
 export function releaseHold(input: { holdId: string; note: string; actor: Actor }): StockHold {
   identity.assertCan(input.actor.staffId, 'hold.set', 'taking items off hold');
   const hold = inventoryTables().holds.find((h) => h.id === input.holdId);
-  if (!hold) throw new Error('That hold no longer exists.');
-  if (hold.status !== 'active') throw new Error('That item is already off hold.');
+  if (!hold) throw new DomainError('That hold no longer exists.');
+  if (hold.status !== 'active') throw new DomainError('That item is already off hold.');
   const note = input.note.trim();
   hold.status = 'released';
   hold.releasedBy = input.actor.staffId;
@@ -264,54 +291,64 @@ export function releaseHold(input: { holdId: string; note: string; actor: Actor 
 
 /* ---------------------------------------------------------------- write-off */
 
-export type WriteOffCategory = 'write_off_breakage' | 'write_off_spillage' | 'write_off_expiry' | 'staff_drink' | 'comp';
+export const WRITE_OFF_CATEGORIES = ['write_off_breakage', 'write_off_spillage', 'write_off_expiry', 'staff_drink', 'comp'] as const;
+export type WriteOffCategory = (typeof WRITE_OFF_CATEGORIES)[number];
 
 export function writeOff(input: { variantId: string; locationId: string; qty: number; category: WriteOffCategory; reason: string; actor: Actor }) {
   const { reason, actor } = requireReasoned(input);
   identity.assertCan(actor.staffId, 'stock.writeoff', 'writing off stock');
-  if (!(input.qty > 0)) throw new Error('Write off at least one unit.');
+  if (!WRITE_OFF_CATEGORIES.includes(input.category)) throw new DomainError('Choose what kind of write-off this is.');
+  if (!locations().some((l) => l.id === input.locationId)) throw new DomainError('Choose where the stock was written off.');
+  if (!(input.qty > 0) || !Number.isFinite(input.qty)) throw new DomainError('Write off at least one unit.');
   const stock = catalogue.stockVariantFor(input.variantId);
-  if (!stock) throw new Error('This item does not hold stock.');
+  if (!stock) throw new DomainError('This item does not hold stock.');
   const qty = input.qty;
   const available = onHand(stock.stockVariantId, input.locationId);
   const name = catalogue.variantById(stock.stockVariantId)?.name ?? 'this item';
   if (available - qty < -1e-9) {
-    throw new Error(`This would take ${name} below zero. Post a delivery first, or record a count adjustment with a reason.`);
+    throw new DomainError(`This would take ${name} below zero. Post a delivery first, or record a count adjustment with a reason.`);
   }
   const outlet = identity.outlet();
   const now = Date.now();
-  const movement: StockMovement = {
-    id: nextId(),
-    outletId: outlet.id,
-    businessDate: businessDate(now, outlet.timezone, outlet.businessDayCutover),
-    productVariantId: stock.stockVariantId,
-    stockLocationId: input.locationId,
-    stockBatchId: null,
-    qtyDelta: -qty,
-    volumeDeltaMl: null,
-    unitCostCents: averageCost(stock.stockVariantId),
-    movementType: input.category,
-    sourceType: 'write_off',
-    sourceId: null,
-    reason,
-    occurredAt: now,
-    createdBy: actor.staffId,
-    deviceId: null,
-  };
-  inventoryTables().movements.push(movement);
+  const cost = averageCost(stock.stockVariantId);
+  const written: StockMovement[] = [];
+  // An expiry write-off takes the lot closest to its date, like every other draw.
+  for (const { batchId, qty: part } of depleteBatches(stock.stockVariantId, qty)) {
+    if (part <= 0) continue;
+    const movement: StockMovement = {
+      id: nextId(),
+      outletId: outlet.id,
+      businessDate: businessDate(now, outlet.timezone, outlet.businessDayCutover),
+      productVariantId: stock.stockVariantId,
+      stockLocationId: input.locationId,
+      stockBatchId: batchId,
+      qtyDelta: -part,
+      volumeDeltaMl: null,
+      unitCostCents: cost,
+      movementType: input.category,
+      sourceType: 'write_off',
+      sourceId: null,
+      reason,
+      occurredAt: now,
+      createdBy: actor.staffId,
+      deviceId: null,
+    };
+    inventoryTables().movements.push(movement);
+    written.push(movement);
+  }
   bumpAvailabilityVersion();
   audit.record({
     outletId: outlet.id,
     actorStaffId: actor.staffId,
     action: 'stock.written_off',
     entityType: 'stock_movement',
-    entityId: movement.id,
+    entityId: written[0]!.id,
     before: { onHand: available },
-    after: { onHand: available - qty },
+    after: { onHand: available - qty, category: input.category },
     reason,
     severity: 'notable',
   });
-  return movement;
+  return written[0]!;
 }
 
 /* ------------------------------------------------------------------ counts */
@@ -357,7 +394,7 @@ function toleranceFor(variantId: string): number {
  */
 export function countLines(countId: string): CountLinesView {
   const c = count(countId);
-  if (!c) throw new Error('That count no longer exists.');
+  if (!c) throw new DomainError('That count no longer exists.');
   const lines = inventoryTables().countLines.filter((l) => l.stockCountId === countId);
   if (c.status === 'open' || c.status === 'counting') {
     return {
@@ -388,8 +425,15 @@ export function countLines(countId: string): CountLinesView {
   };
 }
 
+export const COUNT_KINDS = ['full', 'cycle', 'spot'] as const satisfies readonly CountKind[];
+
 export function openCount(input: { locationId: string; kind: CountKind; categoryIds: string[]; notes: string | null; actor: Actor }): StockCount {
   identity.assertCan(input.actor.staffId, 'stock.count.commit', 'running stock counts');
+  if (!locations().some((l) => l.id === input.locationId && l.status === 'active')) throw new DomainError('Choose where the count happens.');
+  if (!COUNT_KINDS.includes(input.kind)) throw new DomainError('Choose a full, cycle or spot count.');
+  for (const id of input.categoryIds) if (!catalogue.categories().some((c) => c.id === id)) throw new DomainError('One of the categories is not in the catalogue.');
+  const running = counts().find((c) => c.stockLocationId === input.locationId && (c.status === 'counting' || c.status === 'review'));
+  if (running) throw new DomainError('A count is already running at this location. Finish or cancel it first.');
   const outlet = identity.outlet();
   const now = Date.now();
   const stockCount: StockCount = {
@@ -431,30 +475,33 @@ export function openCount(input: { locationId: string; kind: CountKind; category
 }
 
 export function recordCounted(input: { countLineId: string; countedQty: number | null; actor: Actor }) {
+  identity.assertCan(input.actor.staffId, 'stock.count.commit', 'counting stock');
   const line = inventoryTables().countLines.find((l) => l.id === input.countLineId);
-  if (!line) throw new Error('That count line no longer exists.');
+  if (!line) throw new DomainError('That count line no longer exists.');
   const c = count(line.stockCountId);
-  if (c?.status !== 'counting') throw new Error('This count is not accepting figures.');
-  if (input.countedQty !== null && (!Number.isFinite(input.countedQty) || input.countedQty < 0)) throw new Error('Counts are zero or more.');
+  if (c?.status !== 'counting') throw new DomainError('This count is not accepting figures.');
+  if (input.countedQty !== null && (!Number.isFinite(input.countedQty) || input.countedQty < 0 || input.countedQty > 1_000_000)) throw new DomainError('Counts are zero or more.');
   line.countedQty = input.countedQty;
   line.countedBy = input.countedQty === null ? null : input.actor.staffId;
   line.countedAt = input.countedQty === null ? null : Date.now();
 }
 
 export function submitForReview(input: { countId: string; actor: Actor }) {
+  identity.assertCan(input.actor.staffId, 'stock.count.commit', 'sending counts to review');
   const c = count(input.countId);
-  if (!c) throw new Error('That count no longer exists.');
-  if (c.status !== 'counting') throw new Error('Only a count in progress can go to review.');
+  if (!c) throw new DomainError('That count no longer exists.');
+  if (c.status !== 'counting') throw new DomainError('Only a count in progress can go to review.');
   const missing = inventoryTables().countLines.filter((l) => l.stockCountId === c.id && l.countedQty === null).length;
-  if (missing > 0) throw new Error(`${missing} ${missing === 1 ? 'line has' : 'lines have'} no figure yet. Count them, or enter zero.`);
+  if (missing > 0) throw new DomainError(`${missing} ${missing === 1 ? 'line has' : 'lines have'} no figure yet. Count them, or enter zero.`);
   c.status = 'review';
 }
 
 export function returnLineToCounting(input: { countLineId: string; actor: Actor }) {
+  identity.assertCan(input.actor.staffId, 'stock.count.commit', 'sending lines back to counting');
   const line = inventoryTables().countLines.find((l) => l.id === input.countLineId);
   const c = line ? count(line.stockCountId) : null;
-  if (!line || !c) throw new Error('That count line no longer exists.');
-  if (c.status !== 'review') throw new Error('Only a count in review can send a line back.');
+  if (!line || !c) throw new DomainError('That count line no longer exists.');
+  if (c.status !== 'review') throw new DomainError('Only a count in review can send a line back.');
   line.countedQty = null;
   line.countedBy = null;
   line.countedAt = null;
@@ -469,17 +516,17 @@ export function commitCount(input: { countId: string; reasons: Record<string, st
   const { reason, actor } = requireReasoned(input);
   identity.assertCan(actor.staffId, 'stock.count.commit', 'committing counts');
   const c = count(input.countId);
-  if (!c) throw new Error('That count no longer exists.');
-  if (c.status !== 'review') throw new Error('Only a count in review can be committed.');
+  if (!c) throw new DomainError('That count no longer exists.');
+  if (c.status !== 'review') throw new DomainError('Only a count in review can be committed.');
   const view = countLines(c.id);
-  if (view.stage !== 'review') throw new Error('Only a count in review can be committed.');
+  if (view.stage !== 'review') throw new DomainError('Only a count in review can be committed.');
 
   for (const line of view.lines) {
     if (!line.outsideTolerance) continue;
     const given = input.reasons[line.id] ?? line.reason ?? '';
     if (!checkReason(given).ok) {
       const name = catalogue.variantById(line.productVariantId)?.name ?? 'A line';
-      throw new Error(`${name} is outside tolerance. Write what you think happened before committing.`);
+      throw new DomainError(`${name} is outside tolerance. Write what you think happened before committing.`);
     }
   }
 
@@ -494,24 +541,30 @@ export function commitCount(input: { countId: string; reasons: Record<string, st
     stored.varianceCents = line.varianceCents;
     stored.reason = lineReason;
     total = add(total, line.varianceCents ?? ZERO);
-    inventoryTables().movements.push({
-      id: nextId(),
-      outletId: outlet.id,
-      businessDate: c.businessDate,
-      productVariantId: line.productVariantId,
-      stockLocationId: c.stockLocationId,
-      stockBatchId: null,
-      qtyDelta: line.varianceQty,
-      volumeDeltaMl: null,
-      unitCostCents: averageCost(line.productVariantId),
-      movementType: 'count_adjustment',
-      sourceType: 'stock_count',
-      sourceId: c.id,
-      reason: lineReason,
-      occurredAt: now,
-      createdBy: actor.staffId,
-      deviceId: null,
-    });
+    const cost = averageCost(line.productVariantId);
+    // A shortfall draws down the lots like any other loss; a surplus is unbatched stock found.
+    const parts = line.varianceQty < 0 ? depleteBatches(line.productVariantId, -line.varianceQty).map((d) => ({ batchId: d.batchId, qty: -d.qty })) : [{ batchId: null, qty: line.varianceQty }];
+    for (const part of parts) {
+      if (part.qty === 0) continue;
+      inventoryTables().movements.push({
+        id: nextId(),
+        outletId: outlet.id,
+        businessDate: c.businessDate,
+        productVariantId: line.productVariantId,
+        stockLocationId: c.stockLocationId,
+        stockBatchId: part.batchId,
+        qtyDelta: part.qty,
+        volumeDeltaMl: null,
+        unitCostCents: cost,
+        movementType: 'count_adjustment',
+        sourceType: 'stock_count',
+        sourceId: c.id,
+        reason: lineReason,
+        occurredAt: now,
+        createdBy: actor.staffId,
+        deviceId: null,
+      });
+    }
   }
   c.status = 'committed';
   c.committedBy = actor.staffId;
@@ -534,9 +587,10 @@ export function commitCount(input: { countId: string; reasons: Record<string, st
 
 export function cancelCount(input: { countId: string; reason: string; actor: Actor }) {
   const { reason, actor } = requireReasoned(input);
+  identity.assertCan(actor.staffId, 'stock.count.commit', 'cancelling counts');
   const c = count(input.countId);
-  if (!c) throw new Error('That count no longer exists.');
-  if (c.status === 'committed' || c.status === 'cancelled') throw new Error('A committed count is locked permanently.');
+  if (!c) throw new DomainError('That count no longer exists.');
+  if (c.status === 'committed' || c.status === 'cancelled') throw new DomainError('A committed count is locked permanently.');
   c.status = 'cancelled';
   audit.record({
     outletId: c.outletId,
@@ -624,9 +678,15 @@ function saleLocation(variantId: string, amount: number, prefer: SaleInput['pref
   return (all.find((l) => l.isDefaultSale) ?? all.find((l) => l.kind === 'service') ?? all[0]!).id;
 }
 
-function depleteBatches(variantId: string, locationId: string, amount: number): { batchId: string | null; qty: number }[] {
-  const batches = inventoryTables().stockBatches
-    .filter((b) => b.productVariantId === variantId && b.stockLocationId === locationId && b.remainingQty > 0)
+/**
+ * Batches are lots: what arrived on one delivery, at one cost, with one expiry. They are tracked for
+ * the outlet as a whole, because stock moves from the store to the bar shelf without a transfer
+ * record, so a sale at the bar draws down the lot that arrived in the store. Draws go first expiry
+ * first, then oldest first; anything beyond the lots on record is unbatched.
+ */
+function depleteBatches(variantId: string, amount: number): { batchId: string | null; qty: number }[] {
+  const lots = inventoryTables()
+    .stockBatches.filter((b) => b.productVariantId === variantId && b.remainingQty > 0)
     .sort((a, b) => {
       if (a.expiryDate && b.expiryDate) return a.expiryDate - b.expiryDate;
       if (a.expiryDate) return -1;
@@ -636,20 +696,32 @@ function depleteBatches(variantId: string, locationId: string, amount: number): 
 
   let remaining = amount;
   const deductions: { batchId: string | null; qty: number }[] = [];
-
-  for (const batch of batches) {
+  for (const lot of lots) {
     if (remaining <= 0) break;
-    const take = Math.min(batch.remainingQty, remaining);
-    batch.remainingQty = Math.round((batch.remainingQty - take) * 10_000) / 10_000;
+    const take = Math.min(lot.remainingQty, remaining);
+    lot.remainingQty = Math.round((lot.remainingQty - take) * 10_000) / 10_000;
     remaining = Math.round((remaining - take) * 10_000) / 10_000;
-    deductions.push({ batchId: batch.id, qty: take });
+    deductions.push({ batchId: lot.id, qty: take });
   }
-
-  if (remaining > 0) {
-    deductions.push({ batchId: null, qty: remaining });
-  }
-
+  if (remaining > 0) deductions.push({ batchId: null, qty: remaining });
   return deductions;
+}
+
+/** Put units back on the lot they came from, never above what the lot started with. */
+function restoreBatch(batchId: string | null, qty: number) {
+  if (!batchId || qty <= 0) return;
+  const lot = inventoryTables().stockBatches.find((b) => b.id === batchId);
+  if (!lot) return;
+  lot.remainingQty = Math.min(lot.initialQty, Math.round((lot.remainingQty + qty) * 10_000) / 10_000);
+}
+
+/** Take units off one lot, for a delivery that is reversed. Returns what was actually taken. */
+export function drawFromBatch(batchId: string, qty: number): number {
+  const lot = inventoryTables().stockBatches.find((b) => b.id === batchId);
+  if (!lot || qty <= 0) return 0;
+  const take = Math.min(lot.remainingQty, qty);
+  lot.remainingQty = Math.round((lot.remainingQty - take) * 10_000) / 10_000;
+  return take;
 }
 
 /** Write the sale movements for a fired line or a quick sale item. The ledger is the only stock write. */
@@ -657,7 +729,7 @@ export function recordSale(input: SaleInput) {
   for (const [variantId, amount] of depletionFor(input)) {
     if (amount === 0) continue;
     const locationId = saleLocation(variantId, amount, input.preferLocationKind);
-    const deductions = depleteBatches(variantId, locationId, amount);
+    const deductions = depleteBatches(variantId, amount);
     for (const { batchId, qty } of deductions) {
       if (qty <= 0) continue;
       recordMovement({
@@ -675,15 +747,19 @@ export function recordSale(input: SaleInput) {
   }
 }
 
-/** A voided line gives its stock back, to the location each sale movement took it from. */
+/** A voided line gives its stock back, to the location and the lot each sale movement took it from. */
 export function reverseSale(input: { lineId: string; actor: Actor }) {
-  const sales = inventoryTables().movements.filter((m) => m.sourceId === input.lineId && m.movementType === 'sale');
-  const reversed = new Set(inventoryTables().movements.filter((m) => m.sourceId === input.lineId && m.movementType === 'sale_reversal').map((m) => `${m.productVariantId}|${m.stockLocationId}`));
+  const all = inventoryTables().movements;
+  const key = (m: StockMovement) => `${m.productVariantId}|${m.stockLocationId}|${m.stockBatchId ?? ''}`;
+  const reversed = new Set(all.filter((m) => m.sourceId === input.lineId && m.movementType === 'sale_reversal').map(key));
+  const sales = all.filter((m) => m.sourceId === input.lineId && m.movementType === 'sale');
   for (const m of sales) {
-    if (reversed.has(`${m.productVariantId}|${m.stockLocationId}`)) continue;
+    if (reversed.has(key(m))) continue;
+    restoreBatch(m.stockBatchId, -m.qtyDelta);
     recordMovement({
       variantId: m.productVariantId,
       locationId: m.stockLocationId,
+      stockBatchId: m.stockBatchId,
       qtyDelta: -m.qtyDelta,
       type: 'sale_reversal',
       sourceType: 'order_line',

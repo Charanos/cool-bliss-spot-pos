@@ -234,7 +234,7 @@ async function drawerCall<T>(body: Record<string, unknown>): Promise<T> {
   // The drawer close refuses to run on stale data: everything waiting in the outbox goes first.
   const pending = await posDb().outbox.where('status').anyOf('pending', 'inflight').count();
   if (pending > 0 && body.action !== 'preflight') throw new Error('This counter still has changes to send. Wait for Synced, then count the drawer.');
-  const { body: result } = await api.post<DrawerResponse<T>>('/api/dev/counter/drawer', { ...body, deviceId: ctx.device.id, staffId: ctx.session.staffId });
+  const { body: result } = await api.post<DrawerResponse<T>>('/api/station/counter/drawer', { ...body, deviceId: ctx.device.id, staffId: ctx.session.staffId });
   if (!result.ok) throw new Error(result.message);
   return result;
 }

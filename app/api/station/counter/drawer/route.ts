@@ -1,8 +1,9 @@
 import { cents } from '@bliss/shared/money';
 import { z } from 'zod';
-import { devDataEnabled, notFound } from '@/lib/dev';
+import { refused, stationAuth } from '@/lib/station';
 import { wireResponse } from '@/lib/wire';
 import { CommandRejected } from '@/modules/_data/changes';
+import { isUserFacing } from '@/modules/_data/errors';
 import { fresh, withWrite } from '@/modules/_data/store';
 import * as identity from '@/modules/identity/service';
 import * as settlementCommands from '@/modules/settlement/commands';
@@ -22,8 +23,13 @@ const body = z.discriminatedUnion('action', [
  * step needs the connection, and the Counter says so.
  */
 export async function POST(request: Request) {
-  if (!devDataEnabled()) return notFound();
-  const parsed = body.safeParse(JSON.parse(await request.text()));
+  let raw: unknown;
+  try {
+    raw = JSON.parse(await request.text());
+  } catch {
+    return wireResponse({ ok: false, message: 'This request was not in a shape the server accepts.' }, { status: 400 });
+  }
+  const parsed = body.safeParse(raw);
   if (!parsed.success) return wireResponse({ ok: false, message: 'This request was not in a shape the server accepts.' }, { status: 400 });
   const input = parsed.data;
   await fresh();
@@ -32,8 +38,11 @@ export async function POST(request: Request) {
   if (!device || device.status !== 'active' || device.kind !== 'counter') {
     return wireResponse({ ok: false, message: 'The drawer is closed at a registered counter device.' }, { status: 403 });
   }
-  if (!identity.staffById(input.staffId)) return wireResponse({ ok: false, message: 'Sign in again to close the drawer.' }, { status: 401 });
-  const actor = { staffId: input.staffId, deviceId: device.id };
+  // The drawer is counted and closed live, by the person signed in on this counter: the token says who.
+  const auth = stationAuth(request, device.id);
+  if (!auth.ok) return refused(auth);
+  if (auth.staff.id !== input.staffId) return wireResponse({ ok: false, message: 'Sign in again to close the drawer.' }, { status: 401 });
+  const actor = { staffId: auth.staff.id, deviceId: device.id };
 
   try {
     if (input.action === 'preflight') return wireResponse({ ok: true, openTabs: settlementCommands.closePreflight() });
@@ -44,7 +53,7 @@ export async function POST(request: Request) {
     return wireResponse({ ok: true, view: await withWrite(() => settlementCommands.closeDrawer({ sessionId: input.sessionId, reason: input.reason, actor })) });
   } catch (error) {
     if (error instanceof CommandRejected) return wireResponse({ ok: false, code: error.code, message: error.message }, { status: 409 });
-    if (error instanceof Error) return wireResponse({ ok: false, message: error.message }, { status: 403 });
+    if (isUserFacing(error)) return wireResponse({ ok: false, message: error.message }, { status: 403 });
     throw error;
   }
 }

@@ -1,5 +1,6 @@
 import { formatDateTime, formatQty } from '@bliss/shared/format';
 import { notFound } from 'next/navigation';
+import { assertPrintAccess } from '@/lib/print-access';
 import * as identity from '@/modules/identity/service';
 import * as trade from '@/modules/trade/service';
 import * as catalogue from '@/modules/catalogue/service';
@@ -18,7 +19,8 @@ import {
  * Cannot print a KOT without a verified logged-in server and an active table/tab ID.
  * Design rule: No ticket, no pour.
  */
-export default async function PrintKotPage({ params }: { params: Promise<{ tabId: string }> }) {
+export default async function PrintKotPage({ params, searchParams }: { params: Promise<{ tabId: string }>; searchParams: Promise<{ t?: string }> }) {
+  await assertPrintAccess(searchParams);
   const { tabId } = await params;
   const tab = trade.tabById(tabId);
   if (!tab) notFound();

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
-import { openCount } from '../../../_actions';
+import { openCount } from '../../../_actions/inventory';
 
 export const metadata: Metadata = { title: 'Start a blind count' };
 

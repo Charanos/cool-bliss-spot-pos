@@ -7,7 +7,9 @@ import { SelectField, TextField } from '@bliss/ui/components/fields';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { type ActionResult, placeHold, releaseHold, resolveDeadLetter, withdrawDevice, writeOff } from '../_actions';
+import { placeHold, releaseHold, writeOff } from '../_actions/inventory';
+import { resolveDeadLetter, withdrawDevice } from '../_actions/settings';
+import type { ActionResult } from '../_lib/action-result';
 
 async function settle(result: Promise<ActionResult>, after: () => void) {
   const r = await result;

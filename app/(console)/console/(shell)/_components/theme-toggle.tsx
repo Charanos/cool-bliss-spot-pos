@@ -3,7 +3,7 @@
 import { cx } from '@bliss/ui/lib/cx';
 import { IconMoon, IconSun } from '@tabler/icons-react';
 import { useTransition } from 'react';
-import { setTheme } from '../_actions';
+import { setTheme } from '../_actions/settings';
 
 /** Light by default, dark available. Both themes are first class, not a filter over each other. */
 export function ThemeToggle({ theme }: { theme: 'light' | 'dark' }) {

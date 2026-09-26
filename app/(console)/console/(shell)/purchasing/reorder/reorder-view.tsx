@@ -11,7 +11,7 @@ import { StatusChip } from '@bliss/ui/components/status';
 import { IconAlertTriangle, IconCash, IconPackages, IconTruckDelivery } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { raisePurchaseOrder } from '../../_actions';
+import { raisePurchaseOrder } from '../../_actions/purchasing';
 
 export interface ReorderLine {
   variantId: string;

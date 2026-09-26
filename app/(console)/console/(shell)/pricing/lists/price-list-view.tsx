@@ -11,7 +11,7 @@ import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { IconHistory, IconLock, IconPencil, IconPercentage, IconReceipt, IconTag, IconTagOff } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { setPrice } from '../../_actions';
+import { setPrice } from '../../_actions/catalogue';
 import { UrlSelect } from '../../_components/url-select';
 
 export interface PriceRow {

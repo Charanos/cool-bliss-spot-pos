@@ -3,7 +3,7 @@
 import { NoticeViewport } from '@bliss/ui/components/notices';
 import { initMotion } from '@bliss/ui/motion';
 import { type ReactNode, useEffect } from 'react';
-import { setForcedOffline } from '@/lib/pos/api';
+import { primeStationToken, setForcedOffline } from '@/lib/pos/api';
 import { META, getMeta } from '@/lib/pos/db';
 import { ensureDevice } from '@/lib/pos/session';
 import { pruneAcked, startSync, useSync } from '@/lib/pos/sync';
@@ -25,6 +25,7 @@ export function PosRoot({ children }: { children: ReactNode }) {
     void (async () => {
       setForcedOffline(Boolean(await getMeta<boolean>(META.forceOffline)));
       await refreshHaptics();
+      await primeStationToken();
       stop = startSync();
       await pruneAcked();
     })();

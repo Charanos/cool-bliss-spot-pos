@@ -1,5 +1,5 @@
 import { businessDate } from '@bliss/shared/time';
-import { devDataEnabled, notFound } from '@/lib/dev';
+import { stationAuth } from '@/lib/station';
 import { wireResponse } from '@/lib/wire';
 import { dataset } from '@/modules/_data/source';
 import { fresh } from '@/modules/_data/store';
@@ -13,15 +13,19 @@ import * as trade from '@/modules/trade/service';
 
 export const dynamic = 'force-dynamic';
 
+/** A station token older than this is renewed on the next pull, so a tablet in daily use never lapses. */
+const RENEW_AFTER_MS = 24 * 60 * 60_000;
+
 /**
- * Development pull, docs/14 section 4. Pull before push, always.
+ * Station pull, docs/14 section 4. Pull before push, always.
  *
- *  - Catalogue and availability travel whole, only when the device is behind.
- *  - Trade rows travel as changes since the device's cursor.
+ *  - Catalogue and availability travel whole, only when the device is behind. They are what a
+ *    sign-in screen needs, so they travel without a station token; no PIN, hash or contact does.
+ *  - Trade rows travel as changes since the device's cursor, and only to a device that carries a
+ *    valid station token for itself. Without one the reply says so, and the device asks for a PIN.
  *  - A device on another epoch, or with no cursor, receives a bootstrap and is told to reset.
  */
 export async function GET(request: Request) {
-  if (!devDataEnabled()) return notFound();
   const url = new URL(request.url);
   const knownCatalogue = Number(url.searchParams.get('catalogue') ?? -1);
   const knownAvailability = Number(url.searchParams.get('availability') ?? -1);
@@ -62,6 +66,13 @@ export async function GET(request: Request) {
   }
 
   if (reset || knownAvailability !== map.version) body.availability = map.entries;
+
+  const auth = deviceId ? stationAuth(request, deviceId) : null;
+  if (!auth?.ok) {
+    body.authRequired = true;
+    return wireResponse(body);
+  }
+  if (Date.now() - auth.issuedAt > RENEW_AFTER_MS) body.stationToken = identity.issueStationToken(auth.staff.id, auth.device.id);
 
   const feed = reset || since < 0 ? bootstrap(deviceId) : changesSince(since, deviceId);
   body.cursor = feed.cursor;

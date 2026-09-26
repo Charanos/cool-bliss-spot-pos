@@ -68,13 +68,15 @@ export async function signIn(staffId: string, pin: string): Promise<SignInResult
       message?: string;
       staff?: { id: string; displayName: string; roleKey: StaffSession['roleKey']; permissions: StaffSession['permissions'] };
       signedInAt?: number;
-    }>('/api/dev/identity', {
+      token?: string;
+    }>('/api/station/identity', {
       action: 'sign-in',
       deviceId: device.id,
       staffId,
       pin,
     });
-    if (!body.ok || !body.staff) return { ok: false, message: body.message ?? 'That PIN was not recognised.' };
+    if (!body.ok || !body.staff || !body.token) return { ok: false, message: body.message ?? 'That PIN was not recognised.' };
+    await setMeta(META.stationToken, body.token);
     const session: StaffSession = {
       staffId: body.staff.id,
       displayName: body.staff.displayName,
@@ -83,6 +85,8 @@ export async function signIn(staffId: string, pin: string): Promise<SignInResult
       signedInAt: body.signedInAt ?? Date.now(),
     };
     await setMeta(META.session, session);
+    // The first pull after a sign-in carries this device's trade, which needs the token.
+    wakeSync();
     return { ok: true };
   } catch {
     return { ok: false, message: 'No connection. Signing in needs the network once; orders already on this tablet are safe.' };
@@ -99,7 +103,7 @@ export type ApprovalResult = { ok: true; token: string; approverName: string } |
 export async function requestApproval(pin: string, permission: 'void.approve' | 'discount.approve' | 'hold.set'): Promise<ApprovalResult> {
   const device = await ensureDevice();
   try {
-    const { body } = await api.post<{ ok: boolean; message?: string; token?: string; approverName?: string }>('/api/dev/identity', {
+    const { body } = await api.post<{ ok: boolean; message?: string; token?: string; approverName?: string }>('/api/station/identity', {
       action: 'approve',
       deviceId: device?.id,
       pin,

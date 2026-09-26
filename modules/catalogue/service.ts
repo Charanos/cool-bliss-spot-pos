@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { DomainError } from '../_data/errors';
+
 import type { Category, Product, ProductVariant } from '@bliss/shared/domain';
 import type { Actor } from '@bliss/shared/reason';
 import { bumpAvailabilityVersion, bumpCatalogueVersion } from '../_data/source';
@@ -129,12 +131,12 @@ export interface StockSettingsInput {
 export function updateStockSettings(input: StockSettingsInput): Product {
   identity.assertCan(input.actor.staffId, 'price.write', 'changing catalogue settings');
   const product = catalogueTables().products.find((p) => p.id === input.productId);
-  if (!product) throw new Error('That product is not in the catalogue.');
+  if (!product) throw new DomainError('That product is not in the catalogue.');
   const whole = (n: number | null) => n === null || (Number.isInteger(n) && n >= 0);
   if (!whole(input.lowStockThreshold) || !whole(input.reorderPoint) || !whole(input.reorderQty) || !whole(input.leadTimeDays)) {
-    throw new Error('Use whole numbers of zero or more.');
+    throw new DomainError('Use whole numbers of zero or more.');
   }
-  if (input.reorderQty === 0) throw new Error('Reorder quantity needs to be at least one.');
+  if (input.reorderQty === 0) throw new DomainError('Reorder quantity needs to be at least one.');
   const before = { lowStockThreshold: product.lowStockThreshold, reorderPoint: product.reorderPoint, reorderQty: product.reorderQty, leadTimeDays: product.leadTimeDays };
   const after = { lowStockThreshold: input.lowStockThreshold, reorderPoint: input.reorderPoint, reorderQty: input.reorderQty, leadTimeDays: input.leadTimeDays };
   if (JSON.stringify(before) === JSON.stringify(after)) return product;

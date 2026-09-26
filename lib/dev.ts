@@ -1,14 +1,14 @@
 import 'server-only';
 
 /**
- * The development data source and its /api/dev routes exist until Phases 1 to 4 replace them with
- * Neon, custom JWT auth and the sync endpoints. They are on in development, and in a production build
- * only when BLISS_DEV_DATA=1 is set deliberately for a review environment.
+ * The development-only routes (the stock simulator under /api/dev) are on in development, and in a
+ * production build only when BLISS_DEV_DATA=1 is set deliberately for a review environment. The
+ * station API the tablets trade through lives under /api/station and is authenticated instead.
  */
 export function devDataEnabled(): boolean {
-  // Enabled by default across all environments (including production previews, deployed PWA tablets,
-  // and review builds) unless explicitly disabled via BLISS_DEV_DATA=0.
-  return process.env.BLISS_DEV_DATA !== '0';
+  if (process.env.BLISS_DEV_DATA === '1') return true;
+  if (process.env.BLISS_DEV_DATA === '0') return false;
+  return process.env.NODE_ENV !== 'production';
 }
 
 export function notFound(): Response {

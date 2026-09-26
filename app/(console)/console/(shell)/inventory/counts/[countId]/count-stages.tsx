@@ -16,7 +16,7 @@ import { cx } from '@bliss/ui/lib/cx';
 import { IconArrowBackUp, IconArrowLeft } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
-import { commitCount, recordCounted, recountLine, submitForReview } from '../../../_actions';
+import { commitCount, recordCounted, recountLine, submitForReview } from '../../../_actions/inventory';
 
 interface BlindLine {
   id: string;

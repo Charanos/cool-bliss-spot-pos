@@ -5,7 +5,7 @@ import type { OutboxEntry } from '@bliss/shared/sync';
 import { useSyncExternalStore } from 'react';
 import { REJECTION_COPY, type RejectionCode } from '@bliss/shared/sync';
 import { notify } from '@bliss/ui/components/notices';
-import { NetworkUnavailable, api, isForcedOffline } from './api';
+import { NetworkUnavailable, SignInRequired, api, isForcedOffline } from './api';
 import { haptic } from './haptics';
 import { META, posDb, getMeta, setMeta } from './db';
 
@@ -100,6 +100,10 @@ interface PullBody {
   staff?: unknown[];
   devices?: unknown[];
   availability?: AvailabilityEntry[];
+  /** No valid station token came with the pull: no trade rows, and the device asks for a PIN. */
+  authRequired?: boolean;
+  /** A renewed station token, when the one sent is getting old. */
+  stationToken?: string;
   trade: TradeRows;
 }
 
@@ -221,8 +225,11 @@ async function applyPull(body: PullBody) {
       await db.availability.bulkPut(body.availability);
       await setMeta(META.availabilityVersion, body.availabilityVersion);
     }
-    await applyTrade(body.trade, body.full || reset);
-    await setMeta(META.tradeCursor, body.cursor);
+    if (body.stationToken) await setMeta(META.stationToken, body.stationToken);
+    if (!body.authRequired) {
+      await applyTrade(body.trade, body.full || reset);
+      await setMeta(META.tradeCursor, body.cursor);
+    }
     await setMeta(META.bootstrapped, true);
     await setMeta(META.lastPulledAt, Date.now());
   });
@@ -248,8 +255,14 @@ export async function pull(): Promise<void> {
     epoch: epoch ?? '',
     device: device?.id ?? '',
   });
-  const { body } = await api.get<PullBody>(`/api/dev/sync/pull?${query.toString()}`);
+  const { body } = await api.get<PullBody>(`/api/station/sync/pull?${query.toString()}`);
   await applyPull(body);
+  // A device still showing someone signed in, whose sign-in the server no longer accepts (from before
+  // station tokens, or withdrawn since), asks for the PIN again. Its outbox is kept and sends after.
+  if (body.authRequired && (await getMeta(META.session))) {
+    await setMeta(META.session, null);
+    await setMeta(META.stationToken, null);
+  }
   publish({ bootstrapped: true });
 }
 
@@ -265,6 +278,8 @@ let backoffUntil = 0;
 let failures = 0;
 
 export async function drain(): Promise<void> {
+  // Nothing is sent until someone has signed in on this device: the server needs the station token.
+  if (!(await getMeta<string>(META.stationToken))) return;
   const db = posDb();
   const pending = await db.outbox.where('status').anyOf('pending', 'inflight').sortBy('seq');
   if (pending.length === 0) return;
@@ -276,7 +291,7 @@ export async function drain(): Promise<void> {
   let results: PushResult[];
   const refused: PushResult[] = [];
   try {
-    const { body } = await api.post<{ results: PushResult[] }>('/api/dev/sync/push', { entries: batch });
+    const { body } = await api.post<{ results: PushResult[] }>('/api/station/sync/push', { entries: batch });
     results = body.results;
   } catch (error) {
     await db.outbox.bulkUpdate(batch.map((e) => ({ key: e.id, changes: { status: 'pending' as const } })));
@@ -353,6 +368,11 @@ export async function syncNow(): Promise<void> {
         notify({ tone: 'success', key: 'link', title: 'Back online', body: before > 0 ? `${before} held ${before === 1 ? 'change' : 'changes'} sent.` : 'Everything on this device is up to date.' });
       }
     } catch (error) {
+      if (error instanceof SignInRequired) {
+        // Not an outage: the PIN screen is already showing. Keep the outbox and wait for a sign-in.
+        await recount();
+        return;
+      }
       if (!(error instanceof NetworkUnavailable)) console.error('[sync]', error);
       failures += 1;
       backoffUntil = Date.now() + Math.min(30_000, 1000 * 2 ** Math.min(failures, 5));

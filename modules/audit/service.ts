@@ -36,8 +36,9 @@ export function record(input: RecordInput): AuditEvent {
     reason: input.reason,
     severity: input.severity,
   });
-  // Immutable append-only log: newest first, never edited, never removed.
-  auditTables().events.unshift(event);
+  // Append-only: never edited, never removed. Appending (not prepending) keeps every stored row where
+  // it is, so a write persists one new row instead of renumbering the whole log. Readers sort.
+  auditTables().events.push(event);
   return event;
 }
 
@@ -49,15 +50,22 @@ export interface AuditFilter {
   severity?: AuditSeverity | null;
 }
 
+/** Newest first. Ids are uuidv7, so they break ties between events in the same millisecond in order. */
+function newestFirst(a: AuditEvent, b: AuditEvent): number {
+  return b.occurredAt - a.occurredAt || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
+}
+
 export function list(filter: AuditFilter = {}): AuditEvent[] {
-  return auditTables().events.filter(
+  return auditTables()
+    .events.filter(
     (e) =>
       (filter.from === undefined || e.occurredAt >= filter.from) &&
       (filter.to === undefined || e.occurredAt < filter.to) &&
       (!filter.action || e.action.startsWith(filter.action)) &&
       (!filter.actorStaffId || e.actorStaffId === filter.actorStaffId) &&
       (!filter.severity || e.severity === filter.severity),
-  );
+    )
+    .sort(newestFirst);
 }
 
 export function actions(): string[] {

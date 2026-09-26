@@ -12,7 +12,7 @@ import { seatBgClass } from '@bliss/ui/lib/seat';
 import { IconDeviceTablet, IconDoorExit, IconLock, IconPlayerPause, IconPlayerPlay, IconUserCheck, IconUserCog, IconUsers, IconPlus } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { setEmploymentStatus, setStaffRole } from '../../_actions';
+import { setEmploymentStatus, setStaffRole } from '../../_actions/people';
 import { StaffDialog } from './staff-dialog';
 import { staffPhoto } from '@/lib/pos/staff-photos';
 
@@ -24,7 +24,7 @@ export interface StaffRow {
   roleId: string;
   role: string;
   status: EmploymentStatus;
-  pinHash: string | null;
+  pinState: 'set' | 'needs_reset' | 'development' | 'none';
   avatarUrl: string | null;
   contactNumber: string | null;
   pinLocked: boolean;

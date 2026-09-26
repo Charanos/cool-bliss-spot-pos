@@ -3,7 +3,7 @@ import 'server-only';
 import type { CashMovement } from '@bliss/db/seed/types';
 import type { Bill, BillScope, OrderLine, Tender } from '@bliss/shared/domain';
 import { type Cents, ZERO, abs, add, cents, compare, formatKes, isPositive, multiplyByQty, scale, subtract, sum } from '@bliss/shared/money';
-import { type Actor, checkReason, requireReasoned } from '@bliss/shared/reason';
+import { type Actor, checkReason } from '@bliss/shared/reason';
 import { amountDue, billableLines, checkTenders, evenShares, expectedCash, linesTotal } from '@bliss/shared/settlement';
 import type { OutboxPayload } from '@bliss/shared/sync';
 import { businessDate } from '@bliss/shared/time';
@@ -249,44 +249,6 @@ export function settleBill(p: OutboxPayload<'bill.settle'>, actor: Actor): void 
       severity: 'sensitive',
     });
   }
-}
-
-/** Refund a settled bill. Requires refund.approve permission and is audited as sensitive with who, when, why, approver. */
-export function refundBill(input: { billId: string; reason: string; actor: Actor }) {
-  const { reason, actor } = requireReasoned(input);
-  identity.assertCan(actor.staffId, 'refund.approve', 'approving refunds');
-  const t = settlementTables();
-  const bill = t.bills.find((b) => b.id === input.billId);
-  if (!bill) throw new CommandRejected('NOT_FOUND', 'That bill does not exist.');
-  if (bill.status === 'refunded') throw new CommandRejected('VALIDATION_FAILED', 'That bill was already refunded.');
-  if (bill.status !== 'settled') throw new CommandRejected('VALIDATION_FAILED', 'Only settled bills can be refunded.');
-
-  const before = bill.status;
-  bill.status = 'refunded';
-  touch('bills', bill.id);
-
-  // Return stock for the refunded bill lines
-  const lines = t.billLines.filter((l) => l.billId === bill.id);
-  for (const l of lines) {
-    if (l.orderLineId) {
-      inventory.reverseSale({ lineId: l.orderLineId, actor });
-    }
-  }
-
-  audit.record({
-    outletId: bill.outletId,
-    actorStaffId: actor.staffId,
-    actorDeviceId: actor.deviceId,
-    action: 'bill.refunded',
-    entityType: 'bill',
-    entityId: bill.id,
-    before: { status: before },
-    after: { status: 'refunded', approverId: actor.staffId, totalCents: bill.totalCents.toString() },
-    reason,
-    severity: 'sensitive',
-  });
-
-  return bill;
 }
 
 /* ------------------------------------------------------------------ drawer */

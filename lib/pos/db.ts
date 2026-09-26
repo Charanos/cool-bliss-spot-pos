@@ -166,6 +166,8 @@ export const META = {
   deviceId: 'device.id',
   deviceSeq: 'device.outboxSeq',
   session: 'session',
+  /** The signed station token from the last sign-in on this device. */
+  stationToken: 'station.token',
   catalogueVersion: 'cursor.catalogueVersion',
   availabilityVersion: 'cursor.availabilityVersion',
   lastPulledAt: 'cursor.lastPulledAt',

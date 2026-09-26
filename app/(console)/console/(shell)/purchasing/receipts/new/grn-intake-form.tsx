@@ -1,5 +1,7 @@
 'use client';
 
+import { cents, formatDecimal } from '@bliss/shared/money';
+
 import { useState, useTransition, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
@@ -20,7 +22,7 @@ import { Button } from '@bliss/ui/components/button';
 import { TextField, FieldFrame } from '@bliss/ui/components/fields';
 import { cx } from '@bliss/ui/lib/cx';
 import type { Cents } from '@bliss/shared/money';
-import { recordGoodsReceipt } from '../../../_actions';
+import { recordGoodsReceipt } from '../../../_actions/purchasing';
 
 const selectUnderline = "relative flex min-w-0 items-center gap-8 border-b border-ink-subtle/60 transition-[border-color] duration-[160ms] focus-within:border-accent after:pointer-events-none after:absolute after:inset-x-0 after:-bottom-px after:h-[2px] after:origin-left after:scale-x-0 after:bg-accent after:content-[''] after:transition-transform after:duration-[160ms] focus-within:after:scale-x-100";
 
@@ -181,13 +183,11 @@ export interface IntakeFormLine {
 }
 
 export function GrnIntakeForm({ 
-  actorId,
   stores,
   suppliers,
   variants,
   prefillOrder
 }: { 
-  actorId: string;
   stores: { id: string; name: string }[];
   suppliers: { id: string; name: string }[];
   variants: { id: string; name: string; supplierIds: string[]; unitCostCents: Cents | number }[];
@@ -213,7 +213,6 @@ export function GrnIntakeForm({
   const [supplierId, setSupplierId] = useState(prefillOrder?.supplierId || '');
   const [deliveryNoteRef, setDeliveryNoteRef] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [etimsInvoiceRef, setEtimsInvoiceRef] = useState('');
   const [varianceNote, setVarianceNote] = useState('');
 
   // Real Photo Uploads
@@ -385,7 +384,6 @@ export function GrnIntakeForm({
           supplierId,
           deliveryNoteRef: deliveryNoteRef.trim(),
           invoiceNumber: invoiceNumber.trim() || null,
-          etimsInvoiceRef: etimsInvoiceRef.trim() || null,
           varianceNote: varianceNote.trim() || null,
           mediaUrls,
           lines: lines.map((l) => ({
@@ -397,7 +395,8 @@ export function GrnIntakeForm({
             rejectionReason: l.rejectionReason.trim() || null,
             batchNumber: l.batchNumber.trim() || null,
             expiryDate: l.expiryDate || null,
-            unitCostCents: l.unitCostCents || undefined,
+            // Against an order the order's cost is the cost; a delivery with no order states its own.
+            unitCost: prefillOrder ? null : formatDecimal(cents(l.unitCostCents ?? 0)),
           })),
         });
 
@@ -457,7 +456,7 @@ export function GrnIntakeForm({
                 required
                 placeholder="e.g. DN-2026-1042"
               />
-              <div className="grid grid-cols-1 tablet:grid-cols-2 gap-24">
+              <div className="grid grid-cols-1 gap-24">
                 <TextField 
                   id="invoiceNumber"
                   label="Supplier Invoice Number (Optional)"
@@ -465,14 +464,6 @@ export function GrnIntakeForm({
                   value={invoiceNumber}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInvoiceNumber(e.target.value)}
                   placeholder="e.g. INV-0092"
-                />
-                <TextField 
-                  id="etimsInvoiceRef"
-                  label="eTIMS KRA Ref"
-                  size="md"
-                  value={etimsInvoiceRef}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEtimsInvoiceRef(e.target.value)}
-                  placeholder="e.g. KRA-2026-VAT-901"
                 />
               </div>
               <TextField 

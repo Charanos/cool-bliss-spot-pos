@@ -9,7 +9,7 @@ import * as catalogue from '@/modules/catalogue/service';
 import { GrnIntakeForm } from './grn-intake-form';
 
 export default async function NewGoodsReceivedNotePage(props: { searchParams: Promise<{ poId?: string }> }) {
-  const actor = identity.staffList()[0];
+  await identity.currentConsoleActor();
   const searchParams = await props.searchParams;
   
   const stores = inventory.locations().filter((l) => l.isDefaultReceipt || l.kind === 'store');
@@ -66,7 +66,6 @@ export default async function NewGoodsReceivedNotePage(props: { searchParams: Pr
       <div className="mx-auto max-w-[1000px] animate-in fade-in slide-in-from-bottom-4 duration-500">
         <Suspense fallback={<div className="animate-pulse h-96 bg-raised rounded-lg border border-hairline shadow-raised" />}>
           <GrnIntakeForm 
-            actorId={actor?.id ?? ''}
             stores={stores} 
             suppliers={suppliers}
             variants={variants}

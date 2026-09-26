@@ -1,6 +1,7 @@
 import { formatDateTime, formatQty } from '@bliss/shared/format';
 import { cents, formatDecimal } from '@bliss/shared/money';
 import { notFound } from 'next/navigation';
+import { assertPrintAccess } from '@/lib/print-access';
 import * as identity from '@/modules/identity/service';
 import * as trade from '@/modules/trade/service';
 import * as catalogue from '@/modules/catalogue/service';
@@ -20,7 +21,8 @@ import {
  * 1. Customer Copy (Proforma)
  * 2. Counter / Bar Copy
  */
-export default async function PrintTabPage({ params }: { params: Promise<{ tabId: string }> }) {
+export default async function PrintTabPage({ params, searchParams }: { params: Promise<{ tabId: string }>; searchParams: Promise<{ t?: string }> }) {
+  await assertPrintAccess(searchParams);
   const { tabId } = await params;
   const tab = trade.tabById(tabId);
   if (!tab) notFound();

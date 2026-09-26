@@ -5,7 +5,7 @@ import { InlineNotice } from '@bliss/ui/components/feedback';
 import { TextField } from '@bliss/ui/components/fields';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { updateStockSettings } from '../../../_actions';
+import { updateStockSettings } from '../../../_actions/catalogue';
 
 interface Settings {
   lowStockThreshold: number | null;

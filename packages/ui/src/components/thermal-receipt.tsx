@@ -184,39 +184,3 @@ export function ReceiptTenderRow({
     </div>
   );
 }
-
-export function ReceiptFiscalFooter({
-  kraPin,
-  cuNumber,
-  invoiceNumber,
-  controlCode,
-  notice = 'OFFICIAL KRA eTIMS FISCAL RECEIPT',
-}: {
-  kraPin: string;
-  cuNumber: string;
-  invoiceNumber: string;
-  controlCode: string;
-  notice?: string;
-}) {
-  return (
-    <div className="flex flex-col items-center text-center mt-4 w-full border-t border-dashed border-black pt-3 text-[11px]">
-      <div className="font-bold uppercase tracking-wider mb-2">{notice}</div>
-      <div className="flex justify-between w-full">
-        <span>KRA PIN:</span>
-        <span className="font-mono font-bold">{kraPin}</span>
-      </div>
-      <div className="flex justify-between w-full">
-        <span>CU SERIAL NO:</span>
-        <span className="font-mono">{cuNumber}</span>
-      </div>
-      <div className="flex justify-between w-full">
-        <span>CU INVOICE NO:</span>
-        <span className="font-mono font-bold">{invoiceNumber}</span>
-      </div>
-      <div className="flex justify-between w-full mt-1">
-        <span>CONTROL CODE:</span>
-        <span className="font-mono text-[10px] break-all">{controlCode}</span>
-      </div>
-    </div>
-  );
-}

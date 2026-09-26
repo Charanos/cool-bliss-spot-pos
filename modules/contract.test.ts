@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as availability from './availability/service';
 import * as catalogue from './catalogue/service';
-import * as identity from './identity/service';
+import { ownerActor } from '../test/actors';
 import * as inventory from './inventory/service';
 import * as settlement from './settlement/service';
 
@@ -29,9 +29,12 @@ describe('blind count', () => {
   });
 
   it('keeps expected hidden on a count opened now', async () => {
-    const actor = await identity.currentConsoleActor();
-    const bar = inventory.locations().find((l) => l.kind === 'service')!;
-    const opened = inventory.openCount({ locationId: bar.id, kind: 'spot', categoryIds: [], notes: null, actor });
+    const actor = ownerActor();
+    // One running count per location: two would each adjust from their own snapshot and double count.
+    const busy = new Set(inventory.counts().filter((c) => c.status === 'counting' || c.status === 'review').map((c) => c.stockLocationId));
+    const free = inventory.locations().find((l) => !busy.has(l.id))!;
+    expect(() => inventory.openCount({ locationId: [...busy][0]!, kind: 'spot', categoryIds: [], notes: null, actor })).toThrow(/already running/);
+    const opened = inventory.openCount({ locationId: free.id, kind: 'spot', categoryIds: [], notes: null, actor });
     const view = inventory.countLines(opened.id);
     expect(view.stage).toBe('blind');
     expect(JSON.stringify(view)).not.toMatch(/expectedQty/);
@@ -50,7 +53,7 @@ describe('drawer', () => {
 
 describe('availability', () => {
   it('lets a hold outrank a positive stock figure (R2)', async () => {
-    const actor = await identity.currentConsoleActor();
+    const actor = ownerActor();
     const tusker = catalogue.variants().find((v) => v.name === 'Tusker 500ml')!;
     expect(inventory.onHand(tusker.id)).toBeGreaterThan(0);
     const before = availability.evaluate(tusker.id);
@@ -67,7 +70,7 @@ describe('availability', () => {
   });
 
   it('refuses a hold without a ten character reason', async () => {
-    const actor = await identity.currentConsoleActor();
+    const actor = ownerActor();
     const coke = catalogue.variants().find((v) => v.name === 'Coke 300ml')!;
     expect(() => inventory.placeHold({ variantId: coke.id, reason: 'broke', expectedBack: null, actor })).toThrow(/10 characters/);
   });

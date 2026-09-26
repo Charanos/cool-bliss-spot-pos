@@ -277,14 +277,17 @@ export interface GoodsReceivedNote {
   outletId: Id;
   purchaseOrderId: Id | null;
   supplierId: Id;
+  /** The receipt this note documents. Absent on notes written before the link existed. */
+  goodsReceiptId?: Id | null;
   invoiceNumber: string | null;
-  etimsInvoiceRef: string | null;
+  /** Photos and scans of the delivery note and invoice, as Console upload paths. */
   mediaUrls: string[];
   status: GrnStatus;
   receivedBy: Id;
   receivedAt: EpochMs;
   deviceTime: EpochMs;
-  gpsLocation: string | null;
+  varianceApprovedBy?: Id | null;
+  varianceApprovedAt?: EpochMs | null;
 }
 
 export interface StockMovement {

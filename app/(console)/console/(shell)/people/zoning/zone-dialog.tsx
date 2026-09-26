@@ -6,7 +6,7 @@ import { TextField, SelectField } from '@bliss/ui/components/fields';
 import { useRouter } from 'next/navigation';
 import React, { useState, useTransition } from 'react';
 import type { Zone } from '@bliss/shared/domain';
-import { createZone, updateZone } from '../../_actions';
+import { createZone, updateZone } from '../../_actions/people';
 
 export function ZoneDialog({ target, open, onClose }: { target?: Zone | null; open: boolean; onClose: () => void }) {
   const router = useRouter();
