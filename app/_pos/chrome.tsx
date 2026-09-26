@@ -94,10 +94,10 @@ export interface DockItem {
 }
 
 const ITEM =
-  'relative flex h-dock-item min-w-dock-item flex-1 flex-col items-center justify-center gap-2 rounded-[18px] press-feedback transition-colors duration-[160ms] pad:h-dock-item-lg pad:min-w-dock-item-lg pad:flex-none pad:px-16 short:h-control-md short:flex-row short:gap-6 short:px-12';
+  'relative flex h-dock-item min-w-dock-item flex-1 flex-col items-center justify-center gap-2 rounded-sheet press-feedback transition-hover pad:h-dock-item-lg pad:min-w-dock-item-lg pad:flex-none pad:px-16 short:h-control-md short:flex-row short:gap-6 short:px-12';
 
 const IDLE = 'text-ink-muted hover:bg-control/60 hover:text-ink';
-const ON = 'bg-accent/[0.18] text-accent shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--color-accent)_30%,transparent)]';
+const ON = 'bg-accent/[0.18] text-accent ring-1 ring-inset ring-accent/30';
 
 /**
  * A dock item. The whole box is the target: 52px on a phone, 56 from a tablet up, which clears the
@@ -157,7 +157,7 @@ export function DockButton({ label, icon: Glyph, onClick, shortcut }: { label: s
  * primary action reads as part of the rack instead of a slab laid on top of it.
  */
 const DOCK_ACTION =
-  'flex items-center gap-6 empty:hidden [&>*]:flex-1 [&_button]:h-control-lg [&_button]:rounded-[18px] [&_button]:px-20 [&_button]:text-body short:[&_button]:h-control-md';
+  'flex items-center gap-6 empty:hidden [&>*]:flex-1 [&_button]:h-control-lg [&_button]:rounded-sheet [&_button]:px-20 [&_button]:text-body short:[&_button]:h-control-md';
 
 export function Dock({ nav, actionRef, inlineFrom = 'pad', label }: { nav: ReactNode; actionRef: Ref<HTMLDivElement>; inlineFrom?: 'pad' | 'tablet'; label: string }) {
   const pad = inlineFrom === 'pad';
@@ -165,7 +165,7 @@ export function Dock({ nav, actionRef, inlineFrom = 'pad', label }: { nav: React
     <footer className="safe-b safe-x shrink-0 [--bliss-gutter-b:8px] [--bliss-gutter-x:8px] pad:[--bliss-gutter-b:12px] pad:[--bliss-gutter-x:16px] short:[--bliss-gutter-b:6px]">
       <div
         className={cx(
-          'dock-surface mx-auto flex w-full max-w-[560px] flex-col gap-6 rounded-[24px] p-6',
+          'dock-surface mx-auto flex w-full max-w-[560px] flex-col gap-6 rounded-sheet p-6',
           pad ? 'pad:w-fit pad:max-w-none pad:flex-row pad:items-center pad:gap-12' : 'pad:max-w-[640px] tablet:w-fit tablet:max-w-none tablet:flex-row tablet:items-center tablet:gap-12',
         )}
       >

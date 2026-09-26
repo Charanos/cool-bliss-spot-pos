@@ -43,11 +43,11 @@ export function TicketCard({
       data-list-item=""
       aria-labelledby={`ticket-${ticket.orderId}`}
       className={cx(
-        'relative flex flex-col overflow-hidden rounded-[20px] border bg-raised/70 backdrop-blur-glass tablet:rounded-[22px]',
+        'relative flex flex-col overflow-hidden rounded-sheet border bg-raised/70 backdrop-blur-glass tablet:rounded-sheet',
         ranOut
-          ? 'border-stop/40 shadow-[0_8px_32px_-8px_color-mix(in_oklab,var(--color-stop)_25%,transparent)]'
+          ? 'border-stop/40 glow-stop'
           : late
-            ? 'border-low/45 shadow-[0_8px_32px_-8px_color-mix(in_oklab,var(--color-low)_22%,transparent)]'
+            ? 'border-low/45 glow-low'
             : 'border-rule-raised/50',
       )}
     >

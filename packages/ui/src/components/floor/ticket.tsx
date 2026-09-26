@@ -85,12 +85,12 @@ export function TicketLineView({ qty, name, lineTotal, state, detail, pouredAt, 
 
   return (
     <div className="relative flex items-center gap-12 py-8">
-      <Photo src={imageUrl} className="size-[40px] shrink-0 rounded-[8px] object-cover" />
+      <Photo src={imageUrl} className="size-[40px] shrink-0 rounded-md object-cover" />
 
       <div className="min-w-0 flex-1 flex flex-col justify-center">
         <div className="flex items-center gap-6 min-w-0">
           <span className={cx('font-mono tabular text-body-sm font-medium shrink-0', poured ? 'text-ink-subtle' : 'text-accent')}>
-            {qty} <span className="text-[11px] text-ink-subtle font-regular">×</span>
+            {qty} <span className="text-label text-ink-subtle font-regular">×</span>
           </span>
           <span className={cx('block truncate text-body-sm font-medium ', poured ? 'text-ink-muted' : 'text-ink')}>{name}</span>
         </div>

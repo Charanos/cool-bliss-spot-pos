@@ -69,15 +69,15 @@ const SeatColumn = memo(function SeatColumn({
       aria-label={label ? `Seat ${seat}, ${displaySeatLabel(label)}${settled ? ', settled' : ''}` : shared ? `Shared${settled ? ', settled' : ''}` : `Seat ${seat}${settled ? ', settled' : ''}`}
       title={label ?? undefined}
       className={cx(
-        'relative flex shrink-0 size-[40px] flex-col items-center justify-center rounded-full outline-none transition-all duration-[250ms] ease-out',
+        'relative flex shrink-0 size-[40px] flex-col items-center justify-center rounded-full outline-none transition-card',
         shared ? 'border border-dashed border-shared text-shared bg-transparent' : cx(seatBgClass(seat as number), 'text-seat-ink'),
         settled && 'opacity-40',
       )}
       style={selected ? { boxShadow: `0 0 0 2px var(--color-page), 0 0 0 4px ${shared ? 'rgb(var(--bliss-glint-rgb) / 50%)' : 'var(--color-glint)'}` } : undefined}
       {...press}
     >
-      <span className="font-mono tabular font-medium text-[14px] leading-none">{shared ? '··' : seat}</span>
-      {label || shared ? <span className="mt-4 max-w-full truncate px-4 text-[8.5px] font-medium leading-none opacity-90">{shared ? 'Shared' : displaySeatLabel(label!)}</span> : null}
+      <span className="font-mono tabular font-medium text-ui leading-none">{shared ? '··' : seat}</span>
+      {label || shared ? <span className="mt-4 max-w-full truncate px-4 text-badge font-medium leading-none opacity-90">{shared ? 'Shared' : displaySeatLabel(label!)}</span> : null}
     </button>
   );
 });

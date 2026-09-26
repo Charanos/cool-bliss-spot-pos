@@ -109,7 +109,7 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
               <button
                 type="button"
                 onClick={() => setChosen(allChosen ? [] : rows.map((r) => r.id))}
-                className="h-control-sm rounded-[10px] px-12 text-label font-medium text-accent-text press-feedback hover:bg-accent/10"
+                className="h-control-sm rounded-md px-12 text-label font-medium text-accent-text press-feedback hover:bg-accent/10"
               >
                 {allChosen ? 'Choose none' : 'Choose all'}
               </button>
@@ -129,13 +129,13 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
                       aria-checked={on}
                       onClick={() => toggle(r.id)}
                       className={cx(
-                        'flex min-h-row-floor w-full items-center gap-12 rounded-[16px] px-12 text-left press-feedback',
+                        'flex min-h-row-floor w-full items-center gap-12 rounded-card px-12 text-left press-feedback',
                         on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-control hover:bg-control-hover',
                       )}
                     >
                       <span
                         aria-hidden="true"
-                        className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-[7px]', on ? 'bg-accent text-accent-ink' : 'bg-control-hover text-transparent')}
+                        className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-sm', on ? 'bg-accent text-accent-ink' : 'bg-control-hover text-transparent')}
                       >
                         <IconCheck size={14} stroke={ICON_STROKE} />
                       </span>
@@ -172,7 +172,7 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
                       aria-checked={on}
                       onClick={() => setTargetId(c.id)}
                       className={cx(
-                        'flex min-h-[64px] w-full items-center gap-12 rounded-[16px] px-12 text-left press-feedback',
+                        'flex min-h-[64px] w-full items-center gap-12 rounded-card px-12 text-left press-feedback',
                         on ? 'bg-accent/[0.1] ring-1 ring-inset ring-accent/35' : 'bg-control hover:bg-control-hover',
                       )}
                     >

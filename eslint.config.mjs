@@ -7,8 +7,9 @@ import globals from 'globals';
 import bliss from './packages/config/eslint-plugin/index.js';
 
 /**
- * The Console and the primitives it is built from hold to tokens only. docs/19 section 2. Floor and
- * Counter keep their own surface language (docs/12, 13, 15) and are not held to this yet.
+ * Every surface holds to tokens only. docs/19 section 2. The Floor and Counter keep their own
+ * surface language (docs/12, 13, 15), but it is spoken in the same tokens, so a display profile
+ * (docs/06) reaches every one of their screens. docs/11 D-25.
  */
 const CONSOLE_FILES = [
   'app/(console)/**/*.{ts,tsx}',
@@ -17,6 +18,8 @@ const CONSOLE_FILES = [
 ];
 
 const FLOOR_FILES = ['app/(floor)/**/*.{ts,tsx}', 'packages/ui/src/components/floor/**/*.{ts,tsx}', 'packages/ui/src/motion/floor.ts'];
+
+const STATION_FILES = ['app/(floor)/**/*.{ts,tsx}', 'app/(counter)/**/*.{ts,tsx}', 'app/_pos/**/*.{ts,tsx}', 'packages/ui/src/components/floor/**/*.{ts,tsx}'];
 
 export default tseslint.config(
   {
@@ -106,7 +109,7 @@ export default tseslint.config(
     },
   },
   {
-    files: CONSOLE_FILES,
+    files: [...CONSOLE_FILES, ...STATION_FILES],
     rules: {
       'bliss/no-arbitrary-design-values': 'error',
     },

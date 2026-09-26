@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cx } from '../lib/cx';
+import { Photo } from './photo';
 
 /**
  * Production-grade Thermal Receipt primitives.
@@ -36,11 +37,7 @@ export function ReceiptHeader({
   return (
     <div className="flex flex-col items-center text-center mb-6">
       {logoUrl ? (
-        <img 
-          src={logoUrl} 
-          alt={venueName} 
-          className="w-[120px] object-contain mb-4 filter grayscale contrast-125"
-        />
+        <Photo src={logoUrl} alt={venueName} loading="eager" className="w-[120px] object-contain mb-4 filter grayscale contrast-125" />
       ) : null}
       <h1 className="text-[18px] font-medium uppercase mb-2">{venueName}</h1>
       {title ? <div className="text-[14px] font-medium uppercase">{title}</div> : null}

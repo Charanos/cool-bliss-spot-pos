@@ -203,7 +203,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
             type="button"
             disabled={submitting}
             onClick={() => handleAction(() => deliver(order.orderId, order.label))}
-            className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-[18px] bg-served text-page font-medium shadow-[0_6px_28px_color-mix(in_oklab,var(--color-served)_35%,transparent)] hover:brightness-105 active:scale-[0.99] transition-all group cursor-pointer"
+            className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-sheet bg-served text-page font-medium glow-served hover:brightness-105 active:scale-[0.99] transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-16 min-w-0">
               <div className="size-40 rounded-full bg-page/20 flex items-center justify-center shrink-0">
@@ -226,7 +226,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
             </div>
           </button>
         ) : isServed ? (
-          <div className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-[18px] bg-served-wash border border-served/35 text-served">
+          <div className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-sheet bg-served-wash border border-served/35 text-served">
             <div className="flex items-center gap-12 min-w-0">
               <div className="size-40 rounded-full bg-served/20 flex items-center justify-center shrink-0">
                 <IconChecks size={20} stroke={2.5} className="text-served" />
@@ -263,7 +263,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                 await deliver(order.orderId, order.label);
               })
             }
-            className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-[18px] bg-page border border-accent/30 text-ink shadow-raised hover:border-accent/50 hover:bg-control active:scale-[0.99] transition-all group cursor-pointer"
+            className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-sheet bg-page border border-accent/30 text-ink shadow-raised hover:border-accent/50 hover:bg-control active:scale-[0.99] transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-16 min-w-0">
               <div className="size-40 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
@@ -286,7 +286,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
             </div>
           </button>
         ) : isNeedsYou ? (
-          <div className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-[18px] bg-stop-wash border border-stop/35 text-stop">
+          <div className="w-full flex items-center justify-between p-16 desktop:p-16 rounded-sheet bg-stop-wash border border-stop/35 text-stop">
             <div className="flex items-center gap-12 min-w-0">
               <div className="size-40 rounded-full bg-stop/20 flex items-center justify-center shrink-0">
                 <IconAlertCircle size={20} stroke={2} className="text-stop" />
@@ -322,7 +322,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
               type="button"
               disabled={submitting}
               onClick={() => handleAction(() => deliverTable(order.tabId, order.label))}
-              className="w-full flex items-center justify-between p-12 desktop:p-16 rounded-[16px] hover:bg-control-hover border-t border-rule-raised/20 transition-all text-left group cursor-pointer"
+              className="w-full flex items-center justify-between p-12 desktop:p-16 rounded-card hover:bg-control-hover border-t border-rule-raised/20 transition-all text-left group cursor-pointer"
             >
               <div className="flex items-center gap-12 min-w-0">
                 <div className="size-40 rounded-md bg-served-wash flex items-center justify-center shrink-0">
@@ -349,7 +349,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                 onClose();
                 router.push(`/floor/tabs/${order.tabId}`);
               }}
-              className="flex items-center gap-12 p-12 desktop:p-16 rounded-[16px] hover:bg-control-hover transition-colors text-left group cursor-pointer border-t border-rule-raised/15"
+              className="flex items-center gap-12 p-12 desktop:p-16 rounded-card hover:bg-control-hover transition-colors text-left group cursor-pointer border-t border-rule-raised/15"
             >
               <div className="size-40 rounded-md bg-control flex items-center justify-center shrink-0 text-ink-subtle group-hover:text-ink transition-colors">
                 <IconReceipt size={20} stroke={ICON_STROKE} />
@@ -366,7 +366,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
                 onClose();
                 router.push(`/floor/tabs/${order.tabId}`);
               }}
-              className="flex items-center gap-12 p-12 desktop:p-16 rounded-[16px] hover:bg-control-hover transition-colors text-left group cursor-pointer border-t border-rule-raised/15"
+              className="flex items-center gap-12 p-12 desktop:p-16 rounded-card hover:bg-control-hover transition-colors text-left group cursor-pointer border-t border-rule-raised/15"
             >
               <div className="size-40 rounded-md bg-control flex items-center justify-center shrink-0 text-ink-subtle group-hover:text-ink transition-colors">
                 <IconArrowsExchange size={20} stroke={ICON_STROKE} />
@@ -387,7 +387,7 @@ export function OrderActionSheet({ order, timezone, onClose }: OrderActionSheetP
               onClose();
               router.push(`/floor/tabs/${order.tabId}`);
             }}
-            className="w-full flex items-center justify-between p-12 desktop:p-16 rounded-[16px] bg-stop-wash hover:bg-stop/[0.18] transition-colors text-left group text-stop cursor-pointer"
+            className="w-full flex items-center justify-between p-12 desktop:p-16 rounded-card bg-stop-wash hover:bg-stop/[0.18] transition-colors text-left group text-stop cursor-pointer"
           >
             <div className="flex items-center gap-12 min-w-0">
               <IconAlertCircle size={20} stroke={ICON_STROKE} className="shrink-0 text-stop" />

@@ -119,7 +119,7 @@ export const TicketColumn = forwardRef<
                 <div
                   key={group.key}
                   className={cx(
-                    'rounded-[16px] transition-all duration-200',
+                    'rounded-card transition-all duration-200',
                     isSelected ? 'p-16 my-8 border bg-raised/70' : cx('px-16 py-8', gi > 0 && !prevSelected && 'border-t border-rule/50 mt-6'),
                   )}
                   style={

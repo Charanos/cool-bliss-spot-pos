@@ -91,7 +91,7 @@ export default function CounterOrdersPage() {
         {tickets === undefined ? (
           <div className="columns-1 gap-16 pad:columns-2 desktop:columns-3">
             {Array.from({ length: 6 }, (_, i) => (
-              <Skeleton key={i} className="mb-16 h-[220px] break-inside-avoid rounded-[20px]" />
+              <Skeleton key={i} className="mb-16 h-[220px] break-inside-avoid rounded-sheet" />
             ))}
           </div>
         ) : view === 'waiting' ? (

@@ -53,7 +53,7 @@ export function TablesRail({
       <div className="shrink-0 px-8 pt-12">
         {/* Section eyebrow */}
         <div className="flex items-center justify-between px-8 pb-8">
-          <span className="caps text-ink-subtle/70 flex items-center gap-4">
+          <span className="caps text-ink-subtle flex items-center gap-4">
             <IconMap2 size={11} stroke={2} className="text-accent/70" aria-hidden="true" />
             Zones
           </span>
@@ -73,7 +73,7 @@ export function TablesRail({
                 className={cx(
                   'group relative flex h-[34px] w-full items-center justify-between gap-8 rounded-lg px-8 text-left text-body-sm transition-all duration-150 ease-out press-feedback',
                   selected
-                    ? 'bg-control font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_-2px_rgba(0,0,0,0.35)]'
+                    ? 'bg-control font-medium text-ink shadow-control'
                     : 'text-ink-muted hover:bg-control-hover/40 hover:text-ink',
                 )}
               >
@@ -83,7 +83,7 @@ export function TablesRail({
                 </span>
 
                 {/* Count */}
-                <span className={cx('font-mono tabular text-num-sm shrink-0 transition-colors', selected ? 'text-accent' : 'text-ink-subtle/60 group-hover:text-ink-subtle')}>{count}</span>
+                <span className={cx('font-mono tabular text-num-sm shrink-0 transition-colors', selected ? 'text-accent' : 'text-ink-subtle group-hover:text-ink-subtle')}>{count}</span>
               </button>
             );
           })}
@@ -96,7 +96,7 @@ export function TablesRail({
       {/* ── 2. My tabs section ──────────────────────────────────────── */}
       <div className="shrink-0 px-8">
         <div className="flex items-center justify-between px-8 pb-8">
-          <span className="caps text-ink-subtle/70 flex items-center gap-4">
+          <span className="caps text-ink-subtle flex items-center gap-4">
             <IconClipboardList size={11} stroke={2} className="text-attention/70" aria-hidden="true" />
             My tabs
           </span>
@@ -115,10 +115,10 @@ export function TablesRail({
                 aria-current={current ? 'page' : undefined}
                 className={cx(
                   // Base layout
-                  'group relative overflow-hidden flex min-h-[66px] flex-col justify-center gap-6 rounded-[16px] p-12 my-2 transition-all duration-150 ease-out press-feedback',
+                  'group relative overflow-hidden flex min-h-[66px] flex-col justify-center gap-6 rounded-card p-12 my-2 transition-all duration-150 ease-out press-feedback',
                   current
-                    ? 'bg-accent-wash texture-dots-accent border border-accent/30 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]'
-                    : 'bg-control/50 hover:bg-control border border-rule-raised/40 hover:border-rule-raised hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:-translate-y-px',
+                    ? 'bg-accent-wash texture-dots-accent border border-accent/30 shadow-key'
+                    : 'bg-control/50 hover:bg-control border border-rule-raised/40 hover:border-rule-raised hover:shadow-key hover:-translate-y-px',
                 )}
               >
                 {/* Header row: Table label & total */}
@@ -154,7 +154,7 @@ export function TablesRail({
                     />
                     {t.unsentCount > 0 ? (
                       <span
-                        className="size-2 shrink-0 rounded-full bg-attention shadow-[0_0_6px_var(--color-attention)]"
+                        className="size-2 shrink-0 rounded-full bg-attention"
                         title={`${t.unsentCount} unsent lines`}
                         aria-label={`${t.unsentCount} unsent lines`}
                       />

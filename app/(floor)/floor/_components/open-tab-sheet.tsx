@@ -78,11 +78,11 @@ function GuestSeatSelector({
             onClick={() => onChange(Math.max(MIN_GUESTS, guests - 1))}
             disabled={guests <= MIN_GUESTS}
             aria-label="One fewer guest"
-            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full bg-glass text-[32px] font-regular text-ink transition-colors hover:bg-glass-strong disabled:opacity-30 disabled:hover:bg-glass disabled:hover:ring-rule-raised/30 press-feedback"
+            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full bg-glass text-heading font-regular text-ink transition-colors hover:bg-glass-strong disabled:opacity-30 disabled:hover:bg-glass disabled:hover:ring-rule-raised/30 press-feedback"
           >
             −
           </button>
-          <span className="min-w-[48px] text-center text-[40px] font-medium leading-none text-ink tabular-nums">
+          <span className="min-w-[48px] text-center text-num-xl font-medium leading-none text-ink tabular-nums">
             {guests}
           </span>
           <button
@@ -90,7 +90,7 @@ function GuestSeatSelector({
             onClick={() => onChange(Math.min(MAX_GUESTS, guests + 1))}
             disabled={guests >= MAX_GUESTS}
             aria-label="One more guest"
-            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full bg-glass text-[32px] font-regular text-ink transition-colors hover:bg-glass-strong disabled:opacity-30 disabled:hover:bg-glass disabled:hover:ring-rule-raised/30 press-feedback"
+            className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full bg-glass text-heading font-regular text-ink transition-colors hover:bg-glass-strong disabled:opacity-30 disabled:hover:bg-glass disabled:hover:ring-rule-raised/30 press-feedback"
           >
             +
           </button>
@@ -101,16 +101,16 @@ function GuestSeatSelector({
       </div>
 
       <div className="relative mx-auto h-[160px] w-[160px] shrink-0" aria-hidden="true">
-        <div className="absolute inset-[16px] rounded-full border border-rule-raised/50 bg-gradient-to-br from-glass to-transparent shadow-[inset_0_1px_8px_rgba(0,0,0,0.4)]" />
+        <div className="absolute inset-[16px] rounded-full border border-rule-raised/50 bg-gradient-to-br from-glass to-transparent shadow-well" />
         {guests === 1 ? (
-          <div className={cx("absolute left-1/2 top-1/2 flex h-[28px] w-[28px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-[13px] font-medium text-seat-ink shadow-[0_0_0_3px_var(--color-sunken)]", seatBgClass(1))}>
+          <div className={cx("absolute left-1/2 top-1/2 flex h-[28px] w-[28px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-body-sm font-medium text-seat-ink ring-3 ring-sunken", seatBgClass(1))}>
             1
           </div>
         ) : (
           seats.map((pos, i) => (
             <div
               key={i}
-              className={cx("absolute flex h-[28px] w-[28px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-[13px] font-medium text-seat-ink shadow-[0_0_0_3px_var(--color-sunken)]", seatBgClass(i + 1))}
+              className={cx("absolute flex h-[28px] w-[28px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-body-sm font-medium text-seat-ink ring-3 ring-sunken", seatBgClass(i + 1))}
               style={{ left: `calc(50% + ${pos.x}px)`, top: `calc(50% + ${pos.y}px)` }}
             >
               {i + 1}
@@ -196,7 +196,7 @@ export function OpenTabSheet({
         size="lg"
         loading={pending}
         onClick={() => void submit()}
-        className="!rounded-full !bg-ink !text-page px-32 transition-all hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(255,255,255,0.15)]"
+        className="!rounded-full !bg-ink !text-page px-32 transition-all hover:scale-[1.02] hover:shadow-key"
       >
         {guests === 1 ? 'Open tab' : `Open tab · ${guests} ${seatWord}`}
       </Button>
@@ -225,7 +225,7 @@ export function OpenTabSheet({
             <input
               id="tab-name-input"
               type="text"
-              placeholder="Birthday, Kevin's table..."
+              placeholder="A birthday, the corner booth"
               value={name}
               maxLength={40}
               onChange={(e) => setName(e.target.value)}

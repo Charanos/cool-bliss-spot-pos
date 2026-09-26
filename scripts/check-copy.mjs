@@ -1,8 +1,8 @@
 /**
- * Copy checker for the Console. docs/08-ux-copy.md, Console section, and docs/19 section 5.
+ * Copy checker for every surface. docs/08-ux-copy.md and docs/19 section 5.
  *
  * The voice is plain and exact: sentence case, the locked terms, no filler, nothing that sounds like
- * a form letter or a prototype. This reads every string a person sees in the Console (JSX text and
+ * a form letter or a prototype. This reads every string a person sees in the Console, the Floor or the Counter (JSX text and
  * the attributes that carry words) and says where it strays. It is a guard, not a writer: a flagged
  * string is rewritten by a person, in the docs/08 voice.
  *
@@ -13,7 +13,7 @@ import { join, relative } from 'node:path';
 import { files, problemsIn } from './copy-rules.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
-const SCAN = ['app/(console)', 'packages/ui/src/components/console'];
+const SCAN = ['app/(console)', 'packages/ui/src/components/console', 'app/(floor)', 'app/(counter)', 'app/_pos', 'packages/ui/src/components/floor'];
 
 const problems = [];
 for (const dir of SCAN) {
@@ -31,4 +31,4 @@ if (problems.length > 0) {
   console.log(`\n${problems.length} copy ${problems.length === 1 ? 'problem' : 'problems'}. docs/08, Console section.`);
   process.exit(1);
 }
-console.log('Console copy reads in the docs/08 voice.');
+console.log('Copy on every surface reads in the docs/08 voice.');

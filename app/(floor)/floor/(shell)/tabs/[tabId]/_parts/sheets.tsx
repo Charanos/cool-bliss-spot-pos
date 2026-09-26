@@ -120,7 +120,7 @@ export function ModifierSheet({
             setPending(false);
           }
         }}
-        className="!rounded-full !bg-accent !text-accent-ink px-32 transition-all hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(0,0,0,0.2)] font-medium"
+        className="!rounded-full !bg-accent !text-accent-ink px-32 transition-all hover:scale-[1.02] hover:shadow-sheet font-medium"
       >
         {price ? `Add to ${target} · ${formatKes(price.lineTotalCents, { decimals: 'whole' })}` : `Add to ${target}`}
       </Button>
@@ -141,10 +141,10 @@ export function ModifierSheet({
         {data?.groups.map(({ group, modifiers }) => (
           <fieldset key={group.id} className="flex flex-col gap-8">
             <div className="flex items-center justify-between px-2">
-              <legend className="font-mono text-[11px] font-medium uppercase text-ink-subtle">
+              <legend className="font-mono text-label font-medium uppercase text-ink-subtle">
                 {group.name}
               </legend>
-              <span className="font-mono text-[10px] text-ink-disabled uppercase">
+              <span className="font-mono text-badge text-ink-disabled uppercase">
                 {group.maxSelect > 1 ? `choose up to ${group.maxSelect}` : 'choose one'}
               </span>
             </div>
@@ -325,7 +325,7 @@ export function SeatMenuSheet({
             </span>
           </div>
           <div className="text-right">
-            <span className="block font-mono text-[10px] uppercase text-ink-subtle">Seat Total</span>
+            <span className="block font-mono text-badge uppercase text-ink-subtle">Seat Total</span>
             <Money value={seat.total} size="num" tone="default" />
           </div>
         </div>
@@ -601,7 +601,7 @@ export function MoveLineSheet({
                     }}
                     className={cx(isCurrent && 'opacity-40')}
                   />
-                  <span className="max-w-full truncate font-mono text-[11px] text-ink-subtle">
+                  <span className="max-w-full truncate font-mono text-label text-ink-subtle">
                     {isCurrent ? 'Current' : option.seat === 'shared' ? 'Shared' : (displaySeatLabel(option.label) ?? `Seat ${option.seat}`)}
                   </span>
                 </div>

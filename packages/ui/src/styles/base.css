@@ -680,6 +680,28 @@
   transition-timing-function: var(--bliss-ease-out);
 }
 
+/* A transform on its own, for a chevron that turns or a row that slides back. */
+@utility transition-move {
+  transition-property: transform;
+  transition-duration: var(--bliss-duration-hover);
+  transition-timing-function: var(--bliss-ease-out);
+}
+
+/* A status glow under a station card, so an order that needs someone reads from across the room.
+   Built on channel variables (Safari 15 has no color-mix); Clarity swaps it for the card's border. */
+@utility glow-stop {
+  box-shadow: 0 8px 32px -8px rgb(var(--bliss-stop-rgb) / 25%);
+}
+@utility glow-low {
+  box-shadow: 0 8px 32px -8px rgb(var(--bliss-low-rgb) / 22%);
+}
+@utility glow-poured {
+  box-shadow: 0 8px 32px -8px rgb(var(--bliss-poured-rgb) / 20%);
+}
+@utility glow-served {
+  box-shadow: 0 8px 32px -8px rgb(var(--bliss-served-rgb) / 20%);
+}
+
 /* Stacking, named, so a popover never loses to a sticky bar by accident. */
 @utility z-base {
   z-index: 0;
@@ -1029,6 +1051,20 @@
   --text-eyebrow: 12px;
   --text-caps: 12px;
   --text-badge: 11px;
+}
+
+/* Clarity: a soft glow only muddies a weak panel, so a status card carries its tone as a crisp edge. */
+[data-display~='clarity'] .glow-stop {
+  box-shadow: inset 0 0 0 1px rgb(var(--bliss-stop-rgb) / 70%);
+}
+[data-display~='clarity'] .glow-low {
+  box-shadow: inset 0 0 0 1px rgb(var(--bliss-low-rgb) / 70%);
+}
+[data-display~='clarity'] .glow-poured {
+  box-shadow: inset 0 0 0 1px rgb(var(--bliss-poured-rgb) / 70%);
+}
+[data-display~='clarity'] .glow-served {
+  box-shadow: inset 0 0 0 1px rgb(var(--bliss-served-rgb) / 70%);
 }
 
 /* The product grid: as many 160px columns as fit, so a tablet upright shows four and on its side four beside the ticket. */

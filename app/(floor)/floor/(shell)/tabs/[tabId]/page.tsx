@@ -492,7 +492,7 @@ function SettledTab({ detail, timezone }: { detail: TabDetail; timezone: string 
     <div className="flex h-full min-h-0 items-center justify-center p-16 pad:p-40">
       <section
         aria-labelledby="settled-title"
-        className="flex w-full max-w-[480px] flex-col items-center gap-16 rounded-[22px] border border-rule-raised/40 bg-raised/70 p-24 text-center backdrop-blur-glass"
+        className="flex w-full max-w-[480px] flex-col items-center gap-16 rounded-sheet border border-rule-raised/40 bg-raised/70 p-24 text-center backdrop-blur-glass"
       >
         <span
           className={
