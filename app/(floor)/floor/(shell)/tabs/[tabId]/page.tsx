@@ -24,7 +24,7 @@ import { FloorDialog, Sheet } from '@bliss/ui/components/floor/sheet';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { holdsTable, isOrdering, isSeated, placeLabel } from '@bliss/shared/trade';
 import { addLine, addSeat, labelSeat, moveLine, moveTab, removeSeat, selectSeat, setDraftQty, setLineNote, voidLine } from '@/lib/pos/mutations';
-import { type TabDetail, useGrid, useOpenTabs, useOutlet, useTab } from '@/lib/pos/queries';
+import { type TabDetail, useGrid, useOpenTabs, useOutlet, useTab, useTradeReady } from '@/lib/pos/queries';
 import { useSession } from '@/lib/pos/session';
 import { ItemGrid } from './_parts/item-grid';
 import { FinishedSheet, LabelSeatSheet, LineSheet, ModifierSheet, MoveLineSheet, MoveTabSheet, NoteSheet, SeatMenuSheet, VoidDialog } from './_parts/sheets';
@@ -74,6 +74,7 @@ export default function TabScreen() {
   const tables = useLiveQuery(() => posDb().serviceTables.toArray(), []);
   // Every tab that still holds a table, including paid ones whose guests have not left.
   const holding = useLiveQuery(async () => (await posDb().tabs.toArray()).filter((t) => holdsTable(t)), []);
+  const tradeReady = useTradeReady();
 
   const close = () => setOverlay({ kind: 'none' });
   const timezone = outlet?.timezone ?? 'Africa/Nairobi';
@@ -164,7 +165,7 @@ export default function TabScreen() {
       setTimeout(() => setNotice(null), 2000);
     });
 
-  const freeTables = (tables ?? []).filter((t) => !(holding ?? []).some((x) => x.serviceTableId === t.id) && t.status !== 'out_of_service');
+  const freeTables = tradeReady ? (tables ?? []).filter((t) => !(holding ?? []).some((x) => x.serviceTableId === t.id) && t.status !== 'out_of_service') : [];
   // waiterName comes from the TabListItem (which has the staff map join), not TabDetail.
   const tabListItem = (tabs ?? []).find((t) => t.tab.id === tabId);
   const waiterName = tabListItem?.waiterName ?? null;
@@ -200,15 +201,18 @@ export default function TabScreen() {
             <div className="min-w-0">
               <div className="flex min-w-0 items-center gap-8">
                 {/* Below a wide screen the table list is a sheet, opened from the table's own name. */}
-                <button
-                  type="button"
-                  onClick={() => setTablesOpen(true)}
-                  aria-label={`${detail?.label ?? 'This tab'}, switch table`}
-                  className="flex min-w-0 items-center gap-4 rounded-md press-feedback desktop:pointer-events-none"
-                >
-                  <h1 className="truncate text-title font-medium text-ink">{detail?.label ?? 'Tab'}</h1>
-                  <IconChevronDown size={18} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0 text-ink-muted desktop:hidden" />
-                </button>
+                <h1 className="min-w-0 text-title font-medium text-ink">
+                  <button
+                    type="button"
+                    onClick={() => setTablesOpen(true)}
+                    aria-haspopup="dialog"
+                    className="-my-8 flex min-w-0 items-center gap-4 rounded-md py-8 press-feedback desktop:pointer-events-none"
+                  >
+                    <span className="truncate">{detail?.label ?? 'Tab'}</span>
+                    <span className="sr-only desktop:hidden">, switch table</span>
+                    <IconChevronDown size={18} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0 text-ink-muted desktop:hidden" />
+                  </button>
+                </h1>
                 {stage && stage !== 'empty' ? (
                   <StatePill tone={STAGE[stage].tone} more={STAGE[stage].more} live={STAGE[stage].live}>
                     {STAGE[stage].word}

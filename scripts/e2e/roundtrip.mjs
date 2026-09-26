@@ -1,7 +1,7 @@
 /**
  * The round trip, end to end, in real browsers: a waiter on the Floor (an iPad mini 4 shape) orders
  * for two seats and sends it, the Counter (a 1366 laptop) pours it, the Floor marks it served and asks
- * for the bill, the Counter settles it in cash, and the Console shows the bill. Then the Floor goes
+ * for the bill, the Counter opens its drawer if the night has none and settles it in cash, and the Console shows the bill. Then the Floor goes
  * offline, sends an order, comes back, and the Counter sees it exactly once. docs/16 section 8.
  *
  * Needs a running server with the development data (BLISS_STORE=memory BLISS_DEV_DATA=1 pnpm start)
@@ -61,9 +61,16 @@ try {
     const { page } = floor;
     await page.goto(`${BASE}/floor/tabs`);
     await page.getByRole('radio', { name: /Free tables/ }).click();
-    const free = page.locator('section[aria-labelledby=free-tables-heading] button').first();
-    table = (await free.getAttribute('aria-label')).replace(/^Open a tab on /, '').replace(/, .*$/, '');
-    await free.click();
+    const first = page.locator('section[aria-labelledby=free-tables-heading] button').first();
+    const label = await first.getAttribute('aria-label');
+    table = label.replace(/^Open a tab on /, '').replace(/, .*$/, '');
+    console.log(`     at ${table}`);
+    // By its own name: a table offered for a moment and then taken would fail here, not open elsewhere.
+    await page.getByRole('button', { name: label, exact: true }).click({ timeout: 5_000 }).catch(async (error) => {
+      const now = await page.locator('section[aria-labelledby=free-tables-heading] button').evaluateAll((b) => b.map((x) => x.getAttribute('aria-label')));
+      await shot(page, 'floor-table-gone');
+      throw new Error(`${table} was offered, then not clickable; free now: ${now.slice(0, 3).join('; ')}. ${error.message.split('\n')[0]}`);
+    });
     await page.getByRole('button', { name: 'One more guest' }).click();
     await page.getByRole('button', { name: /^Open tab/ }).click();
     await page.waitForURL('**/floor/tabs/**', { timeout: 15_000 });
@@ -91,8 +98,14 @@ try {
 
   await check('The Counter pours it with the keyboard', async () => {
     const { page } = counter;
-    await page.keyboard.press('p');
-    await page.waitForTimeout(2500);
+    // P pours the oldest ticket. On a server that has run this before, older tickets may wait ahead
+    // of this one, so it presses until this table's ticket has nothing left to pour.
+    const ours = page.getByRole('article', { name: table, exact: true }).getByRole('button', { name: 'Pour all' });
+    for (let i = 0; i < 8 && (await ours.count()) > 0; i += 1) {
+      await page.keyboard.press('p');
+      await page.waitForTimeout(1500);
+    }
+    if ((await ours.count()) > 0) throw new Error(`${table} still has lines to pour`);
     await shot(page, 'counter-poured');
   });
 
@@ -103,6 +116,19 @@ try {
     await page.getByRole('button', { name: /Ask for the bill/ }).first().click({ timeout: 20_000 });
     await page.waitForTimeout(2500);
     await shot(page, 'floor-bill-asked');
+  });
+
+  await check('The Counter opens the drawer with a float, if the night has none', async () => {
+    const { page } = counter;
+    await page.goto(`${BASE}/counter/drawer`);
+    await page.getByRole('heading', { name: 'Drawer', level: 1 }).waitFor({ timeout: 15_000 });
+    const open = page.getByRole('button', { name: /^Open with KES/ });
+    if (await open.waitFor({ timeout: 5_000 }).then(() => true, () => false)) {
+      await page.getByLabel('How many 1,000 notes').fill('2');
+      await page.getByRole('button', { name: 'Open with KES 2,000' }).click();
+      await page.getByText('Drawer open', { exact: true }).first().waitFor({ timeout: 15_000 });
+    }
+    await shot(page, 'counter-drawer');
   });
 
   await check('The Counter settles it in cash, exactly', async () => {

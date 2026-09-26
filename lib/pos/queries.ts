@@ -14,6 +14,7 @@ import { assetUrl } from '../assets';
 import { META, type StaffDirectoryEntry, posDb, getMeta } from './db';
 import type { SeatSelection } from './mutations';
 import { usePricingIndex } from './pricing';
+import { useSync } from './sync';
 
 export interface OutletMeta {
   id: string;
@@ -308,6 +309,20 @@ export function useTab(tabId: string): TabDetail | null | undefined {
       blocked: rejected > 0,
     };
   }, [tabId]);
+}
+
+/**
+ * Whether this device knows which tables are taken. Tables travel with the catalogue, before anyone
+ * signs in; tabs only once a signed-in pull lands, and a pull cut short by a reload can leave the
+ * device's copy behind. So a free table is offered only after this page has heard from the server,
+ * or once it knows it cannot: offline, the tables it has are the best answer there is, and the server
+ * refuses a second tab on a table when the order gets through (TABLE_HAS_TAB).
+ */
+export function useTradeReady(): boolean {
+  const cursor = useLiveQuery(() => getMeta<number>(META.tradeCursor), []);
+  const { link, lastSyncedAt } = useSync();
+  if (link === 'offline' || link === 'unreachable') return true;
+  return typeof cursor === 'number' && cursor >= 0 && lastSyncedAt !== null;
 }
 
 export function useZonesAndTables() {

@@ -90,7 +90,7 @@ export const TicketColumn = forwardRef<
           )}
         >
           <div className="flex flex-col justify-center min-w-0">
-            <h1 className="text-title font-medium text-ink  truncate">{detail?.label ?? '\u00a0'}</h1>
+            <h2 className="truncate text-title font-medium text-ink">{detail?.label ?? '\u00a0'}</h2>
             {metaItems.length > 0 && (
               <div className="flex items-center min-w-0 pt-2">
                 <MetaLine items={metaItems} className="flex-nowrap whitespace-nowrap overflow-hidden text-ellipsis text-body-sm text-ink-muted" />

@@ -1122,3 +1122,21 @@
     font-size: max(16px, 1em);
   }
 }
+
+/*
+ * The top bar's controls draw at 32px, as an iPad's navigation bar does, and take a finger at 44:
+ * a transparent layer around each one, inside the bar's own height. Scoped to the bar, so a
+ * scrolling row of chips never gains overflow from it. :where keeps it below any utility.
+ */
+@media (pointer: coarse) {
+  :where([data-topbar]) :where(a[href], button) {
+    position: relative;
+  }
+
+  :where([data-topbar]) :where(a[href], button)::before {
+    content: '';
+    position: absolute;
+    inset-block: min(0px, calc((100% - 44px) / 2));
+    inset-inline: min(0px, calc((100% - 44px) / 2));
+  }
+}

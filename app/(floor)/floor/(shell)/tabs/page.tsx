@@ -16,7 +16,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { OpenTabSheet, tableLabel } from '../../_components/open-tab-sheet';
-import { useOpenTabs, useSeatedTabs, useZonesAndTables } from '@/lib/pos/queries';
+import { useOpenTabs, useSeatedTabs, useTradeReady, useZonesAndTables } from '@/lib/pos/queries';
 import { SeatedTabs } from '@/app/_pos/seated-tabs';
 import { STAGE } from '@/app/_pos/table-stage';
 import { askBill, deliverTable } from '@/lib/pos/actions';
@@ -54,6 +54,7 @@ export default function TabsPage() {
   const [sheet, setSheet] = useState<{ open: boolean; table: ServiceTable | null }>({ open: false, table: null });
 
   const seated = useSeatedTabs();
+  const tradeReady = useTradeReady();
   // A table is taken while it has a tab being ordered on, or a paid one whose guests have not left.
   const occupied = useMemo(() => new Set([...(tabs ?? []).map((t) => t.tab.serviceTableId), ...(seated ?? []).map((t) => t.tab.serviceTableId)].filter(Boolean)), [tabs, seated]);
   const visibleTabs = (tabs ?? []).filter((t) => (scope === 'everyone' || t.tab.assignedTo === session?.staffId) && (zone === 'all' || t.tab.zoneId === zone));
@@ -79,7 +80,7 @@ export default function TabsPage() {
     })),
   ];
 
-  const loading = tabs === undefined || places === undefined;
+  const loading = tabs === undefined || places === undefined || !tradeReady;
 
   // Build summary MetaLine
   const summaryItems = loading

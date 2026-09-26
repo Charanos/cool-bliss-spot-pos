@@ -65,7 +65,7 @@ export function ShiftTabCard({ label, zoneName, seats, showSeats, openedAt, tota
             </button>
           ) : null}
 
-          <button type="button" onClick={onOpen} className="min-w-0 truncate text-left text-title font-medium text-ink press-feedback hover:text-accent">
+          <button type="button" onClick={onOpen} className="-my-8 min-w-0 truncate py-8 text-left text-title font-medium text-ink press-feedback hover:text-accent">
             {label}
           </button>
 
