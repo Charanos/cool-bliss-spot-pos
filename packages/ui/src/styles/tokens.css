@@ -182,6 +182,7 @@
   --spacing-lightbox: 720px;
   --spacing-kpi-min: 136px;
   --spacing-totals: 320px;
+  --spacing-media: 160px;
   --spacing-form: 720px;
   --spacing-panel-tender: 420px;
   --spacing-strip: 56px;
@@ -304,6 +305,7 @@
   --color-rail-active: var(--bliss-rail-active);
   --color-desk: var(--bliss-desk);
   --color-sheet: var(--bliss-sheet);
+  --color-scrim-media: var(--bliss-scrim-media);
   --color-desk-hover: var(--bliss-desk-hover);
   --color-desk-active: var(--bliss-desk-active);
   --color-desk-well: var(--bliss-desk-well);
@@ -395,6 +397,7 @@
   --bliss-rail-active: color-mix(in oklab, #D4DCE3 70%, transparent);
   --bliss-desk: #E7ECF0;
   --bliss-sheet: #FBFCFD;
+  --bliss-scrim-media: color-mix(in oklab, #0B1015 78%, transparent);
   --bliss-desk-hover: color-mix(in oklab, #D4DCE3 70%, transparent);
   --bliss-desk-active: #FBFCFD;
   --bliss-desk-well: color-mix(in oklab, #FBFCFD 55%, transparent);
@@ -484,6 +487,7 @@
   --bliss-rail-active: #232B32;
   --bliss-desk: #06090C;
   --bliss-sheet: #0F151A;
+  --bliss-scrim-media: color-mix(in oklab, #06090C 82%, transparent);
   --bliss-desk-hover: color-mix(in oklab, #232B32 55%, transparent);
   --bliss-desk-active: #151B20;
   --bliss-desk-well: color-mix(in oklab, #151B20 70%, transparent);
@@ -574,6 +578,7 @@
     --bliss-rail-active: #232B32;
     --bliss-desk: #06090C;
     --bliss-sheet: #0F151A;
+    --bliss-scrim-media: color-mix(in oklab, #06090C 82%, transparent);
     --bliss-desk-hover: color-mix(in oklab, #232B32 55%, transparent);
     --bliss-desk-active: #151B20;
     --bliss-desk-well: color-mix(in oklab, #151B20 70%, transparent);

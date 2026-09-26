@@ -5,11 +5,13 @@ import { cx } from '../lib/cx';
  * exactly the button it resembles. docs/06 section 6.1, docs/19 section 3. No client code here, so
  * a server component can style a link with it.
  */
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive' | 'quiet-destructive' | 'tender';
+export type ButtonVariant = 'primary' | 'create' | 'secondary' | 'ghost' | 'outline' | 'destructive' | 'quiet-destructive' | 'tender';
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 const variantClass: Record<ButtonVariant, string> = {
   primary: 'bg-accent text-accent-ink font-medium shadow-control-primary hover:bg-accent-hover active:bg-accent-pressed',
+  /* The one way to make something new on a page: the primary, as a pill, its plus turning a quarter. */
+  create: 'bg-accent text-accent-ink font-medium shadow-control-primary hover:bg-accent-hover active:bg-accent-pressed',
   secondary: 'bg-control text-ink font-medium shadow-control hover:bg-control-hover active:bg-control-pressed',
   ghost: 'bg-transparent text-ink-muted hover:bg-control hover:text-ink active:bg-control-hover',
   /* The Console's quiet action beside a primary: the card surface with its edge. */
@@ -20,12 +22,14 @@ const variantClass: Record<ButtonVariant, string> = {
 };
 
 const sizeClass: Record<ButtonSize, string> = {
-  xs: 'h-row-compact rounded-md px-12 text-body-sm gap-6',
-  sm: 'h-control-sm rounded-md px-12 text-body-sm gap-6',
-  md: 'h-control-md rounded-control px-16 text-body gap-8',
-  lg: 'h-control-lg rounded-control px-20 text-body gap-8',
-  xl: 'h-control-xl rounded-lg px-24 text-subtitle gap-12',
+  xs: 'h-row-compact px-12 text-body-sm gap-6',
+  sm: 'h-control-sm px-12 text-body-sm gap-6',
+  md: 'h-control-md px-16 text-body gap-8',
+  lg: 'h-control-lg px-20 text-body gap-8',
+  xl: 'h-control-xl px-24 text-subtitle gap-12',
 };
+
+const roundClass: Record<ButtonSize, string> = { xs: 'rounded-md', sm: 'rounded-md', md: 'rounded-control', lg: 'rounded-control', xl: 'rounded-lg' };
 
 const iconOnlyClass: Record<ButtonSize, string> = {
   xs: 'w-row-compact px-0',
@@ -34,6 +38,11 @@ const iconOnlyClass: Record<ButtonSize, string> = {
   lg: 'w-control-lg px-0',
   xl: 'w-control-xl px-0',
 };
+
+/** The class a button's icon wears: the create button's plus turns under the pointer. */
+export function buttonIconClass(variant: ButtonVariant): string {
+  return variant === 'create' ? 'shrink-0 turn-on-hover' : 'shrink-0';
+}
 
 export const buttonIconPx: Record<ButtonSize, number> = { xs: 16, sm: 16, md: 20, lg: 20, xl: 24 };
 
@@ -56,6 +65,7 @@ export function buttonClass({
     'relative inline-flex select-none items-center justify-center whitespace-nowrap press-feedback press-scale',
     variantClass[variant],
     sizeClass[size],
+    variant === 'create' ? 'rounded-pill' : roundClass[size],
     iconOnly && iconOnlyClass[size],
     fullWidth && 'w-full',
     disabled && 'bg-control text-ink-disabled shadow-none hover:bg-control active:scale-100',

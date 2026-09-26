@@ -70,8 +70,23 @@ export function Overline({ children, className, as: Tag = 'span' }: { children: 
 }
 
 /** A rule between parts of a page, optionally named. One hairline, never a gradient. */
-export function Separator({ label, className }: { label?: ReactNode; className?: string }) {
+export function Separator({ label, variant = 'line', className }: { label?: ReactNode; variant?: 'line' | 'pill'; className?: string }) {
   if (!label) return <hr className={cx('border-0 border-t border-rule', className)} />;
+  if (variant === 'pill') {
+    // A named break between two parts of a page: a hairline fading out at both ends, and the name
+    // on a small band in the middle.
+    return (
+      <div role="separator" aria-label={typeof label === 'string' ? label : undefined} className={cx('flex items-center gap-16', className)}>
+        <span aria-hidden="true" className="flex-1 rule-fade" />
+        <span className="inline-flex shrink-0 items-center gap-8 rounded-pill bg-band px-12 py-4 shadow-well">
+          <span aria-hidden="true" className="size-dot rounded-dot bg-hairline" />
+          <span className="label-caps text-ink-subtle">{label}</span>
+          <span aria-hidden="true" className="size-dot rounded-dot bg-hairline" />
+        </span>
+        <span aria-hidden="true" className="flex-1 rule-fade" />
+      </div>
+    );
+  }
   return (
     <div role="separator" className={cx('flex items-center gap-12', className)}>
       <span className="label-caps shrink-0 text-ink-subtle">{label}</span>
@@ -237,6 +252,8 @@ export function Callout({
   children,
   aside,
   action,
+  icon,
+  size = 'default',
   className,
 }: {
   tone?: 'stop' | 'low' | 'info' | 'poured';
@@ -245,8 +262,35 @@ export function Callout({
   /** A figure or a short fact on the trailing side. */
   aside?: ReactNode;
   action?: ReactNode;
+  /** The hero size carries an icon tile in place of the dot. */
+  icon?: ReactNode;
+  /** `hero` is the one banner at the head of a page: a larger tile, and its figure set off by a rule. */
+  size?: 'default' | 'hero';
   className?: string;
 }) {
+  if (size === 'hero') {
+    const wash = tone === 'stop' ? 'bg-stop-wash' : tone === 'info' ? 'bg-info-wash' : tone === 'poured' ? 'bg-poured-wash' : 'bg-low-wash';
+    const ink = tone === 'stop' ? 'text-stop' : tone === 'info' ? 'text-info' : tone === 'poured' ? 'text-poured' : 'text-low';
+    return (
+      <section role="status" className={cx('flex flex-wrap items-center justify-between gap-x-32 gap-y-16 rounded-card px-24 py-20', wash, className)}>
+        <div className="flex min-w-0 items-center gap-16">
+          <span aria-hidden="true" className={cx('flex size-control-lg shrink-0 items-center justify-center rounded-control bg-card shadow-chip', ink)}>
+            {icon}
+          </span>
+          <div className="flex min-w-0 flex-col gap-2">
+            <p className="text-title-section text-ink">{title}</p>
+            {children ? <p className="measure text-body-sm text-ink-muted">{children}</p> : null}
+          </div>
+        </div>
+        {aside || action ? (
+          <div className="flex shrink-0 items-center gap-24">
+            {aside ? <div className="border-l border-hairline pl-24">{aside}</div> : null}
+            {action}
+          </div>
+        ) : null}
+      </section>
+    );
+  }
   return (
     <section
       role="status"

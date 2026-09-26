@@ -12,6 +12,7 @@ export type MetricTone = 'default' | 'attention' | 'poured' | 'stop' | 'info';
 
 const iconTone: Record<MetricTone, Tone> = { default: 'neutral', attention: 'low', poured: 'poured', stop: 'stop', info: 'accent' };
 const valueTone: Record<MetricTone, string> = { default: 'text-ink', attention: 'text-low', poured: 'text-ink', stop: 'text-stop', info: 'text-ink' };
+const topline: Record<MetricTone, string> = { default: 'topline-chart', attention: 'topline-low', poured: 'topline-poured', stop: 'topline-stop', info: 'topline-accent' };
 
 export interface MetricProps {
   label: string;
@@ -35,19 +36,34 @@ export interface MetricProps {
 export function Metric({ label, value, detail, delta, tone = 'default', icon, badge, href, className }: MetricProps) {
   const good = delta ? (delta.bps >= 0) !== Boolean(delta.invert) : false;
   return (
-    <Card as="article" aria-label={label} interactive={Boolean(href)} className={cx('min-h-kpi-min', className)}>
-      <CardHeader title={<span className="text-body-sm font-medium text-ink-muted">{label}</span>} level="h3" href={href} actions={badge ?? (icon ? <IconTile icon={icon} tone={iconTone[tone]} /> : null)} className="pb-8" />
+    <Card as="article" aria-label={label} interactive={Boolean(href)} className={cx('group min-h-kpi-min card-topline', topline[tone], className)}>
+      <CardHeader
+        title={
+          <span className="flex items-center gap-8">
+            {icon ? (
+              <span className="swell-on-hover">
+                <IconTile icon={icon} tone={iconTone[tone]} />
+              </span>
+            ) : null}
+            <span className="text-body-sm font-medium text-ink-muted">{label}</span>
+          </span>
+        }
+        level="h3"
+        href={href}
+        actions={badge ?? (href ? <IconArrowUpRight size={16} stroke={1.5} aria-hidden="true" className="text-ink-subtle transition-hover group-hover:text-ink" /> : null)}
+        className="pb-8"
+      />
       <CardBody className="flex flex-col justify-between gap-12">
         <p className={cx('font-mono tabular text-num-kpi', valueTone[tone])}>{value}</p>
         {delta || detail ? (
           <p className="flex flex-wrap items-center gap-x-8 gap-y-4 text-body-sm text-ink-muted">
             {delta ? (
-              <span className={cx('inline-flex items-center gap-2 font-medium tabular', good ? 'text-poured' : 'text-low')}>
+              <span className={cx('inline-flex items-center gap-2 rounded-sm px-4 font-medium tabular', good ? 'bg-poured-wash text-poured' : 'bg-low-wash text-low')}>
                 {delta.bps >= 0 ? <IconArrowUpRight size={14} stroke={2} aria-hidden="true" /> : <IconArrowDownRight size={14} stroke={2} aria-hidden="true" />}
                 {formatBps(delta.bps, { signed: true })}
-                <span className="font-regular text-ink-subtle">vs {delta.against}</span>
               </span>
             ) : null}
+            {delta ? <span className="text-ink-subtle">vs {delta.against}</span> : null}
             {detail ? <span>{detail}</span> : null}
           </p>
         ) : null}

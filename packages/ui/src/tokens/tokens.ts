@@ -163,6 +163,8 @@ export const themes = {
     desk: f[975],
     /* The sheet the page sits on. Inside it, `page` becomes this. */
     sheet: f[925],
+    /* The fall of shadow over a photograph so a title set on it reads. */
+    'scrim-media': alpha(f[975], 82),
     'desk-hover': alpha(f[800], 55),
     'desk-active': f[900],
     'desk-well': alpha(f[900], 70),
@@ -243,6 +245,7 @@ export const themes = {
     'rail-active': alpha(f[200], 70),
     desk: f[100],
     sheet: f[0],
+    'scrim-media': alpha(f[950], 78),
     'desk-hover': alpha(f[200], 70),
     'desk-active': f[0],
     'desk-well': alpha(f[0], 55),
@@ -362,6 +365,8 @@ export const size = {
   'kpi-min': 136,
   /** The totals block at the foot of a bill, an order or a delivery. */
   totals: 320,
+  /** The photograph band across the top of a record card. */
+  media: 160,
   /** A single-column Console form: a count, a zone, a person. */
   form: 720,
   'panel-tender': 420,

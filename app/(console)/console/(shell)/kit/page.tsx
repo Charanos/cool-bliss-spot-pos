@@ -1,6 +1,10 @@
 import { cents } from '@bliss/shared/money';
 import { ButtonLink } from '@bliss/ui/components/button-link';
-import { Card, CardBody, CardFooter, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { ActionPill } from '@bliss/ui/components/console/action-pill';
+import { Card, CardBody, CardFooter, CardGroup, CardHeader, CardMedia, CardStats, Stat } from '@bliss/ui/components/console/card';
+import { ChartCaption } from '@bliss/ui/components/console/chart-caption';
+import { InlineBar } from '@bliss/ui/components/console/inline-bar';
+import { Sparkline } from '@bliss/ui/components/console/sparkline';
 import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Callout, DetailHeader, KeyValueList, LedgerItem, LedgerList, MetaRow, Section, Separator, SummaryStrip, Totals } from '@bliss/ui/components/console/section';
 import { PageHeader } from '@bliss/ui/components/console/shell';
@@ -8,7 +12,7 @@ import { Badge } from '@bliss/ui/components/badge';
 import { EmptyState, InlineNotice } from '@bliss/ui/components/feedback';
 import { Money } from '@bliss/ui/components/money';
 import { STATUS, type StatusKey, StatusChip, ToneChip } from '@bliss/ui/components/status';
-import { IconCash, IconClock, IconReceipt, IconScale } from '@tabler/icons-react';
+import { IconAlertTriangle, IconCash, IconClock, IconFlame, IconLayoutGrid, IconPlus, IconReceipt, IconScale } from '@tabler/icons-react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { devDataEnabled } from '@/lib/dev';
@@ -133,6 +137,49 @@ export default function KitPage() {
           </LedgerItem>
         </LedgerList>
         <EmptyState title="An empty state" body="Says what will appear here, and how it gets there." />
+      </Section>
+
+      <Section id="kit-expressive" title="The expressive layer" description="Top lines in a tone, photographs with a scrim, bars inside figures, and a way on that answers the pointer.">
+        <Separator variant="pill" label="A named break" />
+        <Callout size="hero" tone="stop" icon={<IconAlertTriangle size={22} stroke={1.5} />} title="6 tabs still open from yesterday" aside={<Money value={cents(9_110_00)} size="num-lg" decimals="whole" />} action={<ActionPill href="/console/trade/open">See the tabs</ActionPill>}>
+          The hero banner: one per page, at its head, when something needs a person.
+        </Callout>
+        <ChartCaption icon={<IconFlame size={16} stroke={1.5} />} label="Busiest hour" figures={['23:00', <Money key="m" value={cents(21_800_00)} size="num-md" decimals="whole" />]} note="Fired lines" />
+        <CardGroup title="A group of cards" description="The heading sits above the grid, never inside a card." icon={IconLayoutGrid} actions={<ButtonLink href="/console/kit" variant="create" icon={IconPlus}>New item</ButtonLink>} gridClassName="desktop:grid-cols-3">
+          <Card as="article" interactive className="group">
+            <CardMedia src="/champagne-bottle.png" title="Champagne" subtitle="Wine, 750ml" href="/console/kit" meta={<StatusChip status="settled" />} />
+            <CardStats>
+              <Stat label="On hand">12 btl</Stat>
+              <Stat label="Lasts">
+                <span className="inline-flex items-center gap-8">
+                  9 days <InlineBar value={0.45} tone="attention" />
+                </span>
+              </Stat>
+            </CardStats>
+          </Card>
+          <Card as="article" interactive className="group">
+            <CardMedia src={null} title="Tusker 500ml" subtitle="No photograph: the initial stands in" href="/console/kit" />
+            <CardStats>
+              <Stat label="Sells a day">36</Stat>
+              <Stat label="Share">
+                <span className="inline-flex items-center gap-8">
+                  18% <InlineBar value={0.18} />
+                </span>
+              </Stat>
+            </CardStats>
+          </Card>
+          <Card className="group">
+            <CardHeader band title="Tonight by hour" subtitle="Sparkline, bars and a line" />
+            <CardBody className="flex flex-col gap-16 pt-16">
+              <Sparkline values={[2, 3, 5, 9, 7, 8, 12, 6, 2, 1]} label="Sales by hour" />
+              <Sparkline variant="line" values={[780, 780, 800, 820, 820, 860]} label="Cost over six deliveries" />
+              <div className="flex items-center justify-between">
+                <span className="text-body-sm text-ink-muted">Hover the card</span>
+                <ActionPill href="/console/kit">Open</ActionPill>
+              </div>
+            </CardBody>
+          </Card>
+        </CardGroup>
       </Section>
 
       <KitInteractive />

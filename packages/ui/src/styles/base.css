@@ -762,3 +762,73 @@
 @utility sheet-scope {
   --bliss-page: var(--bliss-sheet);
 }
+
+/*
+ * The expressive layer, docs/19 section 3: the touches the Console's first revamp introduced, on
+ * tokens. A card's top line in its tone, a hairline that fades at both ends, a photograph's scrim,
+ * and the quarter turn of a create button's plus.
+ */
+@utility card-topline {
+  &::after {
+    content: '';
+    position: absolute;
+    inset-inline: 16px;
+    top: 0;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, var(--topline, var(--color-hairline)) 30%, var(--topline, var(--color-hairline)) 70%, transparent);
+  }
+}
+
+@utility topline-* {
+  --topline: --value(--color-*);
+}
+
+@utility rule-fade {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-hairline) 20%, var(--color-hairline) 80%, transparent);
+}
+
+@utility media-scrim {
+  background: linear-gradient(to top, var(--color-scrim-media), transparent 72%);
+}
+
+/* A photograph that leans in, slowly, under the pointer. Still under reduced motion. */
+@utility media-zoom {
+  transition: transform 700ms var(--bliss-ease-out);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :where(.group):hover & {
+      transform: scale(1.04);
+    }
+  }
+}
+
+/* The plus on a create button turns a quarter under the pointer. */
+@utility turn-on-hover {
+  transition: transform var(--bliss-duration-card) var(--bliss-ease-out);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :where(button, a):hover > & {
+      transform: rotate(90deg);
+    }
+  }
+}
+
+/* An arrow that nudges toward where it leads when its row or card is hovered. */
+@utility nudge-on-hover {
+  transition: transform var(--bliss-duration-hover) var(--bliss-ease-out);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :where(.group):hover & {
+      transform: translateX(4px);
+    }
+  }
+}
+
+/* An icon tile that swells a little when its card is hovered. */
+@utility swell-on-hover {
+  transition: transform var(--bliss-duration-card) var(--bliss-ease-snap);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :where(.group):hover & {
+      transform: scale(1.06);
+    }
+  }
+}

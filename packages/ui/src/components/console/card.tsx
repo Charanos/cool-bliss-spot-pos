@@ -157,3 +157,46 @@ export function Stat({ label, children, tone, className }: { label: ReactNode; c
 export function CardFooter({ className, children }: { className?: string; children: ReactNode }) {
   return <footer className={cx('mt-auto flex items-center justify-between gap-12 border-t border-edge px-20 py-12 card-band-strong', className)}>{children}</footer>;
 }
+
+export { CardMedia } from './card-media';
+
+/**
+ * A titled group of cards, the bento label: a heading with its icon above a grid, not inside a
+ * card. The grid's columns are the caller's (`grid-cols-*` in className).
+ */
+export function CardGroup({
+  title,
+  description,
+  icon,
+  actions,
+  level = 'h2',
+  className,
+  gridClassName,
+  children,
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  icon?: TablerIcon | ReactNode;
+  actions?: ReactNode;
+  level?: 'h2' | 'h3';
+  className?: string;
+  gridClassName?: string;
+  children: ReactNode;
+}) {
+  const Heading = level;
+  return (
+    <section className={cx('flex flex-col gap-16', className)}>
+      <header className="flex flex-wrap items-end justify-between gap-12">
+        <div className="flex min-w-0 items-center gap-12">
+          {icon ? <IconTile icon={icon} size="md" /> : null}
+          <div className="flex min-w-0 flex-col gap-2">
+            <Heading className="text-title-section text-ink">{title}</Heading>
+            {description ? <p className="measure text-body-sm text-ink-muted">{description}</p> : null}
+          </div>
+        </div>
+        {actions ? <div className="flex shrink-0 items-center gap-8">{actions}</div> : null}
+      </header>
+      <div className={cx('grid grid-cols-1 gap-16', gridClassName)}>{children}</div>
+    </section>
+  );
+}

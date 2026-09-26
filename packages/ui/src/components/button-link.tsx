@@ -1,6 +1,6 @@
 import Link, { type LinkProps } from 'next/link';
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
-import { type ButtonSize, type ButtonVariant, buttonClass, buttonIconPx } from './button-styles';
+import { type ButtonSize, type ButtonVariant, buttonClass, buttonIconClass, buttonIconPx } from './button-styles';
 import { ICON_STROKE, type TablerIcon } from './icon';
 
 /**
@@ -26,7 +26,7 @@ export function ButtonLink({
     iconPosition?: 'start' | 'end';
     className?: string;
   }) {
-  const glyph = Glyph ? <Glyph size={buttonIconPx[size]} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0" /> : null;
+  const glyph = Glyph ? <Glyph size={buttonIconPx[size]} stroke={ICON_STROKE} aria-hidden="true" className={buttonIconClass(variant)} /> : null;
   return (
     <Link href={href} {...rest} className={buttonClass({ variant, size, className })}>
       {iconPosition === 'start' ? glyph : null}

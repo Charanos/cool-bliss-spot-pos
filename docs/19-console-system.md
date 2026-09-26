@@ -100,6 +100,24 @@ Console-local parts: `ProductThumb` (a catalogue photograph or its initial, with
 Console server actions go through `runAction` (`app/(console)/console/(shell)/_lib/action.ts`): the
 session actor, a zod schema for every field, `withWrite`, safe error messages, revalidation.
 
+### The expressive layer
+
+The touches the Console's first revamp introduced, rebuilt on tokens so every page can use them
+the same way. Each is decoration beside something a page already says in words and figures.
+
+| Primitive | Use |
+|---|---|
+| `Metric` top line | Every metric card carries a 1px line along its top in its tone (`card-topline`, `topline-*`); its icon tile sits before the label and swells a little on hover |
+| `CardMedia` | A real photograph across the top of a record card (a product, a person, a delivery), the title on a scrim. If the image fails, an initial tile stands in and the title turns to ink |
+| `CardGroup` | The bento label: a heading and its icon above a grid of cards, never inside one |
+| `Separator variant="pill"` | A named break between two parts of a page: a hairline fading at both ends around a small band |
+| `Callout size="hero"` | The one banner at the head of a page when something needs a person: an icon tile, the figure behind a rule, the way on |
+| `ActionPill` | The way on from a row or card: turns solid ink when its row (`group`) is hovered, its arrow nudging forward |
+| `InlineBar` | A 3px bar inside a figure's cell: a share, days of cover, how much of an order has come |
+| `ChartCaption` | The line above a chart that says what to look at |
+| `Sparkline` | A small trend in bars or a line, labelled for a screen reader |
+| `Button variant="create"` | The one way to make something new on a page: the primary as a pill, its plus turning a quarter |
+
 ## 4. The shell: a desk and a sheet
 
 ```

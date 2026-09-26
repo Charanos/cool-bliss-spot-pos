@@ -3,7 +3,7 @@
 import { type ButtonHTMLAttributes, type ReactNode, forwardRef, useLayoutEffect, useRef, useState } from 'react';
 import { useDelayedFlag } from '../hooks';
 import { ICON_STROKE, type TablerIcon } from './icon';
-import { type ButtonSize, type ButtonVariant, buttonClass, buttonIconPx } from './button-styles';
+import { type ButtonSize, type ButtonVariant, buttonClass, buttonIconClass, buttonIconPx } from './button-styles';
 import { Spinner } from './spinner';
 
 export type { ButtonSize, ButtonVariant } from './button-styles';
@@ -63,8 +63,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   }
 
   const inert = disabled || loading;
-  const glyph = Glyph ? <Glyph size={buttonIconPx[size]} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0" /> : null;
-  const spinner = <Spinner size={buttonIconPx[size] === 24 ? 20 : 16} tone={variant === 'primary' || variant === 'destructive' ? 'on-accent' : 'default'} />;
+  const glyph = Glyph ? <Glyph size={buttonIconPx[size]} stroke={ICON_STROKE} aria-hidden="true" className={buttonIconClass(variant)} /> : null;
+  const spinner = <Spinner size={buttonIconPx[size] === 24 ? 20 : 16} tone={variant === 'primary' || variant === 'create' || variant === 'destructive' ? 'on-accent' : 'default'} />;
   const leading = showSpinner && (iconPosition === 'start' || !Glyph) ? spinner : iconPosition === 'start' ? glyph : null;
   const trailing = iconPosition === 'end' ? (showSpinner && Glyph ? spinner : glyph) : null;
 
