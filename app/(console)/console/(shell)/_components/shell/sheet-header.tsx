@@ -3,7 +3,7 @@
 import { formatAgo, formatTime } from '@bliss/shared/format';
 import { useDismiss } from '@bliss/ui/hooks';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconArrowLeft, IconChevronDown, IconChevronRight, IconDeviceTablet } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconDeviceTablet } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Fragment, type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -30,8 +30,8 @@ export const SHEET_SCROLL_ID = 'console-sheet';
  *
  * Row one says where you are (the workspace's icon, then the breadcrumb, naming the record on a
  * record page) and, on the right, only what is worth knowing: orders a station is holding, and
- * the stations. Row two is the workspace's views as underline tabs with their counts; on a record
- * page it is a way back to the list instead, since no tab would be lit.
+ * the stations. Row two is the workspace's views as underline tabs with their counts; a record
+ * page has none, since its own header carries the way back.
  */
 export function SheetHeader({
   stations,
@@ -163,13 +163,6 @@ export function SheetHeader({
             })}
           </ul>
         </nav>
-      ) : onRecord && found?.page ? (
-        <div className="flex h-control-md items-center px-32">
-          <Link href={found.page.href} className="inline-flex items-center gap-6 rounded-sm text-body-sm text-ink-muted transition-hover hover:text-ink">
-            <IconArrowLeft size={14} stroke={1.5} aria-hidden="true" />
-            All {found.page.label.toLowerCase()}
-          </Link>
-        </div>
       ) : null}
     </header>
   );

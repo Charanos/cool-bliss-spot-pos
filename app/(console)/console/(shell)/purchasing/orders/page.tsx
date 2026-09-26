@@ -1,3 +1,5 @@
+import { ButtonLink } from '@bliss/ui/components/button-link';
+import { IconListCheck, IconPlus } from '@tabler/icons-react';
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as procurement from '@/modules/procurement/service';
@@ -31,8 +33,20 @@ export default function OrdersPage() {
   });
   return (
     <>
-      <ViewHeader page="/console/purchasing/orders" />
-      <OrdersTable rows={rows} timezone={outlet.timezone} suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} />
+      <ViewHeader
+        page="/console/purchasing/orders"
+        actions={
+          <>
+            <ButtonLink href="/console/purchasing/reorder" variant="ghost" icon={IconListCheck}>
+              Reorder suggestions
+            </ButtonLink>
+            <ButtonLink href="/console/purchasing/orders/new" variant="create" icon={IconPlus}>
+              New order
+            </ButtonLink>
+          </>
+        }
+      />
+      <OrdersTable rows={rows} now={Date.now()} timezone={outlet.timezone} suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} />
     </>
   );
 }

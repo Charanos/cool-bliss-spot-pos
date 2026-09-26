@@ -14,6 +14,7 @@ import { IconAlertTriangle, IconCash, IconPackages, IconTruckDelivery } from '@t
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { raisePurchaseOrder } from '../../_actions/purchasing';
+import { EntityLink } from '../../_components/entity-link';
 
 export interface ReorderLine {
   variantId: string;
@@ -117,7 +118,7 @@ function SupplierGroup({ group }: { group: ReorderGroup }) {
         level="h2"
         titleId={titleId}
         icon={IconTruckDelivery}
-        title={group.name}
+        title={group.supplierId ? <EntityLink kind="supplier" id={group.supplierId}>{group.name}</EntityLink> : group.name}
         subtitle={[group.contact, group.leadTimeDays !== null ? `delivers in ${plural(group.leadTimeDays, 'day')}` : null, group.minOrder ? `minimum ${formatKes(group.minOrder, { decimals: 'whole' })}` : null].filter(Boolean).join(', ')}
       />
       {error || belowMinimum || !group.supplierId ? (

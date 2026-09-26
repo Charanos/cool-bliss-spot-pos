@@ -17,7 +17,9 @@ export default function ReceiptsPage() {
   const orders = procurement.purchaseOrders();
   const rows: ReceiptRow[] = procurement.receipts().map((r) => {
     const lines = procurement.receiptLines(r.id);
+    const note = procurement.noteForReceipt(r.id);
     return {
+      photo: note?.mediaUrls.find((u) => !u.endsWith('.pdf')) ?? null,
       id: r.id,
       number: r.grnNumber,
       poId: r.purchaseOrderId,
@@ -37,9 +39,14 @@ export default function ReceiptsPage() {
   });
   return (
     <>
-      <ViewHeader page="/console/purchasing/receipts" actions={<ButtonLink href="/console/purchasing/receipts/new" variant="primary" icon={IconPlus}>
+      <ViewHeader
+        page="/console/purchasing/receipts"
+        actions={
+          <ButtonLink href="/console/purchasing/receipts/new" variant="create" icon={IconPlus}>
             Receive a delivery
-          </ButtonLink>} />
+          </ButtonLink>
+        }
+      />
       <ReceiptsTable rows={rows} timezone={outlet.timezone} suppliers={procurement.suppliers().map((s) => ({ value: s.id, label: s.name }))} />
     </>
   );

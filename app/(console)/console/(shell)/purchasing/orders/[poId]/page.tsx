@@ -10,8 +10,11 @@ import { notFound } from 'next/navigation';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as procurement from '@/modules/procurement/service';
+import { EntityLink } from '../../../_components/entity-link';
 import { RecordCrumb } from '../../../_components/shell/crumbs';
 import { ORDER_STATUS } from '../../../_lib/labels';
+import { businessDate } from '@bliss/shared/time';
+import { orderFormData } from '../order-data';
 import { OrderActions } from './order-detail';
 
 export async function generateMetadata({ params }: { params: Promise<{ poId: string }> }): Promise<Metadata> {
@@ -51,7 +54,18 @@ export default async function OrderPage({ params }: { params: Promise<{ poId: st
             ]}
           />
         }
-        actions={<OrderActions orderId={order.id} number={order.poNumber} status={order.status} />}
+        actions={
+          <OrderActions
+            orderId={order.id}
+            number={order.poNumber}
+            status={order.status}
+            editable={
+              (order.status === 'draft' || order.status === 'sent') && lines.every((l) => l.qtyReceived === 0)
+                ? { ...orderFormData(), initial: { supplierId: order.supplierId, lines: lines.map((l) => ({ variantId: l.productVariantId, qty: l.qtyOrdered, unitCostCents: l.unitCostCents })), expectedAt: order.expectedAt ? businessDate(order.expectedAt, identity.outlet().timezone, '00:00') : null, notes: order.notes } }
+                : null
+            }
+          />
+        }
       />
 
       {order.notes ? (
@@ -88,7 +102,11 @@ export default async function OrderPage({ params }: { params: Promise<{ poId: st
               <tbody>
                 {lines.map((l) => (
                   <tr key={l.id} className="border-b border-rule last:border-b-0">
-                    <td className="py-12 pl-20 pr-12 text-ui text-ink">{catalogue.variantById(l.productVariantId)?.name ?? 'Item no longer stocked'}</td>
+                    <td className="py-12 pl-20 pr-12 text-ui">
+                      <EntityLink kind="product" id={catalogue.variantById(l.productVariantId)?.productId}>
+                        {catalogue.variantById(l.productVariantId)?.name ?? 'Item no longer stocked'}
+                      </EntityLink>
+                    </td>
                     <td className="px-12 py-12 text-right font-mono tabular text-num-md text-ink">{l.qtyOrdered}</td>
                     <td className={`px-12 py-12 text-right font-mono tabular text-num-md ${l.qtyReceived === 0 ? 'text-ink-subtle' : l.qtyReceived < l.qtyOrdered ? 'text-low' : 'text-poured'}`}>{l.qtyReceived}</td>
                     <td className="px-12 py-12 text-right">
@@ -137,7 +155,7 @@ export default async function OrderPage({ params }: { params: Promise<{ poId: st
 
           {supplier ? (
             <Card aria-labelledby="order-supplier">
-              <CardHeader band level="h2" titleId="order-supplier" title={supplier.name} subtitle="Supplier" />
+              <CardHeader band level="h2" titleId="order-supplier" title={<EntityLink kind="supplier" id={supplier.id}>{supplier.name}</EntityLink>} subtitle="Supplier" />
               <CardBody className="pt-4">
                 <KeyValueList
                   layout="inline"

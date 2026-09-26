@@ -12,6 +12,7 @@ import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import * as procurement from '@/modules/procurement/service';
+import { EntityLink } from '../../../_components/entity-link';
 import { RecordCrumb } from '../../../_components/shell/crumbs';
 import { ReceiptActions } from './receipt-actions';
 import { type ReceiptDetailLine, ReceiptLines, ReceiptPhotos } from './receipt-detail';
@@ -49,6 +50,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ receip
     const batch = move?.stockBatchId ? batches.find((b) => b.id === move.stockBatchId) : null;
     return {
       id: l.id,
+      productId: product?.id ?? null,
       name: productName && !variantName.toLowerCase().startsWith(productName.toLowerCase()) ? `${productName} ${variantName}` : variantName,
       qtyExpected: l.qtyExpected,
       qtyReceived: l.qtyReceived,
@@ -77,7 +79,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ receip
         meta={
           <MetaRow
             items={[
-              { icon: IconTruckDelivery, value: supplier?.name ?? 'Supplier removed' },
+              { icon: IconTruckDelivery, value: supplier ? <EntityLink kind="supplier" id={supplier.id} muted>{supplier.name}</EntityLink> : 'Supplier removed' },
               { icon: IconClock, value: formatDateTime(receipt.receivedAt, tz) },
               { icon: IconUser, value: identity.displayName(receipt.receivedBy) },
               { icon: IconBuildingWarehouse, value: `Into ${location?.name ?? 'the store'}` },

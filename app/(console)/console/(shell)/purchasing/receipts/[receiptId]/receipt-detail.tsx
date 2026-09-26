@@ -7,9 +7,11 @@ import { Totals } from '@bliss/ui/components/console/section';
 import { ImageLightbox } from '@bliss/ui/components/console/lightbox';
 import { Money } from '@bliss/ui/components/money';
 import { useState } from 'react';
+import { EntityLink } from '../../../_components/entity-link';
 
 export interface ReceiptDetailLine {
   id: string;
+  productId: string | null;
   name: string;
   qtyExpected: number;
   qtyReceived: number;
@@ -59,7 +61,9 @@ export function ReceiptLines({ lines }: { lines: ReceiptDetailLine[] }) {
               return (
                 <tr key={l.id} className="border-b border-rule align-top last:border-b-0">
                   <td className="py-12 pl-20 pr-12">
-                    <span className="block text-ui text-ink">{l.name}</span>
+                    <EntityLink kind="product" id={l.productId} className="block text-ui">
+                      {l.name}
+                    </EntityLink>
                     {l.qtyExpected > 0 && l.qtyExpected !== l.qtyReceived ? (
                       <span className={short ? 'text-body-sm text-low' : 'text-body-sm text-ink-muted'}>
                         {l.qtyExpected} expected{short ? `, ${l.qtyExpected - l.qtyReceived} short` : ''}
