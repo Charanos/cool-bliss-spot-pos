@@ -191,6 +191,30 @@ Both themes are first class. Every component is specified in both. Neither is a 
 
 4.5:1 for body text, 3:1 for large text and UI boundaries. Every pairing above was measured, not assumed, and the token file carries the measured ratio as a comment beside each pair. A new pairing is measured before it ships, and a CI test walks the token pairs.
 
+### Display profiles
+
+A theme is chosen for the room; a display profile is chosen for the screen. Each station sets `data-display` on its page before first paint (a boot script in the Floor and Counter layouts reads `bliss-display` from the device), so nothing flashes. Profiles combine: `lite clarity` is valid. docs/11 D-25.
+
+| Profile | For | What changes |
+|---|---|---|
+| `standard` | a good screen | nothing: the look in this document |
+| `lite` | a slow device, such as the iPad mini 4 | no backdrop blur (glass and scrims turn solid), no ambient artwork, no dot textures, and no animation loops more than once |
+| `clarity` | a weak panel, such as the counter laptop | everything `lite` removes, plus the Clarity colours below, 12px minimum type, and a status glow drawn as a crisp tone edge |
+
+Clarity, dark theme only (the Counter keeps its identity):
+
+| Role | Standard | Clarity |
+|---|---|---|
+| poured | pastel green | `#45DC92` |
+| served | pastel violet | `#A0A6FF` |
+| low | pastel amber | `#FFC44D` |
+| stop | pastel red | `#FF8FA5` |
+| money | pale gold | `#FFD68A` |
+
+The page, sunken and raised surfaces step further apart, and `rule` is no longer the same as `raised`. `packages/ui/src/tokens/clarity.test.ts` holds this: every text pair keeps its floor, and every status stays apart from the others, after `weakPanel()` in `contrast.ts` has lifted the blacks, flattened the gamma to 1.8 and taken 30% of the saturation, as a budget TN panel does.
+
+The device check (Settings, This device) suggests a profile from what the device reports: Safari older than 16, two cores or fewer, or 2GB or less suggests `lite`; an sRGB-only, standard range, 1x screen driven by a mouse suggests `clarity`. The person at the device confirms it.
+
 ---
 
 ## 5. Space, shape, elevation

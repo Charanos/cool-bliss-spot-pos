@@ -58,8 +58,8 @@ it is a dense desktop tool. It has exactly three heading levels.
 ## 3. Tokens and primitives
 
 Everything comes from `packages/ui/src/tokens/tokens.ts` (run `pnpm tokens:build`). A value in
-brackets (`text-[13px]`, `shadow-[...]`, `rounded-[12px]`, `px-[6px]`) is refused in Console code by
-`bliss/no-arbitrary-design-values`; layout templates (`grid-cols-[...]`, `w-[...]`) stay allowed.
+brackets (`text-[13px]`, `shadow-[...]`, `rounded-[12px]`, `px-[6px]`) is refused in Console, Floor and
+Counter code by `bliss/no-arbitrary-design-values`; layout templates (`grid-cols-[...]`, `w-[...]`) stay allowed.
 `scripts/check-classes.mjs` fails on any class that compiles to nothing.
 
 **Surfaces and roles** (light and dark): `page`, `card`, `edge`, `edge-strong`, `band`, `band-strong`,
@@ -83,7 +83,7 @@ brackets (`text-[13px]`, `shadow-[...]`, `rounded-[12px]`, `px-[6px]`) is refuse
 | `console/card`: `Card`, `CardHeader`, `CardBody`, `CardStats`, `Stat`, `CardFooter`, `IconTile` | every Card-family surface |
 | `console/metric`: `Metric`, `MetricGrid`, `CountUp` | a headline figure; a row of them. `Metric` renders on the server too, so a server page may pass it an icon |
 | `console/section`: `Section`, `SectionHeader`, `Overline`, `Separator`, `KeyValueList`, `MetaRow`, `SummaryStrip`, `LedgerList`, `LedgerItem`, `DetailHeader`, `Callout`, `Totals` | page composition; a `Callout` says one thing that needs a person, `Totals` ends a bill, an order or a delivery |
-| `console/data-table`: `DataTable`, `NumCell`, `StackCell` | every table; four states, URL state, export |
+| `console/data-table`: `DataTable`, `NumCell`, `StackCell` | every table; four states, URL state, export. Below the width its columns need (a 1280 or 1366 laptop), columns fold into a detail line under the row's first cell instead of scrolling sideways: text first from the right, then figures from the left, so the total stays. `fold` on a column sets its order; `fold: 0` keeps it (`table/fold.ts`) |
 | `console/toolbar`: `Toolbar`, `SearchInput`, `ToggleChip`, `ResultCount` | the strip above a table or report |
 | `console/filter-select`: `FilterSelect` | a filter, as a real listbox |
 | `console/tabs`: `RouteTabs`, `Tabs`, `TabPanel`, `useTabValue` | views as URLs; in-page views in the URL |
@@ -94,6 +94,10 @@ brackets (`text-[13px]`, `shadow-[...]`, `rounded-[12px]`, `px-[6px]`) is refuse
 | `status`: `StatusChip`, `ToneChip`, `Dot`; `badge`: `Badge` | states and labels, in one set of tones |
 | `money`: `Money`, `AnimatedMoney` | every amount |
 | `choice`: `Segmented`, `FilterChips` | radio groups with arrow keys |
+| `photo`: `Photo` | every photograph on every surface; gives way to its fallback (initials, a glyph, nothing) when the image fails, so nothing shows as broken offline |
+| `console/pin-boxes`: `PinBoxes` | a PIN typed or set, one box per digit |
+
+Station parts shared by the Floor and the Counter (`app/_pos`): `StationSettings` (a station's own settings, the same on both) and `DeviceCard` (Settings, This device: the engine, the screen, a pass or fail per feature, the suggested display profile, docs/06 section 4). The Console's device record shows the same report, as the station last sent it.
 
 Console-local parts: `ProductThumb` (a catalogue photograph or its initial, with the category edge) and `StaffAvatar` (an uploaded photo or initials, never a stock photograph). Every primitive is on one page at `/console/kit` when development data is on.
 
