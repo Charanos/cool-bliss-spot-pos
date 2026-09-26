@@ -1,5 +1,9 @@
 import { cx } from '../lib/cx';
 
+/**
+ * The one set of tones. Every chip, badge, count, metric and notice speaks in these, so a state
+ * looks the same wherever it appears. docs/19 section 3.
+ */
 export type Tone = 'poured' | 'served' | 'low' | 'stop' | 'info' | 'neutral' | 'accent';
 
 const dotTone: Record<Tone, string> = {
@@ -92,29 +96,43 @@ export const STATUS: Record<StatusKey, { word: string; tone: Tone }> = {
   unresolved: { word: 'Unresolved', tone: 'stop' },
 };
 
+/** A tint in the tone's own hue, for a chip or a row it marks. Never a nested box. */
+export const washTone: Record<Tone, string> = {
+  poured: 'bg-poured-wash text-poured',
+  served: 'bg-served-wash text-served',
+  low: 'bg-low-wash text-low',
+  stop: 'bg-stop-wash text-stop',
+  info: 'bg-info-wash text-info',
+  neutral: 'bg-neutral-wash text-ink-muted',
+  accent: 'bg-accent-wash text-accent-text',
+};
+
 /**
- * Status chip: micro type, 22px tall, a 6px dot plus a word. Colour, dot and word together, so the
- * state survives greyscale. No fill, so a chip can sit on any surface without nesting one.
+ * Status chip, docs/06 section 6.8: micro type, 22px tall, radius sm, a 6px dot plus a word, on a
+ * wash of its own tone. Colour, dot and word together, so the state survives greyscale; a wash, not
+ * a box, so it sits on a card without nesting one.
  */
 export function StatusChip({ status, label, className }: { status: StatusKey; label?: string; className?: string }) {
   const { word, tone } = STATUS[status];
   return (
-    <span className={cx('inline-flex h-[22px] shrink-0 items-center gap-6 whitespace-nowrap rounded-full px-8 text-micro micro-caps ring-1 ring-inset shadow-[0_1px_2px_rgba(0,0,0,0.02)]', pillTone[tone], className)}>
+    <span className={cx('inline-flex h-chip-dense shrink-0 items-center gap-6 whitespace-nowrap rounded-sm px-8 text-micro micro-caps', washTone[tone], className)}>
       <Dot tone={tone} />
       {label ?? word}
     </span>
   );
 }
 
-const pillTone: Record<Tone, string> = {
-  poured: 'bg-poured/[0.12] text-poured ring-poured/25',
-  served: 'bg-served/[0.12] text-served ring-served/25',
-  low: 'bg-low/[0.12] text-low ring-low/25',
-  stop: 'bg-stop/[0.14] text-stop ring-stop/30',
-  info: 'bg-info/[0.12] text-info ring-info/25',
-  neutral: 'bg-sunken/70 text-ink-muted ring-rule-raised/50',
-  accent: 'bg-accent/[0.12] text-accent-text ring-accent/25',
-};
+/** A chip for any tone and word, when the state is not one of the named statuses. */
+export function ToneChip({ tone, children, dot = true, className }: { tone: Tone; children: React.ReactNode; dot?: boolean; className?: string }) {
+  return (
+    <span className={cx('inline-flex h-chip-dense shrink-0 items-center gap-6 whitespace-nowrap rounded-sm px-8 text-micro micro-caps', washTone[tone], className)}>
+      {dot ? <Dot tone={tone} /> : null}
+      {children}
+    </span>
+  );
+}
+
+const pillTone = washTone;
 
 /**
  * A state on a card: a tinted pill with a dot and a word or two. One line always, the same height
@@ -123,7 +141,7 @@ const pillTone: Record<Tone, string> = {
  */
 export function StatePill({ tone, children, more, live, className }: { tone: Tone; children: React.ReactNode; more?: React.ReactNode; live?: boolean; className?: string }) {
   return (
-    <span className={cx('inline-flex h-24 shrink-0 items-center gap-6 whitespace-nowrap rounded-dot px-8 text-label font-medium ring-1 ring-inset pad:h-[28px] pad:px-12', pillTone[tone], className)}>
+    <span className={cx('inline-flex h-24 shrink-0 items-center gap-6 whitespace-nowrap rounded-dot px-8 text-label font-medium pad:h-row-compact pad:px-12', pillTone[tone], className)}>
       <Dot tone={tone} className={live ? 'animate-breathe' : undefined} />
       <span>
         {children}

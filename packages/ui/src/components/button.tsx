@@ -2,12 +2,11 @@
 
 import { type ButtonHTMLAttributes, type ReactNode, forwardRef, useLayoutEffect, useRef, useState } from 'react';
 import { useDelayedFlag } from '../hooks';
-import { cx } from '../lib/cx';
 import { ICON_STROKE, type TablerIcon } from './icon';
+import { type ButtonSize, type ButtonVariant, buttonClass, buttonIconPx } from './button-styles';
 import { Spinner } from './spinner';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive' | 'quiet-destructive' | 'tender';
-export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
+export type { ButtonSize, ButtonVariant } from './button-styles';
 
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled' | 'children'> {
   variant?: ButtonVariant;
@@ -25,31 +24,6 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
   destructive?: boolean;
   children?: ReactNode;
 }
-
-const variantClass: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-accent-ink font-medium shadow-[inset_0_1px_0_color-mix(in_oklab,var(--color-ink)_22%,transparent),0_6px_18px_-8px_color-mix(in_oklab,var(--color-accent)_55%,transparent)] hover:bg-accent-hover active:bg-accent-pressed',
-  secondary: 'bg-control text-ink shadow-[inset_0_1px_0_color-mix(in_oklab,var(--color-ink)_8%,transparent)] hover:bg-control-hover active:bg-control-pressed',
-  ghost: 'bg-transparent text-ink-muted hover:bg-control hover:text-ink active:bg-control-hover',
-  destructive: 'bg-stop text-stop-ink font-medium hover:opacity-90 active:opacity-80',
-  'quiet-destructive': 'bg-transparent text-stop hover:bg-control active:bg-control-hover',
-  tender: 'bg-control text-ink text-subtitle hover:bg-control-hover active:bg-control-pressed',
-};
-
-const sizeClass: Record<ButtonSize, string> = {
-  sm: 'h-control-sm rounded-[10px] px-12 text-body-sm gap-6',
-  md: 'h-control-md rounded-[12px] px-16 text-body gap-8',
-  lg: 'h-control-lg rounded-[14px] px-20 text-body gap-8',
-  xl: 'h-control-xl rounded-[16px] px-24 text-subtitle gap-12',
-};
-
-const iconOnlySize: Record<ButtonSize, string> = {
-  sm: 'w-control-sm',
-  md: 'w-control-md',
-  lg: 'w-control-lg',
-  xl: 'w-control-xl',
-};
-
-const iconPx: Record<ButtonSize, number> = { sm: 16, md: 20, lg: 20, xl: 24 };
 
 /**
  * Button, docs/06-design-system.md section 6.1. Labels are verbs naming their outcome, carrying the
@@ -84,13 +58,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     if (!loading && lockedWidth !== null) setLockedWidth(null);
   }, [loading, lockedWidth]);
 
-  if (process.env.NODE_ENV !== 'production' && iconOnly && !rest['aria-label']) {
+  if (process.env.NODE_ENV !== 'production' && iconOnly && !rest['aria-label'] && !rest['aria-labelledby']) {
     console.warn('Button: an icon-only button needs an aria-label.');
   }
 
   const inert = disabled || loading;
-  const glyph = Glyph ? <Glyph size={iconPx[size]} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0" /> : null;
-  const spinner = <Spinner size={iconPx[size] === 24 ? 20 : 16} tone={variant === 'primary' || variant === 'destructive' ? 'on-accent' : 'default'} />;
+  const glyph = Glyph ? <Glyph size={buttonIconPx[size]} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0" /> : null;
+  const spinner = <Spinner size={buttonIconPx[size] === 24 ? 20 : 16} tone={variant === 'primary' || variant === 'destructive' ? 'on-accent' : 'default'} />;
   const leading = showSpinner && (iconPosition === 'start' || !Glyph) ? spinner : iconPosition === 'start' ? glyph : null;
   const trailing = iconPosition === 'end' ? (showSpinner && Glyph ? spinner : glyph) : null;
 
@@ -114,19 +88,22 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         onClick?.(event);
       }}
       style={{ ...style, ...(lockedWidth !== null ? { width: lockedWidth } : null) }}
-      className={cx(
-        'relative inline-flex select-none items-center justify-center whitespace-nowrap press-feedback active:scale-[0.985]',
-        variantClass[variant],
-        sizeClass[size],
-        iconOnly && cx(iconOnlySize[size], 'px-0'),
-        fullWidth && 'w-full',
-        disabled && 'bg-control text-ink-disabled hover:bg-control active:scale-100',
-        className,
-      )}
+      className={buttonClass({ variant, size, iconOnly, fullWidth, disabled, className })}
     >
       {leading}
       {iconOnly ? null : <span className="truncate">{children}</span>}
       {trailing}
     </button>
   );
+});
+
+/**
+ * An icon-only button. The label is required, so it can never be an unnamed control; it also shows
+ * as the tooltip on hover.
+ */
+export const IconButton = forwardRef<HTMLButtonElement, Omit<ButtonProps, 'iconOnly' | 'children' | 'icon'> & { icon: TablerIcon; label: string }>(function IconButton(
+  { icon, label, variant = 'ghost', size = 'sm', title, ...rest },
+  ref,
+) {
+  return <Button ref={ref} {...rest} variant={variant} size={size} icon={icon} iconOnly aria-label={label} title={title ?? label} />;
 });

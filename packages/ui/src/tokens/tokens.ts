@@ -135,6 +135,9 @@ export const themes = {
     'poured-wash': alpha(s.poured.dark, 10),
     'served-wash': alpha(s.served.dark, 10),
     'attention-wash': alpha(e[400], 12),
+    'low-wash': alpha(s.low.dark, 12),
+    'info-wash': alpha(s.info.dark, 10),
+    'neutral-wash': alpha(f[700], 45),
     /* Console, docs/19-console-system.md. The Card family: one surface a step off the page, its edge,
      * and the bands that head and foot it. The rail sits one tonal step off the page. */
     card: f[900],
@@ -146,6 +149,8 @@ export const themes = {
     'rail-hover': alpha(f[800], 70),
     'rail-active': f[800],
     'on-scrim': f[0],
+    /* The selected segment of a segmented control: a thumb, not a nested pane. */
+    thumb: f[700],
   },
   light: {
     page: f[0],
@@ -203,6 +208,9 @@ export const themes = {
     'poured-wash': alpha(s.poured.light, 8),
     'served-wash': alpha(s.served.light, 8),
     'attention-wash': alpha(e[600], 9),
+    'low-wash': alpha(s.low.light, 9),
+    'info-wash': alpha(s.info.light, 8),
+    'neutral-wash': alpha(f[200], 55),
     card: f[0],
     edge: alpha(f[200], 80),
     'edge-strong': f[200],
@@ -212,6 +220,7 @@ export const themes = {
     'rail-hover': alpha(f[200], 45),
     'rail-active': alpha(f[200], 70),
     'on-scrim': f[0],
+    thumb: f[0],
   },
 } as const;
 
@@ -272,11 +281,11 @@ export const fontFamily = {
 export const space = [2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 56, 72, 96] as const;
 
 /**
- * Controls `sm`, rows and tiles `md`, sheets `lg`. The Console adds `card` (the Card family, the same
+ * Chips `sm`, rows, tiles and small buttons `md`, buttons `control`, sheets `lg`. The Console adds `card` (the Card family, the same
  * value as `lg`), `overlay` for dialogs, and `pill`, which only a count badge or a segmented control
  * uses. Status chips stay `sm`.
  */
-export const radius = { sm: 6, md: 10, lg: 16, card: 16, overlay: 20, pill: 9999, dot: 9999 } as const;
+export const radius = { sm: 6, md: 10, control: 12, lg: 16, card: 16, overlay: 20, pill: 9999, dot: 9999 } as const;
 
 /**
  * Component dimensions. Not space: these size things, they do not separate them.
@@ -312,6 +321,12 @@ export const size = {
   'frame-min': 1024,
   /** A nav item in the Console rail. */
   'rail-item': 32,
+  /** A toolbar search field, and a popover list's width and height limits. */
+  search: 240,
+  'popover-min': 200,
+  popover: 320,
+  /** A photo shown at full size inside a dialog. */
+  lightbox: 720,
   /** A KPI card's figure row, so a row of metrics shares one baseline. */
   'kpi-min': 136,
   'panel-tender': 420,
@@ -346,6 +361,12 @@ const ink = (percent: number) => alpha(f[950], percent);
 export const consoleElevation = {
   card: { light: `0 1px 2px ${ink(4)}, 0 2px 8px ${ink(3)}`, dark: 'none' },
   'card-hover': { light: `0 1px 2px ${ink(5)}, 0 10px 28px -6px ${ink(10)}`, dark: `0 12px 28px -12px ${alpha('#000000', 60)}` },
+  /* Buttons, on every surface: a lit top edge, and for the primary a glow in its own colour. */
+  control: { light: `inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 8%, transparent)`, dark: `inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 8%, transparent)` },
+  'control-primary': {
+    light: `inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 22%, transparent), 0 6px 18px -8px color-mix(in oklab, var(--bliss-accent) 55%, transparent)`,
+    dark: `inset 0 1px 0 color-mix(in oklab, var(--bliss-ink) 22%, transparent), 0 6px 18px -8px color-mix(in oklab, var(--bliss-accent) 55%, transparent)`,
+  },
   popover: { light: `0 12px 32px -8px ${ink(18)}, 0 2px 6px ${ink(6)}`, dark: `0 16px 40px -8px ${alpha('#000000', 70)}, 0 0 0 1px ${f[700]}` },
 } as const;
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react';
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
 import { cx } from '../lib/cx';
 
 export interface OverlayMotion {
@@ -40,6 +40,11 @@ export interface OverlayProps {
   onClosed?: () => void;
   className?: string;
   hideTitle?: boolean;
+  /**
+   * `glass` is the Floor and Counter sheet: frosted, over a working surface. `solid` is the Console
+   * dialog: the card surface, one edge, the popover shadow and the Console's type. docs/19.
+   */
+  surface?: 'glass' | 'solid';
 }
 
 const widthClass = {
@@ -62,6 +67,9 @@ const sheetWidthClass = {
 
 /** Square at the bottom edge on a phone, a card once it is centred. */
 const ADAPTIVE_SHAPE = 'safe-b rounded-t-[28px] border-b-0 pad:rounded-[28px] pad:border-b pad:[padding-bottom:0]';
+
+/** Which surface an overlay's children sit on, so its actions row can match the padding. */
+const SurfaceContext = createContext<'glass' | 'solid'>('glass');
 
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
@@ -91,7 +99,9 @@ export function Overlay({
   onClosed,
   className,
   hideTitle,
+  surface = 'glass',
 }: OverlayProps) {
+  const solid = surface === 'solid';
   const dialogRef = useRef<HTMLDialogElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
@@ -186,26 +196,20 @@ export function Overlay({
       className="fixed inset-x-0 top-0 m-0 h-auto w-auto overflow-hidden bg-transparent p-0"
       style={{ bottom: bottomOffset }}
     >
-      <div ref={scrimRef} aria-hidden="true" className="absolute inset-0 bg-page/40 backdrop-blur-[12px] transition-all duration-300" onClick={onClose} />
+      <div ref={scrimRef} aria-hidden="true" className={cx('absolute inset-0', solid ? 'bg-scrim' : 'scrim-glass')} onClick={onClose} />
       <div className={cx('pointer-events-none absolute inset-0 flex', wrapperPosition)}>
         <div
           ref={panelRef}
           tabIndex={-1}
-          style={{
-            backdropFilter: 'blur(40px)',
-            WebkitBackdropFilter: 'blur(40px)',
-            backgroundColor: 'color-mix(in srgb, var(--color-raised) 85%, transparent)',
-            borderColor: 'color-mix(in srgb, var(--color-ink) 4%, transparent)',
-            boxShadow: '0 24px 48px -12px color-mix(in srgb, var(--color-ink) 12%, transparent), 0 8px 24px -4px color-mix(in srgb, var(--color-ink) 4%, transparent), inset 0 1px 0 color-mix(in srgb, white 20%, transparent)',
-          }}
           className={cx(
-            'pointer-events-auto flex max-h-[92dvh] flex-col border outline-none',
+            'pointer-events-auto flex max-h-[92dvh] flex-col outline-none',
+            solid ? 'overlay-solid' : 'overlay-glass',
             // A sheet on a phone is the width of the phone, and pays back the home indicator.
             placement === 'sheet' && 'safe-b rounded-t-[28px] border-b-0',
             placement === 'adaptive' && ADAPTIVE_SHAPE,
-            placement === 'dialog' && 'rounded-[28px]',
+            placement === 'dialog' && (solid ? 'rounded-overlay' : 'rounded-[28px]'),
             placement === 'side'
-              ? 'h-full w-[min(480px,100vw)] rounded-l-[28px] border-r-0'
+              ? cx('h-full w-[min(480px,100vw)] border-r-0', solid ? 'rounded-l-overlay' : 'rounded-l-[28px]')
               : placement === 'sheet' || placement === 'adaptive'
                 ? sheetWidthClass[width]
                 : widthClass[width],
@@ -215,44 +219,49 @@ export function Overlay({
           {/* Header */}
           <div
             className={cx(
-              'shrink-0 px-16 pb-12 pt-20 transition-colors duration-[var(--bliss-duration-hover)] pad:px-32 pad:pb-20 pad:pt-32',
-              edges.top ? 'border-b border-rule-raised/50' : 'border-b border-transparent',
+              'shrink-0 transition-hover',
+              solid ? 'px-24 pb-16 pt-24' : 'px-16 pb-12 pt-20 pad:px-32 pad:pb-20 pad:pt-32',
+              edges.top ? (solid ? 'border-b border-edge' : 'border-b border-rule-raised/50') : 'border-b border-transparent',
               hideTitle && 'sr-only',
             )}
           >
-            {eyebrow ? (
-              <p className="mb-8 font-mono text-caps text-attention text-[10px]">
-                {eyebrow}
-              </p>
-            ) : null}
+            {eyebrow ? <p className={cx('mb-8', solid ? 'overline text-ink-subtle' : 'font-mono text-caps text-attention')}>{eyebrow}</p> : null}
             <div className="flex items-center gap-12">
               {leading ? (
                 <span aria-hidden="true" className="inline-flex shrink-0">
                   {leading}
                 </span>
               ) : null}
-              <h2 id={titleId} className="min-w-0 text-title font-medium text-ink">
+              <h2 id={titleId} className={cx('min-w-0 text-ink', solid ? 'text-title-section' : 'text-title font-medium')}>
                 {title}
               </h2>
             </div>
             {description ? (
-              <p id={descriptionId} className="mt-8 text-body text-ink-muted ">
+              <p id={descriptionId} className={cx('text-ink-muted', solid ? 'measure mt-4 text-body-sm' : 'mt-8 text-body')}>
                 {description}
               </p>
             ) : null}
           </div>
 
           {/* Body */}
-          <div ref={bodyRef} onScroll={measure} className={cx('min-h-0 flex-1 overflow-y-auto overscroll-contain px-16 pad:px-32', footer ? 'pb-16 pad:pb-24' : 'pb-20 pad:pb-32', hideTitle ? 'pt-20 pad:pt-32' : 'pt-4')}>
-            {children}
+          <div
+            ref={bodyRef}
+            onScroll={measure}
+            className={cx(
+              'min-h-0 flex-1 overflow-y-auto overscroll-contain',
+              solid ? cx('px-24', footer ? 'pb-16' : 'pb-24', hideTitle ? 'pt-24' : 'pt-4') : cx('px-16 pad:px-32', footer ? 'pb-16 pad:pb-24' : 'pb-20 pad:pb-32', hideTitle ? 'pt-20 pad:pt-32' : 'pt-4'),
+            )}
+          >
+            <SurfaceContext.Provider value={surface}>{children}</SurfaceContext.Provider>
           </div>
 
           {/* Footer */}
           {footer ? (
             <div
               className={cx(
-                'flex shrink-0 flex-wrap items-center justify-end gap-8 px-16 pb-16 pt-16 transition-colors duration-[var(--bliss-duration-hover)] pad:gap-16 pad:px-32 pad:pb-32 pad:pt-24',
-                edges.bottom ? 'border-t border-rule-raised/50' : 'border-t border-transparent',
+                'flex shrink-0 flex-wrap items-center justify-end transition-hover',
+                solid ? 'gap-8 card-band px-24 py-16' : 'gap-8 px-16 pb-16 pt-16 pad:gap-16 pad:px-32 pad:pb-32 pad:pt-24',
+                edges.bottom ? (solid ? 'border-t border-edge' : 'border-t border-rule-raised/50') : solid ? 'border-t border-edge' : 'border-t border-transparent',
               )}
             >
               {footer}
@@ -271,10 +280,13 @@ export function Overlay({
  * disappears beneath it.
  */
 export function OverlayActions({ children, className }: { children: ReactNode; className?: string }) {
+  const surface = useContext(SurfaceContext);
   return (
     <div
       className={cx(
-        'sticky bottom-0 z-10 -mx-16 -mb-20 flex items-center justify-end gap-8 border-t border-rule/60 bg-raised/90 px-16 pb-20 pt-16 backdrop-blur-glass transition-colors pad:-mx-32 pad:-mb-32 pad:gap-16 pad:px-32 pad:pb-32 pad:pt-20',
+        surface === 'solid'
+          ? 'sticky bottom-0 z-raised -mx-24 -mb-24 flex items-center justify-end gap-8 border-t border-edge bg-card px-24 py-16'
+          : 'sticky bottom-0 z-10 -mx-16 -mb-20 flex items-center justify-end gap-8 border-t border-rule/60 bg-raised/90 px-16 pb-20 pt-16 backdrop-blur-glass transition-colors pad:-mx-32 pad:-mb-32 pad:gap-16 pad:px-32 pad:pb-32 pad:pt-20',
         className,
       )}
     >

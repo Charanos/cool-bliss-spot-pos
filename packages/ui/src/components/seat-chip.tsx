@@ -1,6 +1,5 @@
 'use client';
 
-import { displaySeatLabel } from '@bliss/shared/seats';
 import { type ButtonHTMLAttributes, forwardRef, useEffect, useRef } from 'react';
 import { cx } from '../lib/cx';
 import { seatBgClass } from '../lib/seat';
@@ -118,12 +117,3 @@ export const SeatChipButton = forwardRef<HTMLButtonElement, SeatChipButtonProps>
   );
 });
 
-/** A seat label set beside a chip, in label type, truncated at 14 characters with the full value in the title. */
-export function SeatLabel({ label, className }: { label: string | null; className?: string }) {
-  if (!label) return null;
-  return (
-    <span title={label} className={cx('truncate text-label text-ink-muted', className)}>
-      {displaySeatLabel(label)}
-    </span>
-  );
-}

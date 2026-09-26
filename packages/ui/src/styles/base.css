@@ -698,3 +698,58 @@
     transform: none;
   }
 }
+
+/* The press on a control: a small, quick scale. Reduced motion keeps the colour change only. */
+@utility press-scale {
+  &:active {
+    transform: scale(var(--bliss-scale-press));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:active {
+      transform: none;
+    }
+  }
+}
+
+/*
+ * A stretched link: the link covers its whole card, so the card is one tab stop and middle click
+ * opens it, while buttons inside the card sit above it (z-raised) and stay their own targets.
+ */
+@utility link-stretched {
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+}
+
+/* The Console dialog surface: solid, one edge, the popover shadow. Floor sheets keep their glass. */
+@utility overlay-solid {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-edge);
+  box-shadow: var(--shadow-popover);
+}
+
+/* The Floor and Counter sheet surface: frosted glass over the working surface. */
+@utility overlay-glass {
+  background-color: color-mix(in srgb, var(--color-raised) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 4%, transparent);
+  box-shadow:
+    0 24px 48px -12px color-mix(in srgb, var(--color-ink) 12%, transparent),
+    0 8px 24px -4px color-mix(in srgb, var(--color-ink) 4%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-glint) 20%, transparent);
+  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(40px);
+}
+
+@utility scrim-glass {
+  background-color: color-mix(in oklab, var(--color-page) 40%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* A key and its value on one row: a fixed label column that stays readable, the value takes the rest. */
+@utility grid-cols-kv {
+  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+}

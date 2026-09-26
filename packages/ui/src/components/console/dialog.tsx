@@ -24,6 +24,7 @@ export function ConsoleOverlay({ placement = 'dialog', ...props }: Omit<OverlayP
       {...props}
       placement={placement}
       motion={consoleMotion}
+      surface="solid"
       onOpened={() => {
         lenis?.stop();
         props.onOpened?.();

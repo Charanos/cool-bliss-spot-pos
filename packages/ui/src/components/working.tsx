@@ -1,4 +1,3 @@
-import Link, { type LinkProps } from 'next/link';
 import { type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from 'react';
 import { cx } from '../lib/cx';
 import { Eyebrow } from './atmosphere';
@@ -42,19 +41,6 @@ export function PaneButton({
   );
 }
 
-/** A raised pane that navigates. Middle click and long press open it like any link. */
-export function PaneLink({
-  emphasis = 'default',
-  className,
-  children,
-  ...rest
-}: LinkProps & { emphasis?: Emphasis; className?: string; children: ReactNode; 'aria-label'?: string; 'aria-current'?: 'page' | undefined }) {
-  return (
-    <Link {...rest} className={cx(paneClass({ emphasis }), className)}>
-      {children}
-    </Link>
-  );
-}
 
 /** An invitation: a free table, an empty slot. Dashed, unfilled, never a card with zeros in it. */
 export function InviteButton({ className, type = 'button', children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
