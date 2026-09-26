@@ -79,6 +79,8 @@ export interface DataTableProps<Row> {
   /** Offer a grid of cards as a second view. With no renderer, cards are built from the columns. */
   gridView?: boolean;
   renderGridCard?: (row: Row) => ReactNode;
+  /** Which view a first visit sees. A catalogue of pictures opens as cards; a ledger as a table. */
+  defaultView?: 'table' | 'grid';
 }
 
 const VIRTUAL_THRESHOLD = 50;
@@ -120,6 +122,7 @@ export function DataTable<Row>({
   variant = 'card',
   pageSize = 50,
   gridView = false,
+  defaultView = 'table',
   renderGridCard,
 }: DataTableProps<Row>) {
   const url = useUrlState();
@@ -143,7 +146,8 @@ export function DataTable<Row>({
   const [storedDensity, setStoredDensity] = usePersistentState<'comfortable' | 'compact'>(`bliss.table.${id}.density`, 'comfortable', ['comfortable', 'compact']);
   const density = (read('density') as 'comfortable' | 'compact' | null) ?? storedDensity;
   const gridAvailable = gridView || Boolean(renderGridCard);
-  const isGrid = gridAvailable && read('view') === 'grid';
+  const view = read('view') ?? defaultView;
+  const isGrid = gridAvailable && view === 'grid';
   const rowHeight = density === 'compact' ? 36 : 44;
 
   const hidden = new Set((read('hide') ?? '').split(',').filter(Boolean));
@@ -315,7 +319,7 @@ export function DataTable<Row>({
                   variant="ghost"
                   icon={isGrid ? IconLayoutRows : IconLayoutGrid}
                   label={isGrid ? 'Show as a list' : 'Show as cards'}
-                  onClick={() => write({ view: isGrid ? null : 'grid' })}
+                  onClick={() => write({ view: (isGrid ? 'table' : 'grid') === defaultView ? null : isGrid ? 'table' : 'grid' })}
                 />
               ) : null}
               <OverflowMenu

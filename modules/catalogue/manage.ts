@@ -182,6 +182,9 @@ function productFields(input: ProductInput, t: ReturnType<typeof catalogueTables
   const barcode = optional(input.barcode, 32, 'A barcode');
   if (barcode && !/^[0-9]{6,32}$/.test(barcode)) throw new DomainError('A barcode is digits only.');
   if (input.defaultSupplierId && !suppliers.some((s) => s.id === input.defaultSupplierId && s.status === 'active')) throw new DomainError('Choose a supplier that is still active.');
+  const imageKey = optional(input.imageKey, 200, 'The photograph');
+  // A photo is one this server's uploader issued, or a catalogue asset key: never an address typed in.
+  if (imageKey && !/^\/api\/uploads\/[A-Za-z0-9_-]{8,64}\.(jpg|png|webp)$/.test(imageKey) && !/^\d{10,}-[0-9a-f]{12}$/.test(imageKey)) throw new DomainError('Upload the photograph again.');
   const abv = input.abv === null ? null : Number(input.abv);
   if (abv !== null && (!Number.isFinite(abv) || abv < 0 || abv > 96)) throw new DomainError('Alcohol by volume is between 0 and 96 per cent.');
   return {
@@ -193,7 +196,7 @@ function productFields(input: ProductInput, t: ReturnType<typeof catalogueTables
     containerVolumeMl: whole(input.containerVolumeMl, 'The bottle size in ml', { min: 1, max: 20_000 }),
     abv,
     defaultSupplierId: input.defaultSupplierId || null,
-    imageKey: optional(input.imageKey, 200, 'The photograph'),
+    imageKey,
   };
 }
 

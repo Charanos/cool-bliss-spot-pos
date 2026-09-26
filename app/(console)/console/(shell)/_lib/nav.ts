@@ -221,3 +221,52 @@ export function destinations(): { href: string; label: string; context: string; 
   }
   return out;
 }
+
+/** Every kind of record the Console has a page for. */
+export type RecordKind =
+  | 'product'
+  | 'category'
+  | 'modifier'
+  | 'priceList'
+  | 'rule'
+  | 'recipe'
+  | 'supplier'
+  | 'order'
+  | 'receipt'
+  | 'count'
+  | 'bill'
+  | 'tab'
+  | 'staff'
+  | 'role'
+  | 'drawer'
+  | 'shift'
+  | 'device'
+  | 'location'
+  | 'zone';
+
+const RECORD_HREF: Record<RecordKind, (id: string) => string> = {
+  product: (id) => `/console/catalogue/products/${id}`,
+  category: (id) => `/console/catalogue/categories/${id}`,
+  modifier: (id) => `/console/catalogue/modifiers/${id}`,
+  priceList: (id) => `/console/pricing/lists/${id}`,
+  rule: (id) => `/console/pricing/rules/${id}`,
+  recipe: (id) => `/console/inventory/recipes/${id}`,
+  supplier: (id) => `/console/purchasing/suppliers/${id}`,
+  order: (id) => `/console/purchasing/orders/${id}`,
+  receipt: (id) => `/console/purchasing/receipts/${id}`,
+  count: (id) => `/console/inventory/counts/${id}`,
+  bill: (id) => `/console/trade/bills/${id}`,
+  tab: (id) => `/console/trade/tabs/${id}`,
+  staff: (id) => `/console/people/staff/${id}`,
+  role: (id) => `/console/people/roles/${id}`,
+  drawer: (id) => `/console/trade/drawers/${id}`,
+  shift: (id) => `/console/trade/shifts/${id}`,
+  device: (id) => `/console/settings/devices/${id}`,
+  location: () => '/console/settings/locations',
+  zone: () => '/console/people/zoning',
+};
+
+/** The page for one record. Every name the Console shows links through this, so nothing dead-ends. */
+export function hrefFor(kind: RecordKind, id: string): string {
+  return RECORD_HREF[kind](encodeURIComponent(id));
+}

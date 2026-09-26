@@ -98,6 +98,7 @@ export function modifierGroups() {
 
 export function imageUrl(key: string | null, width = 320, height = 176): string | null {
   if (!key) return null;
+  if (key.startsWith('/api/uploads/')) return key;
   return `https://images.unsplash.com/photo-${key}?auto=format&fit=crop&w=${width}&h=${height}&q=70`;
 }
 
