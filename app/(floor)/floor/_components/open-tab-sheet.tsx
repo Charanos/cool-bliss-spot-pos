@@ -6,7 +6,8 @@ import { placeLabel } from '@bliss/shared/trade';
 import { Button } from '@bliss/ui/components/button';
 import { TextField } from '@bliss/ui/components/fields';
 import { InlineNotice } from '@bliss/ui/components/feedback';
-import { Sheet } from '@bliss/ui/components/floor/sheet';
+import { Sheet, SheetIcon } from '@bliss/ui/components/floor/sheet';
+import { IconTablePlus } from '@tabler/icons-react';
 import { cx } from '@bliss/ui/lib/cx';
 import { seatBgClass } from '@bliss/ui/lib/seat';
 import { useRouter } from 'next/navigation';
@@ -209,7 +210,7 @@ export function OpenTabSheet({
   );
 
   return (
-    <Sheet open={open} onClose={onClose} title={title} width="md" footer={footerActions}>
+    <Sheet open={open} onClose={onClose} title={title} width="md" footer={footerActions} leading={<SheetIcon icon={IconTablePlus} />}>
       <div className="flex flex-col gap-40">
         {/* Guest count */}
         <div className="flex flex-col gap-12">

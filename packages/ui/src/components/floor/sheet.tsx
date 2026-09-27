@@ -1,6 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { cx } from '../../lib/cx';
+import type { TablerIcon } from '../icon';
 import { sheetEnter, sheetExit } from '../../motion/floor';
 import { Overlay, type OverlayMotion, type OverlayProps } from '../overlay';
 
@@ -29,4 +31,21 @@ export function Sheet(props: Omit<OverlayProps, 'motion' | 'placement' | 'bottom
  */
 export function FloorDialog(props: Omit<OverlayProps, 'motion' | 'placement' | 'bottomOffset'>) {
   return <Overlay {...props} placement="dialog" motion={floorMotion} />;
+}
+
+/**
+ * The mark beside a station sheet's title: what the sheet is about, in a tile of its tone. The same
+ * place and size as the Console dialog's icon, larger for a tablet at arm's length.
+ */
+export function SheetIcon({ icon: Glyph, tone = 'accent' }: { icon: TablerIcon; tone?: 'accent' | 'stop' | 'low' | 'poured' }) {
+  return (
+    <span
+      className={cx(
+        'flex size-control-lg items-center justify-center rounded-control',
+        tone === 'stop' ? 'bg-stop-wash text-stop' : tone === 'low' ? 'bg-low-wash text-low' : tone === 'poured' ? 'bg-poured-wash text-poured' : 'bg-accent-wash text-accent-text',
+      )}
+    >
+      <Glyph size={22} stroke={1.5} />
+    </span>
+  );
 }

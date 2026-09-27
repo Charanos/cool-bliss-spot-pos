@@ -7,9 +7,10 @@ import { type ToastInput, useToast } from '@bliss/ui/components/console/toast';
 import { InlineNotice } from '@bliss/ui/components/feedback';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconCamera, IconTrash } from '@tabler/icons-react';
+import { IconPhotoPlus, IconTrash } from '@tabler/icons-react';
+import type { TablerIcon } from '@bliss/ui/components/icon';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { type ChangeEvent, type FormEvent, type ReactNode, useEffect, useState, useTransition } from 'react';
+import { type ChangeEvent, type FormEvent, type ReactNode, useEffect, useId, useState, useTransition } from 'react';
 import type { ActionResult } from '../_lib/action-result';
 import { uploadFiles } from '../_lib/upload';
 
@@ -91,12 +92,18 @@ export function FormDialog<R extends object>({
   onSubmit,
   onDone,
   toast,
+  icon: Glyph,
+  disabled,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   description?: string;
+  /** The record's kind, in a tile beside the title: a bottle for a product, a person for staff. */
+  icon?: TablerIcon;
+  /** Hold the outcome back while something is still happening, such as an upload. */
+  disabled?: boolean;
   submitLabel: string;
   submitVariant?: ButtonVariant;
   width?: 'md' | 'lg';
@@ -112,6 +119,7 @@ export function FormDialog<R extends object>({
   const notify = useToast();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
+  const formId = useId();
 
   useEffect(() => {
     if (open) setError('');
@@ -134,29 +142,57 @@ export function FormDialog<R extends object>({
     });
   }
 
+  // The actions ride in the dialog's footer, so a long form never pushes them out of reach; the
+  // submit button is tied to the form by id.
   return (
-    <ConsoleOverlay open={open} onClose={onClose} title={title} description={description} width={width}>
-      <form onSubmit={submit} className="flex flex-col gap-24">
-        {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}
-        {children}
-        <div className="flex justify-end gap-12 border-t border-rule pt-16">
+    <ConsoleOverlay
+      open={open}
+      onClose={onClose}
+      title={title}
+      description={description}
+      width={width}
+      leading={
+        Glyph ? (
+          <span className="flex size-control-md items-center justify-center rounded-control bg-accent-wash text-accent-text">
+            <Glyph size={20} stroke={1.5} />
+          </span>
+        ) : undefined
+      }
+      footer={
+        <>
           <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
             Cancel
           </Button>
-          <Button type="submit" variant={submitVariant} loading={pending}>
+          <Button type="submit" form={formId} variant={submitVariant} loading={pending} disabled={disabled}>
             {submitLabel}
           </Button>
-        </div>
+        </>
+      }
+    >
+      <form id={formId} onSubmit={submit} className="flex flex-col gap-32 pt-8">
+        {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}
+        {children}
       </form>
     </ConsoleOverlay>
   );
 }
 
-/** A group of fields with a label in capitals. Two columns on a desktop. */
-export function Fieldset({ legend, columns = 2, children, className }: { legend?: string; columns?: 1 | 2 | 3; children: ReactNode; className?: string }) {
+/**
+ * A group of fields: a heading in capitals running into a hairline, an optional line saying what the
+ * group is for, then the fields, two columns on a desktop.
+ */
+export function Fieldset({ legend, hint, columns = 2, children, className }: { legend?: string; hint?: string; columns?: 1 | 2 | 3; children: ReactNode; className?: string }) {
   return (
-    <fieldset className={cx('grid grid-cols-1 gap-16', columns === 2 ? 'desktop:grid-cols-2' : columns === 3 ? 'desktop:grid-cols-3' : null, className)}>
-      {legend ? <legend className="mb-8 label-caps text-ink-subtle">{legend}</legend> : null}
+    <fieldset className={cx('grid grid-cols-1 gap-x-24 gap-y-20', columns === 2 ? 'desktop:grid-cols-2' : columns === 3 ? 'desktop:grid-cols-3' : null, className)}>
+      {legend ? (
+        <legend className="mb-16 flex w-full flex-col gap-4">
+          <span className="flex items-center gap-12">
+            <span className="label-caps shrink-0 text-ink-subtle">{legend}</span>
+            <span aria-hidden="true" className="h-px flex-1 bg-rule" />
+          </span>
+          {hint ? <span className="text-body-sm text-ink-muted">{hint}</span> : null}
+        </legend>
+      ) : null}
       {children}
     </fieldset>
   );
@@ -282,36 +318,80 @@ export function DaysField({ label, value, onChange, helper }: { label: string; v
 }
 
 /** A photograph chosen, uploaded and previewed in place. Empty shows the name's initial. */
-export function PhotoField({ value, onChange, name, disabled }: { value: string | null; onChange: (url: string | null) => void; name: string; disabled?: boolean }) {
+/**
+ * A photograph for a record: a tile to drop onto or tap, the picture once there is one, and a line
+ * saying what it is for. Round for a person, square for anything else.
+ */
+export function PhotoField({
+  value,
+  onChange,
+  name,
+  disabled,
+  shape = 'square',
+  helper = 'A photograph for the floor tile and the Console. JPEG, PNG or WebP.',
+  onUploading,
+}: {
+  value: string | null;
+  onChange: (url: string | null) => void;
+  name: string;
+  disabled?: boolean;
+  shape?: 'square' | 'round';
+  helper?: string;
+  onUploading?: (uploading: boolean) => void;
+}) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-  async function choose(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = '';
+  const [over, setOver] = useState(false);
+  async function take(file: File | undefined) {
     if (!file) return;
     setUploading(true);
+    onUploading?.(true);
     setError('');
     const result = await uploadFiles([file]);
     setUploading(false);
+    onUploading?.(false);
     if (result.ok) onChange(result.urls[0] ?? null);
     else setError(result.message);
   }
+  function choose(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    void take(file);
+  }
+  const initial = name.trim().charAt(0).toUpperCase();
   return (
-    <div className="flex items-center gap-16">
-      <label className="group relative flex size-avatar shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-control bg-control text-title-card text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus">
+    <div className="flex items-center gap-20">
+      <label
+        onDragOver={(e) => {
+          e.preventDefault();
+          setOver(true);
+        }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setOver(false);
+          void take(e.dataTransfer.files?.[0]);
+        }}
+        className={cx(
+          'group relative flex size-avatar-lg shrink-0 cursor-pointer items-center justify-center overflow-hidden border transition-hover focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
+          shape === 'round' ? 'rounded-dot' : 'rounded-card',
+          value ? 'border-edge' : over ? 'border-dashed border-accent bg-accent-wash' : 'border-dashed border-edge-strong bg-band hover:border-accent hover:bg-accent-wash',
+        )}
+      >
         <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={choose} disabled={uploading || disabled} aria-label="Choose a photograph" />
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element -- an upload, sized by CSS
           <img src={value} alt="" className="size-full object-cover" />
         ) : (
-          <span aria-hidden="true">{name.trim().charAt(0).toUpperCase() || '?'}</span>
+          <span aria-hidden="true" className="flex flex-col items-center gap-4 text-ink-subtle transition-hover group-hover:text-accent-text">
+            {initial && shape === 'round' ? <span className="text-title-card text-ink-muted">{initial}</span> : <IconPhotoPlus size={22} stroke={1.5} />}
+          </span>
         )}
-        <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center bg-scrim text-on-scrim opacity-0 transition-hover group-hover:opacity-100">
-          <IconCamera size={20} stroke={1.5} />
-        </span>
+        {uploading ? <span aria-hidden="true" className="absolute inset-0 animate-breathe bg-scrim" /> : null}
       </label>
-      <div className="flex min-w-0 flex-col gap-4">
-        <span className="text-body-sm text-ink-muted">{uploading ? 'Uploading the photograph' : error || 'A photograph for the floor tile and the Console. JPEG, PNG or WebP.'}</span>
+      <div className="flex min-w-0 flex-col gap-6">
+        <span className="text-body-sm font-medium text-ink">{uploading ? 'Uploading the photograph' : value ? 'Photograph' : 'Add a photograph'}</span>
+        <span className={cx('text-body-sm', error ? 'text-stop' : 'text-ink-muted')}>{error || `${helper} Drop it here or tap the tile.`}</span>
         {value ? (
           <button type="button" onClick={() => onChange(null)} className="inline-flex w-fit items-center gap-6 rounded-sm text-body-sm text-stop transition-hover hover:text-ink">
             <IconTrash size={14} stroke={1.5} aria-hidden="true" />

@@ -216,6 +216,10 @@ export function Overlay({
             className,
           )}
         >
+          {/* A grabber where the sheet rises from the bottom edge of a phone: it says the sheet can go. */}
+          {!solid && (placement === 'sheet' || placement === 'adaptive') ? (
+            <span aria-hidden="true" className={cx('mx-auto mt-8 h-4 w-40 shrink-0 rounded-pill bg-ink-subtle/40', placement === 'adaptive' && 'pad:hidden')} />
+          ) : null}
           {/* Header */}
           <div
             className={cx(
@@ -225,7 +229,7 @@ export function Overlay({
               hideTitle && 'sr-only',
             )}
           >
-            {eyebrow ? <p className={cx('mb-8', solid ? 'label-caps text-ink-subtle' : 'font-mono text-caps text-attention')}>{eyebrow}</p> : null}
+            {eyebrow ? <p className={cx('mb-8 label-caps', solid ? 'text-ink-subtle' : 'text-accent-text')}>{eyebrow}</p> : null}
             <div className="flex items-center gap-12">
               {leading ? (
                 <span aria-hidden="true" className="inline-flex shrink-0">

@@ -73,7 +73,9 @@ export function SurfaceSwitcher({ current }: { current: Surface }) {
 export function LiveClock({ timeZone }: { timeZone?: string }) {
   const now = useNow(30_000);
   const hydrated = useHydrated();
-  const day = hydrated ? new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone }).format(now) : '';
+  const parts = hydrated ? new Intl.DateTimeFormat('en-US', { weekday: 'short', day: 'numeric', month: 'short', timeZone }).formatToParts(now) : [];
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  const day = hydrated ? `${part('weekday')} ${part('day')} ${part('month')}` : '';
   return (
     <div className="hidden flex-col items-end leading-none pad:flex" suppressHydrationWarning>
       <span className="font-mono tabular text-body-sm font-medium text-ink">{hydrated ? formatTime(now, timeZone) : ''}</span>

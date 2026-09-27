@@ -9,14 +9,14 @@ import { SEAT_LABEL_MAX, displaySeatLabel } from '@bliss/shared/seats';
 import { ActionList } from '@bliss/ui/components/action-list';
 import { Button } from '@bliss/ui/components/button';
 import { Stepper } from '@bliss/ui/components/fields';
-import { FloorDialog, Sheet } from '@bliss/ui/components/floor/sheet';
+import { FloorDialog, Sheet, SheetIcon } from '@bliss/ui/components/floor/sheet';
 import { Money } from '@bliss/ui/components/money';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { SeatChip, SeatChipButton } from '@bliss/ui/components/seat-chip';
 import { StatusChip } from '@bliss/ui/components/status';
 import { InviteButton } from '@bliss/ui/components/working';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconArrowsExchange, IconBan, IconNote, IconTag, IconTrash, IconX } from '@tabler/icons-react';
+import { IconArmchair, IconArrowsExchange, IconArrowsRightLeft, IconBan, IconGlassFull, IconListDetails, IconNote, IconPackageOff, IconTag, IconTrash, IconX } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useState } from 'react';
 import { posDb } from '@/lib/pos/db';
@@ -135,6 +135,7 @@ export function ModifierSheet({
       open={Boolean(variantId)}
       onClose={onClose}
       title={data?.variant?.name ?? 'Add a serve'}
+      leading={<SheetIcon icon={IconGlassFull} />}
       description={price ? `${formatKes(price.unitPriceCents)} each` : undefined}
       width={hasModifiers ? 'md' : 'sm'}
       footer={footerActions}
@@ -249,6 +250,7 @@ export function FinishedSheet({ variantId, onClose }: { variantId: string | null
       open={Boolean(variantId)}
       onClose={onClose}
       title={name}
+      leading={<SheetIcon icon={IconPackageOff} tone="low" />}
       width="sm"
       footer={footerActions}
     >
@@ -305,6 +307,7 @@ export function SeatMenuSheet({
       open={Boolean(seatId)}
       onClose={onClose}
       title={`Seat ${seat.seatNo}${seat.label ? ` · ${seat.label}` : ''}`}
+      leading={<SheetIcon icon={IconArmchair} />}
       width="sm"
       footer={footerActions}
     >
@@ -394,6 +397,7 @@ export function LabelSeatSheet({
       open={Boolean(seatId && seat)}
       onClose={onClose}
       title={`Label Seat ${seat?.seatNo ?? ''}`}
+      leading={<SheetIcon icon={IconTag} />}
       width="sm"
       footer={footerActions}
     >
@@ -469,6 +473,7 @@ export function LineSheet({
       open={Boolean(line)}
       onClose={onClose}
       title={line ? `${line.qty} × ${name}` : ''}
+      leading={<SheetIcon icon={IconListDetails} />}
       description={line ? `${seat ? `Seat ${seat.seatNo}` : detail.showControls ? 'Shared' : detail.label} · ${formatKes(line.lineTotalCents)}` : undefined}
       width="sm"
       footer={footerActions}
@@ -550,6 +555,7 @@ export function MoveLineSheet({
       open={Boolean(line)}
       onClose={onClose}
       title={line ? `Move ${line.qty} × ${name} to another seat` : ''}
+      leading={<SheetIcon icon={IconArrowsExchange} />}
       width="md"
       footer={footerActions}
     >
@@ -631,6 +637,7 @@ export function NoteSheet({
       open={Boolean(line)}
       onClose={onClose}
       title={line ? `Note for ${line.qty} × ${name}` : ''}
+      leading={<SheetIcon icon={IconNote} />}
       width="sm"
       footer={footerActions}
     >
@@ -691,6 +698,7 @@ export function VoidDialog({
       open={Boolean(line)}
       onClose={onClose}
       title={line ? `Void ${line.qty} × ${name}${from}?` : ''}
+      leading={<SheetIcon icon={IconBan} tone="stop" />}
       description={line ? `This removes ${formatKes(line.lineTotalCents)} from ${tabRef}. It cannot be undone.` : undefined}
       width="md"
     >
@@ -749,6 +757,7 @@ export function MoveTabSheet({
       open={open}
       onClose={onClose}
       title={`Move ${detail.label} to another table`}
+      leading={<SheetIcon icon={IconArrowsRightLeft} />}
       description="Seats, labels and lines move with the tab."
       width="md"
       footer={footerActions}

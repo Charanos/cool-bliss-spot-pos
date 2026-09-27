@@ -3,12 +3,12 @@
 import { plural } from '@bliss/shared/format';
 import { type Cents, formatKes, sum } from '@bliss/shared/money';
 import { Button } from '@bliss/ui/components/button';
-import { Sheet } from '@bliss/ui/components/floor/sheet';
+import { Sheet, SheetIcon } from '@bliss/ui/components/floor/sheet';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Dot } from '@bliss/ui/components/status';
 import { cx } from '@bliss/ui/lib/cx';
 import { Photo } from '@bliss/ui/components/photo';
-import { IconArrowRight, IconCheck } from '@tabler/icons-react';
+import { IconArrowRight, IconArrowsExchange, IconCheck } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { handOverTabs } from '@/lib/pos/actions';
 import type { StaffDirectoryEntry } from '@/lib/pos/db';
@@ -82,6 +82,7 @@ export function ShiftHandoverSheet({ open, onClose, myTabs, mySeated, colleagues
       width="lg"
       eyebrow="End of shift"
       title="Hand over tables"
+      leading={<SheetIcon icon={IconArrowsExchange} />}
       description="Choose the tables and who takes them. Seats, rounds and bills go with them, unchanged."
       footer={
         <div className="flex w-full items-center justify-between gap-12">

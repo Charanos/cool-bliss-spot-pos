@@ -371,6 +371,10 @@ export const size = {
   'search-wide': 300,
   /** The sign-in photograph as a band across the top of a tablet held upright. */
   'sign-band': 304,
+  /** A floor tile previewed in a Console dialog. */
+  'tile-preview': 176,
+  /** A sign-in card previewed in a Console dialog. */
+  'card-preview': 240,
   'search-panel': 460,
   'search-drop': 60,
   'search-results': 420,
