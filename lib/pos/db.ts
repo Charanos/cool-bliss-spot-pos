@@ -160,6 +160,24 @@ export function posDb(): PosDatabase {
   return instance;
 }
 
+/**
+ * The other station's sign-in in this browser (the Floor's, seen from the Counter, or the other way
+ * round), for carrying it across without a second PIN. Null when nobody is signed in there, or they
+ * signed out.
+ */
+export async function otherStationToken(): Promise<string | null> {
+  const other: StaffSurface = currentSurface() === 'counter' ? 'floor' : 'counter';
+  const db = new PosDatabase(other);
+  try {
+    const [session, token, off] = await Promise.all([db.meta.get(META.session), db.meta.get(META.stationToken), db.meta.get(META.carryOff)]);
+    return session?.value && !off?.value && typeof token?.value === 'string' ? token.value : null;
+  } catch {
+    return null;
+  } finally {
+    db.close();
+  }
+}
+
 export async function getMeta<T>(key: string): Promise<T | undefined> {
   return (await posDb().meta.get(key))?.value as T | undefined;
 }
@@ -179,6 +197,8 @@ export const META = {
   lastPulledAt: 'cursor.lastPulledAt',
   lastPushedAt: 'cursor.lastPushedAt',
   tradeCursor: 'cursor.trade',
+  /** Set by signing out here: the next person types their PIN, even with a Console session open. */
+  carryOff: 'session.carry-off',
   epoch: 'cursor.epoch',
   outlet: 'outlet',
   businessDate: 'businessDate',

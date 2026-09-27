@@ -10,10 +10,10 @@ import { PinPad } from '@bliss/ui/components/pin-pad';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useOutlet, useStaffDirectory } from '@/lib/pos/queries';
 import { pinWeakness } from '@bliss/shared/pin';
-import { choosePin, pairDevice, signIn, useDevice, useSession } from '@/lib/pos/session';
+import { choosePin, continueSession, pairDevice, signIn, useDevice, useSession } from '@/lib/pos/session';
 import { useSync, wakeSync } from '@/lib/pos/sync';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -78,6 +78,23 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
   useEffect(() => {
     if (session) router.replace(home);
   }, [session, router, home]);
+
+  // Signed in to the Console, or to the other station in this browser: go straight in, no PIN.
+  const [carrying, setCarrying] = useState(true);
+  const tried = useRef(false);
+  useEffect(() => {
+    if (session || tried.current) return;
+    if (!sync.bootstrapped && sync.link === 'synced') return;
+    tried.current = true;
+    void continueSession().then((ok) => {
+      if (!ok) setCarrying(false);
+    });
+  }, [session, sync.bootstrapped, sync.link]);
+  useEffect(() => {
+    // Never hold the screen long: offline or slow, the team shows.
+    const timer = setTimeout(() => setCarrying(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const people = (staff ?? []).filter((s) => roles.includes(s.roleKey)).sort((a, b) => roles.indexOf(a.roleKey) - roles.indexOf(b.roleKey) || a.displayName.localeCompare(b.displayName));
   const person = people.find((p) => p.id === chosen);
@@ -201,7 +218,12 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
                 <span className="font-mono tabular text-num-sm text-ink-muted">{people.length === 1 ? '1 on the team' : `${people.length} on the team`}</span>
               </div>
 
-              <ul aria-labelledby={teamId} className="grid grid-cols-1 gap-12 pad:grid-cols-2 pad:gap-16">
+              {carrying && !person ? (
+                <p aria-live="polite" className="animate-breathe py-24 text-center text-body text-ink-muted">
+                  One moment
+                </p>
+              ) : null}
+              <ul aria-labelledby={teamId} className={cx('grid grid-cols-1 gap-12 pad:grid-cols-2 pad:gap-16', carrying && 'hidden')}>
                 {!sync.bootstrapped && people.length === 0
                   ? Array.from({ length: 4 }, (_, i) => (
                       <li key={i}>

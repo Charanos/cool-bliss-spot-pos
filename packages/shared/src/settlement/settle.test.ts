@@ -17,12 +17,14 @@ describe('places', () => {
 });
 
 describe('surfaces', () => {
-  it('lets waiters on both, cashiers only at the counter, stock controllers on neither', () => {
+  it('lets waiters, managers and owners on both, cashiers only at the counter, stock controllers on neither', () => {
     expect(canSignInOn('floor', 'waiter')).toBe(true);
     expect(canSignInOn('counter', 'waiter')).toBe(true);
     expect(canSignInOn('floor', 'cashier')).toBe(false);
     expect(canSignInOn('counter', 'cashier')).toBe(true);
-    expect(canSignInOn('floor', 'manager')).toBe(false);
+    expect(canSignInOn('floor', 'manager')).toBe(true);
+    expect(canSignInOn('floor', 'owner')).toBe(true);
+    expect(canSignInOn('console', 'waiter')).toBe(false);
     expect(canSignInOn('counter', 'stock_controller')).toBe(false);
     expect(wrongSurfaceMessage('floor', 'cashier')).toContain('counter');
   });

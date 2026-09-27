@@ -4,7 +4,7 @@ import type { PermissionKey, RoleKey } from '@bliss/shared/domain';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { api } from './api';
 import { wakeSync } from './sync';
-import { META, currentSurface, getMeta, posDb, setMeta } from './db';
+import { META, currentSurface, getMeta, otherStationToken, posDb, setMeta } from './db';
 
 export interface StaffSession {
   staffId: string;
@@ -85,6 +85,24 @@ export async function signIn(staffId: string, pin: string): Promise<SignInResult
   }
 }
 
+/**
+ * Arrive signed in: someone already signed in to the Console, or to the other station in this
+ * browser, is signed in here too if their role belongs on this device. Anything else (no session,
+ * the wrong role, offline) comes back as not signed in, and the PIN screen stays.
+ */
+export async function continueSession(): Promise<boolean> {
+  if (await getMeta<boolean>(META.carryOff)) return false;
+  const device = await ensureDevice();
+  if (!device) return false;
+  try {
+    const { body } = await api.post<SignInBody>('/api/station/identity', { action: 'continue', deviceId: device.id, token: await otherStationToken() });
+    if (!body.ok) return false;
+    return (await settle(body)).ok;
+  } catch {
+    return false;
+  }
+}
+
 /** After a reset or an expiry: choose a new PIN with the pass the sign-in gave, and sign in with it. */
 export async function choosePin(token: string, pin: string): Promise<SignInResult> {
   const device = await ensureDevice();
@@ -103,6 +121,7 @@ async function settle(body: SignInBody): Promise<SignInResult> {
   if (body.code === 'PIN_CHANGE_EXPIRED') return { ok: false, message: body.message ?? 'Sign in again.', restart: true };
   if (!body.ok || !body.staff || !body.token) return { ok: false, message: body.message ?? 'That PIN was not recognised.' };
   await setMeta(META.stationToken, body.token);
+  await setMeta(META.carryOff, false);
   const session: StaffSession = {
     staffId: body.staff.id,
     displayName: body.staff.displayName,
@@ -139,6 +158,8 @@ export async function signOut() {
   } catch {
     // No connection: signing out here still works; the Console shows the shift as left running.
   }
+  await setMeta(META.carryOff, true);
+  await setMeta(META.stationToken, null);
   await setMeta(META.session, null);
 }
 

@@ -17,6 +17,7 @@ export const dynamic = 'force-dynamic';
 const signIn = z.object({ action: z.literal('sign-in'), deviceId: z.string().max(64), staffId: z.string().max(64), pin: z.string().regex(/^\d{4,8}$/) });
 const choosePin = z.object({ action: z.literal('choose-pin'), deviceId: z.string().max(64), token: z.string().max(2048), pin: z.string().regex(/^\d{4,8}$/) });
 const pair = z.object({ action: z.literal('pair'), deviceId: z.string().max(64), code: z.string().regex(/^\d{6}$/) });
+const carry = z.object({ action: z.literal('continue'), deviceId: z.string().max(64), token: z.string().max(2048).nullish() });
 const signOut = z.object({ action: z.literal('sign-out'), deviceId: z.string().max(64) });
 const approve = z.object({ action: z.literal('approve'), deviceId: z.string().max(64), pin: z.string().regex(/^\d{4,8}$/), permission: z.enum(['void.approve', 'discount.approve', 'hold.set']) });
 
@@ -92,6 +93,25 @@ export async function POST(request: Request) {
   }
   if (venue.pairingRequired(device.id)) {
     return wireResponse({ ok: false, code: 'PAIRING_REQUIRED', message: `${device.label} needs pairing first. Enter the six-digit code shown in Console, Settings, Devices.` }, { status: 409 });
+  }
+
+  // Carrying a sign-in across: someone already signed in to the Console, or to the other station in
+  // this browser, arrives here without typing their PIN again, if their role belongs on this device.
+  // The proof is a live Console session cookie or a station token, both signed and both ended by a
+  // PIN change; nothing is taken on the device's word.
+  const asCarry = carry.safeParse(json);
+  if (asCarry.success) {
+    const own = stationAuth(request);
+    // The other station in this browser signed them in: its token, checked like any other.
+    const fromStation = own.ok ? own : identity.checkStationToken(asCarry.data.token ?? null);
+    const fromConsole = fromStation.ok ? null : identity.checkConsoleSession(request.headers.get('cookie')?.match(new RegExp(`(?:^|; )${identity.CONSOLE_COOKIE}=([^;]+)`))?.[1]);
+    const who = fromStation.ok ? { staff: fromStation.staff, role: fromStation.role } : fromConsole?.ok ? { staff: fromConsole.staff, role: fromConsole.role } : null;
+    if (!who) return wireResponse({ ok: false, code: 'NO_SESSION', message: 'Choose your name, then enter your PIN.' }, { status: 401 });
+    if (!isStaffSurface(device.kind) || !canSignInOn(device.kind, who.role.key)) {
+      return wireResponse({ ok: false, code: 'NO_SESSION', message: isStaffSurface(device.kind) ? wrongSurfaceMessage(device.kind, who.role.key) : 'Staff do not sign in on this device.' }, { status: 403 });
+    }
+    if (pins.mustChangeAtSignIn(who.staff)) return wireResponse({ ok: false, code: 'NO_SESSION', message: 'Choose your name, then enter your PIN.' }, { status: 401 });
+    return await signedIn(who.staff, who.role.key, who.role.permissions ?? [], device.id);
   }
 
   const asSignIn = signIn.safeParse(json);

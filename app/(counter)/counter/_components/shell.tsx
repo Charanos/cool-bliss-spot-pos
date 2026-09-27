@@ -122,7 +122,7 @@ export function CounterShell({ children }: { children: ReactNode }) {
               <StationSearch surface="counter" />
             </>
           }
-          centre={<SurfaceSwitcher current="counter" />}
+          centre={<SurfaceSwitcher current="counter" console={session.roleKey === 'manager' || session.roleKey === 'owner'} />}
           end={
             <>
               <StationStatus link={link} heldOrders={sync.heldOrders} drawer={drawer === undefined ? undefined : { href: '/counter/drawer', ...drawerState }} />

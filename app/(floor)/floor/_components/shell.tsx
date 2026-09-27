@@ -74,7 +74,7 @@ export function FloorShell({ children }: { children: ReactNode }) {
               <StationSearch surface="floor" />
             </>
           }
-          centre={<SurfaceSwitcher current="floor" />}
+          centre={<SurfaceSwitcher current="floor" console={session.roleKey === 'manager' || session.roleKey === 'owner'} />}
           end={
             <>
               <StationStatus link={sync.link} heldOrders={sync.heldOrders} />
