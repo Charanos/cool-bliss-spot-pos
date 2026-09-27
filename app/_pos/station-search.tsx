@@ -190,7 +190,7 @@ export function StationSearch({ surface }: { surface: 'floor' | 'counter' }) {
       aria-autocomplete="list"
       aria-activedescendant={open && activeKey ? `${listId}-${activeKey}` : undefined}
       aria-label="Search tabs, seats and the menu"
-      placeholder="Search tabs, seats, the menu"
+      placeholder="Search"
       value={query}
       onFocus={() => setOpen(true)}
       onChange={(e) => {
@@ -229,7 +229,7 @@ export function StationSearch({ surface }: { surface: 'floor' | 'counter' }) {
             <IconX size={13} stroke={ICON_STROKE} aria-hidden="true" />
           </button>
         ) : (
-          <kbd className="shrink-0 font-mono text-micro text-ink-subtle">{shortcut}</kbd>
+          <kbd className="hidden shrink-0 font-mono text-micro text-ink-subtle mouse:inline">{shortcut}</kbd>
         )}
       </label>
 

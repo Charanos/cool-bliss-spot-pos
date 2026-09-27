@@ -52,6 +52,7 @@ export function buttonClass({
   iconOnly = false,
   fullWidth = false,
   disabled = false,
+  shape = 'default',
   className,
 }: {
   variant?: ButtonVariant;
@@ -59,6 +60,8 @@ export function buttonClass({
   iconOnly?: boolean;
   fullWidth?: boolean;
   disabled?: boolean;
+  /** A pill: the outcome of a station sheet, where the rest of the sheet is rounded too. */
+  shape?: 'default' | 'pill';
   className?: string;
 }): string {
   return cx(
@@ -66,7 +69,7 @@ export function buttonClass({
     variant === 'create' ? null : 'press-scale',
     variantClass[variant],
     sizeClass[size],
-    variant === 'create' ? 'rounded-pill px-16' : roundClass[size],
+    variant === 'create' ? 'rounded-pill px-16' : shape === 'pill' ? 'rounded-pill' : roundClass[size],
     iconOnly && iconOnlyClass[size],
     fullWidth && 'w-full',
     disabled && 'bg-control text-ink-disabled shadow-none hover:bg-control active:scale-100',

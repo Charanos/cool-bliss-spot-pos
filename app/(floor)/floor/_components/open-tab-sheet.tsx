@@ -4,6 +4,8 @@ import { notify } from '@bliss/ui/components/notices';
 import type { ServiceTable } from '@bliss/shared/domain';
 import { placeLabel } from '@bliss/shared/trade';
 import { Button } from '@bliss/ui/components/button';
+import { TextField } from '@bliss/ui/components/fields';
+import { InlineNotice } from '@bliss/ui/components/feedback';
 import { Sheet } from '@bliss/ui/components/floor/sheet';
 import { cx } from '@bliss/ui/lib/cx';
 import { seatBgClass } from '@bliss/ui/lib/seat';
@@ -198,7 +200,8 @@ export function OpenTabSheet({
         size="lg"
         loading={pending}
         onClick={() => void submit()}
-        className="!rounded-full !bg-ink !text-page px-32 transition-all hover:scale-[1.02] hover:shadow-key"
+        shape="pill"
+        className="px-32"
       >
         {guests === 1 ? 'Open tab' : `Open tab · ${guests} ${seatWord}`}
       </Button>
@@ -210,7 +213,7 @@ export function OpenTabSheet({
       <div className="flex flex-col gap-40">
         {/* Guest count */}
         <div className="flex flex-col gap-12">
-          <span className="px-4 text-body font-medium text-ink" id="guest-count-label">
+          <span className="text-label text-ink-subtle" id="guest-count-label">
             Number of guests
           </span>
           <div role="group" aria-labelledby="guest-count-label">
@@ -218,31 +221,11 @@ export function OpenTabSheet({
           </div>
         </div>
 
-        {/* Tab name */}
-        <div className="flex flex-col gap-12">
-          <label htmlFor="tab-name-input" className="px-4 text-body font-medium text-ink">
-            Tab name (optional)
-          </label>
-          <div className="flex h-[56px] items-center border-b border-rule-raised/50 px-4 transition-colors focus-within:border-glass-edge-hover">
-            <input
-              id="tab-name-input"
-              type="text"
-              placeholder="A birthday, the corner booth"
-              value={name}
-              maxLength={40}
-              onChange={(e) => setName(e.target.value)}
-              className="h-full w-full bg-transparent text-body font-medium text-ink outline-none placeholder:font-regular placeholder:text-ink-disabled"
-            />
-          </div>
-        </div>
+        <TextField label="Tab name" helper="Optional. It shows on the tab and the ticket." placeholder="A birthday, the corner booth" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
 
         {/* Error */}
         {error ? (
-          <div className="rounded-lg border border-stop/20 bg-stop/10 px-20 py-16">
-            <p role="alert" className="text-center text-body font-medium text-stop">
-              {error}
-            </p>
-          </div>
+          <InlineNotice tone="stop">{error}</InlineNotice>
         ) : null}
       </div>
     </Sheet>

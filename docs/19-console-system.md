@@ -67,7 +67,7 @@ Counter code by `bliss/no-arbitrary-design-values`; layout templates (`grid-cols
 `served-wash`, `low-wash`, `stop-wash`, `info-wash`, `accent-wash`, `attention-wash`, `neutral-wash`.
 
 **Radius**: `sm` 6 (chips), `md` 10 (small buttons, menus, rows), `control` 12 (buttons), `card` 16,
-`overlay` 20 (dialogs), `pill` (count badges, segmented controls only).
+`overlay` 20 (dialogs), `pill` (counts, badges, status chips, filter buttons and segmented controls).
 
 **Shadows**: `card`, `card-hover`, `popover`, `control`, `control-primary`.
 
@@ -85,7 +85,8 @@ Counter code by `bliss/no-arbitrary-design-values`; layout templates (`grid-cols
 | `console/section`: `Section`, `SectionHeader`, `Overline`, `Separator`, `KeyValueList`, `MetaRow`, `SummaryStrip`, `LedgerList`, `LedgerItem`, `DetailHeader`, `Callout`, `Totals` | page composition; a `Callout` says one thing that needs a person, `Totals` ends a bill, an order or a delivery |
 | `console/data-table`: `DataTable`, `NumCell`, `StackCell` | every table; four states, URL state, export. Below the width its columns need (a 1280 or 1366 laptop), columns fold into a detail line under the row's first cell instead of scrolling sideways: text first from the right, then figures from the left, so the total stays. `fold` on a column sets its order; `fold: 0` keeps it (`table/fold.ts`) |
 | `console/toolbar`: `Toolbar`, `SearchInput`, `ToggleChip`, `ResultCount` | the strip above a table or report |
-| `console/filter-select`: `FilterSelect` | a filter, as a real listbox |
+| `console/filter-select`: `FilterSelect` | a filter, as a pill that opens the shared listbox |
+| `listbox`: `ListboxPopup`; `fields`: `SelectField` | every dropdown: Bliss's own list, portalled into the open dialog when there is one, with type-ahead; `SelectField` keeps a hidden native select for forms |
 | `console/tabs`: `RouteTabs`, `Tabs`, `TabPanel`, `useTabValue` | views as URLs; in-page views in the URL |
 | `console/dialog`: `ConsoleOverlay` | every Console dialog and side sheet |
 | `console/lightbox`: `ImageLightbox` | a photo or scan at full size |

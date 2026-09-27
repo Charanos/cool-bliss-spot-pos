@@ -369,6 +369,8 @@ export const size = {
   search: 240,
   /** The station search in the top bar at desktop width, its results panel, where the panel drops on a narrow screen, and the most it grows. */
   'search-wide': 300,
+  /** The sign-in photograph as a band across the top of a tablet held upright. */
+  'sign-band': 304,
   'search-panel': 460,
   'search-drop': 60,
   'search-results': 420,

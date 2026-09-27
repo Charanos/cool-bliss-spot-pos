@@ -9,8 +9,8 @@ import { CHECKS, type DeviceCaps, type DisplayProfile, readCaps } from '@/lib/po
 import { setDisplay, useDisplay } from '@/lib/pos/display';
 
 const PROFILE_COPY: Record<Exclude<DisplayProfile, 'standard'>, { label: string; helper: string }> = {
-  lite: { label: 'Lite', helper: 'Solid surfaces instead of frosted glass, no background artwork, short motion. Faster on older tablets.' },
-  clarity: { label: 'Clarity', helper: 'Clearer steps between surfaces, visible edges and stronger colours, for screens that wash colour out.' },
+  lite: { label: 'Lite', helper: 'The artwork held still and small surfaces solid, with short motion. Faster on older tablets; nothing is taken away.' },
+  clarity: { label: 'Clarity', helper: 'Clearer steps between surfaces, visible edges and stronger colours. On by default, and reads well on any screen.' },
 };
 
 /**

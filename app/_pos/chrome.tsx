@@ -26,7 +26,7 @@ import { type ReactNode, type Ref, useEffect, useRef } from 'react';
  */
 export function TopBar({ start, centre, end }: { start: ReactNode; centre: ReactNode; end: ReactNode }) {
   return (
-    <header data-topbar="" className="safe-t safe-x relative z-10 shrink-0 border-b border-rule/10 bg-page/20 backdrop-blur-glass">
+    <header data-topbar="" className="safe-t safe-x relative z-bar shrink-0 border-b border-rule/10 bg-page/20 backdrop-blur-glass">
       <div className="grid h-strip-compact grid-cols-[1fr_auto_1fr] items-center gap-8 px-12 pad:h-strip pad:gap-16 pad:px-16 tablet:px-20 short:h-control-md">
         <div className="flex min-w-0 items-center gap-12 tablet:gap-16">{start}</div>
         {centre}

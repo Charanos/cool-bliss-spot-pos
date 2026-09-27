@@ -1,5 +1,7 @@
 'use client';
 
+import { InlineNotice } from '@bliss/ui/components/feedback';
+import { TextField } from '@bliss/ui/components/fields';
 import type { Modifier, ModifierGroup, OrderLine, ServiceTable } from '@bliss/shared/domain';
 import { formatKes } from '@bliss/shared/money';
 import { tryResolvePrice } from '@bliss/shared/pricing';
@@ -120,7 +122,8 @@ export function ModifierSheet({
             setPending(false);
           }
         }}
-        className="!rounded-full !bg-accent !text-accent-ink px-32 transition-all hover:scale-[1.02] hover:shadow-sheet font-medium"
+        shape="pill"
+        className="px-32"
       >
         {price ? `Add to ${target} · ${formatKes(price.lineTotalCents, { decimals: 'whole' })}` : `Add to ${target}`}
       </Button>
@@ -197,33 +200,21 @@ export function ModifierSheet({
           />
         </div>
 
-        {/* Note field with sunken container */}
-        <div className="flex flex-col gap-8">
-          <label htmlFor="modifier-note-input" className="px-2 text-body font-medium text-ink">
-            Note for the bar (optional)
-          </label>
-          <div className="flex h-[52px] items-center rounded-lg bg-control px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50">
-            <input
-              id="modifier-note-input"
-              type="text"
-              placeholder="No ice, with the food..."
-              value={note}
-              maxLength={140}
-              onChange={(e) => setNote(e.target.value)}
-              className="h-full w-full bg-transparent text-body text-ink outline-none placeholder:text-ink-disabled"
-            />
-            {note ? (
-              <button
-                type="button"
-                onClick={() => setNote('')}
-                className="ml-8 text-ink-subtle hover:text-ink"
-                aria-label="Clear note"
-              >
-                <IconX size={16} stroke={1.75} />
+        <TextField
+          label="Note for the bar"
+          helper="Optional. The bar sees it on the ticket."
+          placeholder="No ice, with the food"
+          value={note}
+          maxLength={140}
+          onChange={(e) => setNote(e.target.value)}
+          trailing={
+            note ? (
+              <button type="button" onClick={() => setNote('')} aria-label="Clear the note" className="flex size-control-sm items-center justify-center rounded-dot text-ink-subtle hover:bg-control hover:text-ink">
+                <IconX size={16} stroke={1.75} aria-hidden="true" />
               </button>
-            ) : null}
-          </div>
-        </div>
+            ) : null
+          }
+        />
       </div>
     </Sheet>
   );
@@ -246,7 +237,8 @@ export function FinishedSheet({ variantId, onClose }: { variantId: string | null
       variant="secondary"
       size="lg"
       onClick={onClose}
-      className="w-full !rounded-full font-medium"
+      shape="pill"
+      fullWidth
     >
       Back to the menu
     </Button>
@@ -346,11 +338,7 @@ export function SeatMenuSheet({
         />
 
         {error ? (
-          <div className="rounded-lg border border-stop/20 bg-stop/10 px-16 py-12">
-            <p role="alert" className="text-body font-medium text-stop">
-              {error}
-            </p>
-          </div>
+          <InlineNotice tone="stop">{error}</InlineNotice>
         ) : null}
 
         <p className="px-4 text-body-sm text-ink-subtle">
@@ -393,7 +381,8 @@ export function LabelSeatSheet({
         form="label-seat-form"
         variant="primary"
         size="lg"
-        className="!rounded-full px-32 font-medium"
+        shape="pill"
+        className="px-32"
       >
         {value.trim() ? 'Save label' : 'Clear label'}
       </Button>
@@ -416,39 +405,23 @@ export function LabelSeatSheet({
         }}
         className="flex flex-col gap-12 py-4"
       >
-        <div className="flex items-center justify-between px-2">
-          <label htmlFor="seat-label-input" className="text-body font-medium text-ink">
-            Seat label
-          </label>
-          <span className="font-mono text-num-sm text-ink-subtle">
-            {value.length}/{SEAT_LABEL_MAX}
-          </span>
-        </div>
-        <div className="flex h-[52px] items-center rounded-lg bg-control px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50">
-          <input
-            id="seat-label-input"
-            data-autofocus=""
-            type="text"
-            placeholder="Cap, birthday, boss..."
-            value={value}
-            maxLength={SEAT_LABEL_MAX}
-            onChange={(e) => setValue(e.target.value)}
-            className="h-full w-full bg-transparent text-body text-ink outline-none placeholder:text-ink-disabled"
-          />
-          {value ? (
-            <button
-              type="button"
-              onClick={() => setValue('')}
-              className="ml-8 text-ink-subtle hover:text-ink"
-              aria-label="Clear label"
-            >
-              <IconX size={16} stroke={1.75} />
-            </button>
-          ) : null}
-        </div>
-        <p className="px-2 text-body-sm text-ink-subtle">
-          Only you and the bar see this on the floor.
-        </p>
+        <TextField
+          label="Seat label"
+          data-autofocus=""
+          placeholder="Cap, birthday, the boss"
+          value={value}
+          maxLength={SEAT_LABEL_MAX}
+          counter={`${value.length}/${SEAT_LABEL_MAX}`}
+          helper="Only you and the bar see this on the floor."
+          onChange={(e) => setValue(e.target.value)}
+          trailing={
+            value ? (
+              <button type="button" onClick={() => setValue('')} aria-label="Clear the label" className="flex size-control-sm items-center justify-center rounded-dot text-ink-subtle hover:bg-control hover:text-ink">
+                <IconX size={16} stroke={1.75} aria-hidden="true" />
+              </button>
+            ) : null
+          }
+        />
       </form>
     </Sheet>
   );
@@ -645,7 +618,8 @@ export function NoteSheet({
         form="line-note-form"
         variant="primary"
         size="lg"
-        className="!rounded-full px-32 font-medium"
+        shape="pill"
+        className="px-32"
       >
         {value.trim() ? 'Save note' : 'Clear note'}
       </Button>
@@ -668,39 +642,23 @@ export function NoteSheet({
         }}
         className="flex flex-col gap-12 py-4"
       >
-        <div className="flex items-center justify-between px-2">
-          <label htmlFor="line-note-input" className="text-body font-medium text-ink">
-            Note for the ticket
-          </label>
-          <span className="font-mono text-num-sm text-ink-subtle">
-            {value.length}/140
-          </span>
-        </div>
-        <div className="flex h-[52px] items-center rounded-lg bg-control px-16 ring-1 ring-rule-raised/20 transition-colors focus-within:ring-rule-raised/50">
-          <input
-            id="line-note-input"
-            data-autofocus=""
-            type="text"
-            placeholder="No ice, with the food..."
-            value={value}
-            maxLength={140}
-            onChange={(e) => setValue(e.target.value)}
-            className="h-full w-full bg-transparent text-body text-ink outline-none placeholder:text-ink-disabled"
-          />
-          {value ? (
-            <button
-              type="button"
-              onClick={() => setValue('')}
-              className="ml-8 text-ink-subtle hover:text-ink"
-              aria-label="Clear note"
-            >
-              <IconX size={16} stroke={1.75} />
-            </button>
-          ) : null}
-        </div>
-        <p className="px-2 text-body-sm text-ink-subtle">
-          The bar and kitchen see this printed on the ticket.
-        </p>
+        <TextField
+          label="Note for the ticket"
+          data-autofocus=""
+          placeholder="No ice, with the food"
+          value={value}
+          maxLength={140}
+          counter={`${value.length}/140`}
+          helper="The bar and the kitchen see it printed on the ticket."
+          onChange={(e) => setValue(e.target.value)}
+          trailing={
+            value ? (
+              <button type="button" onClick={() => setValue('')} aria-label="Clear the note" className="flex size-control-sm items-center justify-center rounded-dot text-ink-subtle hover:bg-control hover:text-ink">
+                <IconX size={16} stroke={1.75} aria-hidden="true" />
+              </button>
+            ) : null
+          }
+        />
       </form>
     </Sheet>
   );
