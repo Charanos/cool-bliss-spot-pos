@@ -128,7 +128,17 @@ export async function pairDevice(code: string): Promise<SignInResult> {
   }
 }
 
+/**
+ * Sign out on this device, which ends the person's shift on the server. Best effort: offline, the
+ * shift stays open and a manager ends it in the Console at the time it really ended.
+ */
 export async function signOut() {
+  try {
+    const device = await getMeta<BoundDevice>(META.deviceId);
+    await api.post('/api/station/identity', { action: 'sign-out', deviceId: device?.id });
+  } catch {
+    // No connection: signing out here still works; the Console shows the shift as left running.
+  }
   await setMeta(META.session, null);
 }
 

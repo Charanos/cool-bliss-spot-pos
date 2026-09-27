@@ -1,7 +1,7 @@
 import { formatTime } from '@bliss/shared/format';
 import { canSignInOn, isStaffSurface, wrongSurfaceMessage } from '@bliss/shared/identity';
 import { z } from 'zod';
-import { clientAddress } from '@/lib/station';
+import { clientAddress, stationAuth } from '@/lib/station';
 import { wireResponse } from '@/lib/wire';
 import { fresh, withWrite } from '@/modules/_data/store';
 import * as credentials from '@/modules/identity/credentials';
@@ -9,18 +9,22 @@ import { DomainError } from '@/modules/_data/errors';
 import * as pins from '@/modules/identity/pins';
 import * as identity from '@/modules/identity/service';
 import * as venue from '@/modules/identity/venue';
+import * as shifts from '@/modules/trade/shifts';
+import type { RoleKey } from '@bliss/shared/domain';
 
 export const dynamic = 'force-dynamic';
 
 const signIn = z.object({ action: z.literal('sign-in'), deviceId: z.string().max(64), staffId: z.string().max(64), pin: z.string().regex(/^\d{4,8}$/) });
 const choosePin = z.object({ action: z.literal('choose-pin'), deviceId: z.string().max(64), token: z.string().max(2048), pin: z.string().regex(/^\d{4,8}$/) });
 const pair = z.object({ action: z.literal('pair'), deviceId: z.string().max(64), code: z.string().regex(/^\d{6}$/) });
+const signOut = z.object({ action: z.literal('sign-out'), deviceId: z.string().max(64) });
 const approve = z.object({ action: z.literal('approve'), deviceId: z.string().max(64), pin: z.string().regex(/^\d{4,8}$/), permission: z.enum(['void.approve', 'discount.approve', 'hold.set']) });
 
 const lockedMessage = (until: number, timezone: string) => `This PIN is locked until ${formatTime(until, timezone)}. A manager can unlock it in the Console.`;
 
-/** A signed-in person, as every station sign-in answers. */
-function signedIn(staff: { id: string; displayName: string }, roleKey: string | undefined, permissions: readonly string[], deviceId: string) {
+/** A signed-in person, as every station sign-in answers. Signing in starts their shift, or joins the one running. */
+async function signedIn(staff: { id: string; displayName: string }, roleKey: RoleKey | undefined, permissions: readonly string[], deviceId: string) {
+  if (roleKey) await withWrite(() => shifts.startShift({ staffId: staff.id, roleKey, deviceId }));
   return wireResponse({
     ok: true,
     staff: { id: staff.id, displayName: staff.displayName, roleKey, permissions },
@@ -55,6 +59,15 @@ export async function POST(request: Request) {
 
   const addressState = credentials.attemptStatus(address);
   if (addressState.locked) return wireResponse({ ok: false, message: `Too many wrong PINs from this device. Try again at ${formatTime(addressState.until, outlet.timezone)}.` }, { status: 429 });
+
+  // Signing out ends the person's shift. The station token says who; a device can only end its own person's.
+  const asSignOut = signOut.safeParse(json);
+  if (asSignOut.success) {
+    const check = stationAuth(request, device.id);
+    if (!check.ok) return wireResponse({ ok: true });
+    await withWrite(() => shifts.endShift({ staffId: check.staff.id, deviceId: device.id }));
+    return wireResponse({ ok: true });
+  }
 
   // Pairing: the first time a device is used, it proves it is the one the manager registered.
   const asPair = pair.safeParse(json);
@@ -122,7 +135,7 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
-    return signedIn(staff, role?.key, role?.permissions ?? [], device.id);
+    return await signedIn(staff, role?.key, role?.permissions ?? [], device.id);
   }
 
   const asChoose = choosePin.safeParse(json);
@@ -137,7 +150,7 @@ export async function POST(request: Request) {
       if (error instanceof DomainError) return wireResponse({ ok: false, message: error.message }, { status: 422 });
       throw error;
     }
-    return signedIn(staff, role?.key, role?.permissions ?? [], device.id);
+    return await signedIn(staff, role?.key, role?.permissions ?? [], device.id);
   }
 
   const asApprove = approve.safeParse(json);

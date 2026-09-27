@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
+import * as reporting from '@/modules/reporting/service';
 import * as trade from '@/modules/trade/service';
 import { ROLE_LABEL } from '../../_lib/labels';
 import { businessRange, rangeOptions } from '../../_lib/range';
@@ -11,7 +12,9 @@ export const metadata: Metadata = { title: 'Shifts' };
 /** Who worked, when, and what went through their hands: sales, voids and discounts by shift. */
 export default async function ShiftsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
-  const range = businessRange(params.range, '1');
+  // Tonight while anyone is on shift or the bar is trading; last night once it is quiet.
+  const clock = reporting.clock();
+  const range = businessRange(params.range, clock.tradingInProgress || trade.shiftsOn(clock.current).length > 0 ? 'tonight' : '1');
   const outlet = identity.outlet();
   const rows: ShiftRow[] = trade
     .shiftsBetween(range.from, range.to)
