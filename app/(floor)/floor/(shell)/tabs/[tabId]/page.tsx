@@ -24,6 +24,7 @@ import { FloorDialog, Sheet } from '@bliss/ui/components/floor/sheet';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { holdsTable, isOrdering, isSeated, placeLabel } from '@bliss/shared/trade';
 import { addLine, addSeat, labelSeat, moveLine, moveTab, removeSeat, selectSeat, setDraftQty, setLineNote, voidLine } from '@/lib/pos/mutations';
+import { useSearchTarget } from '@/app/_pos/station-search';
 import { type TabDetail, useGrid, useOpenTabs, useOutlet, useTab, useTradeReady } from '@/lib/pos/queries';
 import { useSession } from '@/lib/pos/session';
 import { ItemGrid } from './_parts/item-grid';
@@ -78,6 +79,10 @@ export default function TabScreen() {
 
   const close = () => setOverlay({ kind: 'none' });
   const timezone = outlet?.timezone ?? 'Africa/Nairobi';
+
+  // Search adds to whichever seat is chosen, the same as a tap on the grid (onAdd, below).
+  const searchAdd = useRef<(variantId: string) => void>(() => undefined);
+  useSearchTarget(detail && isOrdering(detail.tab) ? `Adds to ${detail.label}` : null, (variantId) => searchAdd.current(variantId));
 
   if (detail === null) {
     return (
@@ -135,6 +140,7 @@ export default function TabScreen() {
     const name = grid?.tiles.find((t) => t.variantId === variantId)?.name ?? 'Item';
     void run(() => addItem({ tabId, seat: detail.selected, seatName, variantId, name }));
   };
+  searchAdd.current = onAdd;
 
   const onTileLongPress = (variantId: string) => {
     const tile = grid?.tiles.find((t) => t.variantId === variantId);

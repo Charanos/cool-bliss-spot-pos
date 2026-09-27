@@ -117,8 +117,13 @@ export function SheetHeader({
             </ol>
           </nav>
           <span className="hidden shrink-0 items-center gap-12 border-l border-rule pl-16 wide:flex">
-            <span className={cx('inline-flex h-row-compact items-center gap-6 rounded-pill px-8 label-caps', trading ? 'bg-poured-wash text-poured' : 'bg-band-strong text-ink-subtle')}>
-              {trading ? <span aria-hidden="true" className="size-dot rounded-dot bg-poured animate-breathe" /> : null}
+            <span
+              className={cx(
+                'inline-flex h-count items-center gap-6 rounded-pill px-8 text-label font-medium ring-1 ring-inset',
+                trading ? 'bg-poured-wash text-poured ring-poured/25' : 'bg-band text-ink-muted ring-edge',
+              )}
+            >
+              <span aria-hidden="true" className={cx('size-dot rounded-dot', trading ? 'bg-poured animate-breathe' : 'bg-ink-disabled')} />
               {trading ? 'Trading' : 'Closed'}
             </span>
             <span className="flex items-center gap-6 text-body-sm text-ink-muted">

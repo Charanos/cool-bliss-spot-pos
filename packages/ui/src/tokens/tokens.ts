@@ -367,6 +367,11 @@ export const size = {
   'rail-item': 32,
   /** A toolbar search field, and a popover list's width and height limits. */
   search: 240,
+  /** The station search in the top bar at desktop width, its results panel, where the panel drops on a narrow screen, and the most it grows. */
+  'search-wide': 300,
+  'search-panel': 460,
+  'search-drop': 60,
+  'search-results': 420,
   'popover-min': 200,
   popover: 320,
   /** A photo shown at full size inside a dialog. */
@@ -398,6 +403,8 @@ export const size = {
   'card-tab': 120,
   /** A count badge on a nav item or a zone chip. */
   count: 18,
+  /** A count pill: wider than it is tall, so a single figure reads as a pill, not a dot. */
+  'count-wide': 24,
   /** A Floor nav rail item and a tables rail tab row. */
   'nav-item': 64,
 } as const;

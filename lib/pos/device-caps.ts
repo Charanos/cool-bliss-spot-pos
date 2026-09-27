@@ -104,14 +104,15 @@ export function readCaps(): DeviceCaps {
 export type DisplayProfile = 'standard' | 'lite' | 'clarity';
 
 /**
- * The profile a device suits, by what it reports: a slow device gets Lite, a plain screen at one
- * pixel per point gets Clarity. A suggestion only; the device or a manager decides. docs/06, profiles.
+ * The profile a device suits, by what it reports: every station starts in Clarity, and a slow device
+ * adds Lite. A suggestion only; the device or a manager decides. docs/06, profiles.
  */
 export function suggestProfiles(caps: DeviceCaps): DisplayProfile[] {
   const out: DisplayProfile[] = [];
   const oldSafari = caps.browser.startsWith('Safari') && Number.parseFloat(caps.browser.split(' ')[1] ?? '99') < 16;
   if (oldSafari || (caps.cores !== null && caps.cores <= 2) || (caps.memory !== null && caps.memory <= 2)) out.push('lite');
-  if (caps.gamut === 'srgb' && !caps.hdr && caps.dpr <= 1 && caps.pointer === 'mouse') out.push('clarity');
+  // Clarity reads well on every screen we have tried, good and weak alike, so every station starts in it.
+  out.push('clarity');
   return out;
 }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchTarget } from '@/app/_pos/station-search';
 import { plural } from '@bliss/shared/format';
 import { type Cents, ZERO, formatKes, isPositive, multiplyByQty, subtract, sum } from '@bliss/shared/money';
 import { amountDue } from '@bliss/shared/settlement';
@@ -109,6 +110,9 @@ export default function QuickSalePage() {
     },
     [catalogue],
   );
+  // Search adds here too, the same as a tap on the grid.
+  useSearchTarget('Adds to this sale', add);
+
 
   const onSettle = async () => {
     if (busy || !covered) return;

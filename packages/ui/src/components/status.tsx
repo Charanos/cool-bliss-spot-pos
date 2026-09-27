@@ -115,7 +115,7 @@ export const washTone: Record<Tone, string> = {
 export function StatusChip({ status, label, className }: { status: StatusKey; label?: string; className?: string }) {
   const { word, tone } = STATUS[status];
   return (
-    <span className={cx('inline-flex h-chip-dense shrink-0 items-center gap-6 whitespace-nowrap rounded-sm px-8 text-micro micro-caps', washTone[tone], className)}>
+    <span className={cx('inline-flex h-chip-dense shrink-0 items-center gap-6 whitespace-nowrap rounded-pill pl-6 pr-8 text-micro micro-caps', washTone[tone], className)}>
       <Dot tone={tone} data-chip-dot="" />
       {label ?? word}
     </span>
@@ -125,7 +125,7 @@ export function StatusChip({ status, label, className }: { status: StatusKey; la
 /** A chip for any tone and word, when the state is not one of the named statuses. */
 export function ToneChip({ tone, children, dot = true, className }: { tone: Tone; children: React.ReactNode; dot?: boolean; className?: string }) {
   return (
-    <span className={cx('inline-flex h-chip-dense shrink-0 items-center gap-6 whitespace-nowrap rounded-sm px-8 text-micro micro-caps', washTone[tone], className)}>
+    <span className={cx('inline-flex h-chip-dense shrink-0 items-center gap-6 whitespace-nowrap rounded-pill pl-6 pr-8 text-micro micro-caps', washTone[tone], className)}>
       {dot ? <Dot tone={tone} data-chip-dot="" /> : null}
       {children}
     </span>

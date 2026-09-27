@@ -69,7 +69,7 @@ export default function ShiftPage() {
 
   return (
     <div className="scroll-region flex flex-col">
-      <header className="z-10 border-b border-rule-raised/20 bg-page/85 px-12 py-12 backdrop-blur-glass pad:sticky pad:top-0 pad:px-24 pad:py-16 short:py-8">
+      <header className="z-10 bg-page/85 px-12 py-12 backdrop-blur-glass pad:sticky pad:top-0 pad:px-24 pad:py-16 short:py-8">
         <div className="flex flex-col gap-12">
           <div className="flex items-start justify-between gap-12">
             <div className="flex min-w-0 items-center gap-12">
@@ -113,7 +113,8 @@ export default function ShiftPage() {
       </header>
 
       <div className="flex flex-col gap-24 px-12 py-16 pad:gap-32 pad:px-24 pad:py-24">
-        <section aria-labelledby="shift-metrics">
+        {/* The figures belong with the header; the rule goes under them, where the working list starts. */}
+        <section aria-labelledby="shift-metrics" className="border-b border-rule-raised/30 pb-16 tablet:pb-24">
           <h2 id="shift-metrics" className="sr-only">
             This shift
           </h2>

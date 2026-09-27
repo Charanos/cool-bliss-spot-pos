@@ -181,6 +181,10 @@
   --spacing-frame-min: 1024px;
   --spacing-rail-item: 32px;
   --spacing-search: 240px;
+  --spacing-search-wide: 300px;
+  --spacing-search-panel: 460px;
+  --spacing-search-drop: 60px;
+  --spacing-search-results: 420px;
   --spacing-popover-min: 200px;
   --spacing-popover: 320px;
   --spacing-lightbox: 720px;
@@ -202,6 +206,7 @@
   --spacing-node: 32px;
   --spacing-card-tab: 120px;
   --spacing-count: 18px;
+  --spacing-count-wide: 24px;
   --spacing-nav-item: 64px;
 
   --radius-sm: 6px;

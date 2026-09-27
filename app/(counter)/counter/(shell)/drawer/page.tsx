@@ -18,7 +18,7 @@ import { IconArrowLeft, IconBuildingBank, IconCash, IconChevronRight, IconClockH
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
-import { PageHeader } from '@/app/_pos/chrome';
+import { FiguresRow, PageHeader } from '@/app/_pos/chrome';
 import { type OpenTabBlock, closeDrawer, countDrawer, drawerPreflight, dropCash, openDrawer } from '@/lib/pos/counter';
 import { useDrawerState } from '@/lib/pos/counter-queries';
 import type { DrawerRow } from '@/lib/pos/db';
@@ -96,6 +96,7 @@ export default function DrawerPage() {
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader
         title="Drawer"
+        rule={!open}
         facts={
           state === undefined
             ? [{ key: 'r', text: 'Reading this counter' }]
@@ -107,7 +108,7 @@ export default function DrawerPage() {
         }
         aside={
           status ? (
-            <Badge tone={status.tone} className="!rounded-full">
+            <Badge tone={status.tone}>
               <Dot tone={status.dot} />
               <span>{status.text}</span>
             </Badge>
@@ -212,12 +213,12 @@ export default function DrawerPage() {
           ) : (
             /* ── Open: the day so far ───────────────────────────────────── */
             <>
-              <section aria-label="This drawer" className="grid grid-cols-2 gap-8 pad:gap-16 desktop:grid-cols-4">
+              <FiguresRow label="This drawer" className="grid grid-cols-2 gap-8 pad:gap-16 desktop:grid-cols-4">
                 <MetricTile label="Opening float" icon={IconCash} tone="money" value={<Money value={open.openingFloatCents} size="num-lg" decimals="whole" />} subtitle={`Opened ${formatTime(open.openedAt, tz)}`} />
                 <MetricTile label="Open for" icon={IconClockHour4} tone="accent" value={<span className="font-mono tabular text-num-lg text-ink">{formatElapsed(now - open.openedAt)}</span>} subtitle="Since the float went in" />
                 <MetricTile label="Bills here" icon={IconReceipt} tone="poured" value={<span className="font-mono tabular text-num-lg text-ink">{open.cashBills}</span>} subtitle="Settled on this counter" />
                 <MetricTile label="To the safe" icon={IconBuildingBank} tone="neutral" value={<Money value={drops} size="num-lg" decimals="whole" />} subtitle={open.drops.length === 0 ? 'Nothing taken out' : plural(open.drops.length, 'drop')} />
-              </section>
+              </FiguresRow>
 
               <Pane title="Cash to the safe" aside={open.drops.length > 0 ? <Money value={drops} size="num-sm" tone="muted" /> : null}>
                 {open.drops.length === 0 ? (

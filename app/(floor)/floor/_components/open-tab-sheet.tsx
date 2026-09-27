@@ -10,6 +10,7 @@ import { seatBgClass } from '@bliss/ui/lib/seat';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { openTab } from '@/lib/pos/mutations';
+import { usePlaceName } from '@/lib/pos/queries';
 
 /** A place's name for people: Table 4, Stool 2, or Walk up. docs/14 section 2. */
 export function tableLabel(table: ServiceTable | null): string {
@@ -144,6 +145,7 @@ export function OpenTabSheet({
   walkUpZoneId: string | null;
 }) {
   const router = useRouter();
+  const placeName = usePlaceName();
   const [guests, setGuests] = useState(table?.seats ?? 2);
   const [name, setName] = useState('');
   const [pending, setPending] = useState(false);
@@ -168,7 +170,7 @@ export function OpenTabSheet({
       onClose();
       notify({
         key: `open:${tabId}`,
-        title: `${table ? tableLabel(table) : name || 'Walk-up tab'} is open`,
+        title: `${table ? placeName(table) : name || 'Walk-up tab'} is open`,
         body: guests === 1 ? 'One guest. Add from the grid, then fire.' : `${guests} seats. Pick a seat, add from the grid, then fire.`,
       });
       router.push(`/floor/tabs/${tabId}`);
@@ -179,7 +181,7 @@ export function OpenTabSheet({
     }
   };
 
-  const title = table ? `Open a tab on ${tableLabel(table)}` : 'Open a walk-up tab';
+  const title = table ? `Open a tab on ${placeName(table)}` : 'Open a walk-up tab';
 
   const footerActions = (
     <>

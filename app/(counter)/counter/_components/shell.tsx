@@ -10,7 +10,7 @@ import { Dot, type Tone } from '@bliss/ui/components/status';
 import { LiveRegion } from '@bliss/ui/components/surface';
 import { cx } from '@bliss/ui/lib/cx';
 import { Photo } from '@bliss/ui/components/photo';
-import { IconBeer, IconCash, IconHistory, IconReceipt2, IconKeyboard, IconSearch, IconSettings, IconShoppingBag } from '@tabler/icons-react';
+import { IconBeer, IconCash, IconHistory, IconReceipt2, IconKeyboard, IconSettings, IconShoppingBag } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
@@ -24,6 +24,7 @@ import { useDevice, useSession } from '@/lib/pos/session';
 import { useStaffPhotos } from '@/lib/pos/staff-photos';
 import { useSync } from '@/lib/pos/sync';
 import { ShortcutsSheet, useShortcut } from './shortcuts';
+import { StationSearch, openStationSearch } from '@/app/_pos/station-search';
 
 /**
  * The Counter shell. The same chrome as the Floor (app/_pos/chrome.tsx) with the Counter's own
@@ -57,16 +58,11 @@ export function CounterShell({ children }: { children: ReactNode }) {
     if (session === null) router.replace('/counter/sign-in');
   }, [session, router]);
 
-  // Alt and a number for the five views, Ctrl or Cmd K to find a tab. Digits alone are left to the
+  // Alt and a number for the five views. Ctrl or Cmd K and / open the search (station-search.tsx). Digits alone are left to the
   // tender keypad, which listens for them on the settle and sale screens.
   useEffect(() => {
     const routes = ['/counter/orders', '/counter/tabs', '/counter/sale', '/counter/drawer', '/counter/history'];
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        router.push('/counter/tabs?find=1');
-        return;
-      }
       if (e.altKey && /^[1-5]$/.test(e.key)) {
         e.preventDefault();
         router.push(routes[Number(e.key) - 1]!);
@@ -82,7 +78,7 @@ export function CounterShell({ children }: { children: ReactNode }) {
   useShortcut('s', () => router.push('/counter/sale'));
   useShortcut('d', () => router.push('/counter/drawer'));
   useShortcut('h', () => router.push('/counter/history'));
-  useShortcut('/', () => router.push('/counter/tabs?find=1'));
+  useShortcut('/', openStationSearch);
   useShortcut('?', () => setKeysOpen(true));
 
   if (!session) return <div className="h-dvh bg-page" aria-busy="true" />;
@@ -125,14 +121,7 @@ export function CounterShell({ children }: { children: ReactNode }) {
               <Eyebrow as="p" className="hidden desktop:block">
                 {device?.label ?? 'Counter'}
               </Eyebrow>
-              <Link
-                href="/counter/tabs?find=1"
-                className="hidden h-control-sm w-[220px] items-center gap-8 rounded-md border border-transparent bg-control px-12 text-ink-subtle press-feedback hover:border-hairline tablet:flex desktop:w-[260px]"
-              >
-                <IconSearch size={14} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0" />
-                <span className="flex-1 truncate text-body-sm">Find a tab</span>
-                <kbd className="shrink-0 rounded-sm bg-sunken px-4 font-mono text-micro text-ink-muted">⌘K</kbd>
-              </Link>
+              <StationSearch surface="counter" />
             </>
           }
           centre={<SurfaceSwitcher current="counter" />}

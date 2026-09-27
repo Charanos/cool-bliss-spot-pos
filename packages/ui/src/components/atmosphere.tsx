@@ -169,7 +169,7 @@ export function PhotoBackdrop({ src, className }: { src: string; className?: str
   return (
     <div aria-hidden="true" className={cx('pointer-events-none absolute inset-0 z-0', className)}>
       {/* Decorative: offline or blocked, it simply is not there. */}
-      <Photo src={src} className="ambient-art size-full object-cover opacity-60 mix-blend-luminosity" />
+      <Photo src={src} loading="eager" fetchPriority="high" className="ambient-art size-full object-cover opacity-60 mix-blend-luminosity" />
       <div className="absolute inset-0 bg-gradient-to-b from-page/10 via-page/50 to-page" />
       <div className="absolute inset-0 bg-gradient-to-r from-transparent to-page" />
     </div>

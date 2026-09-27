@@ -17,7 +17,7 @@ import { cx } from '@bliss/ui/lib/cx';
 import { IconBan, IconBeer, IconCloudOff, IconLock, IconReceipt, IconRefresh, IconUsers } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { PageHeader } from '../chrome';
+import { FiguresRow, PageHeader } from '../chrome';
 import { TENDER_FILL, TENDER_WORD } from '../tenders';
 import { META, getMeta } from '@/lib/pos/db';
 import { useHistory } from '@/lib/pos/history';
@@ -178,6 +178,7 @@ export function HistoryView({ surface, staffId, onOpenTab }: HistoryViewProps) {
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader
         title="History"
+        rule={false}
         facts={[
           { key: 'r', text: rangeName(preset, range.from, range.to) },
           state.status === 'loading'
@@ -373,7 +374,7 @@ function Summary({ data, surface }: { data: HistoryResult; surface: 'floor' | 'c
   const split = s.byTender?.filter((t) => isPositive(t.amountCents)) ?? [];
   const total = sum(split.map((t) => t.amountCents));
   return (
-    <section aria-label="This range at a glance" className="flex flex-col gap-8 pad:gap-12">
+    <FiguresRow label="This range at a glance" className="flex flex-col gap-8 pad:gap-12">
       <div className="grid grid-cols-2 gap-8 pad:gap-16 desktop:grid-cols-4">
         <MetricTile
           label="Takings"
@@ -412,7 +413,7 @@ function Summary({ data, surface }: { data: HistoryResult; surface: 'floor' | 'c
           </ul>
         </div>
       ) : null}
-    </section>
+    </FiguresRow>
   );
 }
 

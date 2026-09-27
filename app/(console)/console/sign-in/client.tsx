@@ -15,7 +15,8 @@ import { ROLE_LABEL } from '../(shell)/_lib/labels';
 import { pinWeakness } from '@bliss/shared/pin';
 import { chooseConsolePin, signInToConsole } from './actions';
 
-const BACKDROP = '1621275471769-e6aa344546d5';
+/** The photograph behind the clock, served from the app (public/backdrops) so it never waits on a photo host. */
+const BACKDROP = '/backdrops/console.webp';
 
 export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSummary[]; outlet: { name: string; timezone: string }; notice: string | null }) {
   const [chosen, setChosen] = useState<string | null>(null);
@@ -90,7 +91,7 @@ export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSum
   return (
     <div className="relative flex h-dvh flex-col tablet:grid tablet:grid-cols-[minmax(320px,2fr)_3fr] bg-page">
       <section data-theme="dark" className="hidden tablet:flex relative min-h-[180px] tablet:min-h-0 shrink-0 tablet:shrink flex-col justify-between overflow-hidden p-24 tablet:p-40 bg-page text-ink">
-        <PhotoBackdrop src={`https://images.unsplash.com/photo-${BACKDROP}?q=80&w=1200&auto=format&fit=crop`} />
+        <PhotoBackdrop src={BACKDROP} />
 
         <div className="relative z-10">
           <BlissWordmark size={80} label="Bliss" />

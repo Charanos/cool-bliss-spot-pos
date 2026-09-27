@@ -8,7 +8,7 @@ import { useHydrated, useNow } from '@bliss/ui/hooks';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconBuildingStore, IconLayoutGrid } from '@tabler/icons-react';
 import Link from 'next/link';
-import type { ReactNode, Ref } from 'react';
+import { type ReactNode, type Ref, useEffect, useRef } from 'react';
 
 /**
  * The chrome both staff surfaces wear. docs/16-responsive-and-offline.md.
@@ -161,8 +161,22 @@ const DOCK_ACTION =
 
 export function Dock({ nav, actionRef, inlineFrom = 'pad', label }: { nav: ReactNode; actionRef: Ref<HTMLDivElement>; inlineFrom?: 'pad' | 'tablet'; label: string }) {
   const pad = inlineFrom === 'pad';
+  // The dock's height, for notices to rise from just above it (notices.tsx). It changes with the
+  // page's action and the orientation, so it is measured rather than assumed.
+  const footer = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = footer.current;
+    const root = document.documentElement;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => root.style.setProperty('--bliss-dock-h', `${Math.round(el.getBoundingClientRect().height)}px`));
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--bliss-dock-h');
+    };
+  }, []);
   return (
-    <footer className="safe-b safe-x shrink-0 [--bliss-gutter-b:8px] [--bliss-gutter-x:8px] pad:[--bliss-gutter-b:12px] pad:[--bliss-gutter-x:16px] short:[--bliss-gutter-b:6px]">
+    <footer ref={footer} className="safe-b safe-x shrink-0 [--bliss-gutter-b:8px] [--bliss-gutter-x:8px] pad:[--bliss-gutter-b:12px] pad:[--bliss-gutter-x:16px] short:[--bliss-gutter-b:6px]">
       <div
         className={cx(
           'dock-surface mx-auto flex w-full max-w-[560px] flex-col gap-6 rounded-sheet p-6',
@@ -185,9 +199,22 @@ export function Dock({ nav, actionRef, inlineFrom = 'pad', label }: { nav: React
  * the page needs on the right, and its filters underneath. One row from a tablet held upright,
  * half the padding on a short screen.
  */
-export function PageHeader({ title, facts, aside, children }: { title: ReactNode; facts?: readonly (MetaItem | null | false)[]; aside?: ReactNode; children?: ReactNode }) {
+export function PageHeader({
+  title,
+  facts,
+  aside,
+  rule = true,
+  children,
+}: {
+  title: ReactNode;
+  facts?: readonly (MetaItem | null | false)[];
+  aside?: ReactNode;
+  /** False when a row of figures opens the page: the figures belong with the header, so the rule goes under them (FiguresRow). */
+  rule?: boolean;
+  children?: ReactNode;
+}) {
   return (
-    <header className="z-10 shrink-0 border-b border-rule-raised/20 bg-page/85 px-12 pb-12 pt-12 backdrop-blur-glass pad:px-24 pad:pb-16 pad:pt-20 short:py-6">
+    <header className={cx('z-10 shrink-0 border-b bg-page/85 px-12 pb-12 pt-12 backdrop-blur-glass pad:px-24 pad:pb-16 pad:pt-20 short:py-6', rule ? 'border-rule-raised/20' : 'border-transparent')}>
       <div className="flex flex-col gap-12 pad:flex-row pad:items-center pad:justify-between pad:gap-x-24">
         <div className="flex min-w-0 flex-wrap items-center gap-x-16 gap-y-8">
           <h1 className="shrink-0 whitespace-nowrap text-title-lg font-medium text-ink pad:text-heading short:text-title">{title}</h1>
@@ -205,5 +232,17 @@ export function PageHeader({ title, facts, aside, children }: { title: ReactNode
       </div>
       {children ? <div className="mt-12 pad:mt-16 short:mt-6">{children}</div> : null}
     </header>
+  );
+}
+
+/**
+ * A row of figures that opens a page, under a header without its own rule: the rule sits beneath
+ * the figures, so the header and its numbers read as one block and the working list starts after.
+ */
+export function FiguresRow({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
+  return (
+    <section aria-label={label} className={cx('border-b border-rule-raised/30 pb-16 tablet:pb-24', className)}>
+      {children}
+    </section>
   );
 }

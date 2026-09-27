@@ -3,7 +3,7 @@
 import type { AvailabilityReason, AvailabilityState, CategoryColourToken, OrderLine, OrderLineModifier, ServiceTable, Tab, TabSeat, Zone } from '@bliss/shared/domain';
 import { type Cents, ZERO, add, sum } from '@bliss/shared/money';
 import { tryResolvePrice } from '@bliss/shared/pricing';
-import { type TableStage, isSeated, tabLabel, tableStage } from '@bliss/shared/trade';
+import { type TableStage, isSeated, placeLabel, tabLabel, tableStage } from '@bliss/shared/trade';
 import { showsSeatChips, showsSeatControls } from '@bliss/shared/seats';
 import type { OutboxEntry } from '@bliss/shared/sync';
 import type { TicketLineState } from '@bliss/ui/components/floor/ticket';
@@ -331,6 +331,25 @@ export function useZonesAndTables() {
     const [zones, tables] = await Promise.all([db.zones.orderBy('sortOrder').toArray(), db.serviceTables.toArray()]);
     return { zones, tables };
   }, []);
+}
+
+/**
+ * A table's name for people, with its zone when the name alone is not enough: a venue may have a
+ * Table 1 in the lounge and another at the counter, and a waiter must never guess which.
+ */
+export function usePlaceName(): (table: ServiceTable | null) => string {
+  const places = useZonesAndTables();
+  return useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const t of places?.tables ?? []) counts.set(t.label, (counts.get(t.label) ?? 0) + 1);
+    const zoneName = new Map((places?.zones ?? []).map((z) => [z.id, z.name]));
+    return (table) => {
+      if (!table) return 'Walk up';
+      const name = placeLabel(table.label);
+      const zone = zoneName.get(table.zoneId);
+      return (counts.get(table.label) ?? 0) > 1 && zone ? `${name}, ${zone}` : name;
+    };
+  }, [places]);
 }
 
 export function useStaffDirectory(): StaffDirectoryEntry[] | undefined {

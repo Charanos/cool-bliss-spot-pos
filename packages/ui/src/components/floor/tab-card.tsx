@@ -115,20 +115,21 @@ export function TabCard({ tableLabel, name, seats, showSeats, elapsed, total, wa
  * A free table: an invitation, one row high. Dashed edge (surface-invite), its seats, and the add mark.
  * Named so a screen reader hears "Open a tab on Table 7, 4 seats".
  */
-export function FreeTableCard({ tableLabel, capacity, onOpen }: { tableLabel: string; capacity: number; onOpen: () => void }) {
+/** A free table, as an invitation: its name, its zone underneath, how many it seats, and a quiet plus. */
+export function FreeTableCard({ tableLabel, zone, capacity, onOpen }: { tableLabel: string; zone?: string | null; capacity: number; onOpen: () => void }) {
+  const seats = capacity === 1 ? '1 seat' : `${capacity} seats`;
   return (
-    <InviteButton
-      aria-label={`Open a tab on ${tableLabel}, ${capacity === 1 ? '1 seat' : `${capacity} seats`}`}
-      onClick={onOpen}
-      className="flex w-full min-h-row-floor items-center gap-12 px-16 py-8"
-    >
-      <span className="min-w-0 flex-1 truncate text-body-lg font-medium text-ink" title={tableLabel}>
-        {tableLabel}
+    <InviteButton aria-label={`Open a tab on ${tableLabel}${zone ? `, ${zone}` : ''}, ${seats}`} onClick={onOpen} className="flex w-full min-h-row-floor items-center gap-12 px-16 py-8">
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-body-lg font-medium text-ink" title={tableLabel}>
+          {tableLabel}
+        </span>
+        {zone ? <span className="truncate text-body-sm text-ink-muted">{zone}</span> : null}
       </span>
-      <span className="shrink-0 font-mono tabular text-num-sm text-ink-muted" aria-hidden="true">
-        {capacity} {capacity === 1 ? 'seat' : 'seats'}
+      <span className="shrink-0 rounded-pill bg-sunken px-8 py-2 font-mono tabular text-num-sm text-ink-muted" aria-hidden="true">
+        {seats}
       </span>
-      <span aria-hidden="true" className="flex size-control-sm shrink-0 items-center justify-center rounded-dot bg-attention text-page">
+      <span aria-hidden="true" className="flex size-control-sm shrink-0 items-center justify-center rounded-dot bg-accent-wash text-accent-text ring-1 ring-inset ring-accent/25">
         <IconPlus size={18} stroke={ICON_STROKE} />
       </span>
     </InviteButton>

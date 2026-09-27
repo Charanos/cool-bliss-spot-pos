@@ -22,7 +22,7 @@ export interface ReasonFormProps {
   /** Where approval is needed, the approver enters their own PIN inside the dialog. */
   approval?: { label: string } | null;
   children?: ReactNode;
-  /** Floor focuses a chip so the keyboard does not cover the dialog; Console focuses the field. */
+  /** The Floor leaves focus on the dialog, so the keyboard does not cover it; the Console focuses the field. */
   focus?: 'chip' | 'field';
   onCancel: () => void;
   /** Throw an Error with a plain sentence to show it inline. */
@@ -80,11 +80,10 @@ export function ReasonForm({ quickReasons, initialReason = '', confirmLabel, can
     >
       {children}
       <div className="flex flex-wrap gap-8" role="group" aria-label="Common reasons">
-        {quickReasons.map((chip, i) => (
+        {quickReasons.map((chip) => (
           <button
             key={chip}
             type="button"
-            data-autofocus={focus === 'chip' && i === 0 ? '' : undefined}
             onClick={() => {
               setReason((current) => applyQuickReason(current, chip));
               requestAnimationFrame(() => {

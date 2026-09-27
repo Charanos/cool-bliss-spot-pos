@@ -25,19 +25,22 @@ const ROLE_LABEL: Record<string, string> = {
   stock_controller: 'Stock controller',
 };
 
-/** Photographs behind the clock. Each surface has its own default; development can swap with ?backdrop=. */
+/**
+ * Photographs behind the clock, served from the app itself (public/backdrops): 960 by 1280 WebP, 50 to
+ * 130KB, cached by the service worker, so a tablet shows them offline and never waits on a photo host.
+ * Each surface has its own default; development can swap with ?backdrop=.
+ */
 const BACKDROPS = {
-  bulbs: '1543007630-9710e4a00a20', // a long bar counter under Edison bulbs, portrait
-  counter: '1572116469696-31de0f17cc34', // an amber lit counter and stools
-  pour: '1566417713940-fe7c737a9ef2', // a bartender pouring over ice
-  cocktails: '1551024709-8f23befc6f87', // two cocktails, the revamp's original
+  bulbs: '/backdrops/bulbs.webp', // a long bar counter under Edison bulbs
+  counter: '/backdrops/counter.webp', // an amber lit counter and stools
+  pour: '/backdrops/pour.webp', // a bartender pouring over ice
 } as const;
 
 type BackdropKey = keyof typeof BACKDROPS;
 
 const DEFAULT_BACKDROP: Record<StaffSurface, BackdropKey> = { floor: 'bulbs', counter: 'pour', console: 'bulbs' };
 
-const backdropUrl = (key: BackdropKey) => `https://images.unsplash.com/photo-${BACKDROPS[key]}?q=80&w=1200&auto=format&fit=crop`;
+const backdropUrl = (key: BackdropKey) => BACKDROPS[key];
 
 function useBackdrop(surface: StaffSurface): string {
   const [key, setKey] = useState<BackdropKey>(DEFAULT_BACKDROP[surface]);

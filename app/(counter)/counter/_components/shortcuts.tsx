@@ -17,7 +17,7 @@ export const SHORTCUTS: { keys: string[]; action: string }[] = [
   { keys: ['S'], action: 'Quick sale' },
   { keys: ['D'], action: 'The drawer' },
   { keys: ['H'], action: 'History' },
-  { keys: ['/'], action: 'Find a tab' },
+  { keys: ['/'], action: 'Search tabs, seats and the menu' },
   { keys: ['P'], action: 'Pour the oldest ticket, on Orders' },
   { keys: ['0–9', 'Enter'], action: 'Type an amount and take it, when settling' },
   { keys: ['Alt', '1–5'], action: 'The five views, from anywhere' },

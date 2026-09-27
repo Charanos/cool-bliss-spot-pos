@@ -20,7 +20,7 @@ export function Badge({ children, tone = 'neutral', className, ...rest }: BadgeP
   return (
     <span
       {...rest}
-      className={cx('inline-flex h-chip-dense items-center gap-6 rounded-sm px-8 font-mono text-badge uppercase transition-hover', TONE[tone], className)}
+      className={cx('inline-flex h-chip-dense items-center gap-6 rounded-pill px-8 font-mono text-badge uppercase transition-hover', TONE[tone], className)}
     >
       <span className="inline-flex items-center gap-6 leading-none">{children}</span>
     </span>

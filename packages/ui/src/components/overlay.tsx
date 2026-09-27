@@ -71,15 +71,13 @@ const ADAPTIVE_SHAPE = 'safe-b rounded-t-[28px] border-b-0 pad:rounded-[28px] pa
 /** Which surface an overlay's children sit on, so its actions row can match the padding. */
 const SurfaceContext = createContext<'glass' | 'solid'>('glass');
 
-const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-
 /**
  * One overlay for sheets and dialogs, built on the native <dialog> so focus trapping, Escape and
  * the Android back gesture (through CloseWatcher) come from the platform.
  *
- * docs/07-motion-and-interaction.md section 7: focus moves to the first non-destructive control on
- * open and returns to the trigger on close. docs/06 section 6.7: the destructive action is never the
- * default focus. Scrolling inside carries data-lenis-prevent.
+ * docs/07-motion-and-interaction.md section 7: focus moves to the panel on open (or to a field marked
+ * data-autofocus) and returns to the trigger on close. docs/06 section 6.7: the destructive action is
+ * never the default focus. Scrolling inside carries data-lenis-prevent.
  */
 export function Overlay({
   open,
@@ -146,9 +144,10 @@ export function Overlay({
       closing.current = false;
       returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       dialog.showModal();
-      const preferred =
-        panel.querySelector<HTMLElement>('[data-autofocus]') ??
-        Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).find((el) => !el.hasAttribute('data-destructive') && el.getAttribute('aria-disabled') !== 'true');
+      // The panel takes focus, not its first button: a screen reader announces the dialog by its
+      // title, Tab reaches the first control, and nothing opens wearing a focus ring. A field that
+      // is the whole point of the dialog asks for focus with data-autofocus.
+      const preferred = panel.querySelector<HTMLElement>('[data-autofocus]');
       (preferred ?? panel).focus({ preventScroll: true });
       latest.current.motion.enter(panel, scrimRef.current);
       latest.current.onOpened?.();
