@@ -566,6 +566,7 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
     const shiftTotals = new Map<string, { sales: Cents; voids: Cents; tabs: number }>();
     let cashTaken = ZERO;
     let tabNumber = 0;
+    const dayWalkUps: Tab[] = [];
 
     for (let t = 0; t < tabCount; t += 1) {
       const hourWeights: [number, number][] = [
@@ -624,7 +625,8 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
         serviceTableId: tableRow?.id ?? null,
         zoneId,
         tabNumber,
-        name: walkUp ? pick(rand, ['Walk up', 'Bar stool', 'Takeaway']) : null,
+        // A walk up named only "Walk up" goes by its number instead, given below in the order they opened.
+        name: walkUp ? pick(rand, ['Walk up', 'Bar stool', 'Takeaway']).replace(/^Walk up$/, '') || null : null,
         guestCount,
         openedBy: waiter.id,
         openedAt,
@@ -634,6 +636,7 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
         closedAt: null,
       };
       tabs.push(tab);
+      if (walkUp) dayWalkUps.push(tab);
 
       const rounds = Math.max(1, Math.min(4, Math.round(1 + rand() * 3)));
       const tabLines: OrderLine[] = [];
@@ -877,6 +880,9 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
       tab.status = 'settled';
       tab.closedAt = closeAt;
     }
+
+    // Walk ups are numbered through the night in the order they opened, as the server numbers them.
+    dayWalkUps.sort((a, b) => a.openedAt - b.openedAt).forEach((tab, i) => (tab.walkUpNo = i + 1));
 
     // Shifts and the drawer, for business days that have finished.
     for (const [staffId, totals] of shiftTotals) {

@@ -1,5 +1,6 @@
 import { formatDateTime, formatQty } from '@bliss/shared/format';
 import { formatDecimal, isPositive, isZero, subtract } from '@bliss/shared/money';
+import { tabLabel } from '@bliss/shared/trade';
 import { notFound } from 'next/navigation';
 import { assertPrintAccess } from '@/lib/print-access';
 import * as identity from '@/modules/identity/service';
@@ -38,7 +39,7 @@ export default async function PrintBillPage({ params, searchParams }: { params: 
   const lines = settlement.billLines(bill.id);
   const tenders = settlement.tendersFor(bill.id);
   const tab = bill.tabId ? trade.tabById(bill.tabId) : null;
-  const table = tab ? (trade.tableById(tab.serviceTableId)?.label ?? tab.name ?? 'Walk up') : 'Walk up';
+  const table = tab ? tabLabel({ tableLabel: trade.tableById(tab.serviceTableId)?.label, name: tab.name, walkUpNo: tab.walkUpNo }) : 'Quick sale';
   const zone = tab ? (trade.zoneById(trade.tableById(tab.serviceTableId)?.zoneId ?? '')?.name ?? '') : '';
   const server = identity.displayName(bill.settledBy);
   const device = identity.devices().find((d) => d.id === bill.deviceId);

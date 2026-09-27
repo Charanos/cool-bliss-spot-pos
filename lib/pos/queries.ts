@@ -3,7 +3,7 @@
 import type { AvailabilityReason, AvailabilityState, CategoryColourToken, OrderLine, OrderLineModifier, ServiceTable, Tab, TabSeat, Zone } from '@bliss/shared/domain';
 import { type Cents, ZERO, add, sum } from '@bliss/shared/money';
 import { tryResolvePrice } from '@bliss/shared/pricing';
-import { type TableStage, isSeated, placeLabel, tabLabel, tableStage } from '@bliss/shared/trade';
+import { type TableStage, isSeated, nextWalkUpNo, placeLabel, tabLabel, tableStage } from '@bliss/shared/trade';
 import { showsSeatChips, showsSeatControls } from '@bliss/shared/seats';
 import type { OutboxEntry } from '@bliss/shared/sync';
 import type { TicketLineState } from '@bliss/ui/components/floor/ticket';
@@ -169,7 +169,7 @@ export function useSeatedTabs(): SeatedTab[] | undefined {
         return {
           tab,
           table,
-          label: tabLabel({ tableLabel: table?.label, name: tab.name }),
+          label: tabLabel({ tableLabel: table?.label, name: tab.name, walkUpNo: tab.walkUpNo }),
           paid: sum(bills.filter((b) => b.tabId === tab.id).map((b) => b.totalCents)),
           waiterName: staffById.get(tab.assignedTo)?.displayName ?? '',
           settledFor: tab.closedAt ?? tab.openedAt,
@@ -202,7 +202,7 @@ export function useOpenTabs(): TabListItem[] | undefined {
         return {
           tab,
           table,
-          label: tabLabel({ tableLabel: table?.label, name: tab.name }),
+          label: tabLabel({ tableLabel: table?.label, name: tab.name, walkUpNo: tab.walkUpNo }),
           seats: tabSeats,
           total: sum(own.map((l) => l.lineTotalCents)),
           unsentCount: own.filter((l) => l.status !== 'draft' && unsent.has(l.orderId)).length,
@@ -294,7 +294,7 @@ export function useTab(tabId: string): TabDetail | null | undefined {
       tab,
       table: table ?? null,
       zone: zones.find((z) => z.id === tab.zoneId) ?? null,
-      label: tabLabel({ tableLabel: table?.label, name: tab.name }),
+      label: tabLabel({ tableLabel: table?.label, name: tab.name, walkUpNo: tab.walkUpNo }),
       seats: seatTotals,
       activeSeats,
       sharedTotal: shared.reduce((a, l) => add(a, l.lineTotalCents), ZERO),
@@ -350,6 +350,15 @@ export function usePlaceName(): (table: ServiceTable | null) => string {
       return (counts.get(table.label) ?? 0) > 1 && zone ? `${name}, ${zone}` : name;
     };
   }, [places]);
+}
+
+/** The number the next walk up on this tablet will take tonight, until the server says otherwise. */
+export function useNextWalkUpNo(): number | undefined {
+  return useLiveQuery(async () => {
+    const date = await getMeta<string>(META.businessDate);
+    const tabs = await posDb().tabs.toArray();
+    return nextWalkUpNo(tabs, date ?? tabs.reduce((last, t) => (t.businessDate > last ? t.businessDate : last), ''));
+  }, []);
 }
 
 export function useStaffDirectory(): StaffDirectoryEntry[] | undefined {
@@ -454,7 +463,7 @@ export function useFiredOrders(staffId?: string | null): FiredOrderView[] | unde
         return {
           orderId: o.id,
           tabId: o.tabId,
-          label: tabLabel({ tableLabel: table?.label, name: tab.name }),
+          label: tabLabel({ tableLabel: table?.label, name: tab.name, walkUpNo: tab.walkUpNo }),
           firedAt: o.firedAt ?? 0,
           unsent: unsent.has(o.id),
           lines: own,

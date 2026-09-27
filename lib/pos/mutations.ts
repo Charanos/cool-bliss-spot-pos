@@ -8,7 +8,7 @@ import { checkReason } from '@bliss/shared/reason';
 import { canRemoveSeat, nextSeatNo, normaliseSeatLabel, seatColourIndex, seatNumbersForGuests } from '@bliss/shared/seats';
 import { type OutboxKind, type OutboxPayload, validatePayload } from '@bliss/shared/sync';
 import { businessDate } from '@bliss/shared/time';
-import { holdsTable, isOrdering, isSeated } from '@bliss/shared/trade';
+import { holdsTable, isOrdering, isSeated, nextWalkUpNo } from '@bliss/shared/trade';
 import { META, posDb, getMeta, setMeta } from './db';
 import { newId } from './ids';
 import { pricingIndex } from './pricing';
@@ -71,11 +71,12 @@ export function afterCommit() {
 
 export async function openTab(input: { tableId: string | null; zoneId: string; guestCount: number; name: string | null }): Promise<string> {
   const ctx = await context();
-  if (!input.tableId && !input.name?.trim()) {
-    throw new Error('No ghost service: A tab requires a table or walk-up customer ID.');
-  }
   const db = posDb();
   const now = Date.now();
+  const date = businessDate(now, ctx.timezone, ctx.cutover);
+  // The next walk up number this device knows of. The server allocates the one that sticks, and it
+  // arrives with the next pull, so two tablets opening walk ups at once never both keep the same number.
+  const walkUpNo = input.tableId ? null : nextWalkUpNo(await db.tabs.filter((t) => t.businessDate === date).toArray(), date);
   const tabId = newId(ctx.device.id);
   const seatNos = seatNumbersForGuests(input.guestCount);
   const seats: TabSeat[] = seatNos.map((seatNo) => ({
@@ -94,11 +95,12 @@ export async function openTab(input: { tableId: string | null; zoneId: string; g
   const tab: Tab = {
     id: tabId,
     outletId: ctx.outletId,
-    businessDate: businessDate(now, ctx.timezone, ctx.cutover),
+    businessDate: date,
     serviceTableId: input.tableId,
     zoneId: input.zoneId,
     // Server allocated on acknowledgement. Until then the rail shows the table, never a placeholder.
     tabNumber: null,
+    walkUpNo,
     name: input.name?.trim() || null,
     guestCount: seatNos.length,
     openedBy: ctx.session.staffId,

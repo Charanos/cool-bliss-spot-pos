@@ -1,4 +1,5 @@
 import { formatDateTime, formatQty } from '@bliss/shared/format';
+import { tabLabel } from '@bliss/shared/trade';
 import { notFound } from 'next/navigation';
 import { assertPrintAccess } from '@/lib/print-access';
 import * as identity from '@/modules/identity/service';
@@ -28,7 +29,7 @@ export default async function PrintKotPage({ params, searchParams }: { params: P
   // No ghost service: you cannot print a KOT without a logged-in user and a table/tab ID
   const serverId = tab.assignedTo ?? tab.openedBy;
   if (!serverId) notFound();
-  if (!tab.serviceTableId && !tab.name && !tab.tabNumber) notFound();
+  if (!tab.serviceTableId && !tab.name && !tab.walkUpNo && !tab.tabNumber) notFound();
 
   const outlet = identity.outlet();
   const tz = outlet.timezone;
@@ -45,7 +46,7 @@ export default async function PrintKotPage({ params, searchParams }: { params: P
   const latestOrder = orders[orders.length - 1];
   const timestamp = latestOrder?.firedAt ?? tab.openedAt;
 
-  const tableLabel = table ? `Table ${table.label}` : tab.name ? `Walk-up: ${tab.name}` : `Tab #${tab.tabNumber}`;
+  const tableLabel = tabLabel({ tableLabel: table?.label, name: tab.name, walkUpNo: tab.walkUpNo });
 
   return (
     <div className="flex flex-col items-center bg-paper-desk min-h-screen py-8 print:bg-paper print:py-0">

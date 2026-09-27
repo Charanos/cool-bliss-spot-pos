@@ -8,11 +8,11 @@ import { Skeleton } from '../feedback';
 
 export function PageHeaderSkeleton({ tabs = 0 }: { tabs?: number }) {
   return (
-    <div className="flex flex-col items-end gap-12 pb-24">
+    <div className="flex flex-col gap-12 pb-24">
       <Skeleton className="h-32 w-kpi-min" />
       <Skeleton className="h-16 w-search" />
       {tabs > 0 ? (
-        <div className="mt-12 flex gap-24 pb-12">
+        <div className="mt-12 flex gap-24 border-b border-rule pb-12">
           {Array.from({ length: tabs }, (_, i) => (
             <Skeleton key={i} className="h-16 w-72" />
           ))}

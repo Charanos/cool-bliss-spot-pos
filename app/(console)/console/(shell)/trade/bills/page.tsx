@@ -30,7 +30,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
         number: b.billNumber,
         businessDate: b.businessDate,
         settledAt: b.settledAt,
-        table: tab ? tabLabel({ tableLabel: trade.tableById(tab.serviceTableId)?.label, name: tab.name }) : 'Quick sale',
+        table: tab ? tabLabel({ tableLabel: trade.tableById(tab.serviceTableId)?.label, name: tab.name, walkUpNo: tab.walkUpNo }) : 'Quick sale',
         tabId: tab?.id ?? null,
         scope: b.scope,
         seatNo: seat?.seatNo ?? null,

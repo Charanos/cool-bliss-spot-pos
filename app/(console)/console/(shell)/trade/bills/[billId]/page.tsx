@@ -42,7 +42,7 @@ export default async function BillPage({ params }: { params: Promise<{ billId: s
   const tab = bill.tabId ? trade.tabById(bill.tabId) : null;
   const serviceTable = tab ? trade.tableById(tab.serviceTableId) : null;
   const zone = tab ? trade.zoneById(tab.zoneId) : null;
-  const table = tab ? tabLabel({ tableLabel: serviceTable?.label, name: tab.name }) : 'Quick sale';
+  const table = tab ? tabLabel({ tableLabel: serviceTable?.label, name: tab.name, walkUpNo: tab.walkUpNo }) : 'Quick sale';
   const drawer = settlement.drawerForBill(bill);
   const drawerDevice = drawer ? identity.devices().find((d) => d.id === drawer.deviceId) : null;
   const canCorrect = identity.can(actor.staffId, 'refund.approve');

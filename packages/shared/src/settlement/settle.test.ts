@@ -2,7 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { canSignInOn, wrongSurfaceMessage } from '../identity/surfaces';
 import { type Cents, cents, shillings, sum } from '../money';
-import { placeLabel, tabLabel } from '../trade/places';
+import { nextWalkUpNo, placeLabel, tabLabel } from '../trade/places';
 import { amountDue, billableLines, checkTenders, countedTotal, evenShares, expectedCash, quickCashAmounts } from './settle';
 
 describe('places', () => {
@@ -13,6 +13,12 @@ describe('places', () => {
     expect(tabLabel({ tableLabel: 'T10' })).toBe('Table 10');
     expect(tabLabel({ name: 'Kevin birthday' })).toBe('Kevin birthday');
     expect(tabLabel({})).toBe('Walk up');
+    expect(tabLabel({ walkUpNo: 3 })).toBe('Walk up 3');
+    expect(tabLabel({ walkUpNo: 128 })).toBe('Walk up 128');
+    expect(tabLabel({ name: 'Kevin birthday', walkUpNo: 3 })).toBe('Kevin birthday');
+    expect(tabLabel({ tableLabel: 'T4', walkUpNo: 3 })).toBe('Table 4');
+    expect(nextWalkUpNo([{ businessDate: '2026-09-26', walkUpNo: 9 }, { businessDate: '2026-09-27', walkUpNo: 2 }, { businessDate: '2026-09-27' }], '2026-09-27')).toBe(3);
+    expect(nextWalkUpNo([], '2026-09-27')).toBe(1);
   });
 });
 

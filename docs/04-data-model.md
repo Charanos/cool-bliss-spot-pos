@@ -181,7 +181,7 @@ Posting a receipt writes `receipt` movements and triggers an availability recomp
 Named `service_tables` because `tables` collides with too many reserved contexts.
 
 ### `tabs`
-`id`, `outlet_id`, `business_date`, `service_table_id` (nullable, walk-ups exist), `zone_id`, `tab_number` (gapless per outlet per business day), `name` (nullable, `Birthday`), `guest_count int`, `opened_by`, `opened_at`, `assigned_to` (current waiter, changes at handover), `status` (`open`, `part_settled`, `settling`, `settled`, `voided`, `merged_into`), `merged_into_tab_id` (nullable), `closed_at`.
+`id`, `outlet_id`, `business_date`, `service_table_id` (nullable, walk-ups exist), `zone_id`, `tab_number` (gapless per outlet per business day), `walk_up_no` (nullable, set only on a tab with no table: its own run per business day, read as `Walk up 7`), `name` (nullable, `Birthday`), `guest_count int`, `opened_by`, `opened_at`, `assigned_to` (current waiter, changes at handover), `status` (`open`, `part_settled`, `settling`, `settled`, `voided`, `merged_into`), `merged_into_tab_id` (nullable), `closed_at`.
 
 ### `tab_seats`
 **The table that defines this product.**

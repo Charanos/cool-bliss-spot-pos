@@ -416,6 +416,12 @@ export interface Tab {
   zoneId: Id;
   /** Server allocated, gapless per business day. Null until the open is acknowledged. */
   tabNumber: number | null;
+  /**
+   * A tab with no table is numbered in its own run for the business day: Walk up 1, Walk up 2, and
+   * on without limit. Server allocated like the tab number; the opening device shows its own next
+   * number until the server's arrives. Null or absent on a tab that opened at a table.
+   */
+  walkUpNo?: number | null;
   name: string | null;
   guestCount: number;
   openedBy: Id;

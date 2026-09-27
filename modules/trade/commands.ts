@@ -5,7 +5,7 @@ import { cents } from '@bliss/shared/money';
 import type { Actor } from '@bliss/shared/reason';
 import { seatColourIndex } from '@bliss/shared/seats';
 import { canSignInOn } from '@bliss/shared/identity';
-import { holdsTable, isSeated } from '@bliss/shared/trade';
+import { holdsTable, isSeated, nextWalkUpNo } from '@bliss/shared/trade';
 import type { OutboxPayload } from '@bliss/shared/sync';
 import { businessDate } from '@bliss/shared/time';
 import { CommandRejected, touch } from '../_data/changes';
@@ -52,13 +52,14 @@ function activeSeatOrThrow(tabId: string, seatId: string): TabSeat {
 export function openTab(p: OutboxPayload<'tab.open'>, actor: Actor): void {
   if (!actor?.staffId) throw new CommandRejected('APPROVAL_REQUIRED', 'No ghost service: A logged-in server is required to open a tab.');
   if (!p.tabId) throw new CommandRejected('VALIDATION_FAILED', 'No ghost service: Tab ID is required.');
-  if (!p.serviceTableId && !p.name) throw new CommandRejected('VALIDATION_FAILED', 'No ghost service: A tab requires a table or walk-up customer ID.');
   const t = tradeTables();
   if (t.tabs.some((x) => x.id === p.tabId)) return;
   if (!t.zones.some((z) => z.id === p.zoneId)) throw new CommandRejected('VALIDATION_FAILED', 'That zone does not exist.');
   const outlet = identity.outlet();
   const date = businessDate(p.openedAt, outlet.timezone, outlet.businessDayCutover);
   const tabNumber = t.tabs.filter((x) => x.businessDate === date).reduce((max, x) => Math.max(max, x.tabNumber ?? 0), 0) + 1;
+  // A tab with no table takes the next walk up number for the night, so any number of them read apart.
+  const walkUpNo = p.serviceTableId ? null : nextWalkUpNo(t.tabs, date);
   // One open tab to a table. Two devices can each believe a table is free (a tablet that has not
   // pulled yet, or two waiters at once); the server is the one place that knows, so the second is refused.
   if (p.serviceTableId) {
@@ -81,6 +82,7 @@ export function openTab(p: OutboxPayload<'tab.open'>, actor: Actor): void {
     serviceTableId: p.serviceTableId,
     zoneId: p.zoneId,
     tabNumber,
+    walkUpNo,
     name: p.name,
     guestCount: p.guestCount,
     openedBy: actor.staffId,

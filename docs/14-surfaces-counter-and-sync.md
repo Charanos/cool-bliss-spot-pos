@@ -37,7 +37,7 @@ Two different things were both called "counter".
 |---|---|---|---|
 | The staff station where orders are poured and bills settled | Counter | **Counter** | It is the surface and the device kind |
 | Places where guests sit at the bar | Zone "Counter", places C1 and C2 labelled "Counter 1" | Zone **Bar stools**, places S1 and S2 labelled **Stool 1**, **Stool 2** | A waiter saying "Counter 1" must never be ambiguous between a device and a guest |
-| A tab with no place | Walk up | **Walk up** | Unchanged |
+| A tab with no place | Walk up | **Walk up 1**, **Walk up 2**, and on | Walk ups are numbered per business day, without limit, so any number of them read apart. The server allocates the number; a name, when given, is shown instead |
 | A sale with no tab | Quick sale | **Quick sale** | Unchanged, Counter only |
 | The stock location for sealed retail bottles | Counter | **Counter** | A stock location, only seen in the Console |
 

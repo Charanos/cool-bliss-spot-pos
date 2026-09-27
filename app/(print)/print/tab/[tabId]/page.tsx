@@ -1,5 +1,6 @@
 import { formatDateTime, formatQty } from '@bliss/shared/format';
 import { formatDecimal, sum } from '@bliss/shared/money';
+import { tabLabel } from '@bliss/shared/trade';
 import { notFound } from 'next/navigation';
 import { assertPrintAccess } from '@/lib/print-access';
 import * as identity from '@/modules/identity/service';
@@ -55,7 +56,7 @@ export default async function PrintTabPage({ params, searchParams }: { params: P
           { label: 'Date', value: formatDateTime(Date.now(), tz) },
           { label: 'Server', value: server },
           { label: 'Zone', value: zone || 'Main' },
-          { label: 'Table', value: table?.label || tab.name || 'Walk Up' },
+          { label: 'Table', value: tabLabel({ tableLabel: table?.label, name: tab.name, walkUpNo: tab.walkUpNo }) },
         ]} 
       />
       
