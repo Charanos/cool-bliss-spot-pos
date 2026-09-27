@@ -1,5 +1,6 @@
 'use client';
 
+import { canSignInOn } from '@bliss/shared/identity';
 import { Photo } from '@bliss/ui/components/photo';
 import { formatTime, plural } from '@bliss/shared/format';
 import { formatKes, sum } from '@bliss/shared/money';
@@ -21,7 +22,7 @@ import { posDb } from '@/lib/pos/db';
 import { useOpenTabs, useOutlet, useSeatedTabs, useStaffDirectory } from '@/lib/pos/queries';
 import { signOut, useSession } from '@/lib/pos/session';
 import { useSync } from '@/lib/pos/sync';
-import { ShiftHandoverSheet } from './_components/shift-handover-sheet';
+import { ShiftHandoverSheet } from '@/app/_pos/shift-handover-sheet';
 import { MetricTile } from '@bliss/ui/components/metric-tile';
 import { ShiftTabCard } from './_components/shift-tab-card';
 
@@ -62,7 +63,7 @@ export default function ShiftPage() {
   const handable = myTabs.length + mySeated.length;
   const floorLiabilityTotal = sum(myTabs.map((t) => t.total));
   const totalGuests = myTabs.reduce((acc, t) => acc + (t.tab.guestCount ?? t.seats.length), 0);
-  const colleagues = (staff ?? []).filter((s) => s.id !== session.staffId && (s.roleKey === 'waiter' || s.roleKey === 'supervisor'));
+  const colleagues = (staff ?? []).filter((s) => s.id !== session.staffId && canSignInOn('floor', s.roleKey));
   const firedCount = firedOrders?.length ?? 0;
   const photoUrl = photoOf(session.staffId);
   const role = session.roleKey === 'supervisor' ? 'Supervisor' : 'Floor waiter';

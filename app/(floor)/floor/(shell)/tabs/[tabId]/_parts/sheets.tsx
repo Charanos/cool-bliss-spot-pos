@@ -9,12 +9,11 @@ import { SEAT_LABEL_MAX, displaySeatLabel } from '@bliss/shared/seats';
 import { ActionList } from '@bliss/ui/components/action-list';
 import { Button } from '@bliss/ui/components/button';
 import { Stepper } from '@bliss/ui/components/fields';
-import { FloorDialog, Sheet, SheetIcon } from '@bliss/ui/components/floor/sheet';
+import { ChoiceChip, FloorDialog, Sheet, SheetCancel, SheetIcon, SheetPanel, SheetRow, SheetSection } from '@bliss/ui/components/floor/sheet';
 import { Money } from '@bliss/ui/components/money';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { SeatChip, SeatChipButton } from '@bliss/ui/components/seat-chip';
 import { StatusChip } from '@bliss/ui/components/status';
-import { InviteButton } from '@bliss/ui/components/working';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconArmchair, IconArrowsExchange, IconArrowsRightLeft, IconBan, IconGlassFull, IconListDetails, IconNote, IconPackageOff, IconTag, IconTrash, IconX } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -101,13 +100,7 @@ export function ModifierSheet({
 
   const footerActions = (
     <>
-      <button
-        type="button"
-        onClick={onClose}
-        className="-ml-8 flex h-control-lg items-center rounded-full px-8 text-body font-medium text-ink-muted transition-colors hover:text-ink press-feedback"
-      >
-        Cancel
-      </button>
+      <SheetCancel onClick={onClose}>Cancel</SheetCancel>
       <div className="flex-1" />
       <Button
         variant="primary"
@@ -141,65 +134,29 @@ export function ModifierSheet({
       footer={footerActions}
     >
       <div className="flex flex-col gap-24 py-4">
-        {/* Modifier groups */}
         {data?.groups.map(({ group, modifiers }) => (
-          <fieldset key={group.id} className="flex flex-col gap-8">
-            <div className="flex items-center justify-between px-2">
-              <legend className="font-mono text-label font-medium uppercase text-ink-subtle">
-                {group.name}
-              </legend>
-              <span className="font-mono text-badge text-ink-disabled uppercase">
-                {group.maxSelect > 1 ? `choose up to ${group.maxSelect}` : 'choose one'}
-              </span>
+          <SheetSection key={group.id} label={group.name} aside={group.maxSelect > 1 ? `Up to ${group.maxSelect}` : 'Choose one'}>
+            <div className="flex flex-wrap gap-8" role="group" aria-label={group.name}>
+              {modifiers.map((m) => (
+                <ChoiceChip
+                  key={m.id}
+                  on={(picked[group.id] ?? []).includes(m.id)}
+                  onClick={() => toggle(group, m.id)}
+                  extra={m.priceDeltaCents > 0n ? `+${formatKes(m.priceDeltaCents, { decimals: 'whole' }).replace('KES ', '')}` : undefined}
+                >
+                  {m.name}
+                </ChoiceChip>
+              ))}
             </div>
-            <div className="flex flex-wrap gap-8" role="group">
-              {modifiers.map((m) => {
-                const on = (picked[group.id] ?? []).includes(m.id);
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => toggle(group, m.id)}
-                    className={cx(
-                      'inline-flex min-h-[44px] items-center gap-8 rounded-sm px-16 text-body transition-all press-feedback',
-                      on
-                        ? 'bg-control-pressed text-ink font-medium ring-1 ring-rule-raised/50'
-                        : 'bg-control text-ink-muted ring-1 ring-transparent hover:bg-control-hover hover:text-ink',
-                    )}
-                  >
-                    <span>{m.name}</span>
-                    {m.priceDeltaCents > 0n ? (
-                      <span className={cx('font-mono tabular text-num-sm', on ? 'text-ink' : 'text-ink-subtle')}>
-                        +{formatKes(m.priceDeltaCents, { decimals: 'whole' }).replace('KES ', '')}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
+          </SheetSection>
         ))}
 
-        {/* Quantity in a sunken card */}
-        <div className="flex items-center justify-between rounded-lg bg-control px-16 py-12 ring-1 ring-rule-raised/20">
-          <div className="flex flex-col gap-2">
-            <span className="text-body font-medium text-ink">Quantity</span>
-            <span className="text-body-sm text-ink-subtle">
-              {price ? `${formatKes(price.unitPriceCents)} each` : 'Number of serves'}
-            </span>
-          </div>
-          <Stepper
-            value={qty}
-            min={1}
-            max={24}
-            onChange={setQty}
-            label="Quantity"
-            size="lg"
-            decreaseLabel="One fewer"
-            increaseLabel="One more"
-          />
-        </div>
+        <SheetPanel>
+          <SheetRow title="How many" detail={price ? `${formatKes(price.unitPriceCents)} each` : 'Serves'}>
+            <Stepper value={qty} min={1} max={24} onChange={setQty} label="How many" size="lg" decreaseLabel="One fewer" increaseLabel="One more" />
+          </SheetRow>
+          {price && qty > 1 ? <SheetRow title="Together" detail={`${qty} × ${formatKes(price.unitPriceCents, { decimals: 'whole' })}`}><Money value={price.lineTotalCents} size="num" /></SheetRow> : null}
+        </SheetPanel>
 
         <TextField
           label="Note for the bar"
@@ -255,13 +212,12 @@ export function FinishedSheet({ variantId, onClose }: { variantId: string | null
       footer={footerActions}
     >
       <div className="flex flex-col gap-16 py-4">
-        <div className="flex items-center gap-12 rounded-lg bg-control px-16 py-12 ring-1 ring-rule-raised/20">
-          <StatusChip status={held ? 'on_hold' : 'finished'} />
-          <span className="text-body font-medium text-ink">
-            {held ? 'Currently on hold' : 'Item is finished'}
-          </span>
-        </div>
-        <p className="text-body text-ink px-2">
+        <SheetPanel>
+          <SheetRow title={held ? 'On hold' : 'Finished'} detail={held ? 'Kept off sale for now' : 'None left at the bar'}>
+            <StatusChip status={held ? 'on_hold' : 'finished'} />
+          </SheetRow>
+        </SheetPanel>
+        <p className="text-body text-ink-muted">
           {held
             ? `${name} is on hold. A supervisor can take it off hold in the Console when the bar is ready.`
             : `${name} is finished. A supervisor can put it back if the bar has more.`}
@@ -293,13 +249,7 @@ export function SeatMenuSheet({
   if (!seat) return <Sheet open={false} onClose={onClose} title="">{null}</Sheet>;
 
   const footerActions = (
-    <button
-      type="button"
-      onClick={onClose}
-      className="flex h-control-lg items-center rounded-full px-16 text-body font-medium text-ink-muted transition-colors hover:text-ink press-feedback"
-    >
-      Close
-    </button>
+    <SheetCancel onClick={onClose}>Close</SheetCancel>
   );
 
   return (
@@ -312,18 +262,18 @@ export function SeatMenuSheet({
       footer={footerActions}
     >
       <div className="flex flex-col gap-16 py-2">
-        <div className="flex items-center justify-between rounded-lg bg-control px-16 py-12 ring-1 ring-rule-raised/20">
-          <div className="flex items-center gap-12">
-            <SeatChip seat={seat.seatNo} size="row" label={seat.label} />
-            <span className="text-body font-medium text-ink">
-              {seat.label ? displaySeatLabel(seat.label) : `Seat ${seat.seatNo}`}
-            </span>
+        <SheetPanel>
+          <div className="flex min-h-row-floor items-center justify-between gap-16 py-8">
+            <div className="flex min-w-0 items-center gap-12">
+              <SeatChip seat={seat.seatNo} size="row" label={seat.label} />
+              <span className="truncate text-body font-medium text-ink">{seat.label ? displaySeatLabel(seat.label) : `Seat ${seat.seatNo}`}</span>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-label text-ink-subtle">On this seat</span>
+              <Money value={seat.total} size="num" tone="default" />
+            </div>
           </div>
-          <div className="text-right">
-            <span className="block font-mono text-badge uppercase text-ink-subtle">Seat Total</span>
-            <Money value={seat.total} size="num" tone="default" />
-          </div>
-        </div>
+        </SheetPanel>
 
         <ActionList
           items={[
@@ -344,9 +294,7 @@ export function SeatMenuSheet({
           <InlineNotice tone="stop">{error}</InlineNotice>
         ) : null}
 
-        <p className="px-4 text-body-sm text-ink-subtle">
-          Settling a seat happens at the counter. This seat dims here when it is settled.
-        </p>
+        <p className="text-body-sm text-ink-muted">Settling a seat happens at the counter. This seat dims here when it is settled.</p>
       </div>
     </Sheet>
   );
@@ -371,13 +319,7 @@ export function LabelSeatSheet({
 
   const footerActions = (
     <>
-      <button
-        type="button"
-        onClick={onClose}
-        className="-ml-8 flex h-control-lg items-center rounded-full px-8 text-body font-medium text-ink-muted transition-colors hover:text-ink press-feedback"
-      >
-        Cancel
-      </button>
+      <SheetCancel onClick={onClose}>Cancel</SheetCancel>
       <div className="flex-1" />
       <Button
         type="submit"
@@ -459,13 +401,7 @@ export function LineSheet({
   const seat = line ? detail.seats.find((s) => s.id === line.tabSeatId) : undefined;
 
   const footerActions = (
-    <button
-      type="button"
-      onClick={onClose}
-      className="flex h-control-lg items-center rounded-full px-16 text-body font-medium text-ink-muted transition-colors hover:text-ink press-feedback"
-    >
-      Close
-    </button>
+    <SheetCancel onClick={onClose}>Close</SheetCancel>
   );
 
   return (
@@ -480,33 +416,11 @@ export function LineSheet({
     >
       <div className="flex flex-col gap-16 py-2">
         {line && draft ? (
-          <div className="flex items-center justify-between rounded-lg bg-control px-16 py-12 ring-1 ring-rule-raised/20">
-            <div className="flex flex-col gap-2">
-              <span className="text-body font-medium text-ink">Quantity</span>
-              <span className="text-body-sm text-ink-subtle">Not fired yet</span>
-            </div>
-            <div className="inline-flex h-[40px] shrink-0 items-center rounded-full bg-control-hover select-none overflow-hidden">
-              <button
-                type="button"
-                aria-label={line.qty === 1 ? 'Clear the line' : 'One fewer'}
-                onClick={() => onQty(line.qty - 1)}
-                className="flex h-full w-[40px] shrink-0 items-center justify-center text-ink font-regular transition-colors hover:bg-glass-hover active:bg-glass-strong press-feedback"
-              >
-                {line.qty === 1 ? <IconX size={18} stroke={1.75} className="text-stop" /> : '−'}
-              </button>
-              <span className="min-w-[40px] text-center font-mono tabular text-num-lg font-medium text-ink">
-                {line.qty}
-              </span>
-              <button
-                type="button"
-                aria-label="One more"
-                onClick={() => onQty(line.qty + 1)}
-                className="flex h-full w-[40px] shrink-0 items-center justify-center text-ink font-regular transition-colors hover:bg-glass-hover active:bg-glass-strong press-feedback"
-              >
-                +
-              </button>
-            </div>
-          </div>
+          <SheetPanel>
+            <SheetRow title="How many" detail="Not fired yet">
+              <Stepper value={line.qty} min={1} max={24} onChange={onQty} label="How many" size="lg" decreaseLabel="One fewer" increaseLabel="One more" />
+            </SheetRow>
+          </SheetPanel>
         ) : null}
 
         <ActionList
@@ -541,13 +455,7 @@ export function MoveLineSheet({
   const current: SeatSelection = line?.tabSeatId ?? 'shared';
 
   const footerActions = (
-    <button
-      type="button"
-      onClick={onClose}
-      className="flex h-control-lg items-center rounded-full px-16 text-body font-medium text-ink-muted transition-colors hover:text-ink press-feedback"
-    >
-      Cancel
-    </button>
+    <SheetCancel onClick={onClose}>Cancel</SheetCancel>
   );
 
   return (
@@ -560,8 +468,8 @@ export function MoveLineSheet({
       footer={footerActions}
     >
       <div className="py-4">
-        <div className="rounded-lg bg-control p-16 ring-1 ring-rule-raised/20">
-          <div className="flex flex-wrap gap-16 justify-center" role="group" aria-label="Seats">
+        <SheetPanel className="py-16">
+          <div className="flex flex-wrap justify-center gap-16" role="group" aria-label="Seats">
             {[
               ...detail.activeSeats.map((s) => ({ key: s.id as SeatSelection, seat: s.seatNo as number | 'shared', label: s.label })),
               { key: 'shared' as SeatSelection, seat: 'shared' as const, label: null },
@@ -580,14 +488,14 @@ export function MoveLineSheet({
                     }}
                     className={cx(isCurrent && 'opacity-40')}
                   />
-                  <span className="max-w-full truncate font-mono text-label text-ink-subtle">
-                    {isCurrent ? 'Current' : option.seat === 'shared' ? 'Shared' : (displaySeatLabel(option.label) ?? `Seat ${option.seat}`)}
+                  <span className={cx('max-w-full truncate text-label', isCurrent ? 'text-accent-text' : 'text-ink-muted')}>
+                    {isCurrent ? 'Here now' : option.seat === 'shared' ? 'Shared' : (displaySeatLabel(option.label) ?? `Seat ${option.seat}`)}
                   </span>
                 </div>
               );
             })}
           </div>
-        </div>
+        </SheetPanel>
       </div>
     </Sheet>
   );
@@ -611,13 +519,7 @@ export function NoteSheet({
 
   const footerActions = (
     <>
-      <button
-        type="button"
-        onClick={onClose}
-        className="-ml-8 flex h-control-lg items-center rounded-full px-8 text-body font-medium text-ink-muted transition-colors hover:text-ink press-feedback"
-      >
-        Cancel
-      </button>
+      <SheetCancel onClick={onClose}>Cancel</SheetCancel>
       <div className="flex-1" />
       <Button
         type="submit"
@@ -743,13 +645,7 @@ export function MoveTabSheet({
   onMove: (tableId: string) => Promise<void>;
 }) {
   const footerActions = (
-    <button
-      type="button"
-      onClick={onClose}
-      className="flex h-control-lg items-center rounded-full px-16 text-body font-medium text-ink-muted transition-colors hover:text-ink press-feedback"
-    >
-      Keep it here
-    </button>
+    <SheetCancel onClick={onClose}>Keep it here</SheetCancel>
   );
 
   return (
@@ -764,20 +660,22 @@ export function MoveTabSheet({
     >
       <div className="py-4">
         {freeTables.length === 0 ? (
-          <div className="rounded-lg bg-control p-20 text-center ring-1 ring-rule-raised/20">
-            <p className="text-body text-ink-muted">Every table is taken right now.</p>
-          </div>
+          <SheetPanel className="items-center py-24 text-center">
+            <p className="text-body font-medium text-ink">Every table is taken</p>
+            <p className="text-body-sm text-ink-muted">A table frees up when its guests have paid and left.</p>
+          </SheetPanel>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-8">
             {freeTables.map((t) => (
-              <InviteButton
+              <button
                 key={t.id}
+                type="button"
                 onClick={() => void onMove(t.id).then(onClose)}
-                className="flex min-h-[76px] flex-col justify-center rounded-lg bg-control px-16 ring-1 ring-rule-raised/20 transition-all hover:bg-control-hover hover:ring-rule-raised/40 press-feedback"
+                className="flex min-h-tile-row flex-col justify-center gap-2 rounded-card border border-rule-raised/40 bg-control/60 px-16 py-12 text-left press-feedback transition-hover hover:border-accent/40 hover:bg-accent-wash"
               >
                 <span className="text-subtitle font-medium text-ink">{tableLabel(t)}</span>
-                <span className="mt-2 text-body-sm text-ink-subtle">{t.seats === 1 ? '1 seat' : `${t.seats} seats`}</span>
-              </InviteButton>
+                <span className="text-body-sm text-ink-muted">{t.seats === 1 ? '1 seat' : `${t.seats} seats`}</span>
+              </button>
             ))}
           </div>
         )}

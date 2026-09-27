@@ -1,5 +1,7 @@
 'use client';
 
+import { IconLock } from '@tabler/icons-react';
+import { InlineNotice } from './feedback';
 import { REASON_MIN_LENGTH, REASON_TOO_SHORT, applyQuickReason, checkReason, reasonLength } from '@bliss/shared/reason';
 import { type ReactNode, useId, useRef, useState } from 'react';
 import { cx } from '../lib/cx';
@@ -79,6 +81,7 @@ export function ReasonForm({ quickReasons, initialReason = '', confirmLabel, can
       className="flex flex-col"
     >
       {children}
+      <p className="pb-12 label-caps text-ink-subtle">Why</p>
       <div className="flex flex-wrap gap-8" role="group" aria-label="Common reasons">
         {quickReasons.map((chip) => (
           <button
@@ -94,7 +97,10 @@ export function ReasonForm({ quickReasons, initialReason = '', confirmLabel, can
                 }
               });
             }}
-            className="inline-flex h-control-md items-center rounded-sm bg-control px-12 text-body-sm text-ink press-feedback hover:bg-control-hover"
+            className={cx(
+              'inline-flex h-control-md items-center gap-6 rounded-pill border px-16 text-body-sm press-feedback transition-hover',
+              reason.includes(chip) ? 'border-accent/50 bg-accent-wash font-medium text-accent-text' : 'border-rule bg-control/60 text-ink hover:bg-control-hover',
+            )}
           >
             {chip}
           </button>
@@ -116,16 +122,19 @@ export function ReasonForm({ quickReasons, initialReason = '', confirmLabel, can
       </div>
 
       {approval ? (
-        <div className="pt-24">
-          <p className="pb-16 text-label text-ink-subtle">{approval.label}</p>
+        <div className="mt-24 flex flex-col items-center gap-12 rounded-card bg-sunken/60 px-16 pb-16 pt-12">
+          <p className="flex items-center gap-8 self-start text-body-sm font-medium text-ink">
+            <IconLock size={16} stroke={1.5} aria-hidden="true" className="text-ink-muted" />
+            {approval.label}
+          </p>
           <PinPad value={pin} onChange={setPin} label={approval.label} size="md" length={8} error={attempted && !pinReady ? "Enter the approver's PIN, four to eight digits." : null} />
         </div>
       ) : null}
 
       {failure ? (
-        <p role="alert" className="pt-16 text-body text-stop">
-          {failure}
-        </p>
+        <div role="alert" className="pt-16">
+          <InlineNotice tone="stop">{failure}</InlineNotice>
+        </div>
       ) : null}
 
       <OverlayActions className={cx(destructive && 'justify-between')}>

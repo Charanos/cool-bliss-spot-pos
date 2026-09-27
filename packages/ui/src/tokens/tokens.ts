@@ -375,6 +375,11 @@ export const size = {
   'tile-preview': 176,
   /** A sign-in card previewed in a Console dialog. */
   'card-preview': 240,
+  /** A table to choose in a station sheet: a name and its seats, a finger's height and a half. */
+  'tile-row': 76,
+  /** The table and its seats in the open-tab sheet, and one seat on it. */
+  'seat-ring': 128,
+  'seat-dot': 24,
   'search-panel': 460,
   'search-drop': 60,
   'search-results': 420,
