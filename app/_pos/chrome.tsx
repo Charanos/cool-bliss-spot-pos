@@ -1,12 +1,12 @@
 'use client';
 
-import { formatDate, formatTime } from '@bliss/shared/format';
+import { formatTime } from '@bliss/shared/format';
 import { ICON_STROKE, type TablerIcon } from '@bliss/ui/components/icon';
 import { Dot, type Tone } from '@bliss/ui/components/status';
 import { CountBadge, MetaLine, type MetaItem } from '@bliss/ui/components/working';
 import { useHydrated, useNow } from '@bliss/ui/hooks';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconBuildingStore, IconLayoutGrid } from '@tabler/icons-react';
+import { IconBuildingStore, IconCloudCheck, IconCloudOff, IconCloudUpload, IconLayoutGrid } from '@tabler/icons-react';
 import Link from 'next/link';
 import { type ReactNode, type Ref, useEffect, useRef } from 'react';
 
@@ -66,13 +66,66 @@ export function SurfaceSwitcher({ current }: { current: Surface }) {
 }
 
 /** The time and date, from a tablet up. Rendered after hydration so server and client agree. */
+/**
+ * The time, as a station shows it: the time alone on a tablet, the time over a short date ("Sat 27
+ * Sep") on a laptop, nothing on a phone, where the header needs the room.
+ */
 export function LiveClock({ timeZone }: { timeZone?: string }) {
   const now = useNow(30_000);
   const hydrated = useHydrated();
+  const day = hydrated ? new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone }).format(now) : '';
   return (
-    <div className="hidden text-right pad:block" suppressHydrationWarning>
-      <div className="font-mono tabular text-body-sm font-medium text-ink">{hydrated ? formatTime(now, timeZone) : ''}</div>
-      <div className="text-micro text-ink-subtle">{hydrated ? formatDate(now, timeZone) : ''}</div>
+    <div className="hidden flex-col items-end leading-none pad:flex" suppressHydrationWarning>
+      <span className="font-mono tabular text-body-sm font-medium text-ink">{hydrated ? formatTime(now, timeZone) : ''}</span>
+      <span className="mt-2 hidden text-micro text-ink-subtle desktop:block">{day}</span>
+    </div>
+  );
+}
+
+const LINK_STATE: Record<'synced' | 'sending' | 'offline' | 'unreachable', { icon: TablerIcon; tone: string; label: (held: number) => string; short: (held: number) => string | null }> = {
+  synced: { icon: IconCloudCheck, tone: 'text-ink-subtle', label: () => 'Everything has reached the server', short: () => null },
+  sending: { icon: IconCloudUpload, tone: 'text-info', label: (n) => `Back online, sending ${n} ${n === 1 ? 'order' : 'orders'}`, short: () => 'Sending' },
+  offline: { icon: IconCloudOff, tone: 'text-low', label: (n) => `Offline, ${n} ${n === 1 ? 'order' : 'orders'} held on this device`, short: (n) => (n > 0 ? `Offline · ${n}` : 'Offline') },
+  unreachable: { icon: IconCloudOff, tone: 'text-low', label: () => 'No connection. Orders are saved on this device.', short: () => 'Offline' },
+};
+
+/**
+ * What a station is standing on, in one pill at the right of the top bar: the drawer on the Counter
+ * (a link to it), then the link to the server as an icon that only takes words when something is
+ * wrong. Synced is a quiet cloud with a tick, never a stray dot.
+ */
+export function StationStatus({
+  link,
+  heldOrders,
+  drawer,
+}: {
+  link: 'synced' | 'sending' | 'offline' | 'unreachable';
+  heldOrders: number;
+  drawer?: { href: string; tone: Tone; short: string; long: string };
+}) {
+  const state = LINK_STATE[link];
+  const Glyph = state.icon;
+  const short = state.short(heldOrders);
+  return (
+    <div className="flex h-control-sm shrink-0 items-center rounded-pill border border-rule-raised/30 bg-sunken/60">
+      {drawer ? (
+        <>
+          <Link
+            href={drawer.href}
+            aria-label={drawer.long}
+            title={drawer.long}
+            className={cx('flex h-full items-center gap-8 rounded-l-pill pl-12 pr-8 text-body-sm press-feedback transition-hover hover:bg-control', drawer.tone === 'low' ? 'text-low' : 'text-ink-muted hover:text-ink')}
+          >
+            <Dot tone={drawer.tone} />
+            <span className="hidden whitespace-nowrap tablet:inline">{drawer.short}</span>
+          </Link>
+          <span aria-hidden="true" className="h-16 w-px bg-rule-raised/50" />
+        </>
+      ) : null}
+      <span role="status" aria-live="polite" aria-label={state.label(heldOrders)} title={state.label(heldOrders)} className={cx('flex h-full items-center gap-6 px-12 text-body-sm', state.tone)}>
+        <Glyph size={16} stroke={ICON_STROKE} aria-hidden="true" />
+        {short ? <span className="whitespace-nowrap">{short}</span> : null}
+      </span>
     </div>
   );
 }

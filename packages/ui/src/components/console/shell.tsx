@@ -74,6 +74,8 @@ export interface PageHeaderProps {
   /** The one figure the page is about, set beside the title: stock at cost, tonight's takings. */
   aside?: ReactNode;
   actions?: ReactNode;
+  /** The workspace's pages, as pill tabs: set on the right, across from the title, over the actions. */
+  nav?: ReactNode;
   className?: string;
 }
 
@@ -81,10 +83,13 @@ export interface PageHeaderProps {
  * A page's header: the title, one sentence of purpose, and the page's actions. No eyebrow and no
  * ornament; the breadcrumb above already says where you are. docs/19 section 4.
  */
-export function PageHeader({ eyebrow, title, description, badge, aside, actions, className }: PageHeaderProps) {
+export function PageHeader({ eyebrow, title, description, badge, aside, actions, nav, className }: PageHeaderProps) {
+  const right = nav || aside || actions;
   return (
     <div className="flex flex-col gap-24">
-      <header className={cx('flex flex-wrap items-end justify-between gap-x-32 gap-y-16 pb-8', className)}>
+      {/* Two sides in balance: what the page is on the left, where else to go and what to do on the
+          right. On a narrow screen the right side follows underneath, still flush right. */}
+      <header className={cx('flex flex-col gap-x-32 gap-y-16 pb-8 desktop:flex-row desktop:items-end desktop:justify-between', className)}>
         <div className="flex min-w-0 flex-col gap-6">
           {eyebrow ? <p className="label-caps text-accent-text">{eyebrow}</p> : null}
           <div className="flex min-w-0 flex-wrap items-center gap-12">
@@ -93,10 +98,15 @@ export function PageHeader({ eyebrow, title, description, badge, aside, actions,
           </div>
           {description ? <p className="measure text-ui text-pretty text-ink-muted">{description}</p> : null}
         </div>
-        {aside || actions ? (
-          <div className="flex shrink-0 flex-wrap items-end gap-24">
-            {aside ? <div className={cx('flex items-end gap-24', actions ? 'border-r border-rule pr-24' : null)}>{aside}</div> : null}
-            {actions ? <div className="flex flex-wrap items-center gap-8">{actions}</div> : null}
+        {right ? (
+          <div className="flex min-w-0 max-w-full shrink-0 flex-col items-end gap-16 self-end">
+            {nav}
+            {aside || actions ? (
+              <div className="flex flex-wrap items-end justify-end gap-24">
+                {aside ? <div className={cx('flex items-end gap-24', actions ? 'border-r border-rule pr-24' : null)}>{aside}</div> : null}
+                {actions ? <div className="flex flex-wrap items-center justify-end gap-8">{actions}</div> : null}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </header>

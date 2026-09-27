@@ -17,7 +17,7 @@ import { syncNow, useSync } from '@/lib/pos/sync';
 import { canKeepAwake } from '@/lib/pos/wake';
 import { DeviceCard } from './device-card';
 
-function Panel({ title, id, children }: { title: string; id: string; children: ReactNode }) {
+export function Panel({ title, id, children }: { title: string; id: string; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="flex flex-col gap-16 rounded-card border border-rule-raised bg-raised p-20">
       <h2 id={id} className="text-title-section text-ink">
@@ -33,7 +33,7 @@ function Panel({ title, id, children }: { title: string; id: string; children: R
  * whether everything has reached the server, and two device habits. Everything about the venue is
  * set in the Console, and nothing here pretends otherwise.
  */
-export function StationSettings({ surface }: { surface: 'floor' | 'counter' }) {
+export function StationSettings({ surface, extra }: { surface: 'floor' | 'counter'; /** A station's own section, after the device habits. */ extra?: ReactNode }) {
   const router = useRouter();
   const session = useSession();
   const device = useDevice();
@@ -139,6 +139,8 @@ export function StationSettings({ surface }: { surface: 'floor' | 'counter' }) {
             helper="A short vibration when an order is sent or something needs you, on devices that can vibrate."
           />
         </Panel>
+
+        {extra}
 
         <p className="text-center text-body-sm text-ink-subtle">Bliss {process.env.NEXT_PUBLIC_BLISS_VERSION ?? ''}</p>
       </div>

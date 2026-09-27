@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { BaseLayerContext } from '@/app/_pos/base-layer';
-import { Dock, type DockItem, DockLink, LiveClock, SurfaceSwitcher, TopBar } from '@/app/_pos/chrome';
+import { Dock, type DockItem, DockLink, LiveClock, StationStatus, SurfaceSwitcher, TopBar } from '@/app/_pos/chrome';
 import { UpdateBar } from '@/app/_pos/update-bar';
 import { useFloorWatch } from '@/app/_pos/watchers';
 import { useFiredOrders, useOpenTabs, useOutlet } from '@/lib/pos/queries';
@@ -77,6 +77,7 @@ export function FloorShell({ children }: { children: ReactNode }) {
           centre={<SurfaceSwitcher current="floor" />}
           end={
             <>
+              <StationStatus link={sync.link} heldOrders={sync.heldOrders} />
               <LiveClock timeZone={outlet?.timezone} />
               <Link href="/floor/shift" aria-label={`${session.displayName}, view shift`} className="flex shrink-0 items-center gap-8 rounded-md p-2 press-feedback hover:bg-control/40">
                 <span

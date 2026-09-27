@@ -159,7 +159,8 @@ export function Overlay({
         dialog.close();
         setMounted(false);
         closing.current = false;
-        returnFocus.current?.focus({ preventScroll: true });
+        // Back to what opened it, without a ring: it was just pressed, and it needs no announcing.
+        returnFocus.current?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
         latest.current.onClosed?.();
       });
     }

@@ -84,8 +84,16 @@ export function SheetHeader({
   const round = 'inline-flex size-control-sm items-center justify-center rounded-pill text-ink-subtle transition-hover hover:bg-band-strong hover:text-ink';
 
   return (
-    <header className={cx('sticky top-0 z-bar shrink-0 border-b transition-hover', scrolled ? 'glass-header border-rule' : 'border-transparent bg-page')}>
-      <div className="flex h-bar items-center justify-between gap-16 px-32">
+    // At the top it is part of the sheet; once the page moves under it, it lifts into a floating bar
+    // of glass inset from the sheet's edges, rounded like the sheet and the desk's panels.
+    <header className="sticky top-0 z-bar shrink-0 px-8 pt-8">
+      <div
+        className={cx(
+          'flex h-bar items-center justify-between gap-16 border transition-card',
+          'rounded-card px-24',
+          scrolled ? 'glass-header border-edge shadow-popover' : 'border-transparent bg-page',
+        )}
+      >
         <div className="flex min-w-0 items-center gap-16">
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-12">
             {found ? (
@@ -116,11 +124,12 @@ export function SheetHeader({
               ))}
             </ol>
           </nav>
-          <span className="hidden shrink-0 items-center gap-12 border-l border-rule pl-16 wide:flex">
+          <span className="hidden shrink-0 items-center gap-12 wide:flex">
+            <span aria-hidden="true" className="h-20 w-px bg-rule" />
             <span
               className={cx(
-                'inline-flex h-count items-center gap-6 rounded-pill px-8 text-label font-medium ring-1 ring-inset',
-                trading ? 'bg-poured-wash text-poured ring-poured/25' : 'bg-band text-ink-muted ring-edge',
+                'inline-flex h-count items-center gap-6 rounded-pill px-8 text-label font-medium',
+                trading ? 'bg-poured-wash text-poured' : 'bg-band-strong text-ink-muted',
               )}
             >
               <span aria-hidden="true" className={cx('size-dot rounded-dot', trading ? 'bg-poured animate-breathe' : 'bg-ink-disabled')} />
