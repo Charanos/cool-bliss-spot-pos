@@ -84,29 +84,31 @@ export interface PageHeaderProps {
  * ornament; the breadcrumb above already says where you are. docs/19 section 4.
  */
 export function PageHeader({ eyebrow, title, description, badge, aside, actions, nav, className }: PageHeaderProps) {
-  const right = nav || aside || actions;
+  const tools = nav || aside || actions;
   return (
     <div className="flex flex-col gap-24">
-      {/* Two sides in balance: what the page is on the left, where else to go and what to do on the
-          right. On a narrow screen the right side follows underneath, still flush right. */}
-      <header className={cx('flex flex-col gap-x-32 gap-y-16 pb-8 desktop:flex-row desktop:items-end desktop:justify-between', className)}>
-        <div className="flex min-w-0 flex-col gap-6">
-          {eyebrow ? <p className="label-caps text-accent-text">{eyebrow}</p> : null}
-          <div className="flex min-w-0 flex-wrap items-center gap-12">
-            <h1 className="text-title-page text-balance text-ink">{title}</h1>
+      {/* Set flush right, on every screen: the sheet reads from the desk's navigation on the left to
+          the page's name on the right, and the page's own tabs and actions sit under its name. */}
+      <header className={cx('flex flex-col items-end gap-20 pb-8 text-right', className)}>
+        <div className="flex min-w-0 max-w-full flex-col items-end gap-6">
+          {eyebrow ? (
+            <p className="flex items-center gap-8 label-caps text-accent-text">
+              <span aria-hidden="true" className="h-px w-24 bg-accent/60" />
+              {eyebrow}
+            </p>
+          ) : null}
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-12">
             {badge}
+            <h1 className="text-title-page text-balance text-ink">{title}</h1>
           </div>
           {description ? <p className="measure text-ui text-pretty text-ink-muted">{description}</p> : null}
         </div>
-        {right ? (
-          <div className="flex min-w-0 max-w-full shrink-0 flex-col items-end gap-16 self-end">
-            {nav}
-            {aside || actions ? (
-              <div className="flex flex-wrap items-end justify-end gap-24">
-                {aside ? <div className={cx('flex items-end gap-24', actions ? 'border-r border-rule pr-24' : null)}>{aside}</div> : null}
-                {actions ? <div className="flex flex-wrap items-center justify-end gap-8">{actions}</div> : null}
-              </div>
-            ) : null}
+        {tools ? (
+          <div className="flex max-w-full flex-wrap items-center justify-end gap-x-16 gap-y-12">
+            {aside ? <div className="flex items-end gap-24">{aside}</div> : null}
+            {actions ? <div className="flex flex-wrap items-center justify-end gap-8">{actions}</div> : null}
+            {nav && (aside || actions) ? <span aria-hidden="true" className="hidden h-24 w-px bg-rule pad:block" /> : null}
+            {nav ? <div className="flex max-w-full justify-end">{nav}</div> : null}
           </div>
         ) : null}
       </header>
