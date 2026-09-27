@@ -10,10 +10,10 @@ import { PinPad } from '@bliss/ui/components/pin-pad';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useOutlet, useStaffDirectory } from '@/lib/pos/queries';
 import { pinWeakness } from '@bliss/shared/pin';
-import { choosePin, pairDevice, signIn, useDevice, useSession } from '@/lib/pos/session';
+import { choosePin, continueSession, pairDevice, signIn, useDevice, useSession } from '@/lib/pos/session';
 import { useSync, wakeSync } from '@/lib/pos/sync';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -25,19 +25,22 @@ const ROLE_LABEL: Record<string, string> = {
   stock_controller: 'Stock controller',
 };
 
-/** Photographs behind the clock. Each surface has its own default; development can swap with ?backdrop=. */
+/**
+ * Photographs behind the clock, served from the app itself (public/backdrops): 960 by 1280 WebP, 50 to
+ * 130KB, cached by the service worker, so a tablet shows them offline and never waits on a photo host.
+ * Each surface has its own default; development can swap with ?backdrop=.
+ */
 const BACKDROPS = {
-  bulbs: '1543007630-9710e4a00a20', // a long bar counter under Edison bulbs, portrait
-  counter: '1572116469696-31de0f17cc34', // an amber lit counter and stools
-  pour: '1566417713940-fe7c737a9ef2', // a bartender pouring over ice
-  cocktails: '1551024709-8f23befc6f87', // two cocktails, the revamp's original
+  bulbs: '/backdrops/bulbs.webp', // a long bar counter under Edison bulbs
+  counter: '/backdrops/counter.webp', // an amber lit counter and stools
+  pour: '/backdrops/pour.webp', // a bartender pouring over ice
 } as const;
 
 type BackdropKey = keyof typeof BACKDROPS;
 
 const DEFAULT_BACKDROP: Record<StaffSurface, BackdropKey> = { floor: 'bulbs', counter: 'pour', console: 'bulbs' };
 
-const backdropUrl = (key: BackdropKey) => `https://images.unsplash.com/photo-${BACKDROPS[key]}?q=80&w=1200&auto=format&fit=crop`;
+const backdropUrl = (key: BackdropKey) => BACKDROPS[key];
 
 function useBackdrop(surface: StaffSurface): string {
   const [key, setKey] = useState<BackdropKey>(DEFAULT_BACKDROP[surface]);
@@ -75,6 +78,23 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
   useEffect(() => {
     if (session) router.replace(home);
   }, [session, router, home]);
+
+  // Signed in to the Console, or to the other station in this browser: go straight in, no PIN.
+  const [carrying, setCarrying] = useState(true);
+  const tried = useRef(false);
+  useEffect(() => {
+    if (session || tried.current) return;
+    if (!sync.bootstrapped && sync.link === 'synced') return;
+    tried.current = true;
+    void continueSession().then((ok) => {
+      if (!ok) setCarrying(false);
+    });
+  }, [session, sync.bootstrapped, sync.link]);
+  useEffect(() => {
+    // Never hold the screen long: offline or slow, the team shows.
+    const timer = setTimeout(() => setCarrying(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const people = (staff ?? []).filter((s) => roles.includes(s.roleKey)).sort((a, b) => roles.indexOf(a.roleKey) - roles.indexOf(b.roleKey) || a.displayName.localeCompare(b.displayName));
   const person = people.find((p) => p.id === chosen);
@@ -154,14 +174,15 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
 
   return (
     <div className="relative flex h-dvh flex-col tablet:grid tablet:grid-cols-[minmax(320px,2fr)_3fr] bg-page">
-      <section className="hidden tablet:flex relative min-h-[180px] tablet:min-h-0 shrink-0 tablet:shrink flex-col justify-between overflow-hidden p-24 tablet:p-40">
+      {/* The photograph and the clock: a column beside the team on a wide screen, a band across the top of a tablet held upright. */}
+      <section className="relative hidden shrink-0 flex-col justify-between overflow-hidden p-24 pad:flex pad:h-sign-band pad:flex-row pad:items-end tablet:h-auto tablet:shrink tablet:flex-col tablet:items-stretch tablet:p-40">
         <PhotoBackdrop src={backdrop} />
 
-        <div className="relative z-10">
+        <div className="relative z-10 pad:self-start tablet:self-auto">
           <BlissWordmark size={80} label="Bliss" />
         </div>
 
-        <div className="relative z-10 mt-auto flex flex-col">
+        <div className="relative z-10 mt-auto flex flex-col pad:mt-0 tablet:mt-auto">
           <Eyebrow as="p" className="flex items-center gap-12">
             <span>{outlet?.name ?? 'Cool Bliss Spot'}</span>
             <span aria-hidden="true" className="size-[2px] rounded-dot bg-ink-subtle/80" />
@@ -171,7 +192,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
           <AtmosphereClock timeZone={outlet?.timezone ?? 'Africa/Nairobi'} className="gap-6" />
         </div>
 
-        <FadeRule orientation="y" className="absolute bottom-[10%] right-0 top-[10%] z-20" />
+        <FadeRule orientation="y" className="absolute bottom-[10%] right-0 top-[10%] z-20 hidden tablet:block" />
       </section>
 
       <section className="safe-x safe-b relative flex min-h-0 flex-1 flex-col justify-between overflow-y-auto pt-16 [--bliss-gutter-b:16px] [--bliss-gutter-x:16px] pad:pt-24 pad:[--bliss-gutter-b:24px] pad:[--bliss-gutter-x:24px] tablet:pt-40 tablet:[--bliss-gutter-b:40px] tablet:[--bliss-gutter-x:40px]">
@@ -197,7 +218,12 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
                 <span className="font-mono tabular text-num-sm text-ink-muted">{people.length === 1 ? '1 on the team' : `${people.length} on the team`}</span>
               </div>
 
-              <ul aria-labelledby={teamId} className="grid grid-cols-1 gap-12 pad:grid-cols-2 pad:gap-16">
+              {carrying && !person ? (
+                <p aria-live="polite" className="animate-breathe py-24 text-center text-body text-ink-muted">
+                  One moment
+                </p>
+              ) : null}
+              <ul aria-labelledby={teamId} className={cx('grid grid-cols-1 gap-12 pad:grid-cols-2 pad:gap-16', carrying && 'hidden')}>
                 {!sync.bootstrapped && people.length === 0
                   ? Array.from({ length: 4 }, (_, i) => (
                       <li key={i}>

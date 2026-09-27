@@ -9,7 +9,7 @@ import { MetaLine } from '@bliss/ui/components/working';
 import { SeatSelector } from '@bliss/ui/components/floor/seat-selector';
 import { useNow } from '@bliss/ui/hooks';
 import { orderFire } from '@bliss/ui/motion/floor';
-import { IconArrowBackUp, IconArrowLeft, IconArrowsRightLeft, IconCheck, IconChevronDown, IconDoorExit, IconFlame, IconReceipt, IconReceipt2, IconUserPlus, IconPrinter } from '@tabler/icons-react';
+import { IconArrowBackUp, IconArrowLeft, IconArrowsRightLeft, IconCheck, IconChevronDown, IconDoorExit, IconFlame, IconLayoutGrid, IconPrinter, IconReceipt, IconReceipt2, IconUserPlus } from '@tabler/icons-react';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams, useRouter } from 'next/navigation';
@@ -20,10 +20,11 @@ import { notify } from '@bliss/ui/components/notices';
 import { addItem, askBill, clear, closeEmpty, deliverTable, fire, takeBackBill } from '@/lib/pos/actions';
 import { STAGE } from '@/app/_pos/table-stage';
 import { StatePill } from '@bliss/ui/components/status';
-import { FloorDialog, Sheet } from '@bliss/ui/components/floor/sheet';
+import { FloorDialog, Sheet, SheetIcon } from '@bliss/ui/components/floor/sheet';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { holdsTable, isOrdering, isSeated, placeLabel } from '@bliss/shared/trade';
 import { addLine, addSeat, labelSeat, moveLine, moveTab, removeSeat, selectSeat, setDraftQty, setLineNote, voidLine } from '@/lib/pos/mutations';
+import { useSearchTarget } from '@/app/_pos/station-search';
 import { type TabDetail, useGrid, useOpenTabs, useOutlet, useTab, useTradeReady } from '@/lib/pos/queries';
 import { useSession } from '@/lib/pos/session';
 import { ItemGrid } from './_parts/item-grid';
@@ -78,6 +79,10 @@ export default function TabScreen() {
 
   const close = () => setOverlay({ kind: 'none' });
   const timezone = outlet?.timezone ?? 'Africa/Nairobi';
+
+  // Search adds to whichever seat is chosen, the same as a tap on the grid (onAdd, below).
+  const searchAdd = useRef<(variantId: string) => void>(() => undefined);
+  useSearchTarget(detail && isOrdering(detail.tab) ? `Adds to ${detail.label}` : null, (variantId) => searchAdd.current(variantId));
 
   if (detail === null) {
     return (
@@ -135,6 +140,7 @@ export default function TabScreen() {
     const name = grid?.tiles.find((t) => t.variantId === variantId)?.name ?? 'Item';
     void run(() => addItem({ tabId, seat: detail.selected, seatName, variantId, name }));
   };
+  searchAdd.current = onAdd;
 
   const onTileLongPress = (variantId: string) => {
     const tile = grid?.tiles.find((t) => t.variantId === variantId);
@@ -328,7 +334,7 @@ export default function TabScreen() {
       </BaseAction>
 
       {session && tabs ? (
-        <Sheet open={tablesOpen} onClose={() => setTablesOpen(false)} title="Your tables" description="Switch table, or filter by zone.">
+        <Sheet open={tablesOpen} onClose={() => setTablesOpen(false)} title="Your tables" description="Switch table, or filter by zone." leading={<SheetIcon icon={IconLayoutGrid} />}>
           <TablesRail variant="sheet" tabs={tabs} currentTabId={tabId} currentZoneId={detail?.tab.zoneId ?? null} staffId={session.staffId} selectedSeatId={detail?.selected} />
         </Sheet>
       ) : null}
@@ -447,6 +453,7 @@ export default function TabScreen() {
             open={overlay.kind === 'close-empty'}
             onClose={close}
             title={`Close ${detail.label}?`}
+            leading={<SheetIcon icon={IconDoorExit} tone="low" />}
             description="The guests left before anything was fired. The tab closes, the table is free, and the reason stays with the tab for the manager."
             width="md"
           >

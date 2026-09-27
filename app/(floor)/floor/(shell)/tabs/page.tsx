@@ -213,7 +213,7 @@ export default function TabsPage() {
               {freeTables.length > 0 ? (
                 <div className="grid grid-cols-2 gap-8 pad:grid-cols-3 tablet:flex tablet:flex-col">
                   {freeTables.map((table) => (
-                    <FreeTableCard key={table.id} tableLabel={tableLabel(table)} capacity={table.seats} onOpen={() => setSheet({ open: true, table })} />
+                    <FreeTableCard key={table.id} tableLabel={tableLabel(table)} zone={places?.zones.find((z) => z.id === table.zoneId)?.name} capacity={table.seats} onOpen={() => setSheet({ open: true, table })} />
                   ))}
                 </div>
               ) : zone !== 'all' ? (

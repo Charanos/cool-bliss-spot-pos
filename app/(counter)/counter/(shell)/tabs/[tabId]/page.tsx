@@ -205,7 +205,7 @@ export default function SettleTabPage() {
             />
             {scope === 'even_split' ? (
               view?.split ? (
-                <Badge tone="accent" className="!rounded-full">
+                <Badge tone="accent">
                   Share {view.split.settled + 1} of {view.split.count}
                 </Badge>
               ) : (

@@ -61,7 +61,7 @@ const COUNT_TONE: Record<CountTone, string> = {
 };
 
 /**
- * A count on a nav item or a chip. Filled, so it reads at arm's length; capped at 99+. The number is
+ * A count on a nav item or a chip, as a pill: filled, so it reads at arm's length; capped at 99+. The number is
  * decorative when the label beside it already says it, so pass `label` only when it stands alone.
  */
 export function CountBadge({ count, tone = 'accent', max = 99, label, className }: { count: number; tone?: CountTone; max?: number; label?: string; className?: string }) {
@@ -70,7 +70,7 @@ export function CountBadge({ count, tone = 'accent', max = 99, label, className 
     <span
       aria-hidden={label ? undefined : true}
       aria-label={label}
-      className={cx('inline-flex h-count min-w-count items-center justify-center rounded-dot px-4 font-mono tabular text-num-sm leading-none', COUNT_TONE[tone], className)}
+      className={cx('inline-flex h-count min-w-count-wide items-center justify-center rounded-pill px-6 font-mono tabular text-num-sm font-medium leading-none', COUNT_TONE[tone], className)}
     >
       {count > max ? `${max}+` : count}
     </span>

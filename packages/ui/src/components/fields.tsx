@@ -13,6 +13,7 @@ import {
 } from 'react';
 import { cx } from '../lib/cx';
 import { ICON_STROKE } from './icon';
+import { ListboxPopup } from './listbox';
 import { Spinner } from './spinner';
 
 /**
@@ -169,29 +170,93 @@ export interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement
   pending?: boolean;
 }
 
+/**
+ * A dropdown field. The list opens as Bliss's own listbox (listbox.tsx), never the operating system's
+ * plain menu, so it matches every other surface and reads on a dark tablet. A native <select> stays
+ * underneath, hidden, as the value's home: forms still read it by name, reset it and validate it, and
+ * `value`, `defaultValue` and `onChange` behave exactly as they do on a native select.
+ */
 export function SelectField({ label, helper, options, id, className, hideLabel, pending = false, ...rest }: SelectFieldProps) {
   const autoId = useId();
   const fieldId = id ?? autoId;
+  const nativeRef = useRef<HTMLSelectElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const controlled = rest.value !== undefined;
+  const [own, setOwn] = useState(() => String(rest.defaultValue ?? options[0]?.value ?? ''));
+  const current = controlled ? String(rest.value) : own;
+  const chosen = options.find((o) => o.value === current);
+  const disabled = Boolean(rest.disabled);
+
+  const choose = (next: string) => {
+    const select = nativeRef.current;
+    if (!select || next === current) return;
+    select.value = next;
+    if (!controlled) setOwn(next);
+    // A real change event, so React's onChange and any form listener hear it as they would a native pick.
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  const { value: _value, defaultValue: _defaultValue, style, ...nativeRest } = rest;
   return (
     <FieldFrame label={label} helper={helper} htmlFor={fieldId} hideLabel={hideLabel}>
-      <div className={cx(underline, 'relative h-control-md')}>
+      <div className={cx(underline, 'relative h-control-md', disabled && 'opacity-60')}>
         <select
-          {...rest}
-          id={fieldId}
-          style={{ colorScheme: 'inherit', ...rest.style }}
-          className={cx('h-full w-full min-w-0 flex-1 appearance-none bg-transparent pr-24 text-body text-ink outline-none cursor-pointer', className)}
+          {...nativeRest}
+          ref={nativeRef}
+          {...(controlled ? { value: current } : { defaultValue: rest.defaultValue ?? options[0]?.value })}
+          onChange={(event) => {
+            if (!controlled) setOwn(event.target.value);
+            rest.onChange?.(event);
+          }}
+          aria-hidden="true"
+          tabIndex={-1}
+          style={style}
+          className="sr-only"
         >
           {options.map((o) => (
-            <option key={o.value} value={o.value} className="bg-raised text-ink py-6">
+            <option key={o.value} value={o.value}>
               {o.label}
             </option>
           ))}
         </select>
+        <button
+          ref={buttonRef}
+          id={fieldId}
+          type="button"
+          disabled={disabled}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-label={typeof label === 'string' && hideLabel ? label : undefined}
+          onClick={() => setOpen((v) => !v)}
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              event.preventDefault();
+              setOpen(true);
+            }
+          }}
+          className={cx('flex h-full w-full min-w-0 flex-1 items-center pr-24 text-left text-body outline-none disabled:cursor-not-allowed', chosen ? 'text-ink' : 'text-ink-subtle', className)}
+        >
+          <span className="min-w-0 truncate">{chosen?.label ?? 'Choose one'}</span>
+        </button>
         {pending ? (
           <Spinner size={16} className="pointer-events-none absolute right-0" />
         ) : (
-          <IconChevronDown size={16} stroke={ICON_STROKE} aria-hidden="true" className="pointer-events-none absolute right-0 text-ink-subtle" />
+          <IconChevronDown size={16} stroke={ICON_STROKE} aria-hidden="true" className={cx('pointer-events-none absolute right-0 text-ink-subtle transition-card', open && 'rotate-180')} />
         )}
+        {open ? (
+          <ListboxPopup
+            anchor={buttonRef}
+            options={options}
+            value={current}
+            label={typeof label === 'string' ? label : 'Options'}
+            onChoose={choose}
+            onClose={(refocus) => {
+              setOpen(false);
+              if (refocus) buttonRef.current?.focus({ preventScroll: true });
+            }}
+          />
+        ) : null}
       </div>
     </FieldFrame>
   );

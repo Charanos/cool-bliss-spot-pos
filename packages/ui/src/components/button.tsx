@@ -22,6 +22,8 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
   fullWidth?: boolean;
   /** Marks a destructive action so dialogs never give it default focus. */
   destructive?: boolean;
+  /** A pill rather than the rounded rectangle: a station sheet's outcome. */
+  shape?: 'default' | 'pill';
   children?: ReactNode;
 }
 
@@ -40,6 +42,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     disabled = false,
     fullWidth = false,
     destructive,
+    shape,
     className,
     children,
     onClick,
@@ -88,7 +91,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         onClick?.(event);
       }}
       style={{ ...style, ...(lockedWidth !== null ? { width: lockedWidth } : null) }}
-      className={buttonClass({ variant, size, iconOnly, fullWidth, disabled, className })}
+      className={buttonClass({ variant, size, iconOnly, fullWidth, disabled, shape, className })}
     >
       {leading}
       {iconOnly ? null : <span className="truncate">{children}</span>}

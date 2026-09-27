@@ -10,7 +10,8 @@ import type { RoleKey } from '../domain';
 export type StaffSurface = 'floor' | 'counter' | 'console';
 
 export const SURFACE_ROLES: Record<StaffSurface, readonly RoleKey[]> = {
-  floor: ['waiter', 'supervisor'],
+  // Managers and owners cover the floor on a busy night, and come to it from the Console without a second PIN.
+  floor: ['waiter', 'supervisor', 'manager', 'owner'],
   counter: ['waiter', 'supervisor', 'cashier', 'manager', 'owner'],
   console: ['manager', 'owner', 'stock_controller'],
 };

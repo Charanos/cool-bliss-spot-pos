@@ -62,7 +62,7 @@ CI has no WebKit and no weak panel, so each deploy is confirmed once on the devi
 
 1. Open the Floor in Safari, add it to the Home Screen, and open it from there.
 2. Settings, This device: every feature row passes, and the engine reads Safari 15. The suggested
-   profile is Lite; keep it. Turn on Keep the screen on, or set Auto-Lock to Never in iPadOS.
+   profile is Clarity with Lite; keep it. Turn on Keep the screen on, or set Auto-Lock to Never in iPadOS.
 3. Sign in, open a tab, add two drinks to two seats, send. Turn the iPad on its side and back: the
    grid, the seats and the dock stay whole in both, and nothing needs a pinch or a double tap.
 4. The ticket sheet opens from the dock and closes with a tap on the dimmed page.

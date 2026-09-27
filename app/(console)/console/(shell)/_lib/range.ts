@@ -49,7 +49,9 @@ export function businessRange(param: string | undefined, fallback: RangeKey = '7
 export function rangeOptions(includeTonight: boolean) {
   const clock = reporting.clock();
   return [
-    ...(includeTonight && clock.tradingInProgress ? [{ value: 'tonight', label: 'Tonight so far' }] : []),
+    // The business day now under way, trading or not: a bill settled or a shift started after the
+    // cutover belongs to it, and would otherwise be in no range at all.
+    ...(includeTonight ? [{ value: 'tonight', label: clock.tradingInProgress ? 'Tonight so far' : 'Today' }] : []),
     { value: '1', label: 'Last night' },
     { value: '7', label: 'Last 7 business days' },
     { value: '28', label: 'Last 28 business days' },

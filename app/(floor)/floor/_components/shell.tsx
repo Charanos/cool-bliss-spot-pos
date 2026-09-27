@@ -3,21 +3,20 @@
 import { Photo } from '@bliss/ui/components/photo';
 import { AmbientFloorArtwork } from '@bliss/ui/components/artwork/floor-workspace';
 import { BlissMark } from '@bliss/ui/components/brand';
-import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { LiveRegion } from '@bliss/ui/components/surface';
-import { IconClockHour4, IconHistory, IconLayoutGrid, IconReceipt2, IconSearch, IconSettings } from '@tabler/icons-react';
+import { IconClockHour4, IconHistory, IconLayoutGrid, IconReceipt2, IconSettings } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { BaseLayerContext } from '@/app/_pos/base-layer';
-import { Dock, type DockItem, DockLink, LiveClock, SurfaceSwitcher, TopBar } from '@/app/_pos/chrome';
+import { Dock, type DockItem, DockLink, LiveClock, StationStatus, SurfaceSwitcher, TopBar } from '@/app/_pos/chrome';
 import { UpdateBar } from '@/app/_pos/update-bar';
 import { useFloorWatch } from '@/app/_pos/watchers';
 import { useFiredOrders, useOpenTabs, useOutlet } from '@/lib/pos/queries';
 import { useSession } from '@/lib/pos/session';
 import { useStaffPhotos } from '@/lib/pos/staff-photos';
 import { useSync } from '@/lib/pos/sync';
-import { SearchDialog } from './search-dialog';
+import { StationSearch } from '@/app/_pos/station-search';
 
 /**
  * The Floor shell: a top bar, the view, and a dock. The chrome itself is shared with the Counter
@@ -36,7 +35,6 @@ export function FloorShell({ children }: { children: ReactNode }) {
   const sync = useSync();
   const outlet = useOutlet();
   const [actionTarget, setActionTarget] = useState<HTMLDivElement | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
 
   const tabs = useOpenTabs();
   const orders = useFiredOrders(session?.staffId);
@@ -46,17 +44,6 @@ export function FloorShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (session === null) router.replace('/floor/sign-in');
   }, [session, router]);
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setSearchOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
 
   if (!session) return <div className="h-dvh bg-page" aria-busy="true" />;
 
@@ -83,29 +70,14 @@ export function FloorShell({ children }: { children: ReactNode }) {
               <Link href="/floor/tabs" aria-label="Bliss, floor tabs" className="flex shrink-0 items-center justify-center rounded-md press-feedback">
                 <BlissMark size={32} />
               </Link>
-              <button
-                type="button"
-                onClick={() => setSearchOpen(true)}
-                aria-label="Search items, seats, tabs"
-                className="flex size-control-md items-center justify-center rounded-md text-ink-muted press-feedback hover:bg-control hover:text-ink tablet:hidden"
-              >
-                <IconSearch size={20} stroke={ICON_STROKE} aria-hidden="true" />
-              </button>
               <div className="hidden h-24 w-px bg-rule-raised/60 tablet:block" aria-hidden="true" />
-              <button
-                type="button"
-                onClick={() => setSearchOpen(true)}
-                className="hidden h-control-sm w-[240px] items-center gap-8 rounded-md border border-transparent bg-control px-12 text-ink-subtle press-feedback hover:border-hairline tablet:flex desktop:w-[300px]"
-              >
-                <IconSearch size={14} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0" />
-                <span className="flex-1 truncate text-left text-body-sm">Search items, seats, tabs</span>
-                <kbd className="shrink-0 rounded-sm bg-sunken px-4 font-mono text-micro text-ink-muted">⌘K</kbd>
-              </button>
+              <StationSearch surface="floor" />
             </>
           }
-          centre={<SurfaceSwitcher current="floor" />}
+          centre={<SurfaceSwitcher current="floor" console={session.roleKey === 'manager' || session.roleKey === 'owner'} />}
           end={
             <>
+              <StationStatus link={sync.link} heldOrders={sync.heldOrders} />
               <LiveClock timeZone={outlet?.timezone} />
               <Link href="/floor/shift" aria-label={`${session.displayName}, view shift`} className="flex shrink-0 items-center gap-8 rounded-md p-2 press-feedback hover:bg-control/40">
                 <span
@@ -140,8 +112,6 @@ export function FloorShell({ children }: { children: ReactNode }) {
           ))}
         />
       </div>
-
-      <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       <LiveRegion>{sync.announcements.join(' ')}</LiveRegion>
     </BaseLayerContext.Provider>

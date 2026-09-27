@@ -256,19 +256,20 @@ function NoticeCard({ notice }: { notice: Notice }) {
 }
 
 /**
- * The viewport. Top centre on every screen, just under the top bar, between the brand on the left
- * and the clock and account on the right, where it covers neither and never the dock. The newest
- * sits nearest the bar and they drop down from it.
+ * The viewport. Notices rise from just above the dock, where the action that caused them lives, and
+ * stack upward: the newest nearest the dock. They never cover the seats, the ticket or the header a
+ * waiter is reading. The dock publishes its height as --bliss-dock-h (app/_pos/chrome.tsx); a screen
+ * without one, such as sign-in, keeps them clear of the home indicator.
  */
 export function NoticeViewport({ label = 'Notifications' }: { label?: string }) {
   const list = useNotices();
   return (
     <section
       aria-label={label}
-      className="safe-t safe-x pointer-events-none fixed inset-x-0 top-0 z-[60] flex justify-center [--bliss-gutter-t:calc(var(--spacing-strip-compact)+8px)] [--bliss-gutter-x:12px] pad:[--bliss-gutter-t:calc(var(--spacing-strip)+10px)] short:[--bliss-gutter-t:calc(var(--spacing-control-md)+6px)]"
+      className="safe-x pointer-events-none fixed inset-x-0 bottom-[calc(var(--bliss-dock-h,env(safe-area-inset-bottom))+10px)] z-toast flex justify-center [--bliss-gutter-x:12px]"
     >
-      <ol className="flex w-[min(420px,100%)] flex-col gap-6">
-        {[...list].reverse().map((n) => (
+      <ol className="flex w-[min(440px,100%)] flex-col gap-6">
+        {list.map((n) => (
           <NoticeCard key={n.id} notice={n} />
         ))}
       </ol>

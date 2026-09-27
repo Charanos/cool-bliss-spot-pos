@@ -1,21 +1,17 @@
 'use client';
 
 import { Photo } from '@bliss/ui/components/photo';
-import { Button } from '@bliss/ui/components/button';
-import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
-import { InlineNotice } from '@bliss/ui/components/feedback';
 import { SelectField, TextField } from '@bliss/ui/components/fields';
-import { IconCamera } from '@tabler/icons-react';
-import { useRouter } from 'next/navigation';
-import { type ChangeEvent, type FormEvent, useEffect, useState, useTransition } from 'react';
+import { IconUserPlus, IconUserEdit } from '@tabler/icons-react';
+import { useEffect, useState } from 'react';
 import { createStaff, updateStaff } from '../../_actions/people';
-import { uploadFiles } from '../../_lib/upload';
+import { Fieldset, FormDialog, PhotoField } from '../../_components/forms';
 import type { StaffRow } from './staff-table';
-import { useToast } from '@bliss/ui/components/console/toast';
 
 /**
  * Add or edit a person. A new person can be given a first PIN here, at the outlet's length; after
  * that a PIN is set, reset or taken away from its own dialog, which keeps the reason on record.
+ * Beside the photograph, their card as the sign-in screen on a tablet will show it.
  */
 export function StaffDialog({
   target,
@@ -30,11 +26,7 @@ export function StaffDialog({
   onClose: () => void;
   pinLength: number;
 }) {
-  const router = useRouter();
-  const notify = useToast();
-  const [pending, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
   const [fullName, setFullName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [roleId, setRoleId] = useState('');
@@ -52,119 +44,77 @@ export function StaffDialog({
     setContactNumber(target?.contactNumber ?? '');
     setPin('');
     setAvatarUrl(target?.avatarUrl ?? '');
-    setError('');
   }, [open, target, roles]);
 
-  async function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    setUploading(true);
-    setError('');
-    const result = await uploadFiles([file]);
-    setUploading(false);
-    if (result.ok) setAvatarUrl(result.urls[0] ?? '');
-    else setError(result.message);
-  }
-
-  function save(event: FormEvent) {
-    event.preventDefault();
-    setError('');
-    startTransition(async () => {
-      const form = { fullName, displayName, roleId, pin: editing ? null : pin || null, avatarUrl: avatarUrl || null, contactNumber: contactNumber || null };
-      const result = editing && target ? await updateStaff({ staffId: target.id, ...form }) : await createStaff(form);
-      if (!result.ok) {
-        setError(result.message);
-        return;
-      }
-      onClose();
-      notify({
-        title: target ? `${displayName || 'Their'} details saved` : `${displayName || 'The person'} added`,
-        body: target ? undefined : pin ? 'Hand them the PIN you set.' : 'They can sign in once their PIN is set.',
-      });
-      router.refresh();
-    });
-  }
-
-  const photo = avatarUrl;
-  const initials = displayName.trim().slice(0, 2).toUpperCase();
+  const shown = displayName.trim() || fullName.trim().split(/\s+/)[0] || 'New person';
+  const role = roles.find((r) => r.value === roleId)?.label ?? '';
 
   return (
-    <ConsoleOverlay
+    <FormDialog
       open={open}
       onClose={onClose}
+      icon={editing ? IconUserEdit : IconUserPlus}
+      disabled={uploading}
       title={editing ? `Edit ${target?.displayName ?? 'person'}` : 'Add a person'}
       description={editing ? 'Details and role save together. Their PIN has its own dialog.' : 'They can sign in once their PIN is set.'}
-      width="lg"
+      submitLabel={editing ? 'Save changes' : 'Add person'}
+      onSubmit={() => {
+        const form = { fullName, displayName, roleId, pin: editing ? null : pin || null, avatarUrl: avatarUrl || null, contactNumber: contactNumber || null };
+        return editing && target ? updateStaff({ staffId: target.id, ...form }) : createStaff(form);
+      }}
+      toast={
+        editing
+          ? { title: `${displayName || 'Their'} details saved` }
+          : { title: `${displayName || 'The person'} added`, body: pin ? 'Hand them the PIN you set.' : 'They can sign in once their PIN is set.' }
+      }
     >
-      <form onSubmit={save} className="flex flex-col gap-24">
-        {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}
-
-        <div className="flex items-center gap-16">
-          <label className="group relative flex size-avatar shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-dot bg-control text-title-card text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus">
-            <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={choosePhoto} disabled={uploading} aria-label="Choose a photo" />
-            {photo ? <Photo src={photo} className="size-full object-cover" /> : <span aria-hidden="true">{initials || '?'}</span>}
-            <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center bg-scrim text-on-scrim opacity-0 transition-hover group-hover:opacity-100">
-              <IconCamera size={20} stroke={1.5} />
+      <div className="grid grid-cols-1 items-center gap-24 desktop:grid-cols-[minmax(0,1fr)_auto]">
+        <PhotoField value={avatarUrl || null} name={shown} shape="round" helper="A photo for the sign-in screen, or keep their initials." onChange={(url) => setAvatarUrl(url ?? '')} onUploading={setUploading} />
+        <figure className="flex flex-col items-center gap-8">
+          <div data-theme="dark" aria-hidden="true" className="pointer-events-none flex w-card-preview items-center gap-12 rounded-card bg-raised p-12 shadow-lift">
+            <span className="flex size-control-lg shrink-0 items-center justify-center overflow-hidden rounded-dot text-body text-ink-muted ring-1 ring-rule-raised">
+              {avatarUrl ? <Photo src={avatarUrl} className="size-full object-cover" /> : shown.slice(0, 1).toUpperCase()}
             </span>
-          </label>
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-title-card text-ink">{fullName || 'New person'}</span>
-            <span className="text-body-sm text-ink-muted">{uploading ? 'Uploading the photo' : 'Choose a photo, or keep their initials.'}</span>
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-body font-medium text-ink">{shown}</span>
+              <span className="caps truncate text-ink-subtle">{role || 'Role'}</span>
+            </span>
           </div>
-        </div>
+          <figcaption className="text-label text-ink-subtle">On the sign-in screen</figcaption>
+        </figure>
+      </div>
 
-        <fieldset className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
-          <legend className="mb-8 label-caps text-ink-subtle">Details</legend>
-          <TextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Wanjiru" autoComplete="off" required />
+      <Fieldset legend="Details" hint="The display name is what the floor, the tickets and the bills show.">
+        <TextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Wanjiru" autoComplete="off" required />
+        <TextField label="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Jane" autoComplete="off" required />
+        <TextField label="Contact number" type="tel" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="+254 712 345 678" autoComplete="off" />
+      </Fieldset>
+
+      <Fieldset legend="Access" hint="The role decides which stations they sign in on and what they can do there.">
+        <SelectField
+          label="Role"
+          value={roleId}
+          onChange={(e) => setRoleId(e.target.value)}
+          options={roles}
+          required
+          disabled={target?.isSelf}
+          helper={target?.isSelf ? 'Another manager changes your role.' : undefined}
+        />
+        {editing ? null : (
           <TextField
-            label="Display name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Jane"
-            helper="What the floor and the bills show."
-            autoComplete="off"
-            required
+            label="First PIN"
+            type="password"
+            inputMode="numeric"
+            autoComplete="new-password"
+            pattern={`\\d{${pinLength}}`}
+            maxLength={pinLength}
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, pinLength))}
+            placeholder={`${pinLength} digits`}
+            helper="Optional. Not a run or a repeat. Or set one after, typed or made at random."
           />
-          <TextField label="Contact number" type="tel" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="+254 712 345 678" autoComplete="off" />
-        </fieldset>
-
-        <fieldset className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
-          <legend className="mb-8 label-caps text-ink-subtle">Access</legend>
-          <SelectField
-            label="Role"
-            value={roleId}
-            onChange={(e) => setRoleId(e.target.value)}
-            options={roles}
-            required
-            disabled={target?.isSelf}
-            helper={target?.isSelf ? 'Another manager changes your role.' : undefined}
-          />
-          {editing ? null : (
-            <TextField
-              label="First PIN"
-              type="password"
-              inputMode="numeric"
-              autoComplete="new-password"
-              pattern={`\\d{${pinLength}}`}
-              maxLength={pinLength}
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, pinLength))}
-              placeholder={`${pinLength} digits`}
-              helper="Optional. Not a run or a repeat. Or set one after, typed or made at random."
-            />
-          )}
-        </fieldset>
-
-        <div className="flex justify-end gap-12 border-t border-rule pt-16">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" loading={pending} disabled={uploading}>
-            {editing ? 'Save changes' : 'Add person'}
-          </Button>
-        </div>
-      </form>
-    </ConsoleOverlay>
+        )}
+      </Fieldset>
+    </FormDialog>
   );
 }

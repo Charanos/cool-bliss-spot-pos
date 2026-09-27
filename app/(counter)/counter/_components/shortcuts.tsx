@@ -1,6 +1,7 @@
 'use client';
 
-import { Sheet } from '@bliss/ui/components/floor/sheet';
+import { Sheet, SheetIcon } from '@bliss/ui/components/floor/sheet';
+import { IconKeyboard } from '@tabler/icons-react';
 import { useEffect, useRef } from 'react';
 
 /**
@@ -17,7 +18,7 @@ export const SHORTCUTS: { keys: string[]; action: string }[] = [
   { keys: ['S'], action: 'Quick sale' },
   { keys: ['D'], action: 'The drawer' },
   { keys: ['H'], action: 'History' },
-  { keys: ['/'], action: 'Find a tab' },
+  { keys: ['/'], action: 'Search tabs, seats and the menu' },
   { keys: ['P'], action: 'Pour the oldest ticket, on Orders' },
   { keys: ['0–9', 'Enter'], action: 'Type an amount and take it, when settling' },
   { keys: ['Alt', '1–5'], action: 'The five views, from anywhere' },
@@ -51,7 +52,7 @@ export function useShortcut(key: string, run: () => void, enabled = true) {
 
 export function ShortcutsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <Sheet open={open} onClose={onClose} title="Keyboard" description="For a counter run with a mouse and keyboard.">
+    <Sheet open={open} onClose={onClose} title="Keyboard" description="For a counter run with a mouse and keyboard." leading={<SheetIcon icon={IconKeyboard} />}>
       <dl className="flex flex-col">
         {SHORTCUTS.map((s) => (
           <div key={s.action} className="flex items-center justify-between gap-16 border-t border-rule py-12 first:border-t-0">

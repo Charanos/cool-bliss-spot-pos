@@ -147,7 +147,8 @@ try {
 
   await check('The Console shows the bill', async () => {
     const console = await station('console', { width: 1440, height: 900 }, null, 'Dan', '555555');
-    await console.page.goto(`${BASE}/console/trade/bills?view=list`);
+    // The current business day, whatever the clock: after the cutover the default range is last night.
+    await console.page.goto(`${BASE}/console/trade/bills?view=table&range=tonight`);
     await console.page.getByText(table, { exact: false }).first().waitFor({ timeout: 20_000 });
     await shot(console.page, 'console-bill');
     await console.ctx.close();

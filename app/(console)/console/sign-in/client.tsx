@@ -15,7 +15,8 @@ import { ROLE_LABEL } from '../(shell)/_lib/labels';
 import { pinWeakness } from '@bliss/shared/pin';
 import { chooseConsolePin, signInToConsole } from './actions';
 
-const BACKDROP = '1621275471769-e6aa344546d5';
+/** The photograph behind the clock, served from the app (public/backdrops) so it never waits on a photo host. */
+const BACKDROP = '/backdrops/console.webp';
 
 export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSummary[]; outlet: { name: string; timezone: string }; notice: string | null }) {
   const [chosen, setChosen] = useState<string | null>(null);
@@ -89,14 +90,15 @@ export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSum
 
   return (
     <div className="relative flex h-dvh flex-col tablet:grid tablet:grid-cols-[minmax(320px,2fr)_3fr] bg-page">
-      <section data-theme="dark" className="hidden tablet:flex relative min-h-[180px] tablet:min-h-0 shrink-0 tablet:shrink flex-col justify-between overflow-hidden p-24 tablet:p-40 bg-page text-ink">
-        <PhotoBackdrop src={`https://images.unsplash.com/photo-${BACKDROP}?q=80&w=1200&auto=format&fit=crop`} />
+      {/* The photograph and the clock: a column beside the team on a wide screen, a band across the top of a tablet held upright. */}
+      <section data-theme="dark" className="relative hidden shrink-0 flex-col justify-between overflow-hidden p-24 pad:flex pad:h-sign-band pad:flex-row pad:items-end tablet:h-auto tablet:shrink tablet:flex-col tablet:items-stretch tablet:p-40 bg-page text-ink">
+        <PhotoBackdrop src={BACKDROP} />
 
-        <div className="relative z-10">
+        <div className="relative z-10 pad:self-start tablet:self-auto">
           <BlissWordmark size={80} label="Bliss" />
         </div>
 
-        <div className="relative z-10 mt-auto flex flex-col">
+        <div className="relative z-10 mt-auto flex flex-col pad:mt-0 tablet:mt-auto">
           <Eyebrow as="p" className="flex items-center gap-12">
             <span>{outlet.name}</span>
             <span aria-hidden="true" className="size-[2px] rounded-dot bg-ink-subtle/80" />
@@ -106,7 +108,7 @@ export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSum
           <AtmosphereClock timeZone={outlet.timezone} className="gap-6" />
         </div>
 
-        <FadeRule orientation="y" className="absolute bottom-[10%] right-0 top-[10%] z-20" />
+        <FadeRule orientation="y" className="absolute bottom-[10%] right-0 top-[10%] z-20 hidden tablet:block" />
       </section>
 
       <main className="relative flex min-h-0 flex-1 flex-col">

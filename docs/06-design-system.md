@@ -193,13 +193,13 @@ Both themes are first class. Every component is specified in both. Neither is a 
 
 ### Display profiles
 
-A theme is chosen for the room; a display profile is chosen for the screen. Each station sets `data-display` on its page before first paint (a boot script in the Floor and Counter layouts reads `bliss-display` from the device), so nothing flashes. Profiles combine: `lite clarity` is valid. docs/11 D-25.
+A theme is chosen for the room; a display profile is chosen for the screen. Each station sets `data-display` on its page before first paint (a boot script in the Floor and Counter layouts reads `bliss-display` from the device), so nothing flashes. Profiles combine: `lite clarity` is valid. Every station starts in `clarity`; a slow device adds `lite`. Neither profile takes the design away: the photographs, the artwork, the textures and the blur behind a sheet stay on every device. docs/11 D-25, D-26.
 
 | Profile | For | What changes |
 |---|---|---|
-| `standard` | a good screen | nothing: the look in this document |
-| `lite` | a slow device, such as the iPad mini 4 | no backdrop blur (glass and scrims turn solid), no ambient artwork, no dot textures, and no animation loops more than once |
-| `clarity` | a weak panel, such as the counter laptop | everything `lite` removes, plus the Clarity colours below, 12px minimum type, and a status glow drawn as a crisp tone edge |
+| `standard` | chosen by hand | the look in this document, with the standard status colours |
+| `lite` | a slow device, such as the iPad mini 4 | the artwork is drawn once and never turns, small frosted surfaces are solid (the sheet and its scrim keep their blur), and no animation loops more than once |
+| `clarity` | every station, by default | the Clarity colours below, 12px minimum type, and a status glow drawn as a crisp tone edge |
 
 Clarity, dark theme only (the Counter keeps its identity):
 
@@ -213,7 +213,7 @@ Clarity, dark theme only (the Counter keeps its identity):
 
 The page, sunken and raised surfaces step further apart, and `rule` is no longer the same as `raised`. `packages/ui/src/tokens/clarity.test.ts` holds this: every text pair keeps its floor, and every status stays apart from the others, after `weakPanel()` in `contrast.ts` has lifted the blacks, flattened the gamma to 1.8 and taken 30% of the saturation, as a budget TN panel does.
 
-The device check (Settings, This device) suggests a profile from what the device reports: Safari older than 16, two cores or fewer, or 2GB or less suggests `lite`; an sRGB-only, standard range, 1x screen driven by a mouse suggests `clarity`. The person at the device confirms it.
+The device check (Settings, This device) suggests a profile from what the device reports: `clarity` always, and `lite` as well for Safari older than 16, two cores or fewer, or 2GB or less. The person at the device can change it.
 
 ---
 

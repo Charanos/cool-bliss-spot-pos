@@ -1,14 +1,15 @@
 'use client';
 
-import { formatDate, formatTime } from '@bliss/shared/format';
+import { formatTime } from '@bliss/shared/format';
 import { ICON_STROKE, type TablerIcon } from '@bliss/ui/components/icon';
 import { Dot, type Tone } from '@bliss/ui/components/status';
 import { CountBadge, MetaLine, type MetaItem } from '@bliss/ui/components/working';
 import { useHydrated, useNow } from '@bliss/ui/hooks';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconBuildingStore, IconLayoutGrid } from '@tabler/icons-react';
+import { IconBuildingStore, IconCloudCheck, IconCloudOff, IconCloudUpload, IconLayoutDashboard, IconLayoutGrid } from '@tabler/icons-react';
+import { api } from '@/lib/pos/api';
 import Link from 'next/link';
-import type { ReactNode, Ref } from 'react';
+import { type ReactNode, type Ref, useEffect, useRef, useState } from 'react';
 
 /**
  * The chrome both staff surfaces wear. docs/16-responsive-and-offline.md.
@@ -26,7 +27,7 @@ import type { ReactNode, Ref } from 'react';
  */
 export function TopBar({ start, centre, end }: { start: ReactNode; centre: ReactNode; end: ReactNode }) {
   return (
-    <header data-topbar="" className="safe-t safe-x relative z-10 shrink-0 border-b border-rule/10 bg-page/20 backdrop-blur-glass">
+    <header data-topbar="" className="safe-t safe-x relative z-bar shrink-0 border-b border-rule/10 bg-page/20 backdrop-blur-glass">
       <div className="grid h-strip-compact grid-cols-[1fr_auto_1fr] items-center gap-8 px-12 pad:h-strip pad:gap-16 pad:px-16 tablet:px-20 short:h-control-md">
         <div className="flex min-w-0 items-center gap-12 tablet:gap-16">{start}</div>
         {centre}
@@ -43,8 +44,23 @@ const SURFACES: readonly { key: Surface; label: string; href: string; icon: Tabl
   { key: 'counter', label: 'Counter', href: '/counter/orders', icon: IconBuildingStore },
 ];
 
-/** Floor and Counter, side by side. The one you are on is marked, the other is a link. */
-export function SurfaceSwitcher({ current }: { current: Surface }) {
+/**
+ * Floor and Counter, side by side, and the Console for a manager or owner. The one you are on is
+ * marked; the others take you there already signed in (the PIN is asked for only when the role does
+ * not belong there).
+ */
+export function SurfaceSwitcher({ current, console: withConsole = false }: { current: Surface; console?: boolean }) {
+  const [opening, setOpening] = useState(false);
+  const toConsole = async () => {
+    setOpening(true);
+    try {
+      const { body } = await api.post<{ ok: boolean }>('/api/station/console', {});
+      window.location.href = body.ok ? '/console/overview' : '/console/sign-in';
+    } catch {
+      window.location.href = '/console/sign-in';
+    }
+  };
+  const idle = 'flex h-control-sm items-center gap-6 rounded-dot px-12 text-body-sm text-ink-subtle press-feedback hover:bg-page hover:text-ink';
   return (
     <nav aria-label="Surfaces" className="flex items-center gap-2 rounded-dot border border-rule-raised/30 bg-sunken/50 p-2">
       {SURFACES.map((s) => {
@@ -55,24 +71,85 @@ export function SurfaceSwitcher({ current }: { current: Surface }) {
             <span>{s.label}</span>
           </span>
         ) : (
-          <Link key={s.key} href={s.href} aria-label={`Switch to the ${s.label}`} className="flex h-control-sm items-center gap-6 rounded-dot px-12 text-body-sm text-ink-subtle press-feedback hover:bg-page hover:text-ink">
+          <Link key={s.key} href={s.href} aria-label={`Switch to the ${s.label}`} className={idle}>
             <Glyph size={16} stroke={ICON_STROKE} aria-hidden="true" />
             <span className="hidden compact:inline">{s.label}</span>
           </Link>
         );
       })}
+      {withConsole ? (
+        <button type="button" onClick={() => void toConsole()} disabled={opening} aria-label="Switch to the Console" className={cx(idle, opening && 'animate-breathe')}>
+          <IconLayoutDashboard size={16} stroke={ICON_STROKE} aria-hidden="true" />
+          <span className="hidden desktop:inline">Console</span>
+        </button>
+      ) : null}
     </nav>
   );
 }
 
 /** The time and date, from a tablet up. Rendered after hydration so server and client agree. */
+/**
+ * The time, as a station shows it: the time alone on a tablet, the time over a short date ("Sat 27
+ * Sep") on a laptop, nothing on a phone, where the header needs the room.
+ */
 export function LiveClock({ timeZone }: { timeZone?: string }) {
   const now = useNow(30_000);
   const hydrated = useHydrated();
+  const parts = hydrated ? new Intl.DateTimeFormat('en-US', { weekday: 'short', day: 'numeric', month: 'short', timeZone }).formatToParts(now) : [];
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  const day = hydrated ? `${part('weekday')} ${part('day')} ${part('month')}` : '';
   return (
-    <div className="hidden text-right pad:block" suppressHydrationWarning>
-      <div className="font-mono tabular text-body-sm font-medium text-ink">{hydrated ? formatTime(now, timeZone) : ''}</div>
-      <div className="text-micro text-ink-subtle">{hydrated ? formatDate(now, timeZone) : ''}</div>
+    <div className="hidden flex-col items-end leading-none pad:flex" suppressHydrationWarning>
+      <span className="font-mono tabular text-body-sm font-medium text-ink">{hydrated ? formatTime(now, timeZone) : ''}</span>
+      <span className="mt-2 hidden text-micro text-ink-subtle desktop:block">{day}</span>
+    </div>
+  );
+}
+
+const LINK_STATE: Record<'synced' | 'sending' | 'offline' | 'unreachable', { icon: TablerIcon; tone: string; label: (held: number) => string; short: (held: number) => string | null }> = {
+  synced: { icon: IconCloudCheck, tone: 'text-ink-subtle', label: () => 'Everything has reached the server', short: () => null },
+  sending: { icon: IconCloudUpload, tone: 'text-info', label: (n) => `Back online, sending ${n} ${n === 1 ? 'order' : 'orders'}`, short: () => 'Sending' },
+  offline: { icon: IconCloudOff, tone: 'text-low', label: (n) => `Offline, ${n} ${n === 1 ? 'order' : 'orders'} held on this device`, short: (n) => (n > 0 ? `Offline · ${n}` : 'Offline') },
+  unreachable: { icon: IconCloudOff, tone: 'text-low', label: () => 'No connection. Orders are saved on this device.', short: () => 'Offline' },
+};
+
+/**
+ * What a station is standing on, in one pill at the right of the top bar: the drawer on the Counter
+ * (a link to it), then the link to the server as an icon that only takes words when something is
+ * wrong. Synced is a quiet cloud with a tick, never a stray dot.
+ */
+export function StationStatus({
+  link,
+  heldOrders,
+  drawer,
+}: {
+  link: 'synced' | 'sending' | 'offline' | 'unreachable';
+  heldOrders: number;
+  drawer?: { href: string; tone: Tone; short: string; long: string };
+}) {
+  const state = LINK_STATE[link];
+  const Glyph = state.icon;
+  const short = state.short(heldOrders);
+  return (
+    <div className="flex h-control-sm shrink-0 items-center rounded-pill border border-rule-raised/30 bg-sunken/60">
+      {drawer ? (
+        <>
+          <Link
+            href={drawer.href}
+            aria-label={drawer.long}
+            title={drawer.long}
+            className={cx('flex h-full items-center gap-8 rounded-l-pill pl-12 pr-8 text-body-sm press-feedback transition-hover hover:bg-control', drawer.tone === 'low' ? 'text-low' : 'text-ink-muted hover:text-ink')}
+          >
+            <Dot tone={drawer.tone} />
+            <span className="hidden whitespace-nowrap tablet:inline">{drawer.short}</span>
+          </Link>
+          <span aria-hidden="true" className="h-16 w-px bg-rule-raised/50" />
+        </>
+      ) : null}
+      <span role="status" aria-live="polite" aria-label={state.label(heldOrders)} title={state.label(heldOrders)} className={cx('flex h-full items-center gap-6 px-12 text-body-sm', state.tone)}>
+        <Glyph size={16} stroke={ICON_STROKE} aria-hidden="true" />
+        {short ? <span className="whitespace-nowrap">{short}</span> : null}
+      </span>
     </div>
   );
 }
@@ -161,8 +238,22 @@ const DOCK_ACTION =
 
 export function Dock({ nav, actionRef, inlineFrom = 'pad', label }: { nav: ReactNode; actionRef: Ref<HTMLDivElement>; inlineFrom?: 'pad' | 'tablet'; label: string }) {
   const pad = inlineFrom === 'pad';
+  // The dock's height, for notices to rise from just above it (notices.tsx). It changes with the
+  // page's action and the orientation, so it is measured rather than assumed.
+  const footer = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = footer.current;
+    const root = document.documentElement;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => root.style.setProperty('--bliss-dock-h', `${Math.round(el.getBoundingClientRect().height)}px`));
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--bliss-dock-h');
+    };
+  }, []);
   return (
-    <footer className="safe-b safe-x shrink-0 [--bliss-gutter-b:8px] [--bliss-gutter-x:8px] pad:[--bliss-gutter-b:12px] pad:[--bliss-gutter-x:16px] short:[--bliss-gutter-b:6px]">
+    <footer ref={footer} className="safe-b safe-x shrink-0 [--bliss-gutter-b:8px] [--bliss-gutter-x:8px] pad:[--bliss-gutter-b:12px] pad:[--bliss-gutter-x:16px] short:[--bliss-gutter-b:6px]">
       <div
         className={cx(
           'dock-surface mx-auto flex w-full max-w-[560px] flex-col gap-6 rounded-sheet p-6',
@@ -185,9 +276,22 @@ export function Dock({ nav, actionRef, inlineFrom = 'pad', label }: { nav: React
  * the page needs on the right, and its filters underneath. One row from a tablet held upright,
  * half the padding on a short screen.
  */
-export function PageHeader({ title, facts, aside, children }: { title: ReactNode; facts?: readonly (MetaItem | null | false)[]; aside?: ReactNode; children?: ReactNode }) {
+export function PageHeader({
+  title,
+  facts,
+  aside,
+  rule = true,
+  children,
+}: {
+  title: ReactNode;
+  facts?: readonly (MetaItem | null | false)[];
+  aside?: ReactNode;
+  /** False when a row of figures opens the page: the figures belong with the header, so the rule goes under them (FiguresRow). */
+  rule?: boolean;
+  children?: ReactNode;
+}) {
   return (
-    <header className="z-10 shrink-0 border-b border-rule-raised/20 bg-page/85 px-12 pb-12 pt-12 backdrop-blur-glass pad:px-24 pad:pb-16 pad:pt-20 short:py-6">
+    <header className={cx('z-10 shrink-0 border-b bg-page/85 px-12 pb-12 pt-12 backdrop-blur-glass pad:px-24 pad:pb-16 pad:pt-20 short:py-6', rule ? 'border-rule-raised/20' : 'border-transparent')}>
       <div className="flex flex-col gap-12 pad:flex-row pad:items-center pad:justify-between pad:gap-x-24">
         <div className="flex min-w-0 flex-wrap items-center gap-x-16 gap-y-8">
           <h1 className="shrink-0 whitespace-nowrap text-title-lg font-medium text-ink pad:text-heading short:text-title">{title}</h1>
@@ -205,5 +309,17 @@ export function PageHeader({ title, facts, aside, children }: { title: ReactNode
       </div>
       {children ? <div className="mt-12 pad:mt-16 short:mt-6">{children}</div> : null}
     </header>
+  );
+}
+
+/**
+ * A row of figures that opens a page, under a header without its own rule: the rule sits beneath
+ * the figures, so the header and its numbers read as one block and the working list starts after.
+ */
+export function FiguresRow({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
+  return (
+    <section aria-label={label} className={cx('border-b border-rule-raised/30 pb-16 tablet:pb-24', className)}>
+      {children}
+    </section>
   );
 }

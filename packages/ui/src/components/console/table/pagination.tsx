@@ -2,6 +2,7 @@
 
 import { IconChevronLeft, IconChevronRight, IconChevronsLeft, IconChevronsRight } from '@tabler/icons-react';
 import { cx } from '../../../lib/cx';
+import { FilterSelect } from '../filter-select';
 
 /** The page numbers to show: the first, the last, and two either side of where you are, with gaps. */
 function pageList(page: number, pages: number): (number | 'gap')[] {
@@ -54,20 +55,7 @@ export function Pagination({
           </span>{' '}
           of <span className="font-medium text-ink">{total.toLocaleString('en-KE')}</span> {total === 1 ? noun[0] : noun[1]}
         </span>
-        <label className="flex items-center gap-8">
-          <span>Per page</span>
-          <select
-            value={perPage}
-            onChange={(e) => onPerPage(Number(e.target.value))}
-            className="h-control-sm rounded-md border border-edge bg-card px-8 text-body-sm tabular text-ink transition-hover hover:border-edge-strong"
-          >
-            {perPageOptions.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </label>
+        <FilterSelect label="Per page" value={String(perPage)} allLabel={null} options={perPageOptions.map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => onPerPage(Number(v))} />
       </div>
       {pages > 1 ? (
         <div className="flex items-center gap-2">

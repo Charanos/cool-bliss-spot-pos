@@ -5,14 +5,13 @@ import { BlissMark } from '@bliss/ui/components/brand';
 import { Sparkline } from '@bliss/ui/components/console/sparkline';
 import { AnimatedMoney } from '@bliss/ui/components/money';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconArrowUpRight, IconChevronDown, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconSearch } from '@tabler/icons-react';
+import { IconArrowUpRight, IconChevronDown, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useId, useRef, useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { setRailCollapsed } from '../../_actions/settings';
 import { AccountMenu, type AccountProps } from './account-menu';
-import { openCommandMenu } from './command-events';
 
 export interface DeskPage {
   href: string;
@@ -58,9 +57,11 @@ function isActive(pathname: string, href: string) {
  * accent tick, and the open workspace lists its pages beneath it on a guide line, so the desk, the
  * page tabs and the crumbs always name the same place.
  *
- * Top to bottom: the outlet and its business day with the fold control, search, the workspaces in
- * four groups, tonight's takings, then Settings and the signed-in person. Folded (the `[` key, or
- * the control), it is icons only and a workspace's pages open in a flyout beside it.
+ * Top to bottom: the mark and the outlet with the fold control, the workspaces in four groups,
+ * tonight's takings, then a footer panel with Settings and the signed-in person. Search lives in the
+ * sheet's header (and on Ctrl K), and whether the day is trading in the pill beside the crumbs, so
+ * the desk does not say either twice. Folded (the `[` key, or the control), it is icons only, each
+ * count a small pill on its icon, and a workspace's pages open in a flyout beside it.
  */
 export function DeskNav({
   venue,
@@ -82,10 +83,6 @@ export function DeskNav({
   const [, start] = useTransition();
   // Which workspace lists its pages: the one you are in, unless another was opened by hand.
   const [opened, setOpened] = useState<string | null>(null);
-  const [shortcut, setShortcut] = useState('⌘K');
-  useEffect(() => {
-    if (!/Mac|iPhone|iPad/.test(navigator.platform)) setShortcut('Ctrl K');
-  }, []);
   useEffect(() => setOpened(null), [pathname]);
 
   const toggle = useCallback(() => {
@@ -133,39 +130,13 @@ export function DeskNav({
       data-collapsed={collapsed || undefined}
       className={cx('flex h-full shrink-0 flex-col bg-desk transition-card', collapsed ? 'w-desk-nav-collapsed' : 'w-desk-nav-collapsed desktop:w-desk-nav')}
     >
-      {/* The outlet, where its business day stands, and the fold control. */}
-      <div className={cx('flex h-masthead shrink-0 items-center gap-8', collapsed ? 'justify-center px-12' : 'justify-center px-12 desktop:justify-between desktop:pl-16 desktop:pr-12')}>
-        <Link href="/console/overview" className="focus-ring-desk flex min-w-0 items-center gap-12 rounded-md" title={venue.name}>
-          <span className="flex size-control-md shrink-0 items-center justify-center rounded-control bg-desk-chip text-ink shadow-chip swell-on-hover">
-            <BlissMark size={24} />
-          </span>
-          <span className={cx('min-w-0 flex-col', wide)}>
-            <span className="truncate text-title-card text-ink">{venue.name}</span>
-            <span className="flex items-center gap-6 text-body-sm text-ink-muted">
-              <span aria-hidden="true" className={cx('size-dot shrink-0 rounded-dot', venue.trading ? 'animate-breathe bg-poured' : 'bg-ink-disabled')} />
-              <span className="truncate">{venue.trading ? `Trading, ${venue.day}` : `Closed, ${venue.day}`}</span>
-            </span>
-          </span>
+      {/* The mark and the outlet, uncarded, and the fold control. */}
+      <div className={cx('flex h-masthead shrink-0 items-center gap-8', collapsed ? 'justify-center px-12' : 'justify-center px-12 desktop:justify-between desktop:pl-20 desktop:pr-12')}>
+        <Link href="/console/overview" className="focus-ring-desk group flex min-w-0 items-center gap-12 rounded-md" title={venue.name}>
+          <BlissMark size={32} className="shrink-0 transition-card group-hover:scale-105" />
+          <span className={cx('min-w-0 truncate text-title-card text-ink', wide)}>{venue.name}</span>
         </Link>
         {toggleButton(collapsed ? 'hidden' : 'hidden desktop:flex')}
-      </div>
-
-      {/* Search and jump: a well sunk into the desk. */}
-      <div className="px-12 pb-8">
-        <button
-          type="button"
-          onClick={openCommandMenu}
-          title={`Search or jump to (${shortcut})`}
-          aria-label="Search or jump to"
-          className={cx(
-            'focus-ring-desk flex h-control-sm w-full items-center gap-8 rounded-md bg-desk-well text-body-sm text-ink-subtle shadow-well transition-hover hover:text-ink',
-            collapsed ? 'justify-center px-0' : 'justify-center px-0 desktop:justify-start desktop:px-12',
-          )}
-        >
-          <IconSearch size={16} stroke={1.5} aria-hidden="true" className="shrink-0" />
-          <span className={cx('flex-1 text-left', label)}>Search or jump to</span>
-          <kbd className={cx('rounded-sm bg-desk-chip px-6 font-mono text-num-sm text-ink-subtle shadow-chip', collapsed ? 'hidden' : 'hidden desktop:inline')}>{shortcut}</kbd>
-        </button>
       </div>
 
       <nav aria-label="Workspaces" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-12 pb-16 no-scrollbar fade-foot" data-lenis-prevent="">
@@ -196,29 +167,40 @@ export function DeskNav({
         {tonight ? <TonightCard tonight={tonight} className={cx('mt-auto shrink-0', collapsed ? 'hidden' : 'hidden desktop:flex')} /> : null}
       </nav>
 
-      <div className="flex shrink-0 flex-col gap-8 px-12 pb-12 pt-4">
-        <div className="flex flex-col gap-2">
+      {/* The footer: a panel of its own, so Settings and the person read as the desk's base, not one
+          more workspace. */}
+      <div className="shrink-0 p-8">
+        <div className="flex flex-col gap-4 rounded-card bg-desk-well p-4 shadow-well">
           <Workspace item={settings} pathname={pathname} folded={folded} labelClass={label} expanded={expanded === settings.href} onExpand={(open) => setOpened(open ? settings.href : '')} />
           <div className={cx('justify-center', collapsed ? 'flex' : 'hidden')}>{toggleButton('')}</div>
-        </div>
-        <div className="border-t border-hairline pt-8">
-          <AccountMenu {...account} compact={collapsed} />
+          <div className="border-t border-hairline pt-4">
+            <AccountMenu {...account} compact={collapsed} />
+          </div>
         </div>
       </div>
     </aside>
   );
 }
 
-function CountPill({ count, tone, className }: { count: number; tone?: 'attention' | 'stop'; className?: string }) {
+/**
+ * A count on the desk, as a pill: soft and tinted beside a name, a small solid pill on the icon's
+ * corner when the desk is folded. Display comes from the caller, so a hidden pill stays hidden.
+ */
+function CountPill({ count, tone, folded, className }: { count: number; tone?: 'attention' | 'stop'; folded?: boolean; className?: string }) {
   return (
     <span
       className={cx(
-        'inline-flex h-count min-w-count shrink-0 items-center justify-center rounded-pill px-6 font-mono tabular text-num-sm',
-        tone === 'stop' ? 'bg-stop text-stop-ink' : tone === 'attention' ? 'bg-attention text-accent-ink' : 'bg-desk-chip text-ink-muted shadow-chip',
+        'h-count shrink-0 items-center justify-center rounded-pill font-mono tabular',
+        folded
+          ? cx('min-w-count px-4 text-badge ring-2 ring-desk', tone === 'stop' ? 'bg-stop text-stop-ink' : tone === 'attention' ? 'bg-attention text-accent-ink' : 'bg-ink-muted text-page')
+          : cx(
+              'min-w-count-wide px-8 text-num-sm ring-1 ring-inset',
+              tone === 'stop' ? 'bg-stop-wash text-stop ring-stop/25' : tone === 'attention' ? 'bg-attention-wash text-attention ring-attention/25' : 'bg-desk-chip text-ink-muted ring-hairline',
+            ),
         className,
       )}
     >
-      {count}
+      {count > 99 ? '99+' : count}
       <span className="sr-only">{tone ? ' need attention' : ''}</span>
     </span>
   );
@@ -280,10 +262,10 @@ function Workspace({
           {active ? <span aria-hidden="true" className="absolute left-0 top-1/2 h-16 w-4 -translate-y-1/2 rounded-r-sm bg-accent" /> : null}
           <span aria-hidden="true" className={cx('relative inline-flex size-16 shrink-0 items-center justify-center transition-hover', active ? 'text-accent-text' : 'text-ink-subtle group-hover:scale-110 group-hover:text-ink')}>
             {item.icon}
-            {item.count && item.tone ? <span className={cx('absolute -right-4 -top-4 size-dot rounded-dot ring-2 ring-desk', item.tone === 'stop' ? 'bg-stop' : 'bg-attention', folded === 'true' ? 'block' : 'block desktop:hidden')} /> : null}
+            {item.count ? <CountPill count={item.count} tone={item.tone} folded className={cx('absolute -right-12 -top-8', folded === 'true' ? 'inline-flex' : 'inline-flex desktop:hidden')} /> : null}
           </span>
           <span className={cx('min-w-0 flex-1 truncate', labelClass)}>{item.label}</span>
-          {item.count ? <CountPill count={item.count} tone={item.tone} className={cx(wideOnly, pages ? 'mr-24' : null)} /> : null}
+          {item.count ? <CountPill count={item.count} tone={item.tone} className={cx(folded === 'true' ? 'hidden' : 'hidden desktop:inline-flex', pages ? 'mr-24' : null)} /> : null}
         </Link>
         {pages ? (
           <button

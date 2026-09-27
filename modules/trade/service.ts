@@ -13,6 +13,7 @@ import * as audit from '../audit/service';
 import { assertCan, outlet } from '../identity/service';
 import * as pricing from '../pricing/service';
 import { tradeTables } from './schema';
+import { withFigures } from './shifts';
 
 const createId = createUuidV7();
 
@@ -198,16 +199,29 @@ export function orderFiredAt(orderId: string): number | null {
   return tradeTables().orders.find((o) => o.id === orderId)?.firedAt ?? null;
 }
 
+/** Shifts, a running one with its figures as they stand (shifts.ts). */
 export function shiftsOn(date: IsoDate) {
-  return tradeTables().shifts.filter((s) => s.businessDate === date);
+  const now = Date.now();
+  return tradeTables()
+    .shifts.filter((s) => s.businessDate === date)
+    .map((s) => withFigures(s, now));
 }
 
 export function shiftById(id: string) {
-  return tradeTables().shifts.find((s) => s.id === id) ?? null;
+  const shift = tradeTables().shifts.find((s) => s.id === id);
+  return shift ? withFigures(shift) : null;
 }
 
 export function shiftsBetween(from: IsoDate, to: IsoDate) {
-  return tradeTables().shifts.filter((s) => s.businessDate >= from && s.businessDate <= to);
+  const now = Date.now();
+  return tradeTables()
+    .shifts.filter((s) => s.businessDate >= from && s.businessDate <= to)
+    .map((s) => withFigures(s, now));
+}
+
+/** Shifts still running from a business day that has closed: a tablet put down without signing out. */
+export function shiftsLeftOpen(before: IsoDate) {
+  return tradeTables().shifts.filter((s) => s.status === 'open' && s.businessDate < before);
 }
 
 /** Seats with at least one non-voided line: the honest count of people served. */

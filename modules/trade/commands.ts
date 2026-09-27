@@ -15,6 +15,7 @@ import * as catalogue from '../catalogue/service';
 import * as identity from '../identity/service';
 import * as inventory from '../inventory/service';
 import * as settlement from '../settlement/service';
+import * as shifts from './shifts';
 import { tradeTables } from './schema';
 
 /**
@@ -444,13 +445,17 @@ export function handOver(p: OutboxPayload<'tab.handover'>, actor: Actor): void {
   }
   const tabs = [...new Set(p.tabIds)].map((id) => tradeTables().tabs.find((t) => t.id === id)).filter((t): t is Tab => Boolean(t) && holdsTable(t!));
   if (tabs.length === 0) throw new CommandRejected('TAB_ALREADY_SETTLED', 'Those tables were settled and cleared already. Nothing was handed over.');
+  const given = new Map<string, number>();
   for (const tab of tabs) {
     if (tab.assignedTo === p.toStaffId) continue;
     const before = { assignedTo: tab.assignedTo };
+    given.set(tab.assignedTo, (given.get(tab.assignedTo) ?? 0) + 1);
     tab.assignedTo = p.toStaffId;
     touch('tabs', tab.id);
     audit.record({ outletId: tab.outletId, actorStaffId: actor.staffId, actorDeviceId: actor.deviceId, action: 'tab.handover', entityType: 'tab', entityId: tab.id, before, after: { assignedTo: p.toStaffId }, reason: null, severity: 'info' });
   }
+  // Counted on the shift of whoever gave the tables away.
+  for (const [fromStaffId, count] of given) shifts.noteHandover({ fromStaffId, toStaffId: p.toStaffId, tabs: count });
 }
 
 /**

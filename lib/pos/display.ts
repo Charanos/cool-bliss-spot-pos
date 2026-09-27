@@ -9,10 +9,10 @@ import { DISPLAY_KEY as KEY } from './display-boot';
  * How this device draws Bliss. docs/06, display profiles; docs/11 D-25.
  *
  *  - standard: the design as drawn.
- *  - lite: solid surfaces instead of frosted glass, no ambient artwork or textures, short motion only.
+ *  - lite: the artwork drawn once, small frosted surfaces solid (a sheet keeps its blur), short motion only.
  *    For slower devices such as the iPad mini 4.
  *  - clarity: wider steps between surfaces, visible edges, stronger status colours, larger meta text.
- *    For plain screens that wash colour out, such as a budget laptop panel.
+ *    The default on every station: it reads well on good and weak screens alike.
  *
  * Profiles combine. Until the device chooses, it follows what it reports about itself. The choice is
  * the device's own, kept on it, applied as data-display on <html> before anything else draws.

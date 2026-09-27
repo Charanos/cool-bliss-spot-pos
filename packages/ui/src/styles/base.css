@@ -240,7 +240,7 @@
 @keyframes bliss-notice-in {
   from {
     opacity: 0;
-    transform: translateY(-10px) scale(0.97);
+    transform: translateY(12px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -251,7 +251,7 @@
 @keyframes bliss-notice-out {
   to {
     opacity: 0;
-    transform: translateY(-6px) scale(0.97);
+    transform: translateY(8px) scale(0.97);
   }
 }
 
@@ -777,22 +777,33 @@
   box-shadow: var(--shadow-popover);
 }
 
-/* The Floor and Counter sheet surface: frosted glass over the working surface. */
+/*
+ * The Floor and Counter sheet surface: frosted glass over the working surface. Its depth is a dark
+ * lift and a glint along the top edge, never a pale halo: on the dark page a shadow drawn in ink
+ * reads as a glow around the sheet. Channels rather than color-mix, for Safari 15.
+ */
 @utility overlay-glass {
-  background-color: color-mix(in srgb, var(--color-raised) 85%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-ink) 4%, transparent);
+  background-color: rgb(var(--bliss-raised-rgb) / 86%);
+  border: 1px solid rgb(var(--bliss-ink-rgb) / 7%);
   box-shadow:
-    0 24px 48px -12px color-mix(in srgb, var(--color-ink) 12%, transparent),
-    0 8px 24px -4px color-mix(in srgb, var(--color-ink) 4%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--color-glint) 20%, transparent);
-  -webkit-backdrop-filter: blur(40px);
-  backdrop-filter: blur(40px);
+    var(--shadow-lift),
+    inset 0 1px 0 rgb(var(--bliss-glint-rgb) / 10%);
+  -webkit-backdrop-filter: blur(32px) saturate(140%);
+  backdrop-filter: blur(32px) saturate(140%);
 }
 
+/* Behind a sheet: the page dims and softens, so the sheet is the one thing in focus. */
 @utility scrim-glass {
-  background-color: color-mix(in oklab, var(--color-page) 40%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background-color: rgb(var(--bliss-page-rgb) / 45%);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* The open list of a dropdown (listbox.tsx): the overlay surface, a hairline and the popover lift. */
+@utility listbox-surface {
+  background-color: var(--color-overlay);
+  border: 1px solid rgb(var(--bliss-ink-rgb) / 9%);
+  box-shadow: var(--shadow-popover);
 }
 
 /* A key and its value on one row: a fixed label column that stays readable, the value takes the rest. */
@@ -1003,40 +1014,28 @@
 
 /*
  * Display profiles, per device. docs/06, display profiles; docs/11 D-25. The device sets them as
- * data-display on <html> (lib/pos/display.ts); they combine.
+ * data-display on <html> (lib/pos/display.ts); they combine. Every station starts in Clarity.
  *
- * Lite, for slower devices such as the iPad mini 4, and Clarity, for screens that wash colour out,
- * share their plainness: no frosted glass (a blur is the most expensive thing a tablet draws, and on a
- * weak panel it only muddies), no ambient artwork, no dot textures. Clarity's colours are in tokens.css.
+ * Neither profile takes the design away. Clarity is colour, type and edges only (its colours are in
+ * tokens.css). Lite keeps the artwork, the photographs, the textures and the blur behind a sheet,
+ * and saves the frames a slow tablet needs elsewhere: the artwork is drawn once and never turns, and
+ * the many small frosted surfaces are solid, since a blur is the most expensive thing a tablet draws.
  */
-[data-display~='lite'],
-[data-display~='clarity'] {
+[data-display~='lite'] {
   --bliss-glass: var(--bliss-raised);
   --bliss-glass-hover: var(--bliss-control-hover);
   --bliss-glass-strong: var(--bliss-raised);
   --bliss-glass-strong-hover: var(--bliss-control-hover);
 }
 
-:is([data-display~='lite'], [data-display~='clarity']) :is(*, *::before, *::after) {
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
+[data-display~='lite'] :is(*, *::before, *::after):not(.overlay-glass, .scrim-glass) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
-:is([data-display~='lite'], [data-display~='clarity']) .ambient-art {
-  display: none;
-}
-
-/* Without the blur, a see-through sheet only muddies: sheets and their scrim are solid. */
-:is([data-display~='lite'], [data-display~='clarity']) .overlay-glass {
-  background-color: var(--color-overlay);
-}
-
-:is([data-display~='lite'], [data-display~='clarity']) .scrim-glass {
-  background-color: var(--color-scrim);
-}
-
-:is([data-display~='lite'], [data-display~='clarity']) :is(.texture-dots-accent, .texture-dots-stop) {
-  background-image: none;
+/* Drawn once: a turning SVG with soft glows repaints every step, which an A8 cannot spare. */
+[data-display~='lite'] .ambient-art :is(*, *::before, *::after) {
+  animation: none !important;
 }
 
 /* Lite: nothing loops. A pulse or a breathing label costs a tablet frames it needs for scrolling. */

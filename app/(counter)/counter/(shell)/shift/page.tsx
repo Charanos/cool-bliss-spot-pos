@@ -1,5 +1,6 @@
 'use client';
 
+import { canSignInOn } from '@bliss/shared/identity';
 import { Photo } from '@bliss/ui/components/photo';
 import { formatTime, plural } from '@bliss/shared/format';
 import { formatKes, sum } from '@bliss/shared/money';
@@ -21,7 +22,7 @@ import { posDb } from '@/lib/pos/db';
 import { useOpenTabs, useOutlet, useSeatedTabs, useStaffDirectory } from '@/lib/pos/queries';
 import { signOut, useSession } from '@/lib/pos/session';
 import { useSync } from '@/lib/pos/sync';
-import { ShiftHandoverSheet } from './_components/shift-handover-sheet';
+import { ShiftHandoverSheet } from '@/app/_pos/shift-handover-sheet';
 import { MetricTile } from '@bliss/ui/components/metric-tile';
 import { ShiftTabCard } from './_components/shift-tab-card';
 
@@ -62,14 +63,14 @@ export default function ShiftPage() {
   const handable = myTabs.length + mySeated.length;
   const floorLiabilityTotal = sum(myTabs.map((t) => t.total));
   const totalGuests = myTabs.reduce((acc, t) => acc + (t.tab.guestCount ?? t.seats.length), 0);
-  const colleagues = (staff ?? []).filter((s) => s.id !== session.staffId && (s.roleKey === 'waiter' || s.roleKey === 'supervisor'));
+  const colleagues = (staff ?? []).filter((s) => s.id !== session.staffId && canSignInOn('floor', s.roleKey));
   const firedCount = firedOrders?.length ?? 0;
   const photoUrl = photoOf(session.staffId);
   const role = session.roleKey === 'supervisor' ? 'Supervisor' : 'Floor waiter';
 
   return (
     <div className="scroll-region flex flex-col">
-      <header className="z-10 border-b border-rule-raised/20 bg-page/85 px-12 py-12 backdrop-blur-glass pad:sticky pad:top-0 pad:px-24 pad:py-16 short:py-8">
+      <header className="z-10 bg-page/85 px-12 py-12 backdrop-blur-glass pad:sticky pad:top-0 pad:px-24 pad:py-16 short:py-8">
         <div className="flex flex-col gap-12">
           <div className="flex items-start justify-between gap-12">
             <div className="flex min-w-0 items-center gap-12">
@@ -113,7 +114,8 @@ export default function ShiftPage() {
       </header>
 
       <div className="flex flex-col gap-24 px-12 py-16 pad:gap-32 pad:px-24 pad:py-24">
-        <section aria-labelledby="shift-metrics">
+        {/* The figures belong with the header; the rule goes under them, where the working list starts. */}
+        <section aria-labelledby="shift-metrics" className="border-b border-rule-raised/30 pb-16 tablet:pb-24">
           <h2 id="shift-metrics" className="sr-only">
             This shift
           </h2>

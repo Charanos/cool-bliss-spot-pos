@@ -1,6 +1,7 @@
 'use client';
 
-import { FloorDialog } from '@bliss/ui/components/floor/sheet';
+import { FloorDialog, SheetIcon } from '@bliss/ui/components/floor/sheet';
+import { IconBan } from '@tabler/icons-react';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { voidLine } from '@/lib/pos/mutations';
 import { requestApproval } from '@/lib/pos/session';
@@ -18,7 +19,7 @@ export interface VoidTarget {
  */
 export function VoidLineDialog({ target, onClose }: { target: VoidTarget | null; onClose: () => void }) {
   return (
-    <FloorDialog open={Boolean(target)} onClose={onClose} title={target ? `Void ${target.title}?` : ''} description="It comes off the tab and its stock goes back on the shelf. It cannot be undone." width="md">
+    <FloorDialog open={Boolean(target)} onClose={onClose} title={target ? `Void ${target.title}?` : ''} description="It comes off the tab and its stock goes back on the shelf. It cannot be undone." width="md" leading={<SheetIcon icon={IconBan} tone="stop" />}>
       {target ? (
         <ReasonForm
           key={target.lineId}

@@ -4,18 +4,15 @@ import { formatTime } from '@bliss/shared/format';
 import { AmbientCounterArtwork } from '@bliss/ui/components/artwork/counter-workspace';
 import { Eyebrow } from '@bliss/ui/components/atmosphere';
 import { BlissMark } from '@bliss/ui/components/brand';
-import { ConnectionChip } from '@bliss/ui/components/connection-chip';
-import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Dot, type Tone } from '@bliss/ui/components/status';
 import { LiveRegion } from '@bliss/ui/components/surface';
-import { cx } from '@bliss/ui/lib/cx';
 import { Photo } from '@bliss/ui/components/photo';
-import { IconBeer, IconCash, IconHistory, IconReceipt2, IconKeyboard, IconSearch, IconSettings, IconShoppingBag } from '@tabler/icons-react';
+import { IconBeer, IconCash, IconHistory, IconReceipt2, IconSettings, IconShoppingBag } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { BaseLayerContext } from '@/app/_pos/base-layer';
-import { Dock, type DockItem, DockLink, LiveClock, SurfaceSwitcher, TopBar } from '@/app/_pos/chrome';
+import { Dock, type DockItem, DockLink, LiveClock, StationStatus, SurfaceSwitcher, TopBar } from '@/app/_pos/chrome';
 import { UpdateBar } from '@/app/_pos/update-bar';
 import { useCounterWatch } from '@/app/_pos/watchers';
 import { useCounterTabs, useDrawerState, useTickets } from '@/lib/pos/counter-queries';
@@ -24,6 +21,7 @@ import { useDevice, useSession } from '@/lib/pos/session';
 import { useStaffPhotos } from '@/lib/pos/staff-photos';
 import { useSync } from '@/lib/pos/sync';
 import { ShortcutsSheet, useShortcut } from './shortcuts';
+import { StationSearch, openStationSearch } from '@/app/_pos/station-search';
 
 /**
  * The Counter shell. The same chrome as the Floor (app/_pos/chrome.tsx) with the Counter's own
@@ -57,16 +55,11 @@ export function CounterShell({ children }: { children: ReactNode }) {
     if (session === null) router.replace('/counter/sign-in');
   }, [session, router]);
 
-  // Alt and a number for the five views, Ctrl or Cmd K to find a tab. Digits alone are left to the
+  // Alt and a number for the five views. Ctrl or Cmd K and / open the search (station-search.tsx). Digits alone are left to the
   // tender keypad, which listens for them on the settle and sale screens.
   useEffect(() => {
     const routes = ['/counter/orders', '/counter/tabs', '/counter/sale', '/counter/drawer', '/counter/history'];
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        router.push('/counter/tabs?find=1');
-        return;
-      }
       if (e.altKey && /^[1-5]$/.test(e.key)) {
         e.preventDefault();
         router.push(routes[Number(e.key) - 1]!);
@@ -82,7 +75,7 @@ export function CounterShell({ children }: { children: ReactNode }) {
   useShortcut('s', () => router.push('/counter/sale'));
   useShortcut('d', () => router.push('/counter/drawer'));
   useShortcut('h', () => router.push('/counter/history'));
-  useShortcut('/', () => router.push('/counter/tabs?find=1'));
+  useShortcut('/', openStationSearch);
   useShortcut('?', () => setKeysOpen(true));
 
   if (!session) return <div className="h-dvh bg-page" aria-busy="true" />;
@@ -106,6 +99,7 @@ export function CounterShell({ children }: { children: ReactNode }) {
     { href: '/counter/sale', label: 'Sale', icon: IconShoppingBag, shortcut: 'Alt 3' },
     { href: '/counter/drawer', label: 'Drawer', icon: IconCash, dot: drawer === undefined ? undefined : drawerState.tone, dotLabel: drawerState.long, shortcut: 'Alt 4' },
     { href: '/counter/history', label: 'History', icon: IconHistory, shortcut: 'Alt 5' },
+    { href: '/counter/settings', label: 'Settings', icon: IconSettings, dot: sync.rejected > 0 ? 'stop' : undefined, dotLabel: 'needs attention' },
   ];
 
   const photo = photoOf(session.staffId);
@@ -125,50 +119,14 @@ export function CounterShell({ children }: { children: ReactNode }) {
               <Eyebrow as="p" className="hidden desktop:block">
                 {device?.label ?? 'Counter'}
               </Eyebrow>
-              <Link
-                href="/counter/tabs?find=1"
-                className="hidden h-control-sm w-[220px] items-center gap-8 rounded-md border border-transparent bg-control px-12 text-ink-subtle press-feedback hover:border-hairline tablet:flex desktop:w-[260px]"
-              >
-                <IconSearch size={14} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0" />
-                <span className="flex-1 truncate text-body-sm">Find a tab</span>
-                <kbd className="shrink-0 rounded-sm bg-sunken px-4 font-mono text-micro text-ink-muted">⌘K</kbd>
-              </Link>
+              <StationSearch surface="counter" />
             </>
           }
-          centre={<SurfaceSwitcher current="counter" />}
+          centre={<SurfaceSwitcher current="counter" console={session.roleKey === 'manager' || session.roleKey === 'owner'} />}
           end={
             <>
-              <Link
-                href="/counter/drawer"
-                aria-label={drawerState.long}
-                className={cx(
-                  'hidden h-control-sm shrink-0 items-center gap-8 rounded-dot px-12 text-body-sm press-feedback pad:flex',
-                  drawerState.tone === 'low' ? 'bg-low/10 text-low hover:bg-low/15' : 'bg-sunken/60 text-ink-muted hover:bg-control hover:text-ink',
-                )}
-              >
-                <Dot tone={drawerState.tone} />
-                <span className="whitespace-nowrap">{drawerState.short}</span>
-              </Link>
-              <span className="hidden tablet:block">
-                <ConnectionChip state={link} heldOrders={sync.heldOrders} compact />
-              </span>
+              <StationStatus link={link} heldOrders={sync.heldOrders} drawer={drawer === undefined ? undefined : { href: '/counter/drawer', ...drawerState }} />
               <LiveClock timeZone={tz} />
-              <button
-                type="button"
-                onClick={() => setKeysOpen(true)}
-                aria-label="Keyboard shortcuts"
-                title="Keyboard shortcuts (?)"
-                className="hidden size-control-sm shrink-0 items-center justify-center rounded-md text-ink-muted press-feedback hover:bg-control hover:text-ink mouse:flex"
-              >
-                <IconKeyboard size={18} stroke={ICON_STROKE} aria-hidden="true" />
-              </button>
-              <Link
-                href="/counter/settings"
-                aria-label="Settings for this counter"
-                className="flex size-control-sm shrink-0 items-center justify-center rounded-md text-ink-muted press-feedback hover:bg-control hover:text-ink"
-              >
-                <IconSettings size={18} stroke={ICON_STROKE} aria-hidden="true" />
-              </Link>
               <Link href="/counter/shift" aria-label={`${session.displayName}, view shift`} className="flex shrink-0 items-center gap-8 rounded-md p-2 press-feedback hover:bg-control/40">
                 <span
                   aria-hidden="true"

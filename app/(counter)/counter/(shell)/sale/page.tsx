@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchTarget } from '@/app/_pos/station-search';
 import { plural } from '@bliss/shared/format';
 import { type Cents, ZERO, formatKes, isPositive, multiplyByQty, subtract, sum } from '@bliss/shared/money';
 import { amountDue } from '@bliss/shared/settlement';
@@ -8,11 +9,11 @@ import { FilterChips } from '@bliss/ui/components/choice';
 import { InlineNotice, Skeleton } from '@bliss/ui/components/feedback';
 import { SearchField, Stepper } from '@bliss/ui/components/fields';
 import { ProductTile } from '@bliss/ui/components/floor/product-tile';
-import { Sheet } from '@bliss/ui/components/floor/sheet';
+import { Sheet, SheetIcon } from '@bliss/ui/components/floor/sheet';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Money } from '@bliss/ui/components/money';
 import { useNow } from '@bliss/ui/hooks';
-import { IconArrowRight, IconCheck, IconShoppingBag, IconTrash, IconPrinter } from '@tabler/icons-react';
+import { IconArrowRight, IconCheck, IconPrinter, IconShoppingBag, IconTrash } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { PageHeader } from '@/app/_pos/chrome';
@@ -109,6 +110,9 @@ export default function QuickSalePage() {
     },
     [catalogue],
   );
+  // Search adds here too, the same as a tap on the grid.
+  useSearchTarget('Adds to this sale', add);
+
 
   const onSettle = async () => {
     if (busy || !covered) return;
@@ -301,6 +305,7 @@ export default function QuickSalePage() {
         open={sheetOpen && !wide}
         onClose={() => setSheetOpen(false)}
         eyebrow="Quick sale"
+        leading={<SheetIcon icon={IconShoppingBag} />}
         title={cart.length === 0 ? 'This sale' : `${plural(count, 'item')} · ${formatKes(due, { decimals: 'whole' })}`}
         footer={
           <Button variant="primary" size="lg" fullWidth loading={busy} disabled={!covered} onClick={() => void onSettle()}>
