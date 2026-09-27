@@ -2,7 +2,7 @@
 
 import { notify } from '@bliss/ui/components/notices';
 import type { ServiceTable } from '@bliss/shared/domain';
-import { placeLabel } from '@bliss/shared/trade';
+import { placeLabel, tabLabel, walkUpLabel } from '@bliss/shared/trade';
 import { Button } from '@bliss/ui/components/button';
 import { Stepper, TextField } from '@bliss/ui/components/fields';
 import { InlineNotice } from '@bliss/ui/components/feedback';
@@ -13,7 +13,8 @@ import { seatBgClass } from '@bliss/ui/lib/seat';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { openTab } from '@/lib/pos/mutations';
-import { usePlaceName } from '@/lib/pos/queries';
+import { posDb } from '@/lib/pos/db';
+import { useNextWalkUpNo, usePlaceName } from '@/lib/pos/queries';
 
 /** A place's name for people: Table 4, Stool 2, or Walk up. docs/14 section 2. */
 export function tableLabel(table: ServiceTable | null): string {
@@ -137,6 +138,7 @@ export function OpenTabSheet({
 }) {
   const router = useRouter();
   const placeName = usePlaceName();
+  const nextWalkUp = useNextWalkUpNo();
   const [guests, setGuests] = useState(table?.seats ?? 2);
   const [name, setName] = useState('');
   const [pending, setPending] = useState(false);
@@ -158,10 +160,11 @@ export function OpenTabSheet({
     setPending(true);
     try {
       const tabId = await openTab({ tableId: table?.id ?? null, zoneId, guestCount: guests, name: name || null });
+      const opened = table ? null : await posDb().tabs.get(tabId);
       onClose();
       notify({
         key: `open:${tabId}`,
-        title: `${table ? placeName(table) : name || 'Walk-up tab'} is open`,
+        title: `${table ? placeName(table) : tabLabel({ name: opened?.name, walkUpNo: opened?.walkUpNo })} is open`,
         body: guests === 1 ? 'One guest. Add from the grid, then fire.' : `${guests} seats. Pick a seat, add from the grid, then fire.`,
       });
       router.push(`/floor/tabs/${tabId}`);
@@ -172,7 +175,7 @@ export function OpenTabSheet({
     }
   };
 
-  const title = table ? `Open a tab on ${placeName(table)}` : 'Open a walk-up tab';
+  const title = table ? `Open a tab on ${placeName(table)}` : `Open ${walkUpLabel(nextWalkUp)}`;
 
   const footerActions = (
     <>
@@ -198,7 +201,7 @@ export function OpenTabSheet({
           <GuestSeatSelector guests={guests} onChange={setGuests} />
         </SheetSection>
 
-        <TextField label="Tab name" helper="Optional. It shows on the tab and the ticket." placeholder="A birthday, the corner booth" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
+        <TextField label="Tab name" helper={table ? 'Optional. It shows on the tab and the ticket.' : `Optional. Without one, the tab goes by ${walkUpLabel(nextWalkUp)}.`} placeholder="A birthday, the corner booth" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
 
         {/* Error */}
         {error ? (

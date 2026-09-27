@@ -107,7 +107,7 @@ export function useTickets(): { waiting: Ticket[]; poured: Ticket[] } | undefine
       tickets.push({
         orderId: order.id,
         tabId: tab.id,
-        label: tabLabel({ tableLabel: table?.label, name: tab.name }),
+        label: tabLabel({ tableLabel: table?.label, name: tab.name, walkUpNo: tab.walkUpNo }),
         tabNumber: tab.tabNumber,
         orderNumber: order.orderNumber,
         waiter: names.get(tab.assignedTo) ?? '',
@@ -175,7 +175,7 @@ export function useCounterTabs(): CounterTab[] | undefined {
         const due = billableLines(own, billed);
         return {
           tabId: tab.id,
-          label: tabLabel({ tableLabel: table?.label, name: tab.name }),
+          label: tabLabel({ tableLabel: table?.label, name: tab.name, walkUpNo: tab.walkUpNo }),
           tabNumber: tab.tabNumber,
           waiter: names.get(tab.assignedTo) ?? '',
           openedAt: tab.openedAt,
@@ -289,7 +289,7 @@ export function useSettleView(tabId: string): SettleView | null | undefined {
 
     return {
       tabId,
-      label: tabLabel({ tableLabel: table?.label, name: tab.name }),
+      label: tabLabel({ tableLabel: table?.label, name: tab.name, walkUpNo: tab.walkUpNo }),
       tabNumber: tab.tabNumber,
       waiter: names.get(tab.assignedTo) ?? '',
       openedAt: tab.openedAt,

@@ -33,15 +33,18 @@ export async function Workspace({ workspace, children }: { workspace: WorkspaceK
 export function ViewHeader({ page, actions, aside, badge }: { page: string; actions?: ReactNode; aside?: ReactNode; badge?: ReactNode }) {
   const { page: p, workspace } = pageByHref(page);
   const counts = workspace.pages.length > 1 ? navCounts().pages : {};
-  const nav =
-    workspace.pages.length > 1 ? (
-      <PillTabs
-        label={`${workspace.label} pages`}
-        tabs={workspace.pages.map((x) => {
-          const c = counts[x.href];
-          return { href: x.href, label: x.label, count: c?.count || undefined, attention: c?.tone === 'attention', stop: c?.tone === 'stop' };
-        })}
-      />
-    ) : null;
-  return <PageHeader eyebrow={workspace.label} title={p.label} description={p.description} actions={actions} aside={aside} badge={badge} nav={nav} />;
+  return (
+    <div className="flex flex-col gap-24">
+      {workspace.pages.length > 1 ? (
+        <PillTabs
+          label={`${workspace.label} pages`}
+          tabs={workspace.pages.map((x) => {
+            const c = counts[x.href];
+            return { href: x.href, label: x.label, count: c?.count || undefined, attention: c?.tone === 'attention', stop: c?.tone === 'stop' };
+          })}
+        />
+      ) : null}
+      <PageHeader title={p.label} description={p.description} actions={actions} aside={aside} badge={badge} />
+    </div>
+  );
 }

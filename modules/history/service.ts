@@ -136,7 +136,7 @@ export function history(query: HistoryQuery): HistoryResult {
       return {
         id: t.id,
         businessDate: t.businessDate,
-        label: tabLabel({ tableLabel: t.serviceTableId ? tableLabel.get(t.serviceTableId) : null, name: t.name }),
+        label: tabLabel({ tableLabel: t.serviceTableId ? tableLabel.get(t.serviceTableId) : null, name: t.name, walkUpNo: t.walkUpNo }),
         tabNumber: t.tabNumber,
         zone: zoneName.get(t.zoneId) ?? '',
         waiterId: t.assignedTo,

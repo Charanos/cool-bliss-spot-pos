@@ -145,7 +145,7 @@ export function summarise(tab: Tab): TabSummary {
   const orders = ordersByTab().get(tab.id) ?? [];
   return {
     tab,
-    tableLabel: tabLabel({ tableLabel: tableById(tab.serviceTableId)?.label, name: tab.name }),
+    tableLabel: tabLabel({ tableLabel: tableById(tab.serviceTableId)?.label, name: tab.name, walkUpNo: tab.walkUpNo }),
     zoneName: tradeTables().zones.find((z) => z.id === tab.zoneId)?.name ?? '',
     seats,
     sharedTotal: sum(lines.filter((l) => l.tabSeatId === null).map((l) => l.lineTotalCents)),

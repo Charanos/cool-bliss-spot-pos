@@ -33,13 +33,13 @@ export async function searchConsole(query: string): Promise<SearchHit[]> {
   const tables = new Map(trade.tables().map((t) => [t.id, placeLabel(t.label)]));
   const tabs = trade.readTables().tabs;
   const tabHits = tabs
-    .filter((t) => (number !== null && t.tabNumber === number) || tabLabel({ tableLabel: t.serviceTableId ? tables.get(t.serviceTableId) : null, name: t.name }).toLowerCase().includes(q))
+    .filter((t) => (number !== null && t.tabNumber === number) || tabLabel({ tableLabel: t.serviceTableId ? tables.get(t.serviceTableId) : null, name: t.name, walkUpNo: t.walkUpNo }).toLowerCase().includes(q))
     .sort((a, b) => b.openedAt - a.openedAt)
     .slice(0, PER_KIND);
   for (const t of tabHits) {
     hits.push({
       kind: 'tab',
-      label: `${tabLabel({ tableLabel: t.serviceTableId ? tables.get(t.serviceTableId) : null, name: t.name })}${t.tabNumber ? `, tab ${t.tabNumber}` : ''}`,
+      label: `${tabLabel({ tableLabel: t.serviceTableId ? tables.get(t.serviceTableId) : null, name: t.name, walkUpNo: t.walkUpNo })}${t.tabNumber ? `, tab ${t.tabNumber}` : ''}`,
       detail: `${t.status === 'settled' ? 'Settled' : t.status === 'voided' ? 'Voided' : 'Open'} · ${formatIsoDate(t.businessDate)}`,
       href: `/console/trade/tabs/${t.id}`,
     });
