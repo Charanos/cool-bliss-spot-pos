@@ -35,7 +35,7 @@ export const CHECKS: { key: CheckKey; label: string; needed: boolean; detail: st
   { key: 'storage', label: 'Keeps orders on the device', needed: true, detail: 'IndexedDB, for working through a dropped connection' },
   { key: 'offline', label: 'Opens without a connection', needed: true, detail: 'A service worker, which serves Bliss when the Wi-Fi drops' },
   { key: 'tint', label: 'Soft colour tints', needed: false, detail: 'Read directly, or through the build fallback on older Safari' },
-  { key: 'blur', label: 'Frosted glass', needed: false, detail: 'Off in the Lite profile, which suits slower devices' },
+  { key: 'blur', label: 'Frosted glass', needed: false, detail: 'Behind sheets everywhere; Lite keeps small surfaces solid on slower devices' },
   { key: 'wakeLock', label: 'Keeps the screen awake', needed: false, detail: 'Otherwise set Auto-Lock to Never in the device settings' },
 ];
 
