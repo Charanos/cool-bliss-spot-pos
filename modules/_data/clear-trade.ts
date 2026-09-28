@@ -7,7 +7,7 @@ import type { StockBatch, StockMovement } from '@bliss/shared/domain';
  * of stays: tables and zones, staff, roles and PINs, devices, the menu and its prices, suppliers,
  * deliveries, counts and holds, and the audit trail.
  */
-export const TRADE_COLLECTIONS = ['tabs', 'seats', 'orders', 'lines', 'lineModifiers', 'bills', 'billLines', 'tenders', 'shifts', 'drawerSessions', 'cashMovements', 'deadLetters'] as const satisfies readonly (keyof Dataset)[];
+export const TRADE_COLLECTIONS = ['tabs', 'seats', 'orders', 'lines', 'lineModifiers', 'bills', 'billLines', 'tenders', 'shifts', 'drawerSessions', 'cashMovements', 'deadLetters', 'notifications'] as const satisfies readonly (keyof Dataset)[];
 
 /** Stock that moved because of a sale: the sale, its reversal, what was brought to the bar for it, and what was covered. */
 export function isTradeMovement(m: StockMovement): boolean {

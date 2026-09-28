@@ -7,7 +7,9 @@ import * as identity from '@/modules/identity/service';
 import * as sync from '@/modules/sync/service';
 import { isUserFacing } from '@/modules/_data/errors';
 import { clearTrade } from '@/modules/trade/clear';
-import { type ActionResult, id, reason, runAction } from '../_lib/action';
+import { type ActionResult, id, kes, reason, runAction } from '../_lib/action';
+import * as notify from '@/modules/notify/service';
+import { kickNotifications } from '@/modules/notify/send';
 
 /** Settings actions: devices, sync conflicts and personal preferences. */
 
@@ -36,12 +38,30 @@ export async function clearTradeAction(raw: { confirm: string; reason: string })
   try {
     const s = await clearTrade({ actor, reason: raw.reason });
     revalidatePath('/console', 'layout');
+    kickNotifications();
     return { ok: true, summary: `${s.tabs} tabs, ${s.bills} bills, ${s.shifts} shifts and ${s.drawers} drawers cleared; ${s.stockMovements} stock movements from sales put back.` };
   } catch (error) {
     if (isUserFacing(error)) return { ok: false, message: (error as Error).message };
     console.error('[clear trade]', error);
     return { ok: false, message: 'That did not go through, and nothing was changed. Try again in a moment.' };
   }
+}
+
+/** WhatsApp alerts: who gets them, which, and the void amount. docs/20. */
+export async function saveNotifySettings(raw: { recipients: { name: string; phone: string; active: boolean }[]; alerts: Record<string, boolean>; voidAlert: string }): Promise<ActionResult> {
+  const schema = z.object({
+    recipients: z.array(z.object({ name: z.string().max(60), phone: z.string().max(30), active: z.boolean() })).max(10, 'Ten numbers at most.'),
+    alerts: z.object({ night_summary: z.boolean(), drawer_variance: z.boolean(), void_refund: z.boolean(), stock_out: z.boolean(), trade_cleared: z.boolean() }),
+    voidAlert: kes('the void amount'),
+  });
+  return runAction(schema, raw, (input, actor) => {
+    notify.updateSettings({ recipients: input.recipients, alerts: input.alerts, voidAlertCents: input.voidAlert, actor });
+  });
+}
+
+/** A test message with WhatsApp's own template, to one number or every active one. */
+export async function sendTestAlert(raw: { phone: string | null }): Promise<ActionResult<{ queued: number }>> {
+  return runAction(z.object({ phone: z.string().max(30).nullable() }), raw, (input, actor) => ({ queued: notify.queueTest({ phone: input.phone, actor }) }));
 }
 
 export async function setTheme(theme: ThemePreference): Promise<void> {

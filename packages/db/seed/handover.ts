@@ -92,6 +92,7 @@ export function buildHandoverDataset(input: { now?: number; ownerPinHash: string
     availabilityVersion: 1,
     epoch: `handover:${clock.current}:${now.toString(36)}`,
     cashMovements: [],
+    notifications: [],
     changeSeq: 0,
     changes: [],
     applied: new Set<string>(),

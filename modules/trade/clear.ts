@@ -7,6 +7,7 @@ import { dataset } from '../_data/source';
 import { clearTradeStored, storeEnabled, withWrite } from '../_data/store';
 import * as audit from '../audit/service';
 import * as identity from '../identity/service';
+import '../notify/triggers';
 
 /**
  * Clear trade, for the end of a trial run with the staff: every tab, order, bill, shift and drawer

@@ -11,6 +11,7 @@ import * as inventory from '@/modules/inventory/service';
 import * as pricing from '@/modules/pricing/service';
 import { bootstrap, changesSince, deviceDrawers, rowsForTabs } from '@/modules/sync/apply';
 import * as trade from '@/modules/trade/service';
+import { kickNotifications } from '@/modules/notify/send';
 
 export const dynamic = 'force-dynamic';
 
@@ -123,5 +124,6 @@ export async function GET(request: Request) {
     }
   }
 
+  kickNotifications({ idle: true });
   return wireResponse(body);
 }

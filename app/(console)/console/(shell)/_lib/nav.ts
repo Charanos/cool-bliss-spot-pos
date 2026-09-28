@@ -153,6 +153,7 @@ export const WORKSPACES: readonly NavWorkspace[] = [
       { href: '/console/settings/outlet', label: 'Outlet', description: 'The outlet\'s name, tax details and when the business day ends.', keywords: ['venue', 'vat', 'cutover'] },
       { href: '/console/settings/locations', label: 'Stock locations', description: 'Where stock is kept: where deliveries land and what the floor sells from.', keywords: ['store room', 'bar', 'shelf'] },
       { href: '/console/settings/devices', label: 'Devices', description: 'The tablets and counters signed in to this outlet.', keywords: ['tablets', 'stations'] },
+      { href: '/console/settings/whatsapp', label: 'WhatsApp', description: 'Alerts to the owner\'s WhatsApp: the night\'s summary, drawers out, large voids, items finished.', keywords: ['notifications', 'alerts', 'messages'] },
       { href: '/console/settings/sync', label: 'Sync', description: 'Orders a station sent that the server could not accept.', keywords: ['unsent', 'dead letters'] },
       { href: '/console/settings/audit', label: 'Audit trail', description: 'Every change made in the Console, who made it, and what it was before.', keywords: ['log', 'history'] },
     ],

@@ -7,6 +7,8 @@ import { isUserFacing } from '@/modules/_data/errors';
 import { withWrite } from '@/modules/_data/store';
 import * as identity from '@/modules/identity/service';
 import type { ActionResult } from './action-result';
+import '@/modules/notify/triggers';
+import { kickNotifications } from '@/modules/notify/send';
 
 export type { ActionResult } from './action-result';
 
@@ -38,6 +40,7 @@ export async function runAction<S extends z.ZodType, R extends object | void>(
   try {
     const result = await withWrite(() => work(parsed.data, actor));
     for (const path of options.revalidate ?? ['/console']) revalidatePath(path, 'layout');
+    kickNotifications();
     return { ok: true, ...(result ?? {}) } as ActionResult<R extends object ? R : object>;
   } catch (error) {
     if (isUserFacing(error)) return { ok: false, message: error.message };

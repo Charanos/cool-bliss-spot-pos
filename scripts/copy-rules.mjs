@@ -8,7 +8,7 @@ import { join } from 'node:path';
 
 /** Words that are capitalised wherever they appear: names, places, units, acronyms. */
 const PROPER = new Set(
-  'Bliss Console Floor Counter Cool Spot KES VAT PIN PINs CSV GRN PO SKU M-Pesa Mpesa Nairobi Kenya Tusker Tabler Friday Saturday Sunday Monday Tuesday Wednesday Thursday Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec Owner Manager OK ID Wanjiru Jane Ctrl Cmd Enter Escape Tab Shift Control Command Safaricom Guinness Smirnoff Jameson Coke Seat Table'.split(' '),
+  'Bliss Console Floor Counter Cool Spot KES VAT PIN PINs CSV GRN PO SKU M-Pesa Mpesa Nairobi Kenya Tusker Tabler Friday Saturday Sunday Monday Tuesday Wednesday Thursday Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec Owner Manager OK ID Wanjiru Jane Ctrl Cmd Enter Escape Tab Shift Control Command Safaricom WhatsApp Meta Kenyan Guinness Smirnoff Jameson Coke Seat Table'.split(' '),
 );
 const SMALL = new Set('a an and as at by for from in into of on or per the to vs with'.split(' '));
 

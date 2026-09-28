@@ -3,6 +3,7 @@ import { currentSeq } from '@/modules/_data/changes';
 import { dataset } from '@/modules/_data/source';
 import { fresh } from '@/modules/_data/store';
 import * as identity from '@/modules/identity/service';
+import { kickNotifications } from '@/modules/notify/send';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,5 +19,6 @@ export async function GET(request: Request) {
   // Trade rows, the menu, availability, stock, the drawers and the audit trail (which every notable
   // change in the Console writes to): any of them moving means the page may read differently.
   const parts = [d.epoch, currentSeq(), d.catalogueVersion, d.availabilityVersion, d.movements.length, d.cashMovements.length, d.auditEvents.length];
+  kickNotifications({ idle: true });
   return wireResponse({ ok: true, pulse: parts.join(':') });
 }
