@@ -32,7 +32,7 @@ export function RecipeDialog({ open, onClose, target, items, stockItems }: { ope
     setVariantId(target?.variantId ?? items[0]?.value ?? '');
     setName(target?.name ?? '');
     setLines(target?.parts.length ? target.parts.map((p) => ({ key: `r${(nextKey += 1)}`, component: p.componentVariantId, qty: String(p.qty), ml: p.volumeMl ? String(p.volumeMl) : '', waste: String(p.wastagePct) })) : [blank()]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when it opens
+     
     // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
   }, [stamp]);
   const set = (key: string, patch: Partial<Line>) => setLines((all) => all.map((l) => (l.key === key ? { ...l, ...patch } : l)));

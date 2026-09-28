@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { DomainError } from '@/modules/_data/errors';
 import * as manage from '@/modules/catalogue/manage';
+import * as catalogue from '@/modules/catalogue/service';
 import * as inventoryManage from '@/modules/inventory/manage';
 import * as pricing from '@/modules/pricing/service';
 import * as pricingManage from '@/modules/pricing/manage';
@@ -50,7 +51,12 @@ const productFields = {
   abv: decimal('alcohol by volume').nullable(),
   defaultSupplierId: id('supplier').nullable(),
   imageKey: optionalText(200, 'The photograph'),
+  /** What one bottle or can costs to buy. Blank leaves it as it is. */
+  unitCost: kes('the unit cost').nullable().optional(),
 };
+
+/** The stocked item a product's cost belongs to: its sealed bottle or can. */
+const stockOf = (productId: string) => catalogue.variants().find((v) => v.productId === productId && v.kind === 'sealed') ?? catalogue.variants().find((v) => v.productId === productId);
 
 const activeSuppliers = () => procurement.suppliers().map((s) => ({ id: s.id, status: s.status }));
 
@@ -66,6 +72,7 @@ export async function createProduct(raw: {
   imageKey: string | null;
   firstVariant: { name: string; kind: 'sealed' | 'serve'; serveVolumeMl: number | null; depletionFactor: number };
   basePrice: string;
+  unitCost?: string | null;
   requestId?: string | null;
 }): Promise<ActionResult<{ id: string }>> {
   const schema = z.object({
@@ -83,6 +90,8 @@ export async function createProduct(raw: {
       const product = manage.createProduct({ ...input, sku: input.sku ?? '', basePriceCents: input.basePrice, requestId: input.requestId ?? null, actor }, activeSuppliers(), (variantId) => {
         pricing.setPrice({ listId: base.id, variantId, priceCents: input.basePrice, reason: 'The first price, set when it was added', actor });
       });
+      const stock = stockOf(product.id);
+      if (input.unitCost && stock) inventoryManage.setUnitCost({ variantId: stock.id, costCents: input.unitCost, actor });
       return { id: product.id };
     },
     { revalidate: MENU },
@@ -91,7 +100,16 @@ export async function createProduct(raw: {
 
 export async function updateProduct(raw: { id: string } & Record<string, unknown>): Promise<ActionResult> {
   const schema = z.object({ id: id('product'), ...productFields });
-  return runAction(schema, raw, (input, actor) => void manage.updateProduct({ ...input, sku: input.sku ?? '', actor }, activeSuppliers()), { revalidate: MENU });
+  return runAction(
+    schema,
+    raw,
+    (input, actor) => {
+      manage.updateProduct({ ...input, sku: input.sku ?? '', actor }, activeSuppliers());
+      const stock = stockOf(input.id);
+      if (input.unitCost !== null && input.unitCost !== undefined && stock) inventoryManage.setUnitCost({ variantId: stock.id, costCents: input.unitCost, actor });
+    },
+    { revalidate: MENU },
+  );
 }
 
 export async function setProductStatus(raw: { id: string; status: 'active' | 'archived'; reason: string }): Promise<ActionResult> {

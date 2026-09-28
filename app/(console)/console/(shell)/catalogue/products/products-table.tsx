@@ -28,6 +28,8 @@ export interface ProductRow extends ProductDraft {
   tracked: boolean;
   supplier: string | null;
   onHand: number | null;
+  /** What one unit costs to buy; null when not set, or not shown to this person. */
+  costCents: Cents | null;
   unit: string;
   status: 'active' | 'archived';
 }
@@ -181,6 +183,7 @@ export function ProductsTable({ rows, categories, suppliers, canEdit }: { rows: 
             <KeyRows>
               <KeyRow label="Sold as">{r.serves.join(', ') || 'Not sold yet'}</KeyRow>
               <KeyRow label="Bottle">{r.containerVolumeMl ? `${r.containerVolumeMl}ml` : 'Not a bottle'}</KeyRow>
+              <KeyRow label="Unit cost">{r.costCents === null ? 'Not set' : <Money value={r.costCents} currency={false} size="num-md" />}</KeyRow>
               <KeyRow label="From">{r.fromPrice === null ? 'No price' : <Money value={r.fromPrice} currency={false} size="num-md" decimals="whole" />}</KeyRow>
               <KeyRow label="On hand" tone={r.onHand !== null && r.onHand <= r.effectiveThreshold ? 'low' : undefined}>
                 {r.onHand === null ? 'Not kept' : `${r.onHand} ${r.unit}`}

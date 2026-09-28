@@ -1,6 +1,8 @@
 import 'server-only';
 
-import type { StockLocation, StockLocationKind } from '@bliss/shared/domain';
+import type { StockLocation, StockLocationKind, StockMovement } from '@bliss/shared/domain';
+import { type Cents, formatDecimal, isNegative } from '@bliss/shared/money';
+import { businessDate } from '@bliss/shared/time';
 import { createUuidV7 } from '@bliss/shared/id';
 import { type Actor, requireReasoned } from '@bliss/shared/reason';
 import type { Recipe } from '@bliss/db/seed/catalogue';
@@ -10,7 +12,7 @@ import * as audit from '../audit/service';
 import * as catalogue from '../catalogue/service';
 import * as identity from '../identity/service';
 import { inventoryTables } from './schema';
-import { onHand } from './service';
+import { averageCost, onHand } from './service';
 
 /**
  * Managing what stock is made of and where it is kept: recipes, pour specs and stock locations.
@@ -171,4 +173,46 @@ export function setLocationStatus(input: { id: string; status: 'active' | 'archi
   const before = { status: location.status };
   location.status = input.status;
   record(actor, input.status === 'archived' ? 'location.archived' : 'location.restored', 'stock_location', location.id, before, { status: location.status }, reason);
+}
+
+/* ------------------------------------------------------------------- unit cost */
+
+/**
+ * Set what one unit of an item costs to buy, by hand: before its first delivery, or when a price
+ * list from the supplier changes it. Recorded as a movement that moves no stock, so the ledger stays
+ * the one place a cost comes from, and the next delivery's own cost takes over from it.
+ */
+export function setUnitCost(input: { variantId: string; costCents: Cents; actor: Actor }): void {
+  identity.assertCan(input.actor.staffId, 'price.write', 'changing what items cost');
+  if (isNegative(input.costCents)) throw new DomainError('A cost cannot be below zero.');
+  const stock = catalogue.stockVariantFor(input.variantId)?.stockVariantId ?? input.variantId;
+  const variant = catalogue.variantById(stock);
+  if (!variant) throw new DomainError('That item is no longer in the catalogue.');
+  const before = averageCost(stock);
+  if (before === input.costCents) return;
+  const { locations, movements } = inventoryTables();
+  const location = locations.find((l) => l.isDefaultReceipt && l.status === 'active') ?? locations.find((l) => l.status === 'active');
+  if (!location) throw new DomainError('Add a stock location first, in Settings, Locations.');
+  const outlet = identity.outlet();
+  const now = Date.now();
+  const movement: StockMovement = {
+    id: createId(),
+    outletId: outlet.id,
+    businessDate: businessDate(now, outlet.timezone, outlet.businessDayCutover),
+    productVariantId: stock,
+    stockLocationId: location.id,
+    stockBatchId: null,
+    qtyDelta: 0,
+    volumeDeltaMl: null,
+    unitCostCents: input.costCents,
+    movementType: 'cost_set',
+    sourceType: 'cost',
+    sourceId: null,
+    reason: 'Unit cost set in the Console',
+    occurredAt: now,
+    createdBy: input.actor.staffId,
+    deviceId: null,
+  };
+  movements.push(movement);
+  record(input.actor, 'stock.cost_set', 'product_variant', stock, { unitCost: formatDecimal(before) }, { unitCost: formatDecimal(input.costCents) });
 }

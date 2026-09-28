@@ -1,7 +1,7 @@
 'use client';
 
 import { formatQty } from '@bliss/shared/format';
-import { formatDecimal, sum } from '@bliss/shared/money';
+import { formatDecimal, isPositive, sum } from '@bliss/shared/money';
 import { ActionPill } from '@bliss/ui/components/console/action-pill';
 import { Card, CardMedia, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { IconButton } from '@bliss/ui/components/button';
@@ -79,7 +79,7 @@ export function StockTable({
         </span>
       ),
     },
-    { key: 'unitCost', header: 'Unit cost', width: '96px', align: 'right', sortValue: (r) => r.unitCost, csv: (r) => formatDecimal(r.unitCost), cell: (r) => <Money value={r.unitCost} currency={false} size="num-md" tone="muted" /> },
+    { key: 'unitCost', header: 'Unit cost', width: '96px', align: 'right', sortValue: (r) => r.unitCost, csv: (r) => formatDecimal(r.unitCost), cell: (r) => (isPositive(r.unitCost) ? <Money value={r.unitCost} currency={false} size="num-md" tone="muted" /> : <span className="text-body-sm text-ink-subtle">Not set</span>) },
     { key: 'value', header: 'Value', width: '110px', align: 'right', sortValue: (r) => r.value, csv: (r) => formatDecimal(r.value), cell: (r) => <Money value={r.value} currency={false} size="num-md" decimals="whole" /> },
     { key: 'velocity', header: 'Sells a day', width: '100px', align: 'right', sortValue: (r) => r.velocity, csv: (r) => r.velocity.toFixed(2), cell: (r) => <NumCell tone="muted">{r.velocity.toFixed(r.velocity < 10 ? 1 : 0)}</NumCell> },
     {
@@ -225,12 +225,8 @@ export function StockTable({
               <KeyRow label="On hand" tone={r.onHand <= 0 ? 'stop' : undefined}>
                 {formatQty(r.onHand, r.unit === 'bottles' ? 2 : 0)} {r.unit === 'bottles' ? 'btl' : ''}
               </KeyRow>
-              <KeyRow label="Unit cost">
-                <Money value={r.unitCost} currency={false} size="num-md" tone="muted" />
-              </KeyRow>
-              <KeyRow label="Total value">
-                <Money value={r.value} currency={false} size="num-md" decimals="whole" />
-              </KeyRow>
+              <KeyRow label="Unit cost">{isPositive(r.unitCost) ? <Money value={r.unitCost} currency={false} size="num-md" tone="muted" /> : 'Not set'}</KeyRow>
+              <KeyRow label="Total value">{isPositive(r.unitCost) ? <Money value={r.value} currency={false} size="num-md" decimals="whole" /> : 'Needs a cost'}</KeyRow>
               <KeyRow label="Sells a day">{r.velocity.toFixed(r.velocity < 10 ? 1 : 0)}</KeyRow>
               <KeyRow label="Lasts" tone={r.daysCover !== null && r.daysCover < 2 ? 'low' : undefined}>
                 <span className="inline-flex items-center gap-8">

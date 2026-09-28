@@ -51,7 +51,7 @@ pnpm db:handover --yes
 Replaces everything stored with the outlet as handed over (docs/11 D-31): the outlet and its
 settings, the roles, the stock locations, the Standard price list, and one person, Dan, the
 owner. It also carries the real menu from the Cool Bliss stock sheet (`packages/db/seed/menu.ts`):
-six categories and 176 products, each priced on the Standard list and opened with one on the Bar
+six categories and 177 products, each priced on the Standard list and opened with one on the Bar
 shelf until the first stock take replaces it. Every other product, category, supplier, zone, table,
 device, tab, bill, count, shift and audit entry goes. Dan signs in to the Console with PIN 111111 (or `BLISS_OWNER_PIN`, four to eight
 digits, if set when running it) and should change it at once under his name in the rail. Then, in

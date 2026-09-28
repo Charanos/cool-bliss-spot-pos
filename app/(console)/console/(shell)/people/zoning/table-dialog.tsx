@@ -36,7 +36,7 @@ export function TableDialog({ target, zones, open, onClose }: { target: ServiceT
     setSeats(String(target?.seats ?? 4));
     setStatus(target?.status ?? 'available');
     setError('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when the dialog opens on a target
+     
     // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
   }, [stamp]);
 
