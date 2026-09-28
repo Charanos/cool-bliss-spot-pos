@@ -201,7 +201,7 @@ export function ReceiptPay({ parts, currency = 'KES', paid = false }: { parts: r
                 <span className="text-[10px] uppercase tracking-[0.2em]">Paid</span>
               ) : p.amount ? (
                 <span className="font-mono text-[15px] font-print leading-[1.2] tabular-nums">
-                  <span className="text-[10px] font-normal">{currency} </span>
+                  <span className="text-[10px] font-regular">{currency} </span>
                   {p.amount}
                 </span>
               ) : null}
