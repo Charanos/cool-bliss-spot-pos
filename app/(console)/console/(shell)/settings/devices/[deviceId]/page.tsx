@@ -113,7 +113,7 @@ export default async function DevicePage({ params }: { params: Promise<{ deviceI
         </Callout>
       ) : device.pairingPending ? (
         <Callout tone="info" title="Waiting for its pairing code">
-          Nobody can sign in on it until the code shown when it was registered is entered on the device. If the code is lost, ask for a new one.
+          Nobody can sign in on it until the code shown when it was registered is entered on the device, where its sign-in screen asks to pair it. If the code is lost, ask for a new one.
         </Callout>
       ) : null}
 

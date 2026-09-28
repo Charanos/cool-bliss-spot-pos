@@ -97,6 +97,8 @@ export function ModifierSheet({
 
   const target = seatPhrase(detail, detail.selected);
   const hasModifiers = Boolean(data?.groups && data.groups.length > 0);
+  // A required choice, such as a shisha flavour, is made before the item can be added.
+  const missing = data?.groups.find(({ group }) => group.minSelect > 0 && (picked[group.id]?.length ?? 0) < group.minSelect)?.group ?? null;
 
   const footerActions = (
     <>
@@ -106,8 +108,9 @@ export function ModifierSheet({
         variant="primary"
         size="lg"
         loading={pending}
+        disabled={Boolean(missing)}
         onClick={async () => {
-          if (!variantId) return;
+          if (!variantId || missing) return;
           setPending(true);
           try {
             await onAdd({ variantId, qty, modifiers: choices, note: note.trim() || null });
@@ -118,7 +121,7 @@ export function ModifierSheet({
         shape="pill"
         className="px-32"
       >
-        {price ? `Add to ${target} · ${formatKes(price.lineTotalCents, { decimals: 'whole' })}` : `Add to ${target}`}
+        {missing ? `Choose the ${missing.name.toLowerCase()}` : price ? `Add to ${target} · ${formatKes(price.lineTotalCents, { decimals: 'whole' })}` : `Add to ${target}`}
       </Button>
     </>
   );
@@ -135,7 +138,7 @@ export function ModifierSheet({
     >
       <div className="flex flex-col gap-24 py-4">
         {data?.groups.map(({ group, modifiers }) => (
-          <SheetSection key={group.id} label={group.name} aside={group.maxSelect > 1 ? `Up to ${group.maxSelect}` : 'Choose one'}>
+          <SheetSection key={group.id} label={group.name} aside={group.maxSelect > 1 ? (group.minSelect > 0 ? `Choose one, or up to ${group.maxSelect}` : `Up to ${group.maxSelect}`) : 'Choose one'}>
             <div className="flex flex-wrap gap-8" role="group" aria-label={group.name}>
               {modifiers.map((m) => (
                 <ChoiceChip
@@ -160,7 +163,7 @@ export function ModifierSheet({
 
         <TextField
           label="Note for the bar"
-          helper="Optional. The bar sees it on the ticket."
+          helper="Optional. Anything else the guest asked for; the bar sees it on the ticket."
           placeholder="No ice, with the food"
           value={note}
           maxLength={140}

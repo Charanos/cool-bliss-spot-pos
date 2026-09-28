@@ -10,7 +10,7 @@ import { bumpCatalogueVersion } from '../_data/source';
 import * as audit from '../audit/service';
 import { hashPin, verifyPin } from './credentials';
 import { identityTables } from './schema';
-import { assertCan, can, outlet, rankOf, roleFor, staffList } from './service';
+import { assertCan, can, outlet, rankOf, roleFor, staffById, staffList } from './service';
 
 /**
  * Setting the venue up: the outlet's details, roles, and the devices that trade. docs/19, plan C4.
@@ -260,6 +260,62 @@ export function newPairingCode(input: { deviceId: string; actor: Actor }): { pai
 }
 
 /** Whether a device is waiting for its pairing code before anyone can sign in on it. */
+/**
+ * The browser a manager or owner uses to open a station from the Console. The Console sign-in has
+ * already proved who they are, so the device is paired from the start; it is theirs alone, reused
+ * whenever that browser comes back (`knownId`, kept in a cookie there), and audited when made. Any
+ * other device, or one withdrawn, is never reused.
+ */
+export function browserDeviceFor(input: { staffId: string; kind: 'floor' | 'counter'; knownId: string | null }): Device {
+  const t = identityTables();
+  const known = input.knownId ? t.devices.find((d) => d.id === input.knownId) : null;
+  if (known && known.status === 'active' && known.kind === input.kind && known.personalTo === input.staffId) return known;
+  const person = staffById(input.staffId);
+  const first = (person?.displayName ?? 'Manager').split(/\s+/)[0]!.slice(0, 12);
+  const surface = input.kind === 'floor' ? 'Floor' : 'Counter';
+  const base = `${first}'s browser, ${surface}`;
+  let label = base;
+  for (let n = 2; t.devices.some((d) => d.status === 'active' && d.label.toLowerCase() === label.toLowerCase()); n += 1) label = `${base} ${n}`;
+  const device: Device = {
+    id: createId(),
+    outletId: outlet().id,
+    label,
+    kind: input.kind,
+    enrolledAt: Date.now(),
+    enrolledBy: input.staffId,
+    lastSeenAt: null,
+    lastEventSeq: 0,
+    appVersion: '',
+    status: 'active',
+    revokedAt: null,
+    revokedReason: null,
+    pairingHash: null,
+    pairingExpiresAt: null,
+    personalTo: input.staffId,
+  };
+  t.devices.push(device);
+  bumpCatalogueVersion();
+  audit.record({ outletId: outlet().id, actorStaffId: input.staffId, actorDeviceId: device.id, action: 'device.registered', entityType: 'device', entityId: device.id, before: null, after: { label, kind: device.kind, personal: true }, reason: 'Opened from the Console in their own browser', severity: 'notable' });
+  return device;
+}
+
+/**
+ * A new tablet or till pairs itself with the code the Console showed when it was registered. It knows
+ * only which surface it is, not which device: the code says that. Codes are compared against every
+ * device of that kind still waiting for one; the first that matches is paired and returned.
+ */
+export function claimDevice(kind: 'floor' | 'counter', code: string): Device | 'wrong' | 'expired' {
+  const waiting = identityTables().devices.filter((d) => d.status === 'active' && d.kind === kind && d.pairingHash);
+  const match = waiting.find((d) => verifyPin(code, d.pairingHash!));
+  if (!match) return 'wrong';
+  if ((match.pairingExpiresAt ?? 0) < Date.now()) return 'expired';
+  match.pairingHash = null;
+  match.pairingExpiresAt = null;
+  bumpCatalogueVersion();
+  audit.record({ outletId: outlet().id, actorStaffId: match.enrolledBy, actorDeviceId: match.id, action: 'device.paired', entityType: 'device', entityId: match.id, before: null, after: { label: match.label }, reason: null, severity: 'notable' });
+  return match;
+}
+
 export function pairingRequired(deviceId: string): boolean {
   const device = identityTables().devices.find((d) => d.id === deviceId);
   return Boolean(device?.pairingHash);

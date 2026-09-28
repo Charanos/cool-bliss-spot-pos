@@ -280,12 +280,13 @@ async function applyPull(body: PullBody) {
 }
 
 export async function pull(): Promise<void> {
-  const [catalogueVersion, availabilityVersion, cursor, epoch, device] = await Promise.all([
+  const [catalogueVersion, availabilityVersion, cursor, epoch, device, sentToken] = await Promise.all([
     getMeta<number>(META.catalogueVersion),
     getMeta<number>(META.availabilityVersion),
     getMeta<number>(META.tradeCursor),
     getMeta<string>(META.epoch),
     getMeta<{ id: string }>(META.deviceId),
+    getMeta<string>(META.stationToken),
   ]);
   const unsynced = await posDb().outbox.where('status').anyOf('pending', 'inflight', 'rejected').count();
   const held = await pendingAggregates();
@@ -312,7 +313,8 @@ export async function pull(): Promise<void> {
   await pruneEarlierNights(body.businessDate);
   // A device still showing someone signed in, whose sign-in the server no longer accepts (from before
   // station tokens, or withdrawn since), asks for the PIN again. Its outbox is kept and sends after.
-  if (body.authRequired && (await getMeta(META.session))) {
+  // Only the sign-in this pull carried is refused: one made while it was in flight stands.
+  if (body.authRequired && (await getMeta(META.session)) && ((await getMeta<string>(META.stationToken)) ?? null) === (sentToken ?? null)) {
     await setMeta(META.session, null);
     await setMeta(META.stationToken, null);
   }

@@ -1,6 +1,6 @@
 # Menu photographs
 
-From Wikimedia Commons, each under the licence shown; follow the link for the original and its full terms. Resized and cropped to 640 by 640 for the menu. Brand names and labels belong to their owners and appear only to show the product sold.
+From Wikimedia Commons and Open Food Facts, each under the licence shown; follow the link for the original and its full terms. Resized and cropped to 640 by 640 for the menu. Brand names and labels belong to their owners and appear only to show the product sold.
 
 | File | Source | Author | Licence |
 | --- | --- | --- | --- |
@@ -59,3 +59,47 @@ From Wikimedia Commons, each under the licence shown; follow the link for the or
 | rice.webp | [Cooked white rice.jpg](https://commons.wikimedia.org/wiki/File:Cooked_white_rice.jpg) | Calgary Reviews from Calgary, Canada | CC BY 2.0 |
 | mukimo.webp | [Mukimo and beef curry.jpg](https://commons.wikimedia.org/wiki/File:Mukimo_and_beef_curry.jpg) | Kiptoo96 | CC BY-SA 4.0 |
 | chips.webp | [Truffle oil french fries (33024792848).jpg](https://commons.wikimedia.org/wiki/File:Truffle_oil_french_fries_(33024792848).jpg) | Tony Webster from Minneapolis, Minnesota, United States | CC BY-SA 2.0 |
+| tusker-bottles.webp | [Cold Tusker Bar Rongai.jpg](https://commons.wikimedia.org/wiki/File:Cold_Tusker_Bar_Rongai.jpg) | safaritravelplus | CC0 |
+| tusker-cider.webp | [Social dinner after a busy day at Wikimania at the H Foods foodcourt 03.jpg](https://commons.wikimedia.org/wiki/File:Social_dinner_after_a_busy_day_at_Wikimania_at_the_H_Foods_foodcourt_03.jpg) | Aliceinthealice | CC0 |
+| smirnoff-ice.webp | [Smirnoff Ice Original.jpg](https://commons.wikimedia.org/wiki/File:Smirnoff_Ice_Original.jpg) | Uttamstef12 | CC BY-SA 3.0 |
+| pineapple-punch.webp | [Open Food Facts: Smirnoff Ice peneaple](https://world.openfoodfacts.org/product/5410316963084) | Open Food Facts contributors | CC BY-SA 3.0 |
+| raspberry.webp | [Open Food Facts: Smirnoff Smirnoff Ice](https://world.openfoodfacts.org/product/0082000798705) | Open Food Facts contributors | CC BY-SA 3.0 |
+| lager.webp | [Pint of Taddy Lager in Ye Olde Murenger House, High Street, Newport, August 2026 01.jpg](https://commons.wikimedia.org/wiki/File:Pint_of_Taddy_Lager_in_Ye_Olde_Murenger_House,_High_Street,_Newport,_August_2026_01.jpg) | No Swan So Fine | CC BY-SA 4.0 |
+| cider.webp | [JK Scrumpy cider bottle and glass.jpg](https://commons.wikimedia.org/wiki/File:JK_Scrumpy_cider_bottle_and_glass.jpg) | Scewing | CC BY-SA 3.0 |
+| heineken-can.webp | [Open Food Facts: Heineken Lager Beer 4 x Cans](https://world.openfoodfacts.org/product/5035766062752) | Open Food Facts contributors | CC BY-SA 3.0 |
+| guarana.webp | [Lata de Guaraná Antarctica.jpg](https://commons.wikimedia.org/wiki/File:Lata_de_Guaran%C3%A1_Antarctica.jpg) | Cabeza2000 | CC BY-SA 4.0 |
+| gordons-can.webp | [Gordon's Gin & Tonic.jpg](https://commons.wikimedia.org/wiki/File:Gordon%27s_Gin_%26_Tonic.jpg) | osde8info | CC BY-SA 2.0 |
+| gordons-pink.webp | [Open Food Facts: Gordon's Gordon's premium pink distilled gin and tonic](https://world.openfoodfacts.org/product/5000289929899) | Open Food Facts contributors | CC BY-SA 3.0 |
+| faxe.webp | [Faxe Premium 10%.jpg](https://commons.wikimedia.org/wiki/File:Faxe_Premium_10%25.jpg) | Donarius | CC BY-SA 3.0 |
+| dasani.webp | [Dasani Water Bottle.jpg](https://commons.wikimedia.org/wiki/File:Dasani_Water_Bottle.jpg) | Ameliaelizabeth123 | CC BY-SA 4.0 |
+| minute-maid.webp | [2021-10-11 12 45 47 Bottle of Minute-Maid Grape Cranberry juice at the snack shop next to the USS Missouri at Ford Island in Pearl Harbor, Oahu, Hawaii.jpg](https://commons.wikimedia.org/wiki/File:2021-10-11_12_45_47_Bottle_of_Minute-Maid_Grape_Cranberry_juice_at_the_snack_shop_next_to_the_USS_Missouri_at_Ford_Island_in_Pearl_Harbor,_Oahu,_Hawaii.jpg) | Famartin | CC BY-SA 4.0 |
+| energy.webp | [Energy Drink Battery Cans.jpg](https://commons.wikimedia.org/wiki/File:Energy_Drink_Battery_Cans.jpg) | Klooni | CC BY-SA 3.0 |
+| predator.webp | [Open Food Facts: predator predator energy drink](https://world.openfoodfacts.org/product/5060608745012) | Open Food Facts contributors | CC BY-SA 3.0 |
+| del-monte.webp | [Open Food Facts: Del Monte Jus de prune](https://world.openfoodfacts.org/product/8887333190033) | Open Food Facts contributors | CC BY-SA 3.0 |
+| lemonade.webp | [Hot Lemon 2.jpg](https://commons.wikimedia.org/wiki/File:Hot_Lemon_2.jpg) | Gaurav Dhwaj Khadka | CC BY-SA 4.0 |
+| 7up.webp | [7UP Bottle.jpg](https://commons.wikimedia.org/wiki/File:7UP_Bottle.jpg) | Aurelio de Sandoval | CC BY-SA 2.5 mx |
+| lime-juice.webp | [Open Food Facts: Rose's Lime Juice](https://world.openfoodfacts.org/product/5000193140946) | Open Food Facts contributors | CC BY-SA 3.0 |
+| water.webp | [Bottle of Water.jpg](https://commons.wikimedia.org/wiki/File:Bottle_of_Water.jpg) | Jiafei Slay Queen | CC0 |
+| clear-spirit.webp | [Smirnoff vodka shot.png](https://commons.wikimedia.org/wiki/File:Smirnoff_vodka_shot.png) | William Warby | CC BY 2.0 |
+| whisky-glass.webp | [Jameson Irish Whiskey.PNG](https://commons.wikimedia.org/wiki/File:Jameson_Irish_Whiskey.PNG) | GotIreland | CC BY-SA 2.0 |
+| brandy-glass.webp | [Glencairn Whisky Glass.jpg](https://commons.wikimedia.org/wiki/File:Glencairn_Whisky_Glass.jpg) | Culligan1984 at English Wikipedia | CC BY 3.0 |
+| napoleon.webp | [Open Food Facts: Napoleon Napoleon](https://world.openfoodfacts.org/product/12571503) | Open Food Facts contributors | CC BY-SA 3.0 |
+| cosmopolitan.webp | [Cosmopolitan - CrystalMixer.jpg](https://commons.wikimedia.org/wiki/File:Cosmopolitan_-_CrystalMixer.jpg) | CrystalMixer - CrystalMixer.com | CC BY 4.0 |
+| jack-daniels.webp | [Jack Daniel's Old No. 7 1,14l.jpg](https://commons.wikimedia.org/wiki/File:Jack_Daniel%27s_Old_No._7_1,14l.jpg) | Imalipusram | CC BY-SA 3.0 |
+| double-black.webp | [JW Double Black.jpg](https://commons.wikimedia.org/wiki/File:JW_Double_Black.jpg) | Iceman7840 | CC BY-SA 3.0 |
+| glenfiddich.webp | [Open Food Facts: Glenfiddich Glenfiddich Single Malt Scotch Whisky 18 yo](https://world.openfoodfacts.org/product/5010327325132) | Open Food Facts contributors | CC BY-SA 3.0 |
+| famous-grouse.webp | [Famous Grouse.JPG](https://commons.wikimedia.org/wiki/File:Famous_Grouse.JPG) | Popperipopp | CC BY 3.0 |
+| singleton.webp | [Singleton of Dufftown Tailfire Single Malt Whisky.jpg](https://commons.wikimedia.org/wiki/File:Singleton_of_Dufftown_Tailfire_Single_Malt_Whisky.jpg) | Iwoelbern | CC0 |
+| remy-martin.webp | [Rémy Martin VSOP.jpg](https://commons.wikimedia.org/wiki/File:R%C3%A9my_Martin_VSOP.jpg) | SKopp | CC BY 4.0 |
+| cream-liqueur.webp | [Wikipedia Irish Cream glass.png](https://commons.wikimedia.org/wiki/File:Wikipedia_Irish_Cream_glass.png) | Bruce The Deus | CC BY-SA 4.0 |
+| white-wine.webp | [Glass of White Wine shot with a bottle of white wine - Evan Swigart.jpg](https://commons.wikimedia.org/wiki/File:Glass_of_White_Wine_shot_with_a_bottle_of_white_wine_-_Evan_Swigart.jpg) | Evan Swigart from Chicago, USA | CC BY 2.0 |
+| nederburg.webp | [Open Food Facts: Nederburg vin rosu](https://world.openfoodfacts.org/product/6001108018236) | Open Food Facts contributors | CC BY-SA 3.0 |
+| rose-wine.webp | [Rosé de Syrah.jpg](https://commons.wikimedia.org/wiki/File:Ros%C3%A9_de_Syrah.jpg) | Mark and Allegra Jaroski-Biava | CC BY-SA 2.0 |
+| dunhill.webp | [Dunhill Tembakau 02.jpg](https://commons.wikimedia.org/wiki/File:Dunhill_Tembakau_02.jpg) | Nadiahasnosurname | CC BY-SA 4.0 |
+| pall-mall.webp | [Pall Mall Dutch.JPG](https://commons.wikimedia.org/wiki/File:Pall_Mall_Dutch.JPG) | Vinniebar at English Wikipedia | Public domain |
+| rothmans.webp | [Rothmans Pall Mall Virginia medium cigarettes.JPG](https://commons.wikimedia.org/wiki/File:Rothmans_Pall_Mall_Virginia_medium_cigarettes.JPG) | Alf van Beem | CC0 |
+| cigarettes.webp | [Bonus Cigarettes.jpg](https://commons.wikimedia.org/wiki/File:Bonus_Cigarettes.jpg) | Antonio Kless | CC BY-SA 4.0 |
+| bone-soup.webp | [Bowl of beef soup, 03.jpg](https://commons.wikimedia.org/wiki/File:Bowl_of_beef_soup,_03.jpg) | Zahara5555 | CC BY-SA 4.0 |
+| matumbo.webp | [Restauracja Aromat, Gołków, Poland, 2019, tripe soup.jpg](https://commons.wikimedia.org/wiki/File:Restauracja_Aromat,_Go%C5%82k%C3%B3w,_Poland,_2019,_tripe_soup.jpg) | Kgbo | CC BY-SA 4.0 |
+| rolex.webp | [Fried eggs for making a rolex.jpg](https://commons.wikimedia.org/wiki/File:Fried_eggs_for_making_a_rolex.jpg) | Ssemmanda will | CC BY-SA 4.0 |
+| milk.webp | [A cup of hot soy milk (3076343897).jpg](https://commons.wikimedia.org/wiki/File:A_cup_of_hot_soy_milk_(3076343897).jpg) | Josefine Stenudd from Gothenburg, Sweden | CC BY 2.0 |

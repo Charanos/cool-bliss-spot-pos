@@ -16,7 +16,7 @@ import { buildMenu } from '@bliss/db/seed/menu';
 import { OUTLET } from '@bliss/db/seed/organisation';
 import { businessDate } from '@bliss/shared/time';
 import pg from 'pg';
-import { SCHEMA, WRITE_LOCK, databaseUrl, decode, encode, upsertRows, writeMeta } from '../modules/_data/records';
+import { SCHEMA, WRITE_LOCK, databaseUrl, decode, encode, keyOf, upsertRows, writeMeta } from '../modules/_data/records';
 
 type Row = { collection: string; id: string; ord: number | null; data: string };
 
@@ -50,14 +50,15 @@ async function main() {
     const added: Record<string, number> = {};
     let photos = 0;
 
-    const addNew = async <T extends { id: string }>(collection: string, rows: readonly T[], keep?: (row: NoInfer<T>) => boolean) => {
+    const addNew = async <T extends object>(collection: string, rows: readonly T[], keep?: (row: NoInfer<T>) => boolean) => {
       const have = await stored(collection);
       let ord = have.next;
       const fresh = new Set<string>();
       for (const row of rows) {
-        if (have.rows.has(row.id) || (keep && !keep(row))) continue;
-        out.push({ collection, id: row.id, ord: ord++, data: encode(row) });
-        fresh.add(row.id);
+        const id = keyOf(collection, row);
+        if (have.rows.has(id) || (keep && !keep(row))) continue;
+        out.push({ collection, id, ord: ord++, data: encode(row) });
+        fresh.add(id);
       }
       added[collection] = fresh.size;
       return { have, fresh };
@@ -65,16 +66,24 @@ async function main() {
 
     await addNew('categories', menu.categories);
     const products = await addNew('products', menu.products);
-    // A product already stored keeps everything the owner set; only a missing photograph is filled.
+    // A product already stored keeps everything the owner set; only what it is missing is filled:
+    // its photograph, and how many the house owns of something handed back (the shisha pots).
     for (const p of menu.products) {
       const existing = products.have.rows.get(p.id);
-      if (existing && !existing.imageKey && p.imageKey) {
-        out.push({ collection: 'products', id: p.id, ord: null, data: encode({ ...existing, imageKey: p.imageKey }) });
-        photos += 1;
-      }
+      if (!existing) continue;
+      const patch: Record<string, unknown> = {};
+      if (!existing.imageKey && p.imageKey) patch.imageKey = p.imageKey;
+      if (existing.unitsInHouse == null && p.unitsInHouse) patch.unitsInHouse = p.unitsInHouse;
+      if (Object.keys(patch).length === 0) continue;
+      out.push({ collection: 'products', id: p.id, ord: null, data: encode({ ...existing, ...patch }) });
+      if (patch.imageKey) photos += 1;
     }
     const variants = await addNew('variants', menu.variants);
     await addNew('priceListItems', menu.priceListItems, (item) => lists.rows.has(item.priceListId));
+    // The choices asked on the floor, such as the shisha flavour, and which items ask them.
+    await addNew('modifierGroups', menu.modifierGroups);
+    await addNew('modifiers', menu.modifiers);
+    await addNew('variantModifierGroups', menu.variantModifierGroups);
     // Opening stock only for a drink added now: a drink already stored has its own count.
     await addNew('movements', menu.movements, (m) => variants.fresh.has(m.productVariantId));
 
@@ -98,7 +107,7 @@ async function main() {
     await client.query('commit');
     console.log(
       `Added ${added.categories} categories, ${added.products} products, ${added.variants} ways of selling, ${added.priceListItems} prices and ${added.movements} opening counts.` +
-        ` Photographs given to ${photos} products already stored.${Object.keys(outletPatch).length ? ` Outlet: ${Object.keys(outletPatch).join(' and ')} filled in.` : ''}`,
+        ` ${added.modifiers} choices. Photographs given to ${photos} products already stored.${Object.keys(outletPatch).length ? ` Outlet: ${Object.keys(outletPatch).join(' and ')} filled in.` : ''}`,
     );
   } catch (error) {
     await client.query('rollback').catch(() => undefined);

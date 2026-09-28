@@ -53,6 +53,7 @@ const productFields = {
   imageKey: optionalText(200, 'The photograph'),
   /** What one bottle or can costs to buy. Blank leaves it as it is. */
   unitCost: kes('the unit cost').nullable().optional(),
+  unitsInHouse: wholeNumber('How many the house owns', 999).nullable().optional(),
 };
 
 /** The stocked item a product's cost belongs to: its sealed bottle or can. */

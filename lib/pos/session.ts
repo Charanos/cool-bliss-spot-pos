@@ -26,10 +26,15 @@ export interface BoundDevice {
  */
 export async function ensureDevice(): Promise<BoundDevice | null> {
   const stored = await getMeta<BoundDevice>(META.deviceId);
-  if (stored) return stored;
   const devices = (await posDb().devices.toArray()).sort((a, b) => a.label.localeCompare(b.label, 'en', { numeric: true }));
+  // Kept while the venue still lists it. One it no longer knows (a handover, or removed) or withdrew
+  // is let go, so this browser pairs again instead of being refused as "not registered".
+  const current = stored ? devices.find((d) => d.id === stored.id) : undefined;
+  if (stored && (devices.length === 0 || (current && current.status === 'active'))) return stored;
+  if (stored) await setMeta(META.deviceId, null);
   const surface = currentSurface();
-  const first = devices.find((d) => d.kind === surface && d.status === 'active');
+  // A device still waiting for its code is never taken: it is claimed with that code (claimDevice).
+  const first = devices.find((d) => d.kind === surface && d.status === 'active' && !d.pairing);
   if (!first) return null;
   const bound = { id: first.id, label: first.label };
   await setMeta(META.deviceId, bound);
@@ -47,6 +52,38 @@ export async function bindDevice(device: BoundDevice) {
 
 export async function unbindDevice() {
   await setMeta(META.deviceId, null);
+}
+
+/**
+ * Whether this browser still needs pairing before anyone can sign in: it holds no device, or the one it
+ * holds the venue no longer lists, withdrew, or is still waiting for its code. Undefined while the
+ * first pull has not landed, so the screen does not flash the pairing step on a paired tablet.
+ */
+export function useNeedsPairing(bootstrapped: boolean): boolean | undefined {
+  return useLiveQuery(async () => {
+    if (!bootstrapped) return undefined;
+    const bound = await getMeta<BoundDevice>(META.deviceId);
+    const known = bound ? await posDb().devices.get(bound.id) : null;
+    if (known) return known.status !== 'active' || Boolean(known.pairing);
+    // Nothing bound, or bound to a device this browser has not heard of: pair, unless ensureDevice
+    // has a paired one of this surface to take.
+    const surface = currentSurface();
+    return !(await posDb().devices.toArray()).some((d) => d.kind === surface && d.status === 'active' && !d.pairing);
+  }, [bootstrapped]);
+}
+
+/** Pair a new tablet or till with the six-digit code shown in Console, Settings, Devices. */
+export async function claimDevice(code: string): Promise<SignInResult> {
+  try {
+    const { body } = await api.post<{ ok: boolean; message?: string; device?: BoundDevice }>('/api/station/identity', { action: 'claim', kind: currentSurface(), code });
+    if (!body.ok || !body.device) return { ok: false, message: body.message ?? 'That code does not match.' };
+    // Known here as paired at once; the next pull brings the rest.
+    await posDb().devices.put({ id: body.device.id, label: body.device.label, kind: currentSurface(), status: 'active', pairing: false });
+    await rebind(body.device);
+    return { ok: true };
+  } catch {
+    return { ok: false, message: 'No connection. Pairing needs the network once.' };
+  }
 }
 
 export function useDevice(): BoundDevice | null | undefined {
@@ -90,15 +127,30 @@ export async function signIn(staffId: string, pin: string): Promise<SignInResult
  * once; whoever was signed in on this device before is replaced by them, so what happens next is
  * recorded against the person standing here. Anything wrong with the ticket leaves the PIN screen.
  */
-export async function redeemHandoff(ticket: string): Promise<SignInResult> {
-  const device = await ensureDevice();
+export async function redeemHandoff(ticket: string, spare: BoundDevice | null = null): Promise<SignInResult> {
+  let device = await ensureDevice();
+  // A manager or owner opening a station from the Console brings a browser of their own, made for
+  // them by the server: used when this browser holds no device the venue still knows.
+  if (!device && spare) device = await rebind(spare);
   if (!device) return { ok: false, message: 'This device is not registered to Cool Bliss Spot. A manager needs to add it in Console, Settings, Devices.' };
   try {
-    const { body } = await api.post<SignInBody>('/api/station/identity', { action: 'continue', deviceId: device.id, ticket });
-    return await settle(body);
+    const first = await api.post<SignInBody>('/api/station/identity', { action: 'continue', deviceId: device.id, ticket });
+    if (first.status === 403 && spare && spare.id !== device.id) {
+      await rebind(spare);
+      return await settle((await api.post<SignInBody>('/api/station/identity', { action: 'continue', deviceId: spare.id, ticket })).body);
+    }
+    return await settle(first.body);
   } catch {
     return { ok: false, message: 'No connection. Choose your name, then enter your PIN.' };
   }
+}
+
+/** Bind this browser to another device, and pull the whole picture again with its id on it. */
+async function rebind(device: BoundDevice): Promise<BoundDevice> {
+  await setMeta(META.deviceId, device);
+  await setMeta(META.tradeCursor, -1);
+  wakeSync();
+  return device;
 }
 
 /**

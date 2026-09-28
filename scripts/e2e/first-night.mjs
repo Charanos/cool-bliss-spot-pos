@@ -7,7 +7,7 @@
  *
  * Dan, the owner, signs in with the handover PIN and sets the outlet up in the Console: a zone and a
  * table, a category and a product with a price (beside the menu the handover carries), a waiter, and a Floor and a Counter device. Each
- * device is paired with its code; the waiter signs in on the Floor (choosing their own PIN), opens
+ * device is paired with its code on its first screen; the waiter signs in on the Floor (choosing their own PIN), opens
  * a tab and fires a round; Dan pours and settles it at the Counter, clears the table, and the
  * Console shows the bill, the stock and the audit.
  */
@@ -133,14 +133,11 @@ try {
     floor = await floorCtx.newPage();
     floor.on('pageerror', (e) => errors.push(`floor: ${String(e).slice(0, 200)}`));
     await floor.goto(`${BASE}/floor/sign-in`);
-    await floor.waitForTimeout(3000);
-    await floor.getByRole('button', { name: 'Wanjiru Waiter' }).click();
-    await floor.waitForTimeout(800);
-    for (const d of '246810') await floor.keyboard.press(d);
-    await floor.waitForTimeout(1500);
-    await floor.getByText('Enter the pairing code from the Console').waitFor({ timeout: 10_000 });
+    // A new tablet asks for its code before anyone signs in: the code alone says which device it is.
+    await floor.getByRole('heading', { name: 'Pair this tablet' }).waitFor({ timeout: 15_000 });
     for (const d of codes['Floor 1']) await floor.keyboard.press(d);
-    await floor.waitForTimeout(2000);
+    await floor.getByRole('button', { name: 'Wanjiru Waiter' }).click({ timeout: 15_000 });
+    await floor.waitForTimeout(800);
     await floor.getByText(/Enter your 6 digit PIN/).waitFor({ timeout: 10_000 });
   });
 
@@ -171,16 +168,33 @@ try {
     await shot(floor, 'floor-fired');
   });
 
+  await check('She adds a shisha pot, is asked its flavour, and fires it', async () => {
+    // A tap on the pot asks the flavour first; it is not added until one is chosen.
+    await floor.locator('button[data-variant-id]', { hasText: 'Shisha pot' }).first().click({ timeout: 10_000 });
+    const sheet = floor.locator('dialog[open]');
+    await sheet.getByText('Shisha flavour', { exact: true }).waitFor({ timeout: 10_000 });
+    const add = sheet.getByRole('button', { name: /^Choose the shisha flavour|^Add to/ });
+    if (await add.isEnabled()) throw new Error('The pot could be added without a flavour.');
+    await sheet.getByRole('button', { name: 'Double apple' }).click();
+    await sheet.getByRole('button', { name: 'Mint', exact: true }).click();
+    await sheet.getByRole('textbox', { name: 'Note for the bar' }).fill('Extra coal');
+    await shot(floor, 'floor-flavour');
+    await sheet.getByRole('button', { name: /^Add to/ }).click();
+    await floor.waitForTimeout(600);
+    await floor.getByRole('button', { name: /^Fire/ }).click();
+    await floor.waitForTimeout(2500);
+    await shot(floor, 'floor-shisha-fired');
+  });
+
   await check('The Counter is paired and Dan signs in there', async () => {
     counterCtx = await browser.newContext({ viewport: { width: 1366, height: 768 } });
     counter = await counterCtx.newPage();
     counter.on('pageerror', (e) => errors.push(`counter: ${String(e).slice(0, 200)}`));
     await counter.goto(`${BASE}/counter/sign-in`);
-    await counter.getByRole('button', { name: 'Dan Owner' }).click({ timeout: 20_000 });
-    await counter.waitForTimeout(600);
-    for (const d of '111111') await counter.keyboard.press(d);
-    await counter.getByText('Enter the pairing code from the Console').waitFor({ timeout: 10_000 });
+    await counter.getByRole('heading', { name: 'Pair this counter' }).waitFor({ timeout: 20_000 });
     for (const d of codes['Counter 1']) await counter.keyboard.press(d);
+    await counter.getByRole('button', { name: 'Dan Owner' }).click({ timeout: 15_000 });
+    await counter.waitForTimeout(600);
     await counter.getByText(/Enter your 6 digit PIN/).waitFor({ timeout: 10_000 });
     for (const d of '111111') await counter.keyboard.press(d);
     await counter.waitForURL((u) => u.pathname.startsWith('/counter/') && !u.pathname.endsWith('/sign-in'), { timeout: 20_000 });
@@ -199,8 +213,14 @@ try {
   });
 
   await check('The Floor marks it served and asks for the bill', async () => {
-    await floor.getByRole('button', { name: /Mark served/ }).first().click({ timeout: 20_000 });
+    // The round and the pot come back as they are poured: mark each served until none is left.
+    const serve = floor.getByRole('button', { name: /Mark served/ });
+    await serve.first().click({ timeout: 20_000 });
     await floor.waitForTimeout(1500);
+    for (let i = 0; i < 4 && (await serve.count()) > 0; i += 1) {
+      await serve.first().click();
+      await floor.waitForTimeout(1500);
+    }
     await floor.getByRole('button', { name: /Ask for the bill/ }).first().click({ timeout: 20_000 });
     await floor.waitForTimeout(2500);
   });

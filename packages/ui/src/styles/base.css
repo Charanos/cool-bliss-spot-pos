@@ -871,9 +871,14 @@
   background: linear-gradient(90deg, transparent, var(--color-edge-strong) 6%, var(--color-edge-strong) 94%, transparent);
 }
 
-/* Right under a page header, the header's rule is the one above the strip: never two in a row. */
+/* Right under a page header, the header's rule is the one above the strip: never two in a row.
+   The header usually sits inside its workspace's head (tabs and title together), and the strip at
+   the start of the page body, so both are matched one level in; anything placed between them, such
+   as an alert, keeps the strip's own rule, since then the two are not in a row. */
 [data-page-head] + [data-metric-strip] > [data-strip-rule='top'],
-[data-page-head] + * > [data-metric-strip]:first-child > [data-strip-rule='top'] {
+[data-page-head] + * > [data-metric-strip]:first-child > [data-strip-rule='top'],
+[data-page-head-wrap] + [data-metric-strip] > [data-strip-rule='top'],
+[data-page-head-wrap] + * > [data-metric-strip]:first-child > [data-strip-rule='top'] {
   display: none;
 }
 
@@ -1015,19 +1020,29 @@
 }
 
 /*
- * The sign-in photograph, in its own colour, masked into the page: it holds through the lower part
- * and dissolves to full transparency towards the top, where the wordmark sits.
+ * The sign-in photograph, in its own colour, masked into the page so no hard line cuts it off. On a
+ * phone and a laptop it is a column beside the team: it holds through the lower part, dissolves
+ * towards the top where the wordmark sits, and melts into the page along its inner edge. Two
+ * gradients, kept where both are opaque.
  */
 @utility photo-mask {
-  -webkit-mask-image: linear-gradient(to top, black 0%, black 55%, transparent 100%);
-  mask-image: linear-gradient(to top, black 0%, black 55%, transparent 100%);
+  -webkit-mask-image:
+    linear-gradient(to top, black 0%, black 50%, transparent 100%),
+    linear-gradient(to right, black 0%, black 62%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to top, black 0%, black 50%, transparent 100%),
+    linear-gradient(to right, black 0%, black 62%, transparent 100%);
+  mask-composite: intersect;
 
   /* A tablet held upright shows it as a band across the top of the page: there it dissolves at both
-     edges, into the top of the screen and into the page below, so no hard line cuts it off. The
-     words on it sit in the solid middle. */
+     edges, into the top of the screen and into the page below. The words on it sit in the solid
+     middle. */
   @media (min-width: 768px) and (max-width: 959.98px) {
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 13%, black 80%, transparent 100%);
+    -webkit-mask-composite: source-over;
     mask-image: linear-gradient(to bottom, transparent 0%, black 13%, black 80%, transparent 100%);
+    mask-composite: add;
   }
 }
 

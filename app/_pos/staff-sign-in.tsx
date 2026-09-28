@@ -8,12 +8,12 @@ import { BlissWordmark } from '@bliss/ui/components/brand';
 import { InlineNotice, Skeleton } from '@bliss/ui/components/feedback';
 import { PinPad } from '@bliss/ui/components/pin-pad';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconArrowLeft } from '@tabler/icons-react';
+import { IconArrowLeft, IconLayoutDashboard } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useOutlet, useStaffDirectory } from '@/lib/pos/queries';
 import { pinWeakness } from '@bliss/shared/pin';
-import { choosePin, pairDevice, redeemHandoff, signIn, useDevice, useSession } from '@/lib/pos/session';
+import { choosePin, claimDevice, pairDevice, redeemHandoff, signIn, useDevice, useNeedsPairing, useSession } from '@/lib/pos/session';
 import { useSync, wakeSync } from '@/lib/pos/sync';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -64,6 +64,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
   const outlet = useOutlet();
   const staff = useStaffDirectory();
   const sync = useSync();
+  const needsPairing = useNeedsPairing(sync.bootstrapped);
   const [chosen, setChosen] = useState<string | null>(null);
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -78,10 +79,14 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
   // Arriving from another surface with a ticket: the person who switched is signed in here, replacing
   // whoever this device held, before anything else happens. Null until the address has been read.
   const [handoff, setHandoff] = useState<string | null>(null);
+  const [spare, setSpare] = useState<{ id: string; label: string } | null>(null);
   const [carrying, setCarrying] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
-    setHandoff(new URLSearchParams(window.location.search).get('handoff') ?? '');
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('device');
+    if (id) setSpare({ id, label: params.get('label') ?? 'This browser' });
+    setHandoff(params.get('handoff') ?? '');
   }, []);
   const tried = useRef(false);
   useEffect(() => {
@@ -91,13 +96,13 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
     setCarrying(true);
     // The ticket works once; it never stays in the address or the history.
     window.history.replaceState(null, '', window.location.pathname);
-    void redeemHandoff(handoff).then((result) => {
+    void redeemHandoff(handoff, spare).then((result) => {
       setCarrying(false);
       if (result.ok) return router.replace(home);
       setNotice(result.message);
       setHandoff('');
     });
-  }, [handoff, sync.bootstrapped, sync.link, router, home]);
+  }, [handoff, spare, sync.bootstrapped, sync.link, router, home]);
 
   useEffect(() => {
     if (session && handoff === '') router.replace(home);
@@ -186,7 +191,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
         <PhotoBackdrop src={backdrop} />
 
         <div className="relative z-10 pad:self-center tablet:self-auto">
-          <BlissWordmark size={80} label="Bliss" />
+          <BlissWordmark size={96} label="Cool Bliss" />
         </div>
 
         <div className="relative z-10 mt-auto flex flex-col pad:mt-0 tablet:mt-auto">
@@ -204,12 +209,22 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
 
       <section className="safe-x safe-b relative flex min-h-0 flex-1 flex-col justify-between overflow-y-auto pt-16 [--bliss-gutter-b:16px] [--bliss-gutter-x:16px] pad:pt-24 pad:[--bliss-gutter-b:24px] pad:[--bliss-gutter-x:24px] tablet:pt-40 tablet:[--bliss-gutter-b:40px] tablet:[--bliss-gutter-x:40px]">
         <AmbientTerminalArtwork />
-        {!person ? (
+        {needsPairing && !person && !handoff && !carrying ? (
+          <PairThisDevice surface={surface} onBack={() => router.push('/')} />
+        ) : !person ? (
           <>
             <header className="relative z-10 flex flex-col gap-16 pad:gap-24 tablet:flex-row tablet:items-start tablet:justify-between tablet:gap-16">
-              <VeilButton icon={IconArrowLeft} onClick={() => router.push('/')} className="self-end origin-right scale-90 tablet:self-start tablet:origin-top-left">
-                Back to home
-              </VeilButton>
+              <div className="flex items-center gap-8 self-end origin-right scale-90 tablet:self-start tablet:origin-top-left">
+                <VeilButton icon={IconArrowLeft} onClick={() => router.push('/')}>
+                  Back to home
+                </VeilButton>
+                {/* A manager or owner who came from the Console, and was not signed straight in, goes back the same way. */}
+                {spare ? (
+                  <VeilButton icon={IconLayoutDashboard} onClick={() => router.push('/console')}>
+                    Back to the Console
+                  </VeilButton>
+                ) : null}
+              </div>
 
               <div className="flex flex-col items-end text-right">
                 <h1 className="font-mono text-title font-medium text-balance text-ink pad:text-title-lg tablet:text-heading">Sign in to {device?.label ?? SURFACE_NAME[surface]}</h1>
@@ -302,5 +317,58 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * The first step on a new tablet or till, before anyone can sign in: the venue registers it in the
+ * Console, which shows a six-digit code, and the code is entered here. The code says which device
+ * this is, so nothing needs choosing; once it matches, the team appears.
+ */
+function PairThisDevice({ surface, onBack }: { surface: StaffSurface; onBack: () => void }) {
+  const [code, setCode] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const thing = surface === 'floor' ? 'tablet' : 'counter';
+  const submit = async (value: string) => {
+    setPending(true);
+    setError(null);
+    const result = await claimDevice(value);
+    setPending(false);
+    setCode('');
+    if (!result.ok) setError(result.message);
+  };
+  return (
+    <>
+      <header className="relative z-20 flex items-start justify-end tablet:justify-start">
+        <VeilButton icon={IconArrowLeft} onClick={onBack} className="origin-right scale-90 tablet:origin-top-left">
+          Back to home
+        </VeilButton>
+      </header>
+
+      <div className="relative z-10 mx-auto flex w-full max-w-[380px] flex-1 flex-col items-center justify-center py-32">
+        <h1 className="font-mono text-title-lg font-medium text-ink tablet:text-heading">Pair this {thing}</h1>
+        <p className="mt-12 text-center text-body text-ink-muted">Once, before anyone signs in. The code tells the {thing} which one it is.</p>
+
+        <ol className="mt-24 flex w-full flex-col gap-12 text-body-sm text-ink-subtle">
+          <li className="flex gap-12">
+            <span className="font-mono tabular text-accent-text">1</span>
+            <span>
+              In the Console, open <span className="text-ink">Settings, Devices</span> and register this {thing} as a {SURFACE_NAME[surface]} device. For one already listed, choose{' '}
+              <span className="text-ink">A new pairing code</span>.
+            </span>
+          </li>
+          <li className="flex gap-12">
+            <span className="font-mono tabular text-accent-text">2</span>
+            <span>Enter the six-digit code it shows. It works for 24 hours.</span>
+          </li>
+        </ol>
+
+        <Eyebrow as="p" tone={pending ? 'accent' : 'subtle'} aria-live="polite" className={cx('mb-16 mt-32', pending && 'animate-breathe')}>
+          {pending ? 'Checking the code' : 'Pairing code'}
+        </Eyebrow>
+        <PinPad value={code} onChange={setCode} onComplete={(v) => void submit(v)} label={`Pairing code for this ${thing}`} error={error} disabled={pending} length={6} />
+      </div>
+    </>
   );
 }

@@ -161,6 +161,8 @@ export interface ProductInput {
   abv: number | null;
   defaultSupplierId: string | null;
   imageKey: string | null;
+  /** How many the house owns of something handed back, such as shisha pots; absent leaves it as it is. */
+  unitsInHouse?: number | null;
   actor: Actor;
 }
 
@@ -213,6 +215,7 @@ function productFields(input: ProductInput, t: ReturnType<typeof catalogueTables
     abv,
     defaultSupplierId: input.defaultSupplierId || null,
     imageKey,
+    ...(input.unitsInHouse === undefined ? {} : { unitsInHouse: whole(input.unitsInHouse ?? null, 'How many the house owns', { min: 1, max: 999 }) }),
   };
 }
 
@@ -270,10 +273,10 @@ export function updateProduct(input: ProductInput & { id: string }, suppliers: r
   const product = t.products.find((p) => p.id === input.id);
   if (!product) throw new DomainError('That product is no longer in the catalogue.');
   const fields = productFields(input, t, suppliers);
-  const before = { categoryId: product.categoryId, name: product.name, brand: product.brand, sku: product.sku, barcode: product.barcode, containerVolumeMl: product.containerVolumeMl, abv: product.abv, defaultSupplierId: product.defaultSupplierId, imageKey: product.imageKey };
+  const before = { categoryId: product.categoryId, name: product.name, brand: product.brand, sku: product.sku, barcode: product.barcode, containerVolumeMl: product.containerVolumeMl, abv: product.abv, defaultSupplierId: product.defaultSupplierId, imageKey: product.imageKey, ...(fields.unitsInHouse === undefined ? {} : { unitsInHouse: product.unitsInHouse ?? null }) };
   if (!changed(before, fields)) return product;
   Object.assign(product, fields);
-  menuChanged({ availability: before.categoryId !== fields.categoryId });
+  menuChanged({ availability: before.categoryId !== fields.categoryId || 'unitsInHouse' in fields });
   record(input.actor, 'product.updated', 'product', product.id, before, fields);
   return product;
 }

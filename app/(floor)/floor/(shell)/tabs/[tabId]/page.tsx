@@ -76,6 +76,13 @@ export default function TabScreen() {
   // Every tab that still holds a table, including paid ones whose guests have not left.
   const holding = useLiveQuery(async () => (await posDb().tabs.toArray()).filter((t) => holdsTable(t)), []);
   const tradeReady = useTradeReady();
+  // Items with a choice that must be made, such as the shisha flavour, open their sheet on a tap.
+  const needsChoice = useLiveQuery(async () => {
+    const db = posDb();
+    const required = new Set((await db.modifierGroups.toArray()).filter((g) => g.status === 'active' && g.minSelect > 0).map((g) => g.id));
+    if (required.size === 0) return new Set<string>();
+    return new Set((await db.variantModifierGroups.toArray()).filter((l) => !l.removed && required.has(l.modifierGroupId)).map((l) => l.productVariantId));
+  }, []);
 
   const close = () => setOverlay({ kind: 'none' });
   const timezone = outlet?.timezone ?? 'Africa/Nairobi';
@@ -135,8 +142,13 @@ export default function TabScreen() {
     for (const { line, state } of group.lines) if (state === 'draft') inCart.set(line.productVariantId, (inCart.get(line.productVariantId) ?? 0) + line.qty);
   }
 
+
   const onAdd = (variantId: string) => {
     if (!detail) return;
+    if (needsChoice?.has(variantId)) {
+      setOverlay({ kind: 'modifiers', variantId });
+      return;
+    }
     const name = grid?.tiles.find((t) => t.variantId === variantId)?.name ?? 'Item';
     void run(() => addItem({ tabId, seat: detail.selected, seatName, variantId, name }));
   };

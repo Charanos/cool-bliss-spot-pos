@@ -5,7 +5,8 @@ import { isStaffSurface } from '@bliss/shared/identity';
 import type { Actor } from '@bliss/shared/reason';
 import { type OutboxKind, type OutboxPayload, REJECTION_COPY, type RejectionCode, outboxPayloads } from '@bliss/shared/sync';
 import { CommandRejected, changedSince, currentSeq } from '../_data/changes';
-import { dataset } from '../_data/source';
+import { bumpAvailabilityVersion, dataset } from '../_data/source';
+import * as availability from '../availability/service';
 import { checkpoint, release, rollbackTo } from '../_data/store';
 import * as identity from '../identity/service';
 import * as settlementCommands from '../settlement/commands';
@@ -63,6 +64,9 @@ function reject(entry: IncomingEntry, code: RejectionCode, detail: string): Appl
   return result;
 }
 
+/** The changes that put a returnable item on a table or take it off one. */
+const UNITS_OUT: ReadonlySet<OutboxKind> = new Set<OutboxKind>(['order.fire', 'line.void', 'line.move', 'tab.move', 'tab.clear', 'bill.settle']);
+
 export function applyEntry(entry: IncomingEntry): ApplyResult {
   const data = dataset();
   if (data.applied.has(entry.id)) return { id: entry.id, status: 'acked', idempotent: true };
@@ -85,6 +89,8 @@ export function applyEntry(entry: IncomingEntry): ApplyResult {
   try {
     const conflicts = run(entry.kind, parsed.data, actor);
     data.applied.add(entry.id);
+    // A shisha pot going out or coming back changes what the floor can sell, without any stock moving.
+    if (UNITS_OUT.has(entry.kind) && availability.hasUnitsInHouse()) bumpAvailabilityVersion();
     release(cp);
     return { id: entry.id, status: 'acked', idempotent: false, stockConflictLineIds: conflicts };
   } catch (error) {

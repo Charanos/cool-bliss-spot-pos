@@ -99,7 +99,7 @@ export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSum
         </div>
 
         <div className="relative z-10 pad:self-center tablet:self-auto">
-          <BlissWordmark size={80} label="Bliss" />
+          <BlissWordmark size={96} label="Cool Bliss" />
         </div>
 
         <div data-theme="dark" className="relative z-10 mt-auto flex flex-col text-ink pad:mt-0 tablet:mt-auto">
