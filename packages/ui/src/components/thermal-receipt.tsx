@@ -47,12 +47,18 @@ export function ReceiptBrand({ name, tagline, lines, logoUrl }: { name: string; 
     <header className="flex flex-col items-center gap-4 text-center">
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- printed as is, no optimiser in the way of the print dialog
-        <img src={logoUrl} alt={name} className="mb-6 h-[26mm] w-auto object-contain" />
+        <img src={logoUrl} alt={name} className="mb-4 h-[26mm] w-auto object-contain" />
       ) : null}
-      {/* Under the logo, which already spells the name, it is a quiet line; alone, it is the title. */}
-      <h1 className={logoUrl ? 'text-[9.5px] uppercase leading-none tracking-[0.3em]' : 'text-[15px] font-medium uppercase leading-none tracking-[0.18em]'}>{name}</h1>
-      {tagline ? <p className={caps}>{tagline}</p> : null}
-      <div className="mt-2 flex flex-col text-[10px] leading-[1.45]">
+      {/* The logo already spells the name, so under it the house line takes its place; alone, the name is the title. */}
+      {logoUrl && tagline ? (
+        <p className="text-[11px] italic leading-none tracking-[0.06em]">{tagline}</p>
+      ) : (
+        <>
+          <h1 className={logoUrl ? 'text-[9.5px] uppercase leading-none tracking-[0.3em]' : 'text-[15px] font-medium uppercase leading-none tracking-[0.18em]'}>{name}</h1>
+          {tagline ? <p className="text-[11px] italic leading-none tracking-[0.06em]">{tagline}</p> : null}
+        </>
+      )}
+      <div className="mt-4 flex flex-col text-[10px] leading-[1.45]">
         {lines?.filter(Boolean).map((line) => (
           <p key={line}>{line}</p>
         ))}
@@ -176,33 +182,33 @@ export function ReceiptTotalRow({ label, value, bold = false, large = false }: {
  * How to pay by M-Pesa: the till for each part of the bill, in a fine rounded frame so it is found
  * at once. With one part, one till; with drinks and food, each till with what is paid to it.
  */
-export function ReceiptPay({ parts, currency = 'KES' }: { parts: readonly { label: string; till: string; amount?: string | null }[]; currency?: string }) {
+/**
+ * Where to pay by M-Pesa: each till with what goes to it, side by side, so a guest paying drinks and
+ * food separately reads both at a glance. `paid` marks a receipt already settled.
+ */
+export function ReceiptPay({ parts, currency = 'KES', paid = false }: { parts: readonly { label: string; till: string; amount?: string | null }[]; currency?: string; paid?: boolean }) {
   if (parts.length === 0) return null;
   return (
     <section className="mt-12 rounded-[6px] border border-paper-ink px-12 py-8">
       <p className={cx(caps, 'text-center')}>M-Pesa · Buy Goods</p>
-      {parts.length === 1 ? (
-        <div className="mt-4 flex flex-col items-center">
-          <span className="font-mono text-[20px] font-print leading-[1.2] tracking-[0.14em]">{parts[0]!.till}</span>
-          <span className="text-[9.5px]">{parts[0]!.amount ? `Till number · ${currency} ${parts[0]!.amount}` : 'Till number'}</span>
-        </div>
-      ) : (
-        <div className="mt-6 flex flex-col">
-          {parts.map((p) => (
-            <div key={p.label} className="flex items-center justify-between gap-8 border-t border-dotted border-paper-ink py-4 first:border-t-0 first:pt-0">
-              <span className="flex flex-col">
-                <span className="text-[9.5px]">{p.label}</span>
-                <span className="font-mono text-[16px] font-print leading-[1.2] tracking-[0.12em]">{p.till}</span>
-              </span>
-              {p.amount ? (
-                <span className="font-mono text-[11px] tabular-nums">
-                  {currency} {p.amount}
+      <div className="mt-6 flex flex-col">
+        {parts.map((p) => (
+          <div key={p.label} className="flex flex-col border-t border-dotted border-paper-ink py-6 first:border-t-0 first:pt-0 last:pb-0">
+            <span className="text-[9.5px]">{p.label}</span>
+            <span className="flex items-baseline justify-between gap-8">
+              <span className="font-mono text-[17px] font-print leading-[1.2] tracking-[0.12em]">{p.till}</span>
+              {paid ? (
+                <span className="text-[10px] uppercase tracking-[0.2em]">Paid</span>
+              ) : p.amount ? (
+                <span className="font-mono text-[15px] font-print leading-[1.2] tabular-nums">
+                  <span className="text-[10px] font-normal">{currency} </span>
+                  {p.amount}
                 </span>
               ) : null}
-            </div>
-          ))}
-        </div>
-      )}
+            </span>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
