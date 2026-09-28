@@ -79,8 +79,8 @@ export function TabCard({ tableLabel, name, seats, showSeats, elapsed, total, wa
           </span>
         </span>
 
-        {/* Row 2: state signal or waiter */}
-        <span className="flex min-h-[24px] min-w-0 items-center gap-8" aria-hidden="true">
+        {/* Row 2: where it stands, then whose it is */}
+        <span className="flex min-h-24 min-w-0 items-center gap-8" aria-hidden="true">
           {state ? (
             <Signal tone={state.tone}>{state.text}</Signal>
           ) : stage ? (
@@ -91,11 +91,11 @@ export function TabCard({ tableLabel, name, seats, showSeats, elapsed, total, wa
           {!state && !mine && waiter ? <span className="min-w-0 truncate text-body-sm text-ink-subtle">{waiter}</span> : null}
         </span>
 
-        {/* Spacer to replace divider */}
-        <span className="flex-1" aria-hidden="true" />
+        {/* The figures sit on a hairline at the foot, however tall the card grows. */}
+        <span aria-hidden="true" className="mt-auto h-px w-full bg-rule-raised/25" />
 
         {/* Row 3: seats or tab name + total */}
-        <span className="flex items-end justify-between gap-8">
+        <span className="flex items-end justify-between gap-8 pt-4">
           <span className="min-w-0 flex-1 flex items-center" aria-hidden="true">
             {showSeats && seats.length > 1 ? (
               <SeatChipStack seats={seats.map((s) => ({ seatNo: s.seatNo, settled: s.settled }))} max={6} size="tile" overlapping />
@@ -119,17 +119,18 @@ export function TabCard({ tableLabel, name, seats, showSeats, elapsed, total, wa
 export function FreeTableCard({ tableLabel, zone, capacity, onOpen }: { tableLabel: string; zone?: string | null; capacity: number; onOpen: () => void }) {
   const seats = capacity === 1 ? '1 seat' : `${capacity} seats`;
   return (
-    <InviteButton aria-label={`Open a tab on ${tableLabel}${zone ? `, ${zone}` : ''}, ${seats}`} onClick={onOpen} className="flex w-full min-h-row-floor items-center gap-12 px-16 py-8">
-      <span className="flex min-w-0 flex-1 flex-col">
+    <InviteButton aria-label={`Open a tab on ${tableLabel}${zone ? `, ${zone}` : ''}, ${seats}`} onClick={onOpen} className="group flex w-full min-h-row-floor items-center gap-12 px-16 py-8">
+      <span className="flex min-w-0 flex-1 flex-col gap-2">
         <span className="truncate text-body-lg font-medium text-ink" title={tableLabel}>
           {tableLabel}
         </span>
-        {zone ? <span className="truncate text-body-sm text-ink-muted">{zone}</span> : null}
+        <span className="flex min-w-0 items-center gap-6 text-body-sm text-ink-muted">
+          {zone ? <span className="truncate">{zone}</span> : null}
+          {zone ? <span aria-hidden="true" className="size-4 shrink-0 rounded-dot bg-ink-subtle/60" /> : null}
+          <span className="shrink-0 font-mono tabular text-num-sm">{seats}</span>
+        </span>
       </span>
-      <span className="shrink-0 rounded-pill bg-sunken px-8 py-2 font-mono tabular text-num-sm text-ink-muted" aria-hidden="true">
-        {seats}
-      </span>
-      <span aria-hidden="true" className="flex size-control-sm shrink-0 items-center justify-center rounded-dot bg-accent-wash text-accent-text ring-1 ring-inset ring-accent/25">
+      <span aria-hidden="true" className="flex size-control-sm shrink-0 items-center justify-center rounded-dot bg-accent-wash text-accent-text ring-1 ring-inset ring-accent/25 transition-hover group-hover:bg-accent group-hover:text-accent-ink">
         <IconPlus size={18} stroke={ICON_STROKE} />
       </span>
     </InviteButton>

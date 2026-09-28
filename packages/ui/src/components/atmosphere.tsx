@@ -162,16 +162,18 @@ export function Avatar({ src, name, size = 'md', className }: { src?: string | n
 }
 
 /**
- * A photograph as atmosphere: desaturated into the page's luminance, then faded into the page so
- * text laid over its lower edge keeps its contrast. Never behind dense data.
+ * A photograph as atmosphere: desaturated into the page's luminance and masked into it, dissolving
+ * to nothing at the top and along the inner edge (photo-mask), with a low shade at the foot so the
+ * words laid over its lower edge keep their contrast. Never behind dense data.
  */
 export function PhotoBackdrop({ src, className }: { src: string; className?: string }) {
   return (
     <div aria-hidden="true" className={cx('pointer-events-none absolute inset-0 z-0', className)}>
       {/* Decorative: offline or blocked, it simply is not there. */}
-      <Photo src={src} loading="eager" fetchPriority="high" className="ambient-art size-full object-cover opacity-60 mix-blend-luminosity" />
-      <div className="absolute inset-0 bg-gradient-to-b from-page/10 via-page/50 to-page" />
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-page" />
+      {/* A mask isolates what it masks, which would switch a blend mode off, so the photograph is
+          taken into the page's tone with a filter instead. */}
+      <Photo src={src} loading="eager" fetchPriority="high" className="ambient-art photo-mask size-full object-cover opacity-70 grayscale brightness-75" />
+      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-page/85 via-page/40 to-transparent" />
     </div>
   );
 }

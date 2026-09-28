@@ -1,10 +1,11 @@
 import 'server-only';
+import { randomUUID } from 'node:crypto';
 
 import { DomainError } from '../_data/errors';
 
 import { DEV_PINS } from '@bliss/db/seed/organisation';
 import type { Device, EmploymentStatus, PermissionKey, Role, RoleKey, Staff } from '@bliss/shared/domain';
-import { canSignInOn } from '@bliss/shared/identity';
+import { canSignInOn, wrongSurfaceMessage } from '@bliss/shared/identity';
 import { createUuidV7 } from '@bliss/shared/id';
 import { type Actor, requireReasoned } from '@bliss/shared/reason';
 import { bumpCatalogueVersion } from '../_data/source';
@@ -293,6 +294,40 @@ export function checkStationToken(token: string | null | undefined, deviceId?: s
   if (!staff || !role || staff.employmentStatus !== 'active') return { ok: false, status: 401, message: 'This PIN no longer works. A manager can check your access in the Console.' };
   if ((claims.pv ?? 0) !== (staff.pinVersion ?? 0)) return { ok: false, status: 401, message: 'Your PIN was changed. Sign in again with the new one.' };
   return { ok: true, staff, role, device, issuedAt: claims.iat };
+}
+
+/* ------------------------------------------------------------------ handoff */
+
+/** A handoff ticket is spent within a minute of the click that made it, or not at all. */
+export const HANDOFF_MS = 60_000;
+
+export type HandoffSurface = 'console' | 'floor' | 'counter';
+
+/**
+ * A pass from one surface to another for the person signed in on the first, made when they choose
+ * to switch. It names that person and the surface it opens, works once, and lasts a minute. It is
+ * the only way a sign-in crosses surfaces: nothing already signed in on the other surface, in this
+ * browser or on the device, is ever taken as the person arriving.
+ */
+export function issueHandoff(staffId: string, from: HandoffSurface, to: HandoffSurface): string {
+  return credentials.signToken({ k: 'handoff', sid: staffId, pv: staffById(staffId)?.pinVersion ?? 0, from, to, n: randomUUID(), ttlMs: HANDOFF_MS });
+}
+
+export type HandoffCheck = { ok: true; staff: Staff; role: Role; from: HandoffSurface } | { ok: false; message: string };
+
+/** Spend a handoff ticket on the surface it names. Everything is checked again: the person, the role, the PIN. */
+export function redeemHandoff(ticket: string | null | undefined, to: HandoffSurface): HandoffCheck {
+  const again: HandoffCheck = { ok: false, message: 'That switch has run out. Choose your name, then enter your PIN.' };
+  const claims = credentials.verifyToken(ticket, 'handoff');
+  if (!claims || claims.to !== to || !claims.n) return again;
+  if (claims.from !== 'console' && claims.from !== 'floor' && claims.from !== 'counter') return again;
+  const staff = staffById(claims.sid);
+  const role = staff ? roleFor(staff.id) : null;
+  if (!staff || !role || staff.employmentStatus !== 'active') return { ok: false, message: 'This PIN no longer works. A manager can check your access in the Console.' };
+  if ((claims.pv ?? 0) !== (staff.pinVersion ?? 0)) return again;
+  if (!canSignInOn(to, role.key)) return { ok: false, message: wrongSurfaceMessage(to, role.key) };
+  if (!credentials.spendOnce(claims.n, claims.exp)) return again;
+  return { ok: true, staff, role, from: claims.from };
 }
 
 /** Sign an approval for one permission, given by a person who proved their PIN in the dialog. */

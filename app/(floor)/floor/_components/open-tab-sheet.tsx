@@ -77,7 +77,7 @@ function GuestSeatSelector({
         : `${guests} guests · seating assigned at the table`;
 
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-16">
       <div className="flex flex-wrap gap-8" role="group" aria-label="Quick picks">
         {QUICK.map((n) => (
           <ChoiceChip key={n} on={guests === n} onClick={() => onChange(n)}>
@@ -85,8 +85,9 @@ function GuestSeatSelector({
           </ChoiceChip>
         ))}
       </div>
-      <SheetPanel className="py-16">
-        <div className="flex items-center gap-24">
+      {/* The table on the left, the count and what it means on the right: justified apart, with room. */}
+      <SheetPanel className="px-24 py-20">
+        <div className="flex items-center justify-between gap-32">
           <div className="relative size-seat-ring shrink-0" aria-hidden="true">
             <div className="absolute inset-12 rounded-dot border border-rule-raised/50 bg-gradient-to-br from-glass to-transparent shadow-well" />
             {guests === 1 ? (
@@ -103,9 +104,9 @@ function GuestSeatSelector({
               ))
             )}
           </div>
-          <div className="flex min-w-0 flex-1 flex-col items-start gap-8">
+          <div className="flex min-w-0 flex-col items-end gap-12 text-right">
             <Stepper value={guests} min={MIN_GUESTS} max={MAX_GUESTS} onChange={onChange} label="Guests" size="lg" decreaseLabel="One fewer guest" increaseLabel="One more guest" />
-            <p className="text-body-sm text-ink-muted" aria-live="polite">
+            <p className="max-w-card-preview text-body-sm text-ink-muted" aria-live="polite">
               {caption}
             </p>
           </div>

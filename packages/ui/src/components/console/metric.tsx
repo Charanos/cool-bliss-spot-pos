@@ -72,7 +72,20 @@ export function Metric({ label, value, detail, delta, tone = 'default', icon, ba
   );
 }
 
-/** A row of metrics: four across a desktop, two on anything narrower, one shared rhythm. */
-export function MetricGrid({ children, columns = 4, className }: { children: ReactNode; columns?: 2 | 3 | 4; className?: string }) {
-  return <div className={cx('grid grid-cols-1 gap-16 pad:grid-cols-2', columns === 4 ? 'desktop:grid-cols-4' : columns === 3 ? 'desktop:grid-cols-3' : null, className)}>{children}</div>;
+/**
+ * A row of metrics: four across a desktop, two on anything narrower, one shared rhythm. The strip is
+ * bounded by a rule above and below, with the same room on each side, so it stands apart from the
+ * page head and from the content under it. Right under a page header, the header's own rule is the
+ * one above. `bare` drops both, for a strip inside a card.
+ */
+export function MetricGrid({ children, columns = 4, className, bare = false }: { children: ReactNode; columns?: 2 | 3 | 4; className?: string; bare?: boolean }) {
+  const grid = <div className={cx('grid grid-cols-1 gap-16 pad:grid-cols-2', columns === 4 ? 'desktop:grid-cols-4' : columns === 3 ? 'desktop:grid-cols-3' : null, className)}>{children}</div>;
+  if (bare) return grid;
+  return (
+    <section data-metric-strip="" aria-label="Figures" className="metric-strip flex flex-col gap-32">
+      <div aria-hidden="true" data-strip-rule="top" className="rule-strip" />
+      {grid}
+      <div aria-hidden="true" className="rule-strip" />
+    </section>
+  );
 }

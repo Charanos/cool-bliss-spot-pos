@@ -80,7 +80,8 @@ export function HistoryView({ surface, staffId, onOpenTab }: HistoryViewProps) {
 
   const [preset, setPreset] = useState<HistoryPreset>('tonight');
   const [custom, setCustom] = useState<{ from: string; to: string } | null>(null);
-  const [scope, setScope] = useState<Scope>('own');
+  // The bar sees every settle and clear by default; a waiter starts on their own tables.
+  const [scope, setScope] = useState<Scope>(surface === 'counter' ? 'everyone' : 'own');
   const [show, setShow] = useState<Show>('all');
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(PAGE);

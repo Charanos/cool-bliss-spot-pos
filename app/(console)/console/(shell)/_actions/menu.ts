@@ -44,7 +44,7 @@ const productFields = {
   categoryId: id('category'),
   name: name('a name', 60),
   brand: optionalText(40, 'A brand'),
-  sku: name('a SKU', 32),
+  sku: optionalText(32, 'A SKU'),
   barcode: optionalText(32, 'A barcode'),
   containerVolumeMl: wholeNumber('The bottle size', 20_000).nullable(),
   abv: decimal('alcohol by volume').nullable(),
@@ -80,7 +80,7 @@ export async function createProduct(raw: {
     (input, actor) => {
       const base = pricingManage.defaultList();
       if (!base) throw new DomainError('There is no base price list to price it on. Add one in Pricing first.');
-      const product = manage.createProduct({ ...input, basePriceCents: input.basePrice, requestId: input.requestId ?? null, actor }, activeSuppliers(), (variantId) => {
+      const product = manage.createProduct({ ...input, sku: input.sku ?? '', basePriceCents: input.basePrice, requestId: input.requestId ?? null, actor }, activeSuppliers(), (variantId) => {
         pricing.setPrice({ listId: base.id, variantId, priceCents: input.basePrice, reason: 'The first price, set when it was added', actor });
       });
       return { id: product.id };
@@ -91,7 +91,7 @@ export async function createProduct(raw: {
 
 export async function updateProduct(raw: { id: string } & Record<string, unknown>): Promise<ActionResult> {
   const schema = z.object({ id: id('product'), ...productFields });
-  return runAction(schema, raw, (input, actor) => void manage.updateProduct({ ...input, actor }, activeSuppliers()), { revalidate: MENU });
+  return runAction(schema, raw, (input, actor) => void manage.updateProduct({ ...input, sku: input.sku ?? '', actor }, activeSuppliers()), { revalidate: MENU });
 }
 
 export async function setProductStatus(raw: { id: string; status: 'active' | 'archived'; reason: string }): Promise<ActionResult> {

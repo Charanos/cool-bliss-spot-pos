@@ -172,10 +172,25 @@ export interface NewProductInput extends ProductInput {
   requestId?: string | null;
 }
 
+/** A readable SKU from a product's name and size (TUSKER-LAGER-500), numbered on when it is taken. */
+function makeSku(name: string, ml: number | null, products: readonly { id: string; sku: string }[], self?: string): string {
+  const words = name
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const base = [...words, ...(ml ? [String(ml)] : [])].join('-').slice(0, 26).replace(/-+$/, '') || 'ITEM';
+  const taken = new Set(products.filter((p) => p.id !== self).map((p) => p.sku));
+  if (!taken.has(base)) return base;
+  for (let n = 2; ; n += 1) if (!taken.has(`${base}-${n}`)) return `${base}-${n}`;
+}
+
 function productFields(input: ProductInput, t: ReturnType<typeof catalogueTables>, suppliers: readonly { id: string; status: string }[]) {
   const category = t.categories.find((c) => c.id === input.categoryId && c.status === 'active');
   if (!category) throw new DomainError('Choose a category that is on the menu.');
-  const sku = input.sku.trim().toUpperCase();
+  // A SKU is optional: left empty, one is made from the name and bottle size, and kept unique.
+  const sku = input.sku.trim() ? input.sku.trim().toUpperCase() : makeSku(input.name, input.containerVolumeMl, t.products, input.id ?? undefined);
   if (!/^[A-Z0-9][A-Z0-9-]{1,31}$/.test(sku)) throw new DomainError('A SKU is 2 to 32 letters, numbers and dashes, such as SPR-GLB-750.');
   const skuClash = t.products.find((p) => p.sku === sku && p.id !== input.id);
   if (skuClash) throw new DomainError(`${skuClash.name} already uses the SKU ${sku}.`);

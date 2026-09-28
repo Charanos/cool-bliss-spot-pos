@@ -83,7 +83,7 @@ export interface PageHeaderProps {
  */
 export function PageHeader({ eyebrow, title, description, badge, aside, actions, className }: PageHeaderProps) {
   return (
-    <div className="flex flex-col gap-24">
+    <div data-page-head="" className="flex flex-col gap-24">
       <header className={cx('flex flex-wrap items-end justify-between gap-x-32 gap-y-16 pb-8', className)}>
         <div className="flex min-w-0 flex-col gap-6">
           {eyebrow ? <p className="label-caps text-accent-text">{eyebrow}</p> : null}
@@ -100,7 +100,7 @@ export function PageHeader({ eyebrow, title, description, badge, aside, actions,
           </div>
         ) : null}
       </header>
-      <div aria-hidden="true" className="rule-fade" />
+      <div aria-hidden="true" data-page-rule="" className="rule-strip" />
     </div>
   );
 }

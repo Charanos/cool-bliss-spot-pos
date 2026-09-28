@@ -14,10 +14,9 @@ export default function CounterSettingsPage() {
       <StationSettings
         surface="counter"
         extra={
-          <Panel title="Keyboard" id="settings-keys">
-            <p className="text-body-sm text-ink-muted">Letters move between the views, P pours the oldest ticket, and amounts can be typed. Press ? anywhere for the list.</p>
+          <Panel title="Keyboard" id="settings-keys" icon={IconKeyboard} lede="Letters move between the views, P pours the oldest ticket, and amounts can be typed. Press ? anywhere for the list.">
             <div>
-              <Button variant="secondary" icon={IconKeyboard} onClick={() => setKeys(true)}>
+              <Button variant="secondary" shape="pill" icon={IconKeyboard} onClick={() => setKeys(true)}>
                 Every key
               </Button>
             </div>

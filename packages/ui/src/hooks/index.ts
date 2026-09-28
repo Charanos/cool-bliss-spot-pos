@@ -132,23 +132,66 @@ export function useLongPress(options: {
   };
 }
 
-/** Close on outside pointer down and Escape, for menus. */
+/**
+ * Close a menu or dropdown: on a pointer down outside it, on Escape, when the page scrolls under it,
+ * and when the window is resized. A press on the control that opened it closes it and stays closed:
+ * the click that would toggle it open again is swallowed, so a trigger always toggles.
+ */
 export function useDismiss(ref: RefObject<HTMLElement | null>, open: boolean, onDismiss: () => void) {
   const latest = useRef(onDismiss);
   latest.current = onDismiss;
   useEffect(() => {
     if (!open) return undefined;
+    let pressedTrigger: Element | null = null;
+    let pressedAt = 0;
+    const inside = (target: EventTarget | null) => Boolean(ref.current && target instanceof Node && ref.current.contains(target));
     const onPointer = (event: PointerEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) latest.current();
+      if (inside(event.target)) return;
+      // Only the control that shows this menu as open; any other control works on its first press.
+      const trigger = event.target instanceof Element ? event.target.closest('[aria-expanded="true"]') : null;
+      pressedTrigger = trigger;
+      pressedAt = Date.now();
+      latest.current();
     };
+    const onClick = (event: MouseEvent) => {
+      if (!pressedTrigger || Date.now() - pressedAt > 800) return;
+      if (event.target instanceof Node && pressedTrigger.contains(event.target)) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      pressedTrigger = null;
+    };
+    // Scrolling the page away closes it; the settling of a scroll already under way when it opened,
+    // or a nudge of a few pixels, does not. Measured per scroller from the first scroll it makes.
+    const openedAt = Date.now();
+    const baseline = new Map<EventTarget, number>();
+    const position = (target: EventTarget | null) => (target instanceof Element ? target.scrollTop : window.scrollY);
+    const onScroll = (event: Event) => {
+      if (inside(event.target)) return;
+      const key = event.target ?? window;
+      const now = position(event.target);
+      if (Date.now() - openedAt < 250 || !baseline.has(key)) {
+        baseline.set(key, now);
+        return;
+      }
+      if (Math.abs(now - baseline.get(key)!) > 24) latest.current();
+    };
+    const onResize = () => latest.current();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') latest.current();
     };
     document.addEventListener('pointerdown', onPointer, true);
+    document.addEventListener('click', onClick, true);
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onResize);
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('pointerdown', onPointer, true);
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onResize);
       document.removeEventListener('keydown', onKey);
+      // The click that follows the closing press still needs swallowing after this effect ends.
+      window.setTimeout(() => document.removeEventListener('click', onClick, true), 800);
     };
   }, [open, ref]);
 }

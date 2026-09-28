@@ -7,6 +7,7 @@ import type { OutboxKind, OutboxPayload } from '@bliss/shared/sync';
 import { describe, expect, it } from 'vitest';
 import { actorWithRole, ownerActor } from '../test/actors';
 import { dataset } from './_data/source';
+import * as availability from './availability/service';
 import * as catalogueManage from './catalogue/manage';
 import * as catalogue from './catalogue/service';
 import * as identity from './identity/service';
@@ -102,6 +103,9 @@ describe('the menu', () => {
     expect(catalogue.version()).toBeGreaterThan(before);
     const variant = catalogue.variants().find((v) => v.productId === product.id)!;
     expect(pricing.currentPrice(variant.id)?.unitPriceCents).toBe(cents(250_000));
+    // Its stock was never received or counted, so it sells, and the Console lists it as not counted.
+    expect(inventory.stockRecorded(variant.id)).toBe(false);
+    expect(availability.evaluate(variant.id).state).toBe('available');
     // The same request again adds nothing.
     const again = catalogueManage.createProduct(
       { categoryId: spirits.id, name: 'Test Gin', brand: 'Test', sku: 'SPR-TST-750', barcode: null, containerVolumeMl: 750, abv: 40, defaultSupplierId: null, imageKey: null, firstVariant: { name: '750ml', kind: 'sealed', serveVolumeMl: null, depletionFactor: 1 }, basePriceCents: cents(250_000), requestId: 'test-gin-once', actor },
@@ -111,6 +115,15 @@ describe('the menu', () => {
       },
     );
     expect(again.id).toBe(product.id);
+    // Without a SKU, one is made from the name and size, and numbered on when it is taken.
+    const plain = (requestId: string) =>
+      catalogueManage.createProduct(
+        { categoryId: spirits.id, name: 'Test Rum', brand: null, sku: '', barcode: null, containerVolumeMl: 750, abv: 40, defaultSupplierId: null, imageKey: null, firstVariant: { name: '750ml', kind: 'sealed', serveVolumeMl: null, depletionFactor: 1 }, basePriceCents: cents(200_000), requestId, actor },
+        procurement.suppliers(),
+        (variantId) => pricing.setPrice({ listId: base.id, variantId, priceCents: cents(200_000), reason: 'The first price for the test', actor }),
+      );
+    expect(plain('test-rum-1').sku).toBe('TEST-RUM-750');
+    expect(plain('test-rum-2').sku).toBe('TEST-RUM-750-2');
     // A tot of it pours a share of the bottle.
     const tot = catalogueManage.saveVariant({ productId: product.id, name: 'tot', kind: 'serve', serveVolumeMl: 25, depletionFactor: 0, barcode: null, isDefault: false, actor }, (variantId) =>
       pricing.setPrice({ listId: base.id, variantId, priceCents: cents(20_000), reason: 'The first price for the test', actor }),

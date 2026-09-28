@@ -134,6 +134,8 @@ describe('the table lifecycle', () => {
     expect(isSeated(tab)).toBe(true);
     expect(trade.seatedTabs().some((t) => t.id === tabId)).toBe(true);
     expect(tonight().days.flatMap((d) => d.tabs).find((t) => t.id === tabId)?.state).toBe('seated');
+    // Paid but still seated: History does not claim the table was cleared when the bill was paid.
+    expect(tonight().days.flatMap((d) => d.tabs).find((t) => t.id === tabId)?.clearedAt).toBeNull();
   });
 
   it('refuses a bill request on a tab that is already paid', () => {

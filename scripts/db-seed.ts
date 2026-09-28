@@ -2,6 +2,10 @@
  * Seed the outlet's database. docs/17-persistence.md.
  *
  *   pnpm db:seed           builds eight weeks of trading up to now and replaces what is stored
+ *   pnpm db:handover       replaces what is stored with the outlet as handed over: the owner, the
+ *                          roles, stock locations and the Standard price list, and nothing made up.
+ *                          Asks for --yes, because everything else stored goes. The owner's PIN is
+ *                          BLISS_OWNER_PIN, or 111111 when unset; change it in the Console at once.
  *
  * The history is generated relative to this moment: tonight is in progress with live tabs, last
  * night is closed, and the weeks before it are the record. Run it shortly before a walkthrough so
@@ -10,15 +14,23 @@
  *
  * Reads DATABASE_URL from the environment (pnpm passes .env.local). Never prints it.
  */
+import { buildHandoverDataset } from '@bliss/db/seed/handover';
 import { buildDataset } from '@bliss/db/seed/history';
+import { hashPin } from '../modules/identity/credentials';
 import pg from 'pg';
 import { SCALARS, SCHEMA, WRITE_LOCK, databaseUrl, insertApplied, insertChanges, rowsOf, upsertRows, writeMeta } from '../modules/_data/records';
 
 async function main() {
+  const handover = process.argv.includes('--handover');
+  if (handover && !process.argv.includes('--yes')) {
+    throw new Error('This replaces every product, person, device, tab, bill and count stored with an empty outlet and one owner. Run it again with --yes to go ahead.');
+  }
+  const pin = process.env.BLISS_OWNER_PIN ?? '111111';
+  if (handover && !/^\d{4,8}$/.test(pin)) throw new Error('BLISS_OWNER_PIN must be four to eight digits.');
   const url = databaseUrl();
   if (!url) throw new Error('DATABASE_URL is not set. Put it in .env.local.');
   const started = Date.now();
-  const data = buildDataset(Date.now());
+  const data = handover ? buildHandoverDataset({ ownerPinHash: hashPin(pin), ownerPinLength: pin.length }) : buildDataset(Date.now());
   const rows = rowsOf(data);
   console.log(`Generated ${rows.length} rows across ${new Set(rows.map((r) => r.collection)).size} collections in ${Date.now() - started}ms.`);
 
@@ -40,6 +52,7 @@ async function main() {
     await writeMeta(client, meta);
     await client.query('commit');
     console.log(`Seeded version ${version} in ${Date.now() - started}ms. Tonight is ${data.currentBusinessDate}; epoch ${data.epoch}.`);
+    if (handover) console.log(`Handed over: ${data.staff[0]!.displayName} is the owner. Sign in to the Console with the PIN given, then add the menu, people, zones, tables and devices.`);
   } catch (error) {
     await client.query('rollback').catch(() => undefined);
     throw error;

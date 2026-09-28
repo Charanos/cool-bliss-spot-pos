@@ -52,7 +52,7 @@ export function CounterTabCard({ tab, now, onOpen }: { tab: CounterTab; now: num
         ) : null}
       </span>
 
-      <span className="flex min-h-[24px] min-w-0 flex-wrap items-center gap-8" aria-hidden="true">
+      <span className="flex min-h-24 min-w-0 flex-wrap items-center gap-8" aria-hidden="true">
         <StatePill tone={stage.tone} more={stage.more} live={stage.live}>
           {stage.word}
         </StatePill>

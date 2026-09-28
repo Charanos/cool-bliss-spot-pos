@@ -62,6 +62,19 @@ function onHandIndex(): Map<string, number> {
   return ledger().onHand;
 }
 
+/** How stock first comes to be known: a delivery, an opening balance or a count. */
+const RECORDING: readonly MovementType[] = ['receipt', 'opening_balance', 'count_adjustment', 'transfer_in'];
+
+/**
+ * Whether this item's stock has ever been recorded: received, counted or given an opening balance.
+ * Until it has, the floor can sell it, since nothing says the shelf is empty; the Console shows it as
+ * not counted yet. On a new outlet that is every item until its first delivery or count.
+ */
+export function stockRecorded(variantId: string): boolean {
+  const byType = ledger().lastAt.get(variantId);
+  return Boolean(byType && RECORDING.some((t) => byType.has(t)));
+}
+
 /**
  * On hand is the sum of the ledger. docs/04-data-model.md, "On hand at a moment". With `at`, the
  * sum runs to that instant, which is the definition; without it, a cached index of the same sum.

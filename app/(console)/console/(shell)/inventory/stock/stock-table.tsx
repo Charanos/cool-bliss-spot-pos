@@ -12,7 +12,7 @@ import { Callout } from '@bliss/ui/components/console/section';
 import { assetUrl } from '@/lib/assets';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { AnimatedMoney, Money } from '@bliss/ui/components/money';
-import { StatusChip } from '@bliss/ui/components/status';
+import { StatusChip, ToneChip } from '@bliss/ui/components/status';
 import { IconAlertTriangle, IconBan, IconHistory, IconLock, IconLockOpen, IconScale, IconShoppingCart } from '@tabler/icons-react';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { useRouter } from 'next/navigation';
@@ -27,6 +27,8 @@ function stateChip(row: StockRow) {
   if (row.state === 'finished') return <StatusChip status="finished" />;
   if (row.state === 'last_few') return <StatusChip status="last_few" />;
   if (row.state === 'low') return <StatusChip status="low" />;
+  // Never received or counted: on sale, and waiting for its first delivery, count or opening figure.
+  if (!row.counted) return <ToneChip tone="info">Not counted yet</ToneChip>;
   return <span className="sr-only">Available</span>;
 }
 
@@ -207,7 +209,7 @@ export function StockTable({
               title={r.variant}
               subtitle={r.location === 'All locations' ? r.categoryName : `${r.categoryName}, ${r.location}`}
               href={`/console/catalogue/products/${r.productId}`}
-              meta={r.state !== 'available' || r.reason === 'hold' ? stateChip(r) : null}
+              meta={r.state !== 'available' || r.reason === 'hold' || !r.counted ? stateChip(r) : null}
               actions={
                 <>
                   {r.holdId ? (

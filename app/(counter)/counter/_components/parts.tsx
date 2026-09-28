@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
  * The glass the Counter's panes are cut from: the Floor's order card, at the Counter's scale.
  * One pane per thing, never a pane inside a pane (bliss/one-pane).
  */
-export const PANE = 'rounded-sheet border border-rule-raised/40 bg-raised/70 backdrop-blur-glass tablet:rounded-sheet';
+export const PANE = 'rounded-sheet border border-rule-raised/40 surface-card tablet:rounded-sheet';
 
 /** A pane with a caps heading and an optional figure or action on the right of it. */
 export function Pane({ title, aside, children, className }: { title?: ReactNode; aside?: ReactNode; children: ReactNode; className?: string }) {
