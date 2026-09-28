@@ -4,7 +4,7 @@ import type { CashMovement } from '@bliss/db/seed/types';
 import type { Bill, BillScope, OrderLine, Tender } from '@bliss/shared/domain';
 import { type Cents, ZERO, abs, add, cents, compare, formatKes, isPositive, multiplyByQty, scale, subtract, sum } from '@bliss/shared/money';
 import { type Actor, checkReason } from '@bliss/shared/reason';
-import { amountDue, billableLines, checkTenders, evenShares, expectedCash, linesTotal } from '@bliss/shared/settlement';
+import { amountDue, billableLines, checkTenders, evenShares, linesTotal } from '@bliss/shared/settlement';
 import type { OutboxPayload } from '@bliss/shared/sync';
 import { businessDate } from '@bliss/shared/time';
 import { CommandRejected, touch } from '../_data/changes';
@@ -16,7 +16,7 @@ import * as pricing from '../pricing/service';
 import * as tradeCommands from '../trade/commands';
 import * as trade from '../trade/service';
 import { settlementTables } from './schema';
-import { billedLineIds, cashTakenIn, drawerProjection, openDrawerFor } from './service';
+import { billedLineIds, drawerProjection, expectedCashFor, openDrawerFor } from './service';
 
 /**
  * Settlement writes. docs/05 sections 1.5, 1.8, 2.6, 2.7 and 2.12; docs/14 sections 6 and 7.
@@ -284,16 +284,23 @@ export function openDrawer(p: OutboxPayload<'drawer.open'>, actor: Actor): void 
   audit.record({ outletId: outlet.id, actorStaffId: actor.staffId, actorDeviceId: actor.deviceId, action: 'drawer.opened', entityType: 'drawer_session', entityId: p.sessionId, before: null, after: { floatCents: float.toString() }, reason: null, severity: 'info' });
 }
 
+const MOVE_AUDIT = { drop_to_safe: 'drawer.cash_dropped', paid_in: 'drawer.cash_paid_in', paid_out: 'drawer.cash_paid_out' } as const;
+
+/**
+ * Cash in or out of an open drawer, other than a sale: to the safe, put in, or paid out for the
+ * business. Each is recorded with its reason and counted in what the drawer should hold at close.
+ */
 export function dropCash(p: OutboxPayload<'drawer.drop'>, actor: Actor): void {
   const t = settlementTables();
   if (t.cashMovements.some((m) => m.id === p.movementId)) return;
   const session = t.drawerSessions.find((s) => s.id === p.sessionId);
   if (!session || session.status !== 'open' || session.deviceId !== actor.deviceId) throw new CommandRejected('DRAWER_NOT_OPEN', 'That drawer is not open on this device.');
   const amount = cents(p.amountCents);
-  if (!isPositive(amount)) throw new CommandRejected('VALIDATION_FAILED', 'A drop needs an amount.');
-  t.cashMovements.push({ id: p.movementId, drawerSessionId: session.id, kind: 'drop_to_safe', amountCents: amount, reason: p.reason, createdBy: actor.staffId, deviceId: session.deviceId, occurredAt: p.at });
+  const kind = p.kind ?? 'drop_to_safe';
+  if (!isPositive(amount)) throw new CommandRejected('VALIDATION_FAILED', 'Cash in or out needs an amount.');
+  t.cashMovements.push({ id: p.movementId, drawerSessionId: session.id, kind, amountCents: amount, reason: p.reason, createdBy: actor.staffId, deviceId: session.deviceId, occurredAt: p.at });
   touch('drawerSessions', session.id);
-  audit.record({ outletId: session.outletId, actorStaffId: actor.staffId, actorDeviceId: actor.deviceId, action: 'drawer.cash_dropped', entityType: 'drawer_session', entityId: session.id, before: null, after: { amountCents: amount.toString() }, reason: p.reason, severity: 'notable' });
+  audit.record({ outletId: session.outletId, actorStaffId: actor.staffId, actorDeviceId: actor.deviceId, action: MOVE_AUDIT[kind], entityType: 'drawer_session', entityId: session.id, before: null, after: { amountCents: amount.toString(), kind }, reason: p.reason, severity: 'notable' });
 }
 
 /** Tabs that must be settled or voided before the drawer closes for the business day. */
@@ -314,9 +321,7 @@ export function countDrawer(input: { sessionId: string; countedCents: Cents; act
     const open = closePreflight();
     if (open.length > 0) throw new CommandRejected('VALIDATION_FAILED', `${open.length} ${open.length === 1 ? 'tab is' : 'tabs are'} still open. They must be settled or voided first.`);
     if (compare(input.countedCents, ZERO) < 0) throw new CommandRejected('VALIDATION_FAILED', 'A count cannot be below zero.');
-    // Drops to the safe and refunds paid out both left the drawer.
-    const drops = t.cashMovements.filter((m) => m.drawerSessionId === session.id && (m.kind === 'drop_to_safe' || m.kind === 'payout')).map((m) => m.amountCents);
-    const expected = expectedCash({ float: session.openingFloatCents, cashTaken: cashTakenIn(session.id), drops });
+    const expected = expectedCashFor(session);
     session.status = 'counting';
     session.countedCashCents = input.countedCents;
     session.expectedCashCents = expected;

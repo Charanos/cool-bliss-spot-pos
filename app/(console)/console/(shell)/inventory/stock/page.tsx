@@ -7,6 +7,7 @@ import * as inventory from '@/modules/inventory/service';
 import * as identity from '@/modules/identity/service';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { IconClipboardList } from '@tabler/icons-react';
+import { BelowZeroNotice } from './below-zero';
 import { StockTable } from './stock-table';
 import { ViewHeader } from '../../_components/workspace';
 
@@ -40,6 +41,8 @@ export interface StockRow {
   attention: boolean;
   /** Stock never received, counted or opened: it sells, and needs its first count or delivery. */
   counted: boolean;
+  /** Sold beyond what the record said was there, since its last count or delivery. */
+  needsCount: boolean;
 }
 
 /**
@@ -96,10 +99,13 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         holdReason: hold?.reason ?? null,
         variancePct: variance?.pct ?? null,
         counted: inventory.stockRecorded(variant.id),
-        attention: !inventory.stockRecorded(variant.id) || entry.state !== 'available' || totalOnHand <= product.reorderPoint || totalOnHand <= threshold || (variance !== null && Math.abs(variance.pct) > 2),
+        needsCount: inventory.needsCount(variant.id),
+        attention: !inventory.stockRecorded(variant.id) || inventory.needsCount(variant.id) || onHand < 0 || entry.state !== 'available' || totalOnHand <= product.reorderPoint || totalOnHand <= threshold || (variance !== null && Math.abs(variance.pct) > 2),
       });
     }
   }
+
+  const belowZero = inventory.belowZeroCount();
 
   return (
     <>
@@ -112,6 +118,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         }
       />
 
+    {belowZero > 0 ? <BelowZeroNotice count={belowZero} /> : null}
     <StockTable
       rows={rows}
       locations={locations.map((l) => ({ value: l.id, label: l.name }))}

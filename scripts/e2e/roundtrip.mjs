@@ -51,10 +51,21 @@ async function station(surface, viewport, ua, who, pin) {
 
 const shot = (page, name) => page.screenshot({ path: `${SHOTS}/${String(step).padStart(2, '0')}-${name}.png` });
 
-let floor, counter, table;
+let floor, counter, table, desk, openAtStart;
+// The Tonight card in the Console's desk says how many tabs are open; it lives in the layout, which a
+// page change never renders again, so only the Console's own refresh can move it.
+const openOnDesk = async () => Number((await desk.page.locator('body').innerText()).match(/(\d+) open\b/)?.[1] ?? NaN);
 try {
   await check('A waiter signs in on the Floor', async () => {
     floor = await station('floor', { width: 768, height: 1024 }, IPAD, 'Amina', '111111');
+  });
+
+  await check('A manager opens the Console on the open tabs, and leaves it there', async () => {
+    desk = await station('console', { width: 1440, height: 900 }, null, 'Dan', '555555');
+    await desk.page.goto(`${BASE}/console/trade/open`);
+    await desk.page.getByRole('heading', { name: 'Open tabs', level: 1 }).waitFor({ timeout: 15_000 });
+    openAtStart = await openOnDesk();
+    if (Number.isNaN(openAtStart)) throw new Error('The Tonight card shows no open count');
   });
 
   await check('She opens a tab on a free table for two', async () => {
@@ -107,6 +118,15 @@ try {
     }
     if ((await ours.count()) > 0) throw new Error(`${table} still has lines to pour`);
     await shot(page, 'counter-poured');
+  });
+
+  await check('The Console, never reloaded, shows the tab by itself', async () => {
+    // The page keeps itself current: nothing here navigates or reloads it.
+    const started = Date.now();
+    while ((await openOnDesk()) !== openAtStart + 1) {
+      if (Date.now() - started > 30_000) throw new Error(`The Tonight card still shows ${await openOnDesk()} open, not ${openAtStart + 1}`);
+      await desk.page.waitForTimeout(1000);
+    }
   });
 
   await check('The Floor marks it served and asks for the bill', async () => {
@@ -174,6 +194,15 @@ try {
     await shot(page, 'counter-history-cleared');
     const fl = floor.page;
     await fl.getByRole('button', { name: `Guests have left ${table}. Clear the table` }).waitFor({ state: 'detached', timeout: 12_000 });
+  });
+
+  await check('The Console, still never reloaded, lets the cleared table go', async () => {
+    const started = Date.now();
+    while ((await openOnDesk()) !== openAtStart) {
+      if (Date.now() - started > 30_000) throw new Error(`The Tonight card still shows ${await openOnDesk()} open, not ${openAtStart}`);
+      await desk.page.waitForTimeout(1000);
+    }
+    await desk.ctx.close();
   });
 
   await check('The Console shows the bill', async () => {

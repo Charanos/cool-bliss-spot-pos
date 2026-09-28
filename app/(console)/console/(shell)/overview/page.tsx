@@ -20,9 +20,10 @@ export const metadata: Metadata = { title: 'Overview' };
  * needs a person now, and what is on the floor at this moment.
  */
 export default function OverviewPage() {
-  const clock = reporting.clock();
   const outlet = identity.outlet();
-  const date = clock.lastNight;
+  // Tonight so far while it trades, last night otherwise: the same night the Tonight card shows.
+  const { date, live } = reporting.nightInView();
+  const night = live ? 'Tonight so far' : 'Last night';
   const headline = reporting.headline(date);
   const hours = reporting.salesByHour(date);
   const attention = reporting.needsAttention();
@@ -39,7 +40,7 @@ export default function OverviewPage() {
     <div className="flex flex-col gap-32">
       <PageHeader
         title="Overview"
-        description={`Last night, ${formatWeekday(date)} ${formatIsoDate(date)}, at a glance, and what needs you now.`}
+        description={`${night}, ${formatWeekday(date)} ${formatIsoDate(date)}, at a glance, and what needs you now.`}
         actions={
           <>
             <ButtonLink href="/console/reports/sales" variant="secondary" icon={IconChartBar}>
@@ -83,7 +84,7 @@ export default function OverviewPage() {
 
       <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-[3fr_2fr]">
         <Card aria-labelledby="overview-hours">
-          <CardHeader band level="h2" titleId="overview-hours" icon={IconClock} title="Sales by hour" subtitle="Last night, by the hour each line was fired" />
+          <CardHeader band level="h2" titleId="overview-hours" icon={IconClock} title="Sales by hour" subtitle={`${night}, by the hour each line was fired`} />
           <SalesByHour data={hours.map((h) => ({ key: h.hour, label: h.hour.slice(0, 2), value: h.value }))} />
         </Card>
 
@@ -110,7 +111,7 @@ export default function OverviewPage() {
             titleId="overview-movers"
             icon={IconTrendingUp}
             title="Top movers"
-            subtitle="Last night, by sales"
+            subtitle={`${night}, by sales`}
             actions={
               <ButtonLink href="/console/reports/sales" variant="ghost" size="sm">
                 Sales report

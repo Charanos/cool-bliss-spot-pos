@@ -29,7 +29,9 @@ export function businessRange(param: string | undefined, fallback: RangeKey = '7
   const clock = reporting.clock();
   const outlet = identity.outlet();
   const key = (param && (param === 'tonight' || param in DAYS) ? param : fallback) as RangeKey;
-  const to = key === 'tonight' ? clock.current : clock.lastNight;
+  // A span of days runs up to the day in view: tonight once it has traded, so what happened tonight
+  // is in the default view of every list; "Last night" alone means the night before.
+  const to = key === 'tonight' ? clock.current : key === '1' ? clock.lastNight : reporting.nightInView().date;
   const days = key === 'tonight' ? 1 : DAYS[key];
   const earliest = clock.first;
   const wanted = addDays(to, -(days - 1));

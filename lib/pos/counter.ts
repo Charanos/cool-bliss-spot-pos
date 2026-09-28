@@ -200,9 +200,12 @@ export async function openDrawer(float: Cents): Promise<void> {
   afterCommit();
 }
 
-export async function dropCash(amount: Cents, reason: string): Promise<void> {
+export type CashMove = 'drop_to_safe' | 'paid_in' | 'paid_out';
+
+/** Cash in or out of the drawer, other than a sale: to the safe, put in, or paid out, with its reason. */
+export async function moveCash(kind: CashMove, amount: Cents, reason: string): Promise<void> {
   const ctx = await context();
-  if (!isPositive(amount)) throw new Error('Enter the amount going to the safe.');
+  if (!isPositive(amount)) throw new Error('Enter the amount.');
   const check = checkReason(reason);
   if (!check.ok) throw new Error(check.message);
   const drawer = await openDrawerOnThisDevice();
@@ -211,8 +214,8 @@ export async function dropCash(amount: Cents, reason: string): Promise<void> {
   const movementId = newId(ctx.device.id);
   const now = Date.now();
   await db.transaction('rw', [db.drawers, db.outbox, db.meta], async () => {
-    await db.drawers.update(drawer.id, { drops: [...drawer.drops, { id: movementId, amountCents: amount, reason: check.reason, occurredAt: now, createdBy: ctx.session.staffId }] });
-    await enqueue(ctx, 'drawer.drop', drawer.id, { v: 1, movementId, sessionId: drawer.id, amountCents: toJSON(amount), reason: check.reason, at: now });
+    await db.drawers.update(drawer.id, { drops: [...drawer.drops, { id: movementId, kind, amountCents: amount, reason: check.reason, occurredAt: now, createdBy: ctx.session.staffId }] });
+    await enqueue(ctx, 'drawer.drop', drawer.id, { v: 1, movementId, sessionId: drawer.id, kind, amountCents: toJSON(amount), reason: check.reason, at: now });
   });
   afterCommit();
 }

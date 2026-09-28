@@ -29,6 +29,8 @@ function stateChip(row: StockRow) {
   if (row.state === 'low') return <StatusChip status="low" />;
   // Never received or counted: on sale, and waiting for its first delivery, count or opening figure.
   if (!row.counted) return <ToneChip tone="info">Not counted yet</ToneChip>;
+  // More went out than the record held: the shelf needs counting to know what is really there.
+  if (row.needsCount || row.onHand < 0) return <ToneChip tone="low">Count needed</ToneChip>;
   return <span className="sr-only">Available</span>;
 }
 
@@ -209,7 +211,7 @@ export function StockTable({
               title={r.variant}
               subtitle={r.location === 'All locations' ? r.categoryName : `${r.categoryName}, ${r.location}`}
               href={`/console/catalogue/products/${r.productId}`}
-              meta={r.state !== 'available' || r.reason === 'hold' || !r.counted ? stateChip(r) : null}
+              meta={r.state !== 'available' || r.reason === 'hold' || !r.counted || r.needsCount || r.onHand < 0 ? stateChip(r) : null}
               actions={
                 <>
                   {r.holdId ? (

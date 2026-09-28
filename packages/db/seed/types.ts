@@ -140,12 +140,21 @@ export interface SupplierProduct {
   removed?: boolean;
 }
 
-/** Cash that moved in or out of a drawer other than a sale: the float and drops to the safe. docs/04. */
+/**
+ * Cash that moved in or out of a drawer other than a sale. docs/04. In: the float, and cash put in
+ * (change from the safe, a top-up). Out: drops to the safe, refunds paid out, and cash paid out for
+ * the business (ice, charcoal, a delivery). The amount is always positive; the kind says which way.
+ */
+export type CashMovementKind = 'opening_float' | 'drop_to_safe' | 'payout' | 'adjustment' | 'paid_in' | 'paid_out';
+
+/** Kinds that take cash out of the drawer; `opening_float` and `paid_in` put it in. */
+export const CASH_OUT: readonly CashMovementKind[] = ['drop_to_safe', 'payout', 'paid_out'];
+
 export interface CashMovement {
   id: string;
   drawerSessionId: string;
-  kind: 'opening_float' | 'drop_to_safe' | 'payout' | 'adjustment';
-  /** Signed: a drop is negative. */
+  kind: CashMovementKind;
+  /** Always positive; `kind` says whether it went in or out. */
   amountCents: Cents;
   reason: string | null;
   createdBy: string;

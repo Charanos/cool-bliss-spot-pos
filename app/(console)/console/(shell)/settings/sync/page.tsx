@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import * as identity from '@/modules/identity/service';
 import * as sync from '@/modules/sync/service';
 import { ViewHeader } from '../../_components/workspace';
+import { dataset } from '@/modules/_data/source';
+import { ClearTrade } from './clear-trade';
 import { type DeadLetterRow, SyncView } from './sync-view';
 
 export const metadata: Metadata = { title: 'Sync' };
@@ -34,6 +36,7 @@ export default async function SyncPage() {
   const tz = identity.outlet().timezone;
   const devices = identity.devices();
   const actor = await identity.currentConsoleActor();
+  const data = dataset();
   const rows: DeadLetterRow[] = sync.deadLetters().map((d) => {
     const payload = (d.payload ?? {}) as { tab?: string; lines?: number };
     return {
@@ -54,6 +57,7 @@ export default async function SyncPage() {
     <>
       <ViewHeader page="/console/settings/sync" />
       <SyncView rows={rows} timezone={tz} canResolve={identity.can(actor.staffId, 'device.manage')} held={devices.reduce((n, d) => n + d.unsyncedCount, 0)} offline={devices.filter((d) => d.status === 'active' && !d.online).length} />
+      {actor.role.key === 'owner' ? <ClearTrade counts={{ tabs: data.tabs.length, bills: data.bills.length, shifts: data.shifts.length, drawers: data.drawerSessions.length }} /> : null}
     </>
   );
 }

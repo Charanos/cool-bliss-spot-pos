@@ -63,7 +63,8 @@ export interface RecipeEntry {
  * committed the expected figure is absent from the row, because the server never sent it.
  */
 export interface DrawerRow extends Pick<DrawerSession, 'id' | 'businessDate' | 'deviceId' | 'openedBy' | 'openedAt' | 'openingFloatCents' | 'status'> {
-  drops: { id: string; amountCents: DrawerSession['openingFloatCents']; reason: string | null; occurredAt: number; createdBy: string }[];
+  /** Every cash movement but the float. Rows from before `kind` was sent are drops to the safe. */
+  drops: { id: string; kind?: 'drop_to_safe' | 'payout' | 'paid_in' | 'paid_out' | 'adjustment'; amountCents: DrawerSession['openingFloatCents']; reason: string | null; occurredAt: number; createdBy: string }[];
   cashBills: number;
   closedBy?: string | null;
   closedAt?: number | null;

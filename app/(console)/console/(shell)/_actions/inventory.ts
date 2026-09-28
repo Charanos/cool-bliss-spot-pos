@@ -32,6 +32,13 @@ export async function writeOff(raw: { variantId: string; locationId: string; qty
   });
 }
 
+/** Bring every balance below zero back to zero, each flagged for a count. */
+export async function coverNegatives(): Promise<ActionResult> {
+  return runAction(z.object({}), {}, (_input, actor) => {
+    inventory.coverNegatives(actor);
+  });
+}
+
 /** Start a count, then go straight to it. A form action: failures come back to the form as a query. */
 export async function openCount(formData: FormData): Promise<void> {
   const raw = {

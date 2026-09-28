@@ -33,6 +33,8 @@ interface LedgerIndex {
 
 let ledgerCache: LedgerIndex | null = null;
 
+const isPlaceholder = (m: StockMovement) => m.movementType === 'opening_balance' && m.sourceType === 'opening' && m.reason === 'Placeholder until the first stock take';
+
 function ledger(): LedgerIndex {
   const { movements } = inventoryTables();
   const last = movements[movements.length - 1];
@@ -50,6 +52,9 @@ function ledger(): LedgerIndex {
       list.push({ at: m.occurredAt, qty: -m.qtyDelta });
       sales.set(m.productVariantId, list);
     }
+    // The handover's placeholder of one on the shelf was never a count: it does not make the item's
+    // stock recorded, so the item sells as "Not counted yet" until a real count or delivery (D-30).
+    if (isPlaceholder(m)) continue;
     const byType = lastAt.get(m.productVariantId) ?? new Map<MovementType, number>();
     byType.set(m.movementType, Math.max(byType.get(m.movementType) ?? 0, m.occurredAt));
     lastAt.set(m.productVariantId, byType);
@@ -779,6 +784,7 @@ export function recordSale(input: SaleInput) {
   for (const [variantId, amount] of depletionFor(input)) {
     if (amount === 0) continue;
     const locationId = saleLocation(variantId, amount, input.preferLocationKind);
+    coverSale({ variantId, locationId, amount, sourceId: input.lineId, actor: input.actor });
     const deductions = depleteBatches(variantId, amount);
     for (const { batchId, qty } of deductions) {
       if (qty <= 0) continue;
@@ -795,6 +801,66 @@ export function recordSale(input: SaleInput) {
       });
     }
   }
+}
+
+const round4 = (n: number) => Math.round(n * 10_000) / 10_000;
+
+/**
+ * Stock never reads below zero. A sale is recorded in full, because it happened: an order fired
+ * offline, or on a tablet that had not yet heard an item was finished, is still a drink that went
+ * out. So before the sale takes stock from where it is sold:
+ *
+ *   1. what the store holds comes to the bar first, as a transfer, since that is where it went;
+ *   2. anything still missing was there but never recorded, and is put back as `sale_cover`, which
+ *      flags the item for a count ("Count needed" in Stock) and never counts as a recording itself.
+ *
+ * A balance already below zero, from before this rule, is brought back to zero the same way.
+ */
+function coverSale(input: { variantId: string; locationId: string; amount: number; sourceId: string; actor: Actor }) {
+  let short = round4(input.amount - onHand(input.variantId, input.locationId));
+  if (short <= 0) return;
+  const elsewhere = locations()
+    .filter((l) => l.id !== input.locationId)
+    .map((l) => ({ id: l.id, qty: onHand(input.variantId, l.id) }))
+    .filter((l) => l.qty > 0)
+    .sort((a, b) => b.qty - a.qty);
+  for (const from of elsewhere) {
+    if (short <= 0) break;
+    const qty = round4(Math.min(from.qty, short));
+    recordMovement({ variantId: input.variantId, locationId: from.id, qtyDelta: -qty, type: 'transfer_out', sourceType: 'sale_restock', sourceId: input.sourceId, reason: null, actor: input.actor });
+    recordMovement({ variantId: input.variantId, locationId: input.locationId, qtyDelta: qty, type: 'transfer_in', sourceType: 'sale_restock', sourceId: input.sourceId, reason: null, actor: input.actor });
+    short = round4(short - qty);
+  }
+  if (short <= 0) return;
+  recordMovement({ variantId: input.variantId, locationId: input.locationId, qtyDelta: short, type: 'sale_cover', sourceType: 'order_line', sourceId: input.sourceId, reason: 'Sold beyond the recorded stock. Count it.', actor: input.actor });
+}
+
+/** Items whose stock was sold beyond the record since they were last counted or received. */
+export function needsCount(variantId: string): boolean {
+  const byType = ledger().lastAt.get(variantId);
+  const covered = byType?.get('sale_cover');
+  if (!covered) return false;
+  const since = Math.max(byType?.get('count_adjustment') ?? 0, byType?.get('receipt') ?? 0, byType?.get('opening_balance') ?? 0);
+  return covered > since;
+}
+
+/** How many item and location balances read below zero. */
+export function belowZeroCount(): number {
+  return [...onHandIndex().values()].filter((q) => q < 0).length;
+}
+
+/**
+ * Bring every balance below zero back to zero, in every location, from before stock was kept from
+ * going there. Each is recorded as sold beyond the record and flagged for a count. Returns how many
+ * balances moved.
+ */
+export function coverNegatives(actor: Actor): number {
+  const index = onHandIndex();
+  const below = [...index.entries()].filter(([, qty]) => qty < 0).map(([key, qty]) => ({ variantId: key.split('|')[0]!, locationId: key.split('|')[1]!, qty }));
+  for (const b of below) {
+    recordMovement({ variantId: b.variantId, locationId: b.locationId, qtyDelta: round4(-b.qty), type: 'sale_cover', sourceType: 'correction', sourceId: null, reason: 'Below zero before stock was kept from going there. Count it.', actor });
+  }
+  return below.length;
 }
 
 /** A voided line gives its stock back, to the location and the lot each sale movement took it from. */
