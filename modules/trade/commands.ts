@@ -17,6 +17,7 @@ import * as inventory from '../inventory/service';
 import * as settlement from '../settlement/service';
 import * as shifts from './shifts';
 import { tradeTables } from './schema';
+import { emit } from '../_data/events';
 
 /**
  * Trade writes, applied from device outbox entries. docs/05 sections 1 to 2.5 and 2.11, docs/14
@@ -224,6 +225,7 @@ export function fireOrder(p: OutboxPayload<'order.fire'>, actor: Actor): { stock
     if (modifiers.length > 0) touch('lineModifiers', ...modifiers.map((m) => m.id));
   }
   touch('orders', order.id);
+  emit('order.fired', { tabId: tab.id, lineIds: p.lines.map((l) => l.lineId) });
   return { stockConflictLineIds: conflicts };
 }
 

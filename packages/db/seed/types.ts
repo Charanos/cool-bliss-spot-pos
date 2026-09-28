@@ -150,6 +150,38 @@ export type CashMovementKind = 'opening_float' | 'drop_to_safe' | 'payout' | 'ad
 /** Kinds that take cash out of the drawer; `opening_float` and `paid_in` put it in. */
 export const CASH_OUT: readonly CashMovementKind[] = ['drop_to_safe', 'payout', 'paid_out'];
 
+/** What a WhatsApp alert is about. docs/20. */
+export type AlertKind = 'night_summary' | 'drawer_variance' | 'void_refund' | 'stock_out' | 'trade_cleared' | 'test';
+
+/**
+ * One WhatsApp message to one number, queued in the same write as what caused it, so an alert is
+ * never lost and never sent twice. The sender works through the queue after the response.
+ */
+export interface NotificationRecord {
+  id: string;
+  outletId: string;
+  kind: AlertKind;
+  /** One message per key and number: a night's summary, an item finished that night. */
+  dedupeKey: string;
+  /** E.164 without the plus: 254118933850. */
+  to: string;
+  /** The approved WhatsApp template, and its body parameters in order. */
+  template: string;
+  params: string[];
+  /** The message as it reads, for the Console log. */
+  preview: string;
+  businessDate: string | null;
+  createdAt: number;
+  status: 'queued' | 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  attempts: number;
+  nextAttemptAt: number;
+  leaseUntil: number | null;
+  lastError: string | null;
+  providerId: string | null;
+  sentAt: number | null;
+  updatedAt: number;
+}
+
 export interface CashMovement {
   id: string;
   drawerSessionId: string;
@@ -287,6 +319,7 @@ export interface Dataset {
   /** Changes a fresh dataset makes the devices discard their local trade copy. docs/14 section 4. */
   epoch: string;
   cashMovements: CashMovement[];
+  notifications: NotificationRecord[];
   changeSeq: number;
   changes: ChangeRef[];
   /** Outbox entry ids already applied, so a retried entry is acknowledged without a second effect. */

@@ -3,6 +3,7 @@ import 'server-only';
 import type { AuditEvent, AuditSeverity } from '@bliss/shared/domain';
 import { createUuidV7 } from '@bliss/shared/id';
 import { auditTables } from './schema';
+import { emit } from '../_data/events';
 
 const nextId = createUuidV7();
 
@@ -39,6 +40,7 @@ export function record(input: RecordInput): AuditEvent {
   // Append-only: never edited, never removed. Appending (not prepending) keeps every stored row where
   // it is, so a write persists one new row instead of renumbering the whole log. Readers sort.
   auditTables().events.push(event);
+  emit('audit', event);
   return event;
 }
 

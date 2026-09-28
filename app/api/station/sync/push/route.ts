@@ -6,6 +6,7 @@ import { currentSeq } from '@/modules/_data/changes';
 import * as availability from '@/modules/availability/service';
 import { withWrite } from '@/modules/_data/store';
 import { applyEntry } from '@/modules/sync/apply';
+import { kickNotifications } from '@/modules/notify/send';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,5 +55,6 @@ export async function POST(request: Request) {
       return applyEntry(parsed.data);
     }),
   );
+  kickNotifications();
   return wireResponse({ results, availabilityVersion: availability.map().version, cursor: currentSeq() });
 }

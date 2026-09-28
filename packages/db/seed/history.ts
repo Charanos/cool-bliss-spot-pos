@@ -1084,6 +1084,7 @@ export function buildDataset(now: number = Date.now(), days = 56): Dataset {
     availabilityVersion: 4_000 + movements.length,
     epoch: `${clock.current}:${Date.now().toString(36)}`,
     cashMovements: [],
+    notifications: [],
     changeSeq: 0,
     changes: [],
     applied: new Set<string>(),

@@ -14,6 +14,8 @@ import * as settlement from '../settlement/service';
 import * as tradeCommands from '../trade/commands';
 import * as trade from '../trade/service';
 import { syncTables } from './schema';
+// Alerts are queued inside the writes that raise them. docs/20.
+import '../notify/triggers';
 
 /**
  * The development applier behind POST /api/dev/sync/push, and the change feed behind pull. docs/14

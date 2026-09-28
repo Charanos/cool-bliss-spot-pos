@@ -52,6 +52,17 @@ export interface Outlet {
   status: 'active' | 'archived';
   /** Absent until set: the defaults in `modules/identity/pins.ts` apply. */
   pinPolicy?: PinPolicy;
+  /** WhatsApp alerts: who gets them and which. Absent until set: the defaults in `modules/notify/config.ts`. */
+  notify?: NotifySettings;
+}
+
+export type OutletAlert = 'night_summary' | 'drawer_variance' | 'void_refund' | 'stock_out' | 'trade_cleared';
+
+export interface NotifySettings {
+  recipients: { name: string; phone: string; active: boolean }[];
+  alerts: Record<OutletAlert, boolean>;
+  /** A void or refund at or above this sends an alert. */
+  voidAlertCents: Cents;
 }
 
 export interface Role {

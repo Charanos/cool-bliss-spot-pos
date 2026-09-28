@@ -56,6 +56,7 @@ export const COLLECTIONS = [
   'deadLetters',
   'presence',
   'cashMovements',
+  'notifications',
 ] as const satisfies readonly (keyof Dataset)[];
 
 export type Collection = (typeof COLLECTIONS)[number];
