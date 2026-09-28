@@ -8,7 +8,7 @@ import { categoryEdgeClass } from '@bliss/ui/lib/seat';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Money } from '@bliss/ui/components/money';
-import { StatusChip } from '@bliss/ui/components/status';
+import { StatusChip, ToneChip } from '@bliss/ui/components/status';
 import { IconArchive, IconArrowBackUp, IconBottle, IconBuildingWarehouse, IconCategory, IconCheck, IconPencil, IconPlus } from '@tabler/icons-react';
 import { assetUrl } from '@/lib/assets';
 import { setProductStatus } from '../../_actions/menu';
@@ -28,6 +28,10 @@ export interface ProductRow extends ProductDraft {
   tracked: boolean;
   supplier: string | null;
   onHand: number | null;
+  /** Stock received, counted or opened at least once (D-30); until then it sells and is not "low". */
+  counted: boolean;
+  /** Sold beyond the record since its last count or delivery (D-32). */
+  needsCount: boolean;
   /** What one unit costs to buy; null when not set, or not shown to this person. */
   costCents: Cents | null;
   unit: string;
@@ -35,6 +39,22 @@ export interface ProductRow extends ProductDraft {
 }
 
 type Option = { value: string; label: string };
+
+/** What a product's stock says on its card: low only once it has been counted. */
+function stockFlag(r: ProductRow): 'uncounted' | 'count' | 'low' | null {
+  if (r.onHand === null) return null;
+  if (!r.counted) return 'uncounted';
+  if (r.needsCount) return 'count';
+  return r.onHand <= r.effectiveThreshold ? 'low' : null;
+}
+
+function StockChip({ row }: { row: ProductRow }) {
+  const flag = stockFlag(row);
+  if (flag === 'uncounted') return <ToneChip tone="info">Not counted yet</ToneChip>;
+  if (flag === 'count') return <ToneChip tone="low">Count needed</ToneChip>;
+  if (flag === 'low') return <StatusChip status="low" label="Low" />;
+  return null;
+}
 
 /** Everything on the menu: how it is sold, from what price, and how its stock is watched. */
 export function ProductsTable({ rows, categories, suppliers, canEdit }: { rows: ProductRow[]; categories: Option[]; suppliers: Option[]; canEdit: boolean }) {
@@ -101,7 +121,7 @@ export function ProductsTable({ rows, categories, suppliers, canEdit }: { rows: 
       align: 'right',
       sortValue: (r) => r.onHand,
       csv: (r) => r.onHand ?? '',
-      cell: (r) => (r.onHand === null ? <NumCell tone="muted">Not kept</NumCell> : <NumCell tone={r.onHand <= r.effectiveThreshold ? 'low' : 'default'}>{r.onHand}</NumCell>),
+      cell: (r) => (r.onHand === null ? <NumCell tone="muted">Not kept</NumCell> : !r.counted ? <NumCell tone="muted">Not counted</NumCell> : <NumCell tone={stockFlag(r) ? 'low' : 'default'}>{r.onHand}</NumCell>),
     },
     {
       key: 'supplier',
@@ -170,14 +190,14 @@ export function ProductsTable({ rows, categories, suppliers, canEdit }: { rows: 
         empty={{ title: 'No products yet', body: 'Add the first product, and it goes on sale at the next sync.' }}
         emptyFiltered={{ title: 'No products match', body: 'Clear the category, the toggles or the search to see every product.' }}
         renderGridCard={(r) => (
-          <Card as="article" interactive className="group h-full" tone={r.status === 'archived' ? undefined : r.onHand !== null && r.onHand <= r.effectiveThreshold ? 'low' : undefined}>
+          <Card as="article" interactive className="group h-full" tone={r.status === 'archived' ? undefined : stockFlag(r) === 'low' || stockFlag(r) === 'count' ? 'low' : undefined}>
             <CardMedia
               src={assetUrl(r.imageKey, 640, 340)}
               tint={categoryEdgeClass(r.colour)}
               title={r.name}
               subtitle={`${r.category}, ${r.sku}`}
               href={`/console/catalogue/products/${r.id}`}
-              meta={r.status === 'archived' ? <StatusChip status="retired" label="Archived" /> : r.onHand !== null && r.onHand <= r.effectiveThreshold ? <StatusChip status="low" label="Low" /> : null}
+              meta={r.status === 'archived' ? <StatusChip status="retired" label="Archived" /> : stockFlag(r) ? <StockChip row={r} /> : null}
               actions={canEdit ? <IconButton size="sm" variant="secondary" icon={IconPencil} label={`Edit ${r.name}`} onClick={() => dialog.open('edit', r)} /> : null}
             />
             <KeyRows>
@@ -185,8 +205,8 @@ export function ProductsTable({ rows, categories, suppliers, canEdit }: { rows: 
               <KeyRow label="Bottle">{r.containerVolumeMl ? `${r.containerVolumeMl}ml` : 'Not a bottle'}</KeyRow>
               <KeyRow label="Unit cost">{r.costCents === null ? 'Not set' : <Money value={r.costCents} currency={false} size="num-md" />}</KeyRow>
               <KeyRow label="From">{r.fromPrice === null ? 'No price' : <Money value={r.fromPrice} currency={false} size="num-md" decimals="whole" />}</KeyRow>
-              <KeyRow label="On hand" tone={r.onHand !== null && r.onHand <= r.effectiveThreshold ? 'low' : undefined}>
-                {r.onHand === null ? 'Not kept' : `${r.onHand} ${r.unit}`}
+              <KeyRow label="On hand" tone={stockFlag(r) === 'low' || stockFlag(r) === 'count' ? 'low' : undefined}>
+                {r.onHand === null ? 'Not kept' : !r.counted ? 'Not counted yet' : `${r.onHand} ${r.unit}`}
               </KeyRow>
               <KeyRow label="Low at">{r.tracked ? `${r.effectiveThreshold}${r.thresholdIsDefault ? ', the default' : ''}` : 'Not kept'}</KeyRow>
             </KeyRows>

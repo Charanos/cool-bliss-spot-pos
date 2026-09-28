@@ -270,6 +270,10 @@ export function browserDeviceFor(input: { staffId: string; kind: 'floor' | 'coun
   const t = identityTables();
   const known = input.knownId ? t.devices.find((d) => d.id === input.knownId) : null;
   if (known && known.status === 'active' && known.kind === input.kind && known.personalTo === input.staffId) return known;
+  // Another browser of theirs, or this one after its cookie was cleared: the device they already
+  // have for this station, rather than a second one ("Counter 2").
+  const theirs = t.devices.find((d) => d.status === 'active' && d.kind === input.kind && d.personalTo === input.staffId);
+  if (theirs) return theirs;
   const person = staffById(input.staffId);
   const first = (person?.displayName ?? 'Manager').split(/\s+/)[0]!.slice(0, 12);
   const surface = input.kind === 'floor' ? 'Floor' : 'Counter';

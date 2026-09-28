@@ -5,6 +5,7 @@ import { SWRegister } from '../_components/sw-register';
 import { DISPLAY_BOOT } from '@/lib/pos/display-boot';
 import { fontVariables } from '../fonts';
 import '../globals.css';
+import { BRAND_ICONS } from '@/app/brand-icons';
 
 export const metadata: Metadata = {
   title: 'Bliss Floor',
@@ -12,11 +13,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   applicationName: 'Bliss',
   appleWebApp: { capable: true, title: 'Bliss', statusBarStyle: 'black-translucent' },
-  icons: {
-    // iOS reads this one and has never supported SVG here.
-    apple: '/icon/192',
-    icon: [{ url: '/icon/192', type: 'image/png' }],
-  },
+  icons: BRAND_ICONS,
 };
 
 export const viewport: Viewport = {

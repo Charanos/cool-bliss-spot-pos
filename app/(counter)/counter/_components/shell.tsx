@@ -2,7 +2,6 @@
 
 import { formatTime } from '@bliss/shared/format';
 import { AmbientCounterArtwork } from '@bliss/ui/components/artwork/counter-workspace';
-import { Eyebrow } from '@bliss/ui/components/atmosphere';
 import { BlissMark } from '@bliss/ui/components/brand';
 import { Dot, type Tone } from '@bliss/ui/components/status';
 import { LiveRegion } from '@bliss/ui/components/surface';
@@ -112,13 +111,11 @@ export function CounterShell({ children }: { children: ReactNode }) {
         <TopBar
           start={
             <>
-              <Link href="/counter/orders" aria-label="Bliss Counter, orders" className="flex shrink-0 items-center justify-center rounded-md press-feedback">
+              {/* Which counter this is lives on the mark (and on Settings), not in the bar's width. */}
+              <Link href="/counter/orders" aria-label={`${device?.label ?? 'Counter'}, orders`} title={device?.label ?? 'Counter'} className="flex shrink-0 items-center justify-center rounded-md press-feedback">
                 <BlissMark size={32} />
               </Link>
               <div className="hidden h-24 w-px bg-rule-raised/60 tablet:block" aria-hidden="true" />
-              <Eyebrow as="p" className="hidden desktop:block">
-                {device?.label ?? 'Counter'}
-              </Eyebrow>
               <StationSearch surface="counter" />
             </>
           }

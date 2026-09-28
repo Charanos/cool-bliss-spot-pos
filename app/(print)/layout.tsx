@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import '../globals.css';
 import { cx } from '@bliss/ui/lib/cx';
+import { BRAND_ICONS } from '@/app/brand-icons';
 
 export const metadata: Metadata = {
+  icons: BRAND_ICONS,
   title: 'Print',
 };
 

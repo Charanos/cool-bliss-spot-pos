@@ -3,8 +3,10 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { fontVariables } from '../fonts';
 import '../globals.css';
+import { BRAND_ICONS } from '@/app/brand-icons';
 
 export const metadata: Metadata = {
+  icons: BRAND_ICONS,
   title: 'Offline · Bliss',
   robots: 'noindex',
 };

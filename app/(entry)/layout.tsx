@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { SWRegister } from '../_components/sw-register';
 import { fontVariables } from '../fonts';
 import '../globals.css';
+import { BRAND_ICONS } from '@/app/brand-icons';
 
 /**
  * The landing page is where the installed app opens (app/manifest.webmanifest), so it carries the
@@ -15,11 +16,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   applicationName: 'Bliss',
   appleWebApp: { capable: true, title: 'Bliss', statusBarStyle: 'black-translucent' },
-  icons: {
-    // iOS reads this one and has never supported SVG here.
-    apple: '/icon/192',
-    icon: [{ url: '/icon/192', type: 'image/png' }],
-  },
+  icons: BRAND_ICONS,
 };
 
 export const viewport: Viewport = {
