@@ -4,7 +4,7 @@ import { SelectField, TextField } from '@bliss/ui/components/fields';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { copyPrices, savePriceList } from '../../_actions/menu';
-import { Fieldset, FormDialog, ReasonDialog } from '../../_components/forms';
+import { Fieldset, FormDialog, ReasonDialog, useOpenStamp } from '../../_components/forms';
 
 export interface ListDraft {
   id: string;
@@ -17,9 +17,11 @@ export interface ListDraft {
 export function PriceListDialog({ open, onClose, target }: { open: boolean; onClose: () => void; target: ListDraft | null }) {
   const router = useRouter();
   const [f, setF] = useState({ name: '', kind: 'overlay' as 'base' | 'overlay', priority: '10' });
+  const stamp = useOpenStamp(open, target?.id);
   useEffect(() => {
     if (open) setF({ name: target?.name ?? '', kind: target?.kind ?? 'overlay', priority: String(target?.priority ?? 10) });
-  }, [open, target]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [stamp]);
   const editing = Boolean(target);
   return (
     <FormDialog<{ id: string }>

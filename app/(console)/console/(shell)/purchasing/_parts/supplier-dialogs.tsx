@@ -5,7 +5,7 @@ import { SelectField, TextArea, TextField } from '@bliss/ui/components/fields';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { saveSupplier, setSupplierItem } from '../../_actions/purchasing';
-import { DaysField, Fieldset, FormDialog } from '../../_components/forms';
+import { DaysField, Fieldset, FormDialog, useOpenStamp } from '../../_components/forms';
 
 export interface SupplierDraft {
   id: string;
@@ -24,6 +24,7 @@ export interface SupplierDraft {
 export function SupplierDialog({ open, onClose, target }: { open: boolean; onClose: () => void; target: SupplierDraft | null }) {
   const router = useRouter();
   const [f, setF] = useState({ name: '', contact: '', phone: '', email: '', terms: '14', lead: '2', min: '0', days: [] as number[], notes: '' });
+  const stamp = useOpenStamp(open, target?.id);
   useEffect(() => {
     if (!open) return;
     setF({
@@ -37,7 +38,8 @@ export function SupplierDialog({ open, onClose, target }: { open: boolean; onClo
       days: target?.deliveryDays ?? [],
       notes: target?.notes ?? '',
     });
-  }, [open, target]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [stamp]);
   const set = (key: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [key]: e.target.value }));
   const editing = Boolean(target);
   return (
@@ -85,9 +87,11 @@ export function SupplierDialog({ open, onClose, target }: { open: boolean; onClo
 /** Say a supplier carries an item: their code, the pack it comes in, and what one unit costs. */
 export function SupplierItemDialog({ open, onClose, supplierId, target, items }: { open: boolean; onClose: () => void; supplierId: string; target: { variantId: string; name: string; supplierSku: string | null; packSize: number; costCents: Cents } | null; items: { value: string; label: string }[] }) {
   const [f, setF] = useState({ variantId: '', sku: '', pack: '1', cost: '' });
+  const itemStamp = useOpenStamp(open, target?.variantId);
   useEffect(() => {
     if (open) setF({ variantId: target?.variantId ?? items[0]?.value ?? '', sku: target?.supplierSku ?? '', pack: String(target?.packSize ?? 1), cost: target ? formatDecimal(target.costCents) : '' });
-  }, [open, target, items]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [itemStamp]);
   return (
     <FormDialog
       open={open}

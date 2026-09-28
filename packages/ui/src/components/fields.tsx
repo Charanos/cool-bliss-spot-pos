@@ -186,7 +186,8 @@ export function SelectField({ label, helper, options, id, className, hideLabel, 
   const [own, setOwn] = useState(() => String(rest.defaultValue ?? options[0]?.value ?? ''));
   const current = controlled ? String(rest.value) : own;
   const chosen = options.find((o) => o.value === current);
-  const disabled = Boolean(rest.disabled);
+  // Nothing to choose from is a closed field that says so, never a list that opens on nothing.
+  const disabled = Boolean(rest.disabled) || options.length === 0;
 
   const choose = (next: string) => {
     const select = nativeRef.current;
@@ -237,7 +238,7 @@ export function SelectField({ label, helper, options, id, className, hideLabel, 
           }}
           className={cx('flex h-full w-full min-w-0 flex-1 items-center pr-24 text-left text-body outline-none disabled:cursor-not-allowed', chosen ? 'text-ink' : 'text-ink-subtle', className)}
         >
-          <span className="min-w-0 truncate">{chosen?.label ?? 'Choose one'}</span>
+          <span className="min-w-0 truncate">{chosen?.label ?? (options.length === 0 ? 'None yet' : 'Choose one')}</span>
         </button>
         {pending ? (
           <Spinner size={16} className="pointer-events-none absolute right-0" />

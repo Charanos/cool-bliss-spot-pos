@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState, useTransition } from 'react';
 import { createServiceTable, updateServiceTable } from '../../_actions/people';
 import { useToast } from '@bliss/ui/components/console/toast';
+import { useOpenStamp } from '../../_components/forms';
 
 /**
  * Add or edit a table. Occupied is not a choice: a table is occupied while a tab is open on it, and
@@ -27,6 +28,7 @@ export function TableDialog({ target, zones, open, onClose }: { target: ServiceT
   const occupied = target?.status === 'occupied';
   const activeZones = zones.filter((z) => z.status === 'active' || z.id === target?.zoneId);
 
+  const stamp = useOpenStamp(open, target?.id);
   useEffect(() => {
     if (!open) return;
     setLabel(target?.label ?? '');
@@ -35,7 +37,8 @@ export function TableDialog({ target, zones, open, onClose }: { target: ServiceT
     setStatus(target?.status ?? 'available');
     setError('');
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when the dialog opens on a target
-  }, [open, target]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [stamp]);
 
   function save(event: FormEvent) {
     event.preventDefault();

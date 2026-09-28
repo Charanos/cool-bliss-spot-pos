@@ -73,6 +73,8 @@ export function SheetHeader({
       if (event.key !== 'r' || event.metaKey || event.ctrlKey || event.altKey) return;
       const target = event.target as HTMLElement | null;
       if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+      // Never under an open dialog or list: R there is a letter typed to find an option.
+      if (document.querySelector('dialog[open]') || target?.closest('[role="listbox"],[role="menu"]')) return;
       router.refresh();
     };
     window.addEventListener('keydown', onKey);

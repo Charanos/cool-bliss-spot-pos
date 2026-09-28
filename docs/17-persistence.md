@@ -49,15 +49,18 @@ pnpm db:handover --yes
 ```
 
 Replaces everything stored with the outlet as handed over (docs/11 D-31): the outlet and its
-settings, the roles, the stock locations and the Standard price list, and one person, Dan, the
-owner. Every product, category, supplier, zone, table, device, tab, bill, count, shift and audit
-entry goes. Dan signs in to the Console with PIN 111111 (or `BLISS_OWNER_PIN`, four to eight
+settings, the roles, the stock locations, the Standard price list, and one person, Dan, the
+owner. It also carries the real menu from the Cool Bliss stock sheet (`packages/db/seed/menu.ts`):
+six categories and 176 products, each priced on the Standard list and opened with one on the Bar
+shelf until the first stock take replaces it. Every other product, category, supplier, zone, table,
+device, tab, bill, count, shift and audit entry goes. Dan signs in to the Console with PIN 111111 (or `BLISS_OWNER_PIN`, four to eight
 digits, if set when running it) and should change it at once under his name in the rail. Then, in
 order:
 
 1. People: add the team, each with a first PIN; they choose their own at their first sign-in.
 2. People, Zones and tables: the floor as it is.
-3. Catalogue: categories, then products with their first price.
+3. Catalogue: the menu is there; check the prices against the sheet, add photos, and add anything
+   missing. Then run a full stock count, which replaces every opening one.
 4. Settings, Devices: register each tablet and the counter, and pair each with its code.
 5. Inventory: an opening count, or book in the first delivery, when stock should start counting.
    Until then items sell and show as "Not counted yet" (D-30).

@@ -5,7 +5,7 @@ import { SelectField, TextField } from '@bliss/ui/components/fields';
 import { IconUserPlus, IconUserEdit } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { createStaff, updateStaff } from '../../_actions/people';
-import { FactList, Fieldset, FormDialog, PhotoField } from '../../_components/forms';
+import { FactList, Fieldset, FormDialog, PhotoField, useOpenStamp } from '../../_components/forms';
 import type { StaffRow } from './staff-table';
 
 /** Where each role signs in, read back beside the role as it is chosen. */
@@ -45,6 +45,7 @@ export function StaffDialog({
   const [avatarUrl, setAvatarUrl] = useState('');
   const editing = Boolean(target);
 
+  const stamp = useOpenStamp(open, target?.id);
   useEffect(() => {
     if (!open) return;
     setFullName(target?.name ?? '');
@@ -54,7 +55,8 @@ export function StaffDialog({
     setContactNumber(target?.contactNumber ?? '');
     setPin('');
     setAvatarUrl(target?.avatarUrl ?? '');
-  }, [open, target, roles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [stamp]);
 
   const shown = displayName.trim() || fullName.trim().split(/\s+/)[0] || 'New person';
   const role = roles.find((r) => r.value === roleId)?.label ?? '';

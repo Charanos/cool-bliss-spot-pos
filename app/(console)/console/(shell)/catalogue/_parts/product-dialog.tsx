@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { assetUrl } from '@/lib/assets';
 import { useEffect, useMemo, useState } from 'react';
 import { createProduct, updateProduct } from '../../_actions/menu';
-import { ChoiceCards, FactList, Fieldset, FormDialog, PhotoField } from '../../_components/forms';
+import { ChoiceCards, FactList, Fieldset, FormDialog, PhotoField, useOpenStamp } from '../../_components/forms';
 
 export interface ProductDraft {
   id: string;
@@ -42,6 +42,7 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
   const [first, setFirst] = useState({ kind: 'sealed' as 'sealed' | 'serve', name: '', serve: '', price: '' });
   const [uploading, setUploading] = useState(false);
 
+  const stamp = useOpenStamp(open, target?.id);
   useEffect(() => {
     if (!open) return;
     setF({
@@ -56,7 +57,8 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
       imageKey: target?.imageKey ?? null,
     });
     setFirst({ kind: 'sealed', name: '', serve: '', price: '' });
-  }, [open, target, categories]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [stamp]);
 
   const set = (key: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [key]: e.target.value }));
   const fields = {

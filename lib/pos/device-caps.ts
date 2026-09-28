@@ -31,12 +31,12 @@ export type CheckKey = 'modern' | 'tint' | 'blur' | 'storage' | 'offline' | 'wak
 
 /** Each check, in the words a manager reads, and whether Bliss needs it or only uses it when there. */
 export const CHECKS: { key: CheckKey; label: string; needed: boolean; detail: string }[] = [
-  { key: 'modern', label: 'Runs Bliss', needed: true, detail: 'Safari 15.4 or Chrome 111 and newer' },
-  { key: 'storage', label: 'Keeps orders on the device', needed: true, detail: 'IndexedDB, for working through a dropped connection' },
-  { key: 'offline', label: 'Opens without a connection', needed: true, detail: 'A service worker, which serves Bliss when the Wi-Fi drops' },
-  { key: 'tint', label: 'Soft colour tints', needed: false, detail: 'Read directly, or through the build fallback on older Safari' },
-  { key: 'blur', label: 'Frosted glass', needed: false, detail: 'Behind sheets everywhere; Lite keeps small surfaces solid on slower devices' },
-  { key: 'wakeLock', label: 'Keeps the screen awake', needed: false, detail: 'Otherwise set Auto-Lock to Never in the device settings' },
+  { key: 'modern', label: 'Up to date enough for Bliss', needed: true, detail: 'Update this device and its browser, then open Bliss again.' },
+  { key: 'storage', label: 'Keeps orders when the Wi-Fi drops', needed: true, detail: 'Turn off private browsing for Bliss, then open it again.' },
+  { key: 'offline', label: 'Opens when the Wi-Fi is down', needed: true, detail: 'Open Bliss once while connected, and add it to the Home Screen.' },
+  { key: 'tint', label: 'Colours', needed: false, detail: 'Some colours show plainer on this device. Nothing is missing.' },
+  { key: 'blur', label: 'Frosted panels', needed: false, detail: 'Panels show solid on this device. Nothing is missing.' },
+  { key: 'wakeLock', label: 'Keeps the screen on', needed: false, detail: 'Set Auto-Lock to Never in the device settings, so the screen stays on through service.' },
 ];
 
 function media(query: string): boolean {
