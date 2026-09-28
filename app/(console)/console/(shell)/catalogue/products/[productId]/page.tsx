@@ -63,7 +63,8 @@ export default async function ProductPage({ params }: { params: Promise<{ produc
     .filter((l) => l.status === 'active')
     .sort((a, b) => (a.kind === b.kind ? b.priority - a.priority : a.kind === 'base' ? -1 : 1));
   const sealed = variants.find((v) => v.kind === 'sealed' && v.status === 'active');
-  const onHand = sealed ? inventory.onHand(sealed.id) : null;
+  // Never shown below zero: such a balance is brought to zero in the background and flagged Count needed.
+  const onHand = sealed ? Math.max(0, inventory.onHand(sealed.id)) : null;
   const unit = product.containerVolumeMl ? 'btl' : 'units';
   const supplier = procurement.supplierById(product.defaultSupplierId);
   const supplied = sealed ? procurement.supplierProducts().filter((sp) => sp.productVariantId === sealed.id) : [];

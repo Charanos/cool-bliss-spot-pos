@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import * as inventory from '@/modules/inventory/service';
+import * as inventoryManage from '@/modules/inventory/manage';
 import { type ActionResult, id, optionalText, reason, runAction } from '../_lib/action';
 
 /** Inventory actions. docs/19 section 3: validated here, ruled in the inventory service. */
@@ -30,6 +31,13 @@ export async function writeOff(raw: { variantId: string; locationId: string; qty
   return runAction(schema, raw, (input, actor) => {
     inventory.writeOff({ ...input, actor });
   });
+}
+
+/** Set every stock-kept drink to one figure on hand, for a trial run. */
+export async function setTrialStock(raw: { qty: number; reason: string }): Promise<ActionResult<{ moved: number }>> {
+  return runAction(z.object({ qty: z.number({ error: 'Enter a whole number.' }).int('Enter a whole number.').min(0, 'Zero or more.').max(1000, 'At most 1,000.'), reason }), raw, (input, actor) => ({
+    moved: inventoryManage.setTrialStock({ ...input, actor }),
+  }));
 }
 
 /** Bring every balance below zero back to zero, each flagged for a count. */

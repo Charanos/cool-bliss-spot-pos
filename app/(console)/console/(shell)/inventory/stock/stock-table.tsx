@@ -1,7 +1,7 @@
 'use client';
 
 import { formatQty } from '@bliss/shared/format';
-import { formatDecimal, isPositive, sum } from '@bliss/shared/money';
+import { ZERO, formatDecimal, formatKes, isPositive, sum } from '@bliss/shared/money';
 import { ActionPill } from '@bliss/ui/components/console/action-pill';
 import { Card, CardMedia, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { IconButton } from '@bliss/ui/components/button';
@@ -82,7 +82,8 @@ export function StockTable({
       ),
     },
     { key: 'unitCost', header: 'Unit cost', width: '96px', align: 'right', sortValue: (r) => r.unitCost, csv: (r) => formatDecimal(r.unitCost), cell: (r) => (isPositive(r.unitCost) ? <Money value={r.unitCost} currency={false} size="num-md" tone="muted" /> : <span className="text-body-sm text-ink-subtle">Not set</span>) },
-    { key: 'value', header: 'Value', width: '110px', align: 'right', sortValue: (r) => r.value, csv: (r) => formatDecimal(r.value), cell: (r) => <Money value={r.value} currency={false} size="num-md" decimals="whole" /> },
+    { key: 'price', header: 'Sells at', width: '96px', align: 'right', sortValue: (r) => r.price, csv: (r) => (r.price === null ? '' : formatDecimal(r.price)), cell: (r) => (r.price === null ? <span className="text-body-sm text-ink-subtle">No price</span> : <Money value={r.price} currency={false} size="num-md" decimals="whole" tone="muted" />) },
+    { key: 'value', header: 'Value at cost', width: '110px', align: 'right', sortValue: (r) => r.value, csv: (r) => (isPositive(r.unitCost) ? formatDecimal(r.value) : ''), cell: (r) => (isPositive(r.unitCost) ? <Money value={r.value} currency={false} size="num-md" decimals="whole" /> : <span className="text-body-sm text-ink-subtle">Not costed</span>) },
     { key: 'velocity', header: 'Sells a day', width: '100px', align: 'right', sortValue: (r) => r.velocity, csv: (r) => r.velocity.toFixed(2), cell: (r) => <NumCell tone="muted">{r.velocity.toFixed(r.velocity < 10 ? 1 : 0)}</NumCell> },
     {
       key: 'cover',
@@ -128,6 +129,8 @@ export function StockTable({
   ];
 
   const totalValuation = sum(rows.map((r) => r.value));
+  const costed = rows.filter((r) => isPositive(r.unitCost)).length;
+  const retailTotal = sum(rows.map((r) => r.retailValue ?? ZERO));
   const activeHoldsCount = rows.filter((r) => r.reason === 'hold').length;
   const lowStockCount = rows.filter((r) => r.state === 'low' || r.state === 'last_few' || r.state === 'finished').length;
   const varianceCount = rows.filter((r) => r.variancePct !== null && Math.abs(r.variancePct) > 2).length;
@@ -152,7 +155,16 @@ export function StockTable({
         </Callout>
       ) : null}
       <MetricGrid>
-        <Metric label="Stock at cost" icon={IconScale} value={<AnimatedMoney value={totalValuation} animation="metric.count" size="num-kpi" fromZeroOnMount decimals="whole" />} detail={`${rows.length} tracked items`} />
+        {costed === 0 ? (
+          <Metric label="Stock at cost" icon={IconScale} value={<span className="font-sans text-title-section text-ink-muted">Not costed</span>} detail={`Worth ${formatKes(retailTotal, { decimals: 'whole' })} at selling price. Set unit costs for the value at cost.`} />
+        ) : (
+          <Metric
+            label="Stock at cost"
+            icon={IconScale}
+            value={<AnimatedMoney value={totalValuation} animation="metric.count" size="num-kpi" fromZeroOnMount decimals="whole" />}
+            detail={costed < rows.length ? `${costed} of ${rows.length} items costed. ${formatKes(retailTotal, { decimals: 'whole' })} at selling price.` : `${rows.length} tracked items, ${formatKes(retailTotal, { decimals: 'whole' })} at selling price`}
+          />
+        )}
         <Metric
           label="On hold"
           icon={IconLock}
@@ -227,8 +239,9 @@ export function StockTable({
               <KeyRow label="On hand" tone={r.onHand <= 0 ? 'stop' : undefined}>
                 {formatQty(r.onHand, r.unit === 'bottles' ? 2 : 0)} {r.unit === 'bottles' ? 'btl' : ''}
               </KeyRow>
+              <KeyRow label="Sells at">{r.price === null ? 'No price' : <Money value={r.price} currency={false} size="num-md" decimals="whole" />}</KeyRow>
               <KeyRow label="Unit cost">{isPositive(r.unitCost) ? <Money value={r.unitCost} currency={false} size="num-md" tone="muted" /> : 'Not set'}</KeyRow>
-              <KeyRow label="Total value">{isPositive(r.unitCost) ? <Money value={r.value} currency={false} size="num-md" decimals="whole" /> : 'Needs a cost'}</KeyRow>
+              <KeyRow label="Value at cost">{isPositive(r.unitCost) ? <Money value={r.value} currency={false} size="num-md" decimals="whole" /> : 'Not costed'}</KeyRow>
               <KeyRow label="Sells a day">{r.velocity.toFixed(r.velocity < 10 ? 1 : 0)}</KeyRow>
               <KeyRow label="Lasts" tone={r.daysCover !== null && r.daysCover < 2 ? 'low' : undefined}>
                 <span className="inline-flex items-center gap-8">

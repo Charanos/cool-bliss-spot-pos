@@ -549,3 +549,19 @@ export async function clearTradeStored(epoch: string): Promise<ClearPlan['summar
   s.queue = run.catch(() => undefined);
   return run;
 }
+
+/**
+ * How the database is doing, for Console, Settings, Health: a round trip's time, the committed
+ * version and whether this instance holds it. Null without a database (memory mode).
+ */
+export async function ping(): Promise<{ ms: number; version: number; loaded: number; rows: number } | { error: string } | null> {
+  if (!storeEnabled()) return null;
+  const s = state();
+  const started = performance.now();
+  try {
+    const [version, rows] = await Promise.all([versionOf(s.pool), s.pool.query('select count(*)::int as n from bliss_record')]);
+    return { ms: Math.round(performance.now() - started), version, loaded: s.loaded, rows: Number(rows.rows[0]?.n ?? 0) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message.slice(0, 160) : 'No answer from the database' };
+  }
+}
