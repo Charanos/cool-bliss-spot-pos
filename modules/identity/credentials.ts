@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { PIN_HASH_PREFIX, PIN_PATTERN, hashPin } from './pin-hash';
 
 /**
  * Credentials: PIN hashes, signed tokens and the attempt limiter. Everything here runs on the server
@@ -43,18 +44,9 @@ export function resetSecretForTests() {
 
 /* -------------------------------------------------------------------- PINs */
 
-/** A PIN is four to eight digits; the outlet's policy says how many a new one has. */
-export const PIN_PATTERN = /^\d{4,8}$/;
-const SCRYPT = { N: 16384, r: 8, p: 1, keylen: 32 } as const;
-const PREFIX = 'scrypt';
-
-/** Hash a PIN for storage: `scrypt$N$r$p$salt$hash`, salt and hash in base64url. */
-export function hashPin(pin: string): string {
-  if (!PIN_PATTERN.test(pin)) throw new Error('A PIN is four to eight digits.');
-  const salt = randomBytes(16);
-  const hash = scryptSync(pin, salt, SCRYPT.keylen, { N: SCRYPT.N, r: SCRYPT.r, p: SCRYPT.p });
-  return [PREFIX, SCRYPT.N, SCRYPT.r, SCRYPT.p, salt.toString('base64url'), hash.toString('base64url')].join('$');
-}
+// Hashing lives on its own (pin-hash.ts) so a command-line script can use it; it is the same code.
+export { PIN_PATTERN, hashPin };
+const PREFIX = PIN_HASH_PREFIX;
 
 export function isHashedPin(stored: string | null | undefined): boolean {
   return typeof stored === 'string' && stored.startsWith(`${PREFIX}$`);

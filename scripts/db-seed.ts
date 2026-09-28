@@ -16,13 +16,14 @@
  */
 import { buildHandoverDataset } from '@bliss/db/seed/handover';
 import { buildDataset } from '@bliss/db/seed/history';
-import { hashPin } from '../modules/identity/credentials';
+import { hashPin } from '../modules/identity/pin-hash';
 import pg from 'pg';
 import { SCALARS, SCHEMA, WRITE_LOCK, databaseUrl, insertApplied, insertChanges, rowsOf, upsertRows, writeMeta } from '../modules/_data/records';
 
 async function main() {
   const handover = process.argv.includes('--handover');
-  if (handover && !process.argv.includes('--yes')) {
+  // `--yes`, or `yes` alone, since some Windows shells treat a leading dash differently.
+  if (handover && !process.argv.includes('--yes') && !process.argv.includes('yes')) {
     throw new Error('This replaces every product, person, device, tab, bill and count stored with an empty outlet and one owner. Run it again with --yes to go ahead.');
   }
   const pin = process.env.BLISS_OWNER_PIN ?? '111111';
