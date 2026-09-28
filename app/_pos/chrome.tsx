@@ -7,7 +7,7 @@ import { CountBadge, MetaLine, type MetaItem } from '@bliss/ui/components/workin
 import { useHydrated, useNow } from '@bliss/ui/hooks';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconBuildingStore, IconCloudCheck, IconCloudOff, IconCloudUpload, IconLayoutDashboard, IconLayoutGrid } from '@tabler/icons-react';
-import { api } from '@/lib/pos/api';
+import { switchTo } from '@/lib/pos/session';
 import Link from 'next/link';
 import { type ReactNode, type Ref, useEffect, useRef, useState } from 'react';
 
@@ -39,26 +39,21 @@ export function TopBar({ start, centre, end }: { start: ReactNode; centre: React
 
 export type Surface = 'floor' | 'counter';
 
-const SURFACES: readonly { key: Surface; label: string; href: string; icon: TablerIcon }[] = [
-  { key: 'floor', label: 'Floor', href: '/floor/tabs', icon: IconLayoutGrid },
-  { key: 'counter', label: 'Counter', href: '/counter/orders', icon: IconBuildingStore },
+const SURFACES: readonly { key: Surface; label: string; icon: TablerIcon }[] = [
+  { key: 'floor', label: 'Floor', icon: IconLayoutGrid },
+  { key: 'counter', label: 'Counter', icon: IconBuildingStore },
 ];
 
 /**
  * Floor and Counter, side by side, and the Console for a manager or owner. The one you are on is
- * marked; the others take you there already signed in (the PIN is asked for only when the role does
- * not belong there).
+ * marked; the others take you there as yourself: signed straight in when your role belongs there,
+ * or to its PIN screen when it does not. Never as whoever that surface last had signed in.
  */
 export function SurfaceSwitcher({ current, console: withConsole = false }: { current: Surface; console?: boolean }) {
-  const [opening, setOpening] = useState(false);
-  const toConsole = async () => {
-    setOpening(true);
-    try {
-      const { body } = await api.post<{ ok: boolean }>('/api/station/console', {});
-      window.location.href = body.ok ? '/console/overview' : '/console/sign-in';
-    } catch {
-      window.location.href = '/console/sign-in';
-    }
+  const [opening, setOpening] = useState<Surface | 'console' | null>(null);
+  const go = (to: Surface | 'console') => {
+    setOpening(to);
+    void switchTo(to);
   };
   const idle = 'flex h-control-sm items-center gap-6 rounded-dot px-12 text-body-sm text-ink-subtle press-feedback hover:bg-page hover:text-ink';
   return (
@@ -71,14 +66,14 @@ export function SurfaceSwitcher({ current, console: withConsole = false }: { cur
             <span>{s.label}</span>
           </span>
         ) : (
-          <Link key={s.key} href={s.href} aria-label={`Switch to the ${s.label}`} className={idle}>
+          <button key={s.key} type="button" onClick={() => go(s.key)} disabled={opening !== null} aria-label={`Switch to the ${s.label}`} className={cx(idle, opening === s.key && 'animate-breathe')}>
             <Glyph size={16} stroke={ICON_STROKE} aria-hidden="true" />
             <span className="hidden compact:inline">{s.label}</span>
-          </Link>
+          </button>
         );
       })}
       {withConsole ? (
-        <button type="button" onClick={() => void toConsole()} disabled={opening} aria-label="Switch to the Console" className={cx(idle, opening && 'animate-breathe')}>
+        <button type="button" onClick={() => go('console')} disabled={opening !== null} aria-label="Switch to the Console" className={cx(idle, opening === 'console' && 'animate-breathe')}>
           <IconLayoutDashboard size={16} stroke={ICON_STROKE} aria-hidden="true" />
           <span className="hidden desktop:inline">Console</span>
         </button>

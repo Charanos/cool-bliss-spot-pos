@@ -3,7 +3,6 @@
 import { cx } from '@bliss/ui/lib/cx';
 import { Photo } from '@bliss/ui/components/photo';
 import { IconCash, IconDeviceDesktop, IconDeviceTablet, IconKey, IconLogout, IconMoon, IconSelector, IconSun } from '@tabler/icons-react';
-import Link from 'next/link';
 import { useCallback, useLayoutEffect, useRef, useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useDismiss } from '@bliss/ui/hooks';
@@ -27,6 +26,20 @@ const THEMES: { value: ThemePreference; label: string; icon: typeof IconSun }[] 
   { value: 'dark', label: 'Dark', icon: IconMoon },
   { value: 'system', label: 'Match this device', icon: IconDeviceDesktop },
 ];
+
+/**
+ * Go to a station as yourself: signed straight in there when your role belongs, or to its PIN screen.
+ * Never as whoever that station last had signed in.
+ */
+async function switchTo(to: 'floor' | 'counter') {
+  try {
+    const response = await fetch('/api/handoff', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ from: 'console', to }) });
+    const body = (await response.json()) as { url?: string };
+    window.location.href = body.url ?? `/${to}/sign-in`;
+  } catch {
+    window.location.href = `/${to}/sign-in`;
+  }
+}
 
 /**
  * The signed-in person, and what is theirs to change: the theme, a way onto a station, and signing
@@ -154,14 +167,14 @@ export function AccountMenu({ name, role, photo, theme: initialTheme, pin, compa
                 ))}
               </div>
               <div role="group" aria-label="Stations" className="mt-4 border-t border-edge pt-4">
-                <Link role="menuitem" href="/floor" className={item} onClick={() => close(false)}>
+                <button type="button" role="menuitem" className={item} onClick={() => void switchTo('floor')}>
                   <IconDeviceTablet size={16} stroke={1.5} aria-hidden="true" className="text-ink-subtle" />
                   Open the Floor station
-                </Link>
-                <Link role="menuitem" href="/counter" className={item} onClick={() => close(false)}>
+                </button>
+                <button type="button" role="menuitem" className={item} onClick={() => void switchTo('counter')}>
                   <IconCash size={16} stroke={1.5} aria-hidden="true" className="text-ink-subtle" />
                   Open the Counter station
-                </Link>
+                </button>
               </div>
               <form action={signOutFromConsole} className="mt-4 border-t border-edge pt-4">
                 <button type="submit" role="menuitem" className={item}>

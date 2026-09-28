@@ -23,11 +23,20 @@ One table in `packages/shared/src/identity/surfaces.ts`, enforced by the server 
 | Waiter | Yes | Yes |
 | Supervisor | Yes | Yes |
 | Cashier | | Yes |
-| Manager | | Yes |
-| Owner | | Yes |
+| Manager | Yes | Yes |
+| Owner | Yes | Yes |
 | Stock controller | | |
 
-Managers and owners run the business from the Console and close the drawer at the Counter; they do not take orders on a Floor tablet. Changing this is a one-line edit to the table.
+Managers and owners run the business from the Console, close the drawer at the Counter, and cover the floor on a busy night. Changing this is a one-line edit to the table.
+
+### Switching surfaces as yourself
+
+A manager or owner moves between the Console, the Floor and the Counter without typing their PIN again, and a waiter or supervisor moves between the Floor and the Counter the same way. The switch carries the person who made it and no one else (docs/11 D-29):
+
+- The surface being left makes a one-use ticket from its own session: the Console cookie, or that station's token. The ticket names the person and the surface it opens, and lasts a minute.
+- The surface arriving spends it, checking again that the person is active, their role belongs there and their PIN has not changed. It replaces whoever that surface held, in the browser or on the device.
+- Each switch is in the audit as "Switched surface as themselves", with the surface left and the device arrived on.
+- Opening a station by its address, without switching, shows whoever is signed in there or its PIN screen, as a shared tablet always has.
 
 ## 2. The counter as a place and the Counter as a station
 

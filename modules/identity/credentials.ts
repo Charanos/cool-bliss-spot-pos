@@ -85,7 +85,7 @@ function safeEqual(a: Buffer, b: Buffer): boolean {
 
 /* ------------------------------------------------------------------ tokens */
 
-export type TokenKind = 'console' | 'station' | 'approval' | 'pin_change';
+export type TokenKind = 'console' | 'station' | 'approval' | 'pin_change' | 'handoff';
 
 export interface TokenClaims {
   /** What the token is for. A token of one kind is never accepted as another. */
@@ -102,6 +102,26 @@ export interface TokenClaims {
   perm?: string;
   /** The person's PIN version when it was signed: a later PIN change ends it. */
   pv?: number;
+  /** For handoff tickets: the surface it was issued on, the one it opens, and its one-use number. */
+  from?: string;
+  to?: string;
+  n?: string;
+}
+
+/* ----------------------------------------------------------------- one use */
+
+const spent = (globalThis as unknown as { __blissSpent?: Map<string, number> }).__blissSpent ?? new Map<string, number>();
+(globalThis as unknown as { __blissSpent?: Map<string, number> }).__blissSpent = spent;
+
+/**
+ * Mark a one-use number spent. False when it was already spent, so a ticket works once. Numbers are
+ * forgotten once the ticket they belong to has expired, since an expired ticket fails anyway.
+ */
+export function spendOnce(nonce: string, expiresAt: number, now = Date.now()): boolean {
+  for (const [key, exp] of spent) if (exp <= now) spent.delete(key);
+  if (spent.has(nonce)) return false;
+  spent.set(nonce, expiresAt);
+  return true;
 }
 
 /** A compact signed token: base64url(JSON claims) + '.' + base64url(HMAC-SHA256). */

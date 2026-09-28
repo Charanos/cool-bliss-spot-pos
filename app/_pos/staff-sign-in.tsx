@@ -5,7 +5,7 @@ import { ActionNode, Avatar, Eyebrow, FadeRule, GlassButton, GlassPane, PhotoBac
 import { AtmosphereClock } from '@bliss/ui/components/atmosphere-clock';
 import { AmbientTerminalArtwork } from '@bliss/ui/components/artwork/frost-crystals';
 import { BlissWordmark } from '@bliss/ui/components/brand';
-import { Skeleton } from '@bliss/ui/components/feedback';
+import { InlineNotice, Skeleton } from '@bliss/ui/components/feedback';
 import { PinPad } from '@bliss/ui/components/pin-pad';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconArrowLeft } from '@tabler/icons-react';
@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useOutlet, useStaffDirectory } from '@/lib/pos/queries';
 import { pinWeakness } from '@bliss/shared/pin';
-import { choosePin, continueSession, pairDevice, signIn, useDevice, useSession } from '@/lib/pos/session';
+import { choosePin, pairDevice, redeemHandoff, signIn, useDevice, useSession } from '@/lib/pos/session';
 import { useSync, wakeSync } from '@/lib/pos/sync';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -75,26 +75,33 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
   const backdrop = useBackdrop(surface);
   const roles = SURFACE_ROLES[surface];
 
+  // Arriving from another surface with a ticket: the person who switched is signed in here, replacing
+  // whoever this device held, before anything else happens. Null until the address has been read.
+  const [handoff, setHandoff] = useState<string | null>(null);
+  const [carrying, setCarrying] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
-    if (session) router.replace(home);
-  }, [session, router, home]);
-
-  // Signed in to the Console, or to the other station in this browser: go straight in, no PIN.
-  const [carrying, setCarrying] = useState(true);
+    setHandoff(new URLSearchParams(window.location.search).get('handoff') ?? '');
+  }, []);
   const tried = useRef(false);
   useEffect(() => {
-    if (session || tried.current) return;
+    if (!handoff || tried.current) return;
     if (!sync.bootstrapped && sync.link === 'synced') return;
     tried.current = true;
-    void continueSession().then((ok) => {
-      if (!ok) setCarrying(false);
+    setCarrying(true);
+    // The ticket works once; it never stays in the address or the history.
+    window.history.replaceState(null, '', window.location.pathname);
+    void redeemHandoff(handoff).then((result) => {
+      setCarrying(false);
+      if (result.ok) return router.replace(home);
+      setNotice(result.message);
+      setHandoff('');
     });
-  }, [session, sync.bootstrapped, sync.link]);
+  }, [handoff, sync.bootstrapped, sync.link, router, home]);
+
   useEffect(() => {
-    // Never hold the screen long: offline or slow, the team shows.
-    const timer = setTimeout(() => setCarrying(false), 2500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (session && handoff === '') router.replace(home);
+  }, [session, handoff, router, home]);
 
   const people = (staff ?? []).filter((s) => roles.includes(s.roleKey)).sort((a, b) => roles.indexOf(a.roleKey) - roles.indexOf(b.roleKey) || a.displayName.localeCompare(b.displayName));
   const person = people.find((p) => p.id === chosen);
@@ -218,6 +225,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
                 <span className="font-mono tabular text-num-sm text-ink-muted">{people.length === 1 ? '1 on the team' : `${people.length} on the team`}</span>
               </div>
 
+              {notice && !carrying ? <InlineNotice tone="neutral">{notice}</InlineNotice> : null}
               {carrying && !person ? (
                 <p aria-live="polite" className="animate-breathe py-24 text-center text-body text-ink-muted">
                   One moment
