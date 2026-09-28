@@ -75,7 +75,7 @@ export function SurfaceSwitcher({ current, console: withConsole = false }: { cur
       {withConsole ? (
         <button type="button" onClick={() => go('console')} disabled={opening !== null} aria-label="Switch to the Console" className={cx(idle, opening === 'console' && 'animate-breathe')}>
           <IconLayoutDashboard size={16} stroke={ICON_STROKE} aria-hidden="true" />
-          <span className="hidden desktop:inline">Console</span>
+          <span className="hidden compact:inline">Console</span>
         </button>
       ) : null}
     </nav>

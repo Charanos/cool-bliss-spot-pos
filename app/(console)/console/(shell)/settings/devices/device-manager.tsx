@@ -135,7 +135,7 @@ export function useDeviceManager({ canManage, createParam = false }: { canManage
         <ConsoleOverlay open={open?.kind === 'show'} onClose={close} title={open?.kind === 'show' ? `Pair ${open.label}` : ''} description="Shown once. It works for 24 hours." width="md">
           {open?.kind === 'show' ? (
             <div className="flex flex-col gap-24">
-              <OneTimeCode code={open.code}>On {open.label}, choose it on the sign-in screen and enter this code. Nobody can sign in on it until it is paired.</OneTimeCode>
+              <OneTimeCode code={open.code}>On the device, open its sign-in screen, which asks to pair it first, and enter this code there, not as a PIN. Nobody can sign in on it until it is paired.</OneTimeCode>
               <div className="flex justify-end border-t border-rule pt-16">
                 <Button
                   variant="primary"

@@ -69,6 +69,7 @@ export default async function ProductPage({ params }: { params: Promise<{ produc
   const supplied = sealed ? procurement.supplierProducts().filter((sp) => sp.productVariantId === sealed.id) : [];
   const usedIn = inventory.recipes().filter((r) => r.components.some((c) => variantIds.has(c.componentVariantId)));
   const cost = sealed ? inventory.averageCost(sealed.id) : null;
+  const outNow = product.unitsInHouse ? availability.inUse(product.id) : 0;
   const threshold = product.lowStockThreshold ?? outlet.lowStockDefault;
   const holds = inventory.activeHolds().filter((h) => variantIds.has(h.productVariantId));
   const batches = sealed ? inventory.batchesForVariant(sealed.id).filter((b) => b.remainingQty > 0).sort((a, b) => (a.expiryDate ?? Infinity) - (b.expiryDate ?? Infinity)) : [];
@@ -132,7 +133,7 @@ export default async function ProductPage({ params }: { params: Promise<{ produc
               </ButtonLink>
             ) : null}
             <ProductActions
-              product={{ id: product.id, categoryId: product.categoryId, name: product.name, brand: product.brand, sku: product.sku, barcode: product.barcode, containerVolumeMl: product.containerVolumeMl, abv: product.abv, defaultSupplierId: product.defaultSupplierId, imageKey: product.imageKey, unitCost: canCost && cost && isPositive(cost) ? formatDecimal(cost) : '' }}
+              product={{ id: product.id, categoryId: product.categoryId, name: product.name, brand: product.brand, sku: product.sku, barcode: product.barcode, containerVolumeMl: product.containerVolumeMl, abv: product.abv, defaultSupplierId: product.defaultSupplierId, imageKey: product.imageKey, unitsInHouse: product.unitsInHouse ?? null, unitCost: canCost && cost && isPositive(cost) ? formatDecimal(cost) : '' }}
               status={product.status}
               categories={catalogue.categories().filter((c) => c.status === 'active').map((c) => ({ value: c.id, label: c.name }))}
               suppliers={procurement.suppliers().filter((s) => s.status === 'active').map((s) => ({ value: s.id, label: s.name }))}
@@ -155,6 +156,15 @@ export default async function ProductPage({ params }: { params: Promise<{ produc
           </CardBody>
         </Card>
         <MetricGrid columns={3} className="desktop:grid-cols-3">
+          {product.unitsInHouse ? (
+            <Metric
+              label="Out on tables"
+              icon={IconBottle}
+              tone={outNow >= product.unitsInHouse ? 'stop' : outNow === product.unitsInHouse - 1 ? 'attention' : 'default'}
+              value={`${outNow} of ${product.unitsInHouse}`}
+              detail={outNow >= product.unitsInHouse ? 'All out. Each comes back when its table clears' : `${product.unitsInHouse - outNow} free now. Each comes back when its table clears`}
+            />
+          ) : (
           <Metric
             label="On hand"
             icon={IconBottle}
@@ -163,6 +173,7 @@ export default async function ProductPage({ params }: { params: Promise<{ produc
             detail={onHand === null ? `${category?.name ?? 'Its category'} is not counted` : cover !== null ? `${unit}, about ${formatQty(cover, 1)} days at this pace` : `${unit}, low at ${threshold}`}
             href={sealed ? `/console/inventory/stock?q=${encodeURIComponent(product.name)}` : undefined}
           />
+          )}
           <Metric label="Average cost" icon={IconScale} value={!canCost ? 'Hidden' : cost && isPositive(cost) ? <Money value={cost} size="num-kpi" /> : 'Not set'} detail={!canCost ? 'Needs the cost permission' : cost && isPositive(cost) ? 'Each, from deliveries or set by hand' : 'Set it with Edit, or it comes with the first delivery'} />
           <Metric label={`Takings, ${DAYS} days`} icon={IconCash} tone="poured" value={<Money value={takings} size="num-kpi" decimals="whole" />} detail={`${formatQty(sold, 1)} sold`} href="/console/reports/performance" />
         </MetricGrid>

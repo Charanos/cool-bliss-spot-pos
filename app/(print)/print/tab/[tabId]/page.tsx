@@ -55,7 +55,7 @@ export default async function PrintTabPage({ params, searchParams }: { params: P
   return (
     <PrintPage>
       <Receipt>
-        <ReceiptBrand name={outlet.name} logoUrl="/logo.png" lines={brandLines(outlet)} />
+        <ReceiptBrand name={outlet.name} logoUrl="/brand/logo-ink.svg" lines={brandLines(outlet)} />
         <ReceiptBand title="Your bill" detail={tab.tabNumber ? `Tab ${tab.tabNumber}` : null} />
         <ReceiptFacts
           items={[
@@ -88,7 +88,7 @@ export default async function PrintTabPage({ params, searchParams }: { params: P
         <ReceiptPay parts={tillParts(outlet, lines, total)} currency={outlet.currency} />
 
         <ReceiptFooter>
-          <p className="font-print">Asante, karibu tena</p>
+          <p className="text-[11px] italic">Asante, karibu tena</p>
           <p>Prices include VAT. Not a receipt: yours prints once the bill is paid.</p>
         </ReceiptFooter>
       </Receipt>

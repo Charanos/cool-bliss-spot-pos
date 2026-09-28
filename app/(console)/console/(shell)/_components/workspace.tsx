@@ -34,7 +34,7 @@ export function ViewHeader({ page, actions, aside, badge }: { page: string; acti
   const { page: p, workspace } = pageByHref(page);
   const counts = workspace.pages.length > 1 ? navCounts().pages : {};
   return (
-    <div className="flex flex-col gap-24">
+    <div data-page-head-wrap="" className="flex flex-col gap-24">
       {workspace.pages.length > 1 ? (
         <PillTabs
           label={`${workspace.label} pages`}

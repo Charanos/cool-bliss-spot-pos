@@ -24,6 +24,8 @@ export interface ProductDraft {
   imageKey: string | null;
   /** What one bottle or can costs to buy, in shillings as typed ("180.00"); empty when never set. */
   unitCost?: string;
+  /** How many the house owns of something handed back, such as shisha pots. */
+  unitsInHouse?: number | null;
 }
 
 type Option = { value: string; label: string };
@@ -40,7 +42,7 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
   const router = useRouter();
   const editing = Boolean(target);
   const requestId = useMemo(() => (open ? createUuidV7()() : ''), [open]);
-  const [f, setF] = useState({ name: '', brand: '', categoryId: '', sku: '', barcode: '', bottle: '', abv: '', supplierId: '', imageKey: null as string | null, cost: '' });
+  const [f, setF] = useState({ name: '', brand: '', categoryId: '', sku: '', barcode: '', bottle: '', abv: '', supplierId: '', imageKey: null as string | null, cost: '', inHouse: '' });
   const [first, setFirst] = useState({ kind: 'sealed' as 'sealed' | 'serve', name: '', serve: '', price: '' });
   const [uploading, setUploading] = useState(false);
 
@@ -58,6 +60,7 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
       supplierId: target?.defaultSupplierId ?? '',
       imageKey: target?.imageKey ?? null,
       cost: target?.unitCost ?? '',
+      inHouse: target?.unitsInHouse ? String(target.unitsInHouse) : '',
     });
     setFirst({ kind: 'sealed', name: '', serve: '', price: '' });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
@@ -76,6 +79,7 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
     imageKey: f.imageKey,
     // Blank leaves the cost as it is; a figure sets it until the next delivery brings its own.
     unitCost: f.cost.trim() === '' ? null : f.cost,
+    unitsInHouse: num(f.inHouse),
   };
 
   const categoryName = categories.find((c) => c.value === f.categoryId)?.label ?? '';
@@ -181,6 +185,7 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
         <TextField label="Alcohol, %" value={f.abv} onChange={set('abv')} inputMode="decimal" placeholder="4.2" />
         <TextField label="SKU" value={f.sku} onChange={(e) => setF((x) => ({ ...x, sku: e.target.value.toUpperCase() }))} placeholder="Made from the name" helper="Left empty, one is made for it." autoComplete="off" />
         <TextField label="Barcode" value={f.barcode} onChange={set('barcode')} inputMode="numeric" placeholder="6161101600125" autoComplete="off" />
+        <TextField label="How many you own" value={f.inHouse} onChange={set('inHouse')} inputMode="numeric" placeholder="4" helper="Only for what is served and handed back, like shisha pots. The floor stops selling it while all are out on tables." />
         <SelectField label="Usual supplier" value={f.supplierId} onChange={set('supplierId')} options={[{ value: '', label: 'None yet' }, ...suppliers]} className="desktop:col-span-2" />
       </Fieldset>
     </FormDialog>

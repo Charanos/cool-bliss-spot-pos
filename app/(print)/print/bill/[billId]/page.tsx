@@ -62,7 +62,7 @@ export default async function PrintBillPage({ params, searchParams }: { params: 
   return (
     <PrintPage>
       <Receipt>
-        <ReceiptBrand name={outlet.name} logoUrl="/logo.png" lines={brandLines(outlet)} />
+        <ReceiptBrand name={outlet.name} logoUrl="/brand/logo-ink.svg" lines={brandLines(outlet)} />
         <ReceiptBand title={paid ? 'Receipt' : 'Bill'} detail={`No. ${bill.billNumber}`} />
         <ReceiptFacts
           items={[
@@ -111,7 +111,7 @@ export default async function PrintBillPage({ params, searchParams }: { params: 
         <ReceiptPay parts={tillParts(outlet, lines, bill.totalCents).map((p) => (paid ? { ...p, amount: null } : p))} currency={outlet.currency} />
 
         <ReceiptFooter>
-          <p className="font-print">Asante, karibu tena</p>
+          <p className="text-[11px] italic">Asante, karibu tena</p>
           <p>{paid ? 'Keep this receipt for your records.' : 'Pay at the counter, or by M-Pesa above.'}</p>
           <p>Prices include VAT. Not a tax invoice.</p>
         </ReceiptFooter>

@@ -45,6 +45,7 @@ export default async function ProductsPage() {
       containerVolumeMl: p.containerVolumeMl,
       abv: p.abv,
       defaultSupplierId: p.defaultSupplierId,
+      unitsInHouse: p.unitsInHouse ?? null,
       serves: own.map((v) => v.name.replace(p.name, '').trim() || v.name),
       fromPrice: prices.length > 0 ? prices.reduce((a, b) => (b < a ? b : a)) : null,
       threshold: p.lowStockThreshold,

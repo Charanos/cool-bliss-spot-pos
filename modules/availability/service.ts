@@ -28,6 +28,13 @@ export function evaluate(variantId: string): AvailabilityResult & { threshold: n
     return { state: 'finished', reason: 'variant_status', qtyAvailable: 0, threshold: 0 };
   }
 
+  // Something served and handed back, like a shisha pot: what can go out is what is not already out.
+  if (product.unitsInHouse) {
+    const free = Math.max(0, product.unitsInHouse - inUse(product.id));
+    const result = evaluateAvailability({ hasActiveHold: held.has(variantId), variantActive: variant.status === 'active', categoryActive: category.status === 'active', tracked: true, qtyAvailable: free, threshold: 1 });
+    return { ...result, threshold: 1 };
+  }
+
   const recipe = inventory.recipeFor(variantId);
   let qty = UNTRACKED_QTY;
   let threshold = outletDefault;
@@ -70,6 +77,27 @@ export function evaluate(variantId: string): AvailabilityResult & { threshold: n
     threshold,
   });
   return { ...result, threshold };
+}
+
+/** Tabs still at their table: open, being settled or paid but not yet cleared. */
+const AT_TABLE = new Set(['open', 'part_settled', 'settling', 'settled']);
+
+/**
+ * How many of a product are out on tables now: fired lines, not voided, on tabs not yet cleared. A
+ * pot is back when its table is cleared, the moment the table is free for the next guests.
+ */
+export function inUse(productId: string): number {
+  const d = dataset();
+  const variants = new Set(catalogue.variants().filter((v) => v.productId === productId).map((v) => v.id));
+  const live = new Set(d.tabs.filter((t) => AT_TABLE.has(t.status) && !t.clearedAt).map((t) => t.id));
+  let n = 0;
+  for (const l of d.lines) if (variants.has(l.productVariantId) && live.has(l.tabId) && (l.status === 'pending' || l.status === 'served')) n += l.qty;
+  return n;
+}
+
+/** Whether anything on the menu is counted by what is out rather than by stock. */
+export function hasUnitsInHouse(): boolean {
+  return catalogue.products().some((p) => Boolean(p.unitsInHouse));
 }
 
 /** The derived map for every sellable variant, with the version a device compares before pushing. */

@@ -127,6 +127,12 @@ export interface Device {
   /** A one-time pairing code, hashed, set when the device is registered or reinstated in the Console. */
   pairingHash?: string | null;
   pairingExpiresAt?: EpochMs | null;
+  /**
+   * A manager's or owner's own browser, made when they switch from the Console to a station there:
+   * the staff id it belongs to. Paired by their Console sign-in, not a code; listed and withdrawn in
+   * the Console like any device.
+   */
+  personalTo?: Id | null;
 }
 
 /* ------------------------------------------------------- catalogue and pricing */
@@ -162,6 +168,12 @@ export interface Product {
   isSoldSealed: boolean;
   isSoldByServe: boolean;
   lowStockThreshold: number | null;
+  /**
+   * How many the house owns of something served and handed back, such as shisha pots. Set, it is
+   * what can be out at once: the floor can sell one while fewer than this sit on tabs not yet
+   * cleared, and the pot comes back when its table clears. Null for everything poured or eaten.
+   */
+  unitsInHouse?: number | null;
   reorderPoint: number;
   reorderQty: number;
   leadTimeDays: number;

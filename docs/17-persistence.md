@@ -53,9 +53,11 @@ settings, the roles, the stock locations, the Standard price list, and one perso
 owner. It also carries the real menu (`packages/db/seed/menu.ts`): the drinks from the Cool Bliss
 stock sheet (177 products in six categories, each opened with one on the Bar shelf until the first
 stock take replaces it), shisha pots, and the Bliss Kitchen menu (breakfast, snacks and meals, sent
-to the kitchen). Shisha and food keep no stock. Every line is priced on the Standard list, and a
-dish sold in two sizes is one product with a way to sell each. Photographs ship with the app in
-`public/products`, credited in `public/products/CREDITS.md`. Every other product, category, supplier, zone, table,
+to the kitchen). Food keeps no stock. Shisha is counted by pots: the house owns four (the product's
+"How many you own"), the floor can sell one while fewer than four are out on tables not yet
+cleared, and each asks its flavour, one or two mixed, with a note for anything else. Every line is priced on the Standard list, and a
+dish sold in two sizes is one product with a way to sell each. Every product has a photograph, shipped
+with the app in `public/products` and credited in `public/products/CREDITS.md`. Every other product, category, supplier, zone, table,
 device, tab, bill, count, shift and audit entry goes. Dan signs in to the Console with PIN 111111 (or `BLISS_OWNER_PIN`, four to eight
 digits, if set when running it) and should change it at once under his name in the rail. Then, in
 order:
@@ -64,11 +66,25 @@ order:
 2. People, Zones and tables: the floor as it is.
 3. Catalogue: the menu is there; check the prices against the sheet, add photos, and add anything
    missing. Then run a full stock count, which replaces every opening one.
-4. Settings, Devices: register each tablet and the counter, and pair each with its code.
+4. Settings, Devices: register each tablet and the counter, and pair each with its code. A manager
+   or owner who opens the Floor or the Counter from the Console needs none of this: their browser
+   gets a device of its own, in their name ("Dan's browser, Floor"), listed there and withdrawn
+   the same way.
 5. Inventory: an opening count, or book in the first delivery, when stock should start counting.
    Until then items sell and show as "Not counted yet" (D-30).
 
 It asks for `--yes` because it cannot be undone. Running devices reset on their next pull.
+
+### Adding the menu to a database already in use
+
+```
+pnpm db:menu
+```
+
+Adds whatever of the menu is not stored yet (the kitchen, shisha and its flavours on an outlet
+handed over before them), fills a photograph only where a product has none and the pot count only
+where it is unset, and fills the outlet's phone and M-Pesa tills if empty. Prices, names and stock
+the owner has set are never touched. Running it again changes nothing.
 
 ### Development data
 

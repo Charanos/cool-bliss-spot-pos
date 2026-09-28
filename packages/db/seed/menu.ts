@@ -1,4 +1,4 @@
-import type { Category, CategoryColourToken, PriceListItem, Product, ProductVariant, StockMovement } from '@bliss/shared/domain';
+import type { Category, CategoryColourToken, Modifier, ModifierGroup, PriceListItem, Product, ProductVariant, StockMovement, VariantModifierGroup } from '@bliss/shared/domain';
 import { shillings, ZERO } from '@bliss/shared/money';
 import type { IsoDate } from '@bliss/shared/time';
 import { seedId } from './ids';
@@ -26,7 +26,24 @@ interface Line {
   ml?: number;
   /** Sizes or sides sold under one tile, each its own price: [label, price]. The first is the default. */
   options?: [label: string, price: number][];
+  /** How many the house owns, for something served and handed back: shisha pots. */
+  inHouse?: number;
+  /** A choice asked for on the floor when it is ordered: the key of a group in CHOICES. */
+  choice?: keyof typeof CHOICES;
 }
+
+/**
+ * Choices asked for when an item is ordered, as modifier groups the Floor already knows how to ask.
+ * A shisha pot takes one flavour, or two mixed; anything else the guest asks for goes in its note.
+ */
+export const CHOICES = {
+  flavour: {
+    name: 'Shisha flavour',
+    minSelect: 1,
+    maxSelect: 2,
+    options: ['Double apple', 'Mint', 'Grape', 'Grape mint', 'Watermelon', 'Watermelon mint', 'Blueberry', 'Lemon mint', 'Peach', 'Mango', 'Orange', 'Strawberry', 'Gum mint', 'Mixed fruit'],
+  },
+} as const;
 
 interface Section {
   key: string;
@@ -248,8 +265,9 @@ export const MENU: Section[] = [
     colour: 'rose',
     code: 'SHI',
     tracked: false,
-    // Four pots in the house; a pot is served, not used up, so nothing is counted.
-    lines: [l('Shisha pot', 1000)],
+    // Four pots in the house. A pot is served and comes back, so what is counted is how many are
+    // out on tables, not stock; the floor asks for the flavour, and the note takes the rest.
+    lines: [{ ...l('Shisha pot', 1000), inHouse: 4, choice: 'flavour' }],
   },
   // Bliss Kitchen, from its printed menu. Made to order, so nothing is counted.
   {
@@ -331,7 +349,17 @@ export function buildMenu(input: { now: number; businessDate: IsoDate; ownerId: 
   const variants: ProductVariant[] = [];
   const priceListItems: PriceListItem[] = [];
   const movements: StockMovement[] = [];
+  const modifierGroups: ModifierGroup[] = [];
+  const modifiers: Modifier[] = [];
+  const variantModifierGroups: VariantModifierGroup[] = [];
   const skus = new Set<string>();
+
+  (Object.keys(CHOICES) as (keyof typeof CHOICES)[]).forEach((key, g) => {
+    const choice = CHOICES[key];
+    const groupId = seedId(`menu:choice:${key}`);
+    modifierGroups.push({ id: groupId, outletId, name: choice.name, minSelect: choice.minSelect, maxSelect: choice.maxSelect, isRequired: choice.minSelect > 0, sortOrder: g + 1, status: 'active' });
+    choice.options.forEach((name, i) => modifiers.push({ id: seedId(`menu:choice:${key}:${name}`), modifierGroupId: groupId, name, priceDeltaCents: ZERO, linkedVariantId: null, sortOrder: i + 1, status: 'active' }));
+  });
 
   MENU.forEach((section, s) => {
     const categoryId = seedId(`menu:category:${section.key}`);
@@ -357,6 +385,7 @@ export function buildMenu(input: { now: number; businessDate: IsoDate; ownerId: 
         isSoldSealed: true,
         isSoldByServe: false,
         lowStockThreshold: null,
+        unitsInHouse: line.inHouse ?? null,
         reorderPoint: 0,
         reorderQty: 1,
         leadTimeDays: 2,
@@ -369,6 +398,7 @@ export function buildMenu(input: { now: number; businessDate: IsoDate; ownerId: 
         const id = i === 0 ? variantId : seedId(`menu:variant:${sku}:${i}`);
         variants.push({ id, outletId, productId, name: label ? `${line.name}, ${label}` : line.name, kind: 'sealed', serveVolumeMl: null, depletionFactor: 1, barcode: null, isDefault: i === 0, sortOrder: i + 1, status: 'active' });
         priceListItems.push({ id: i === 0 ? seedId(`menu:price:${sku}`) : seedId(`menu:price:${sku}:${i}`), priceListId: standard, productVariantId: id, priceCents: shillings(price), minQty: null, status: 'active' });
+        if (line.choice) variantModifierGroups.push({ productVariantId: id, modifierGroupId: seedId(`menu:choice:${line.choice}`), sortOrder: 1 });
       });
       if (!tracked) continue;
       movements.push({
@@ -392,5 +422,5 @@ export function buildMenu(input: { now: number; businessDate: IsoDate; ownerId: 
     }
   });
 
-  return { categories, products, variants, priceListItems, movements };
+  return { categories, products, variants, priceListItems, movements, modifierGroups, modifiers, variantModifierGroups };
 }

@@ -48,7 +48,7 @@ export default async function EntryPage() {
 
       <main className="mx-auto flex min-h-dvh max-w-[1040px] flex-col justify-between px-16 py-24 tablet:px-32 tablet:py-56">
         <header className="flex items-center justify-between">
-          <BlissMark size={64} label="Bliss" />
+          <BlissMark size={64} label="Cool Bliss" />
         </header>
 
         <section aria-labelledby="entry-title" className="my-auto py-32 tablet:py-40">

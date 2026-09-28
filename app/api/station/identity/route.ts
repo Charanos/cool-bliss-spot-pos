@@ -17,6 +17,7 @@ export const dynamic = 'force-dynamic';
 
 const signIn = z.object({ action: z.literal('sign-in'), deviceId: z.string().max(64), staffId: z.string().max(64), pin: z.string().regex(/^\d{4,8}$/) });
 const choosePin = z.object({ action: z.literal('choose-pin'), deviceId: z.string().max(64), token: z.string().max(2048), pin: z.string().regex(/^\d{4,8}$/) });
+const claim = z.object({ action: z.literal('claim'), kind: z.enum(['floor', 'counter']), code: z.string().regex(/^\d{6}$/) });
 const pair = z.object({ action: z.literal('pair'), deviceId: z.string().max(64), code: z.string().regex(/^\d{6}$/) });
 const carry = z.object({ action: z.literal('continue'), deviceId: z.string().max(64), ticket: z.string().max(2048) });
 const signOut = z.object({ action: z.literal('sign-out'), deviceId: z.string().max(64) });
@@ -52,6 +53,26 @@ export async function POST(request: Request) {
   await fresh();
   const outlet = identity.outlet();
   const address = `ip:${clientAddress(request)}`;
+
+  // A new device pairs itself by the code alone, before it knows which device it is.
+  const asClaim = claim.safeParse(json);
+  if (asClaim.success) {
+    const state = credentials.attemptStatus(address);
+    if (state.locked) return wireResponse({ ok: false, message: `Pairing is paused until ${formatTime(state.until, outlet.timezone)} after several wrong codes.` }, { status: 429 });
+    const result = await withWrite(() => venue.claimDevice(asClaim.data.kind, asClaim.data.code));
+    if (typeof result === 'object') return wireResponse({ ok: true, device: { id: result.id, label: result.label } });
+    credentials.recordFailure(address);
+    return wireResponse(
+      {
+        ok: false,
+        message:
+          result === 'expired'
+            ? 'That code has run out. Make a new one in Console, Settings, Devices.'
+            : `That code does not match a ${asClaim.data.kind === 'floor' ? 'Floor tablet' : 'Counter'} waiting to pair. Check the code shown in Console, Settings, Devices.`,
+      },
+      { status: 401 },
+    );
+  }
 
   const device = identity.devices().find((d) => d.id === (json as { deviceId?: string })?.deviceId);
   if (!device) return wireResponse({ ok: false, message: `This device is not registered to ${outlet.name}. A manager needs to add it in Console, Settings, Devices.` }, { status: 403 });
