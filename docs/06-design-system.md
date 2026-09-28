@@ -76,6 +76,8 @@ One sans and one mono. No display serif, no third family. A minimal system earns
 
 **Weights never exceed 500.** There is no bold in this product. Hierarchy comes from size, colour and space. A lint rule fails the build on any font weight above 500.
 
+The one exception is paper. A thermal printer renders 500 as thin as 400, so printed tickets (bills, requested bills, order tickets) use `font-print`, 700, from the `--font-weight-print` token, for totals, till numbers and counts. It never appears on a screen surface, like the paper colours.
+
 ### Scale
 
 | Token | Size / line height | Tracking | Use |

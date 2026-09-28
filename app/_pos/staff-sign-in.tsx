@@ -182,10 +182,10 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
   return (
     <div className="relative flex h-dvh flex-col tablet:grid tablet:grid-cols-[minmax(320px,2fr)_3fr] bg-page">
       {/* The photograph and the clock: a column beside the team on a wide screen, a band across the top of a tablet held upright. */}
-      <section className="relative hidden shrink-0 flex-col justify-between overflow-hidden p-24 pad:flex pad:h-sign-band pad:flex-row pad:items-end tablet:h-auto tablet:shrink tablet:flex-col tablet:items-stretch tablet:p-40">
+      <section className="relative hidden shrink-0 flex-col justify-between overflow-hidden p-24 pad:flex pad:h-sign-band pad:flex-row pad:items-center tablet:h-auto tablet:shrink tablet:flex-col tablet:items-stretch tablet:p-40">
         <PhotoBackdrop src={backdrop} />
 
-        <div className="relative z-10 pad:self-start tablet:self-auto">
+        <div className="relative z-10 pad:self-center tablet:self-auto">
           <BlissWordmark size={80} label="Bliss" />
         </div>
 

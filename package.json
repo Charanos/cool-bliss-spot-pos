@@ -21,6 +21,7 @@
     "ci": "pnpm tokens:check && pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm legacy && pnpm budget",
     "db:seed": "tsx --env-file=.env.local scripts/db-seed.ts",
     "db:handover": "tsx --env-file=.env.local scripts/db-seed.ts --handover",
+    "db:menu": "tsx --env-file=.env.local scripts/db-menu.ts",
     "legacy": "node scripts/check-legacy-browsers.mjs"
   },
   "dependencies": {

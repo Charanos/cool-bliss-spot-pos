@@ -2,14 +2,17 @@ import type { Category, CategoryColourToken, PriceListItem, Product, ProductVari
 import { shillings, ZERO } from '@bliss/shared/money';
 import type { IsoDate } from '@bliss/shared/time';
 import { seedId } from './ids';
+import { menuImage } from './menu-images';
 import { LOCATIONS, OUTLET } from './organisation';
 
 /**
- * The real menu, as printed on the Cool Bliss stock sheet: every line with its selling price, one
- * product per line, sold sealed. docs/17 section 3.
+ * The real menu, as printed on the Cool Bliss stock sheet and the Bliss Kitchen menu: every line
+ * with its selling price. Drinks are one product per line, sold sealed; a dish in several sizes is
+ * one product with a way to sell each size. docs/17 section 3.
  *
- * Every line opens with one in stock on the Bar shelf, so its stock counts as recorded from the
- * start. The stock take replaces these ones with what is really there, as count adjustments.
+ * Every drink opens with one in stock on the Bar shelf, so its stock counts as recorded from the
+ * start. The stock take replaces these ones with what is really there, as count adjustments. Food
+ * and shisha keep no stock: their categories do not track it, so they are never "finished".
  *
  * Corrections from the owner over the sheet: Smirnoff 750ml is 2,000 (the sheet prints 200), Black
  * Label is 5,000 and 6,000 for 750ml and a litre, and Martell VS and VSOP come in 750ml and a litre.
@@ -21,6 +24,8 @@ interface Line {
   name: string;
   price: number;
   ml?: number;
+  /** Sizes or sides sold under one tile, each its own price: [label, price]. The first is the default. */
+  options?: [label: string, price: number][];
 }
 
 interface Section {
@@ -29,10 +34,17 @@ interface Section {
   colour: CategoryColourToken;
   /** Added to a product's SKU so a Tusker bottle and a Tusker can never share one. */
   code: string;
+  /** Where its orders print. The bar unless it is food. */
+  routing?: 'bar' | 'kitchen';
+  /** False for what is made or served, not counted: food and shisha keep no stock. */
+  tracked?: boolean;
   lines: Line[];
 }
 
 const l = (name: string, price: number, ml?: number): Line => ({ name, price, ml });
+
+/** One dish in several sizes or with several sides, on one tile: "Beef fry" at half a kilo or one. */
+const o = (name: string, ...options: [label: string, price: number][]): Line => ({ name, price: options[0]![1], options });
 
 /** A brand sold in several bottle sizes: one line per size, named "Gilbeys 250ml". */
 const sizes = (brand: string, ...pairs: [ml: number, price: number][]): Line[] => pairs.map(([ml, price]) => l(`${brand} ${ml === 1000 ? '1 litre' : `${ml}ml`}`, price, ml));
@@ -230,6 +242,73 @@ export const MENU: Section[] = [
       l('Embassy', 600),
     ],
   },
+  {
+    key: 'shisha',
+    name: 'Shisha',
+    colour: 'rose',
+    code: 'SHI',
+    tracked: false,
+    // Four pots in the house; a pot is served, not used up, so nothing is counted.
+    lines: [l('Shisha pot', 1000)],
+  },
+  // Bliss Kitchen, from its printed menu. Made to order, so nothing is counted.
+  {
+    key: 'breakfast',
+    name: 'Breakfast',
+    colour: 'brass',
+    code: 'BRK',
+    routing: 'kitchen',
+    tracked: false,
+    lines: [
+      l('African tea', 50),
+      l('White coffee', 50),
+      l('Black coffee', 40),
+      l('Lemon tea', 50),
+      l('Milk', 70),
+      l('Chocolate', 50),
+      l('Uji power', 100),
+      l('Bone soup', 50),
+    ],
+  },
+  {
+    key: 'snacks',
+    name: 'Snacks',
+    colour: 'leaf',
+    code: 'SNK',
+    routing: 'kitchen',
+    tracked: false,
+    lines: [
+      l('Chapo', 30),
+      l('Samosa', 50),
+      l('Rolex', 80),
+      l('2 eggs, fried', 70),
+      l('Boiled egg', 30),
+      l('Sausage', 50),
+      l('Nduma', 50),
+    ],
+  },
+  {
+    key: 'meals',
+    name: 'Meals',
+    colour: 'ember',
+    code: 'MEA',
+    routing: 'kitchen',
+    tracked: false,
+    lines: [
+      o('Beef fry', ['half kg', 600], ['1 kg', 1200]),
+      o('Goat fry', ['half kg', 700], ['1 kg', 1400]),
+      o('Beef choma', ['half kg', 600], ['1 kg', 1200]),
+      o('Goat choma', ['half kg', 700], ['1 kg', 1400]),
+      o('Beef stew', ['with chapo, ugali or rice', 250], ['with mukimo', 300]),
+      o('Matumbo stew', ['with chapo, ugali or rice', 200]),
+      o('Kichwa mbuzi', ['half', 300], ['full', 600]),
+      o('Chicken kienyeji', ['half', 700], ['full', 1400]),
+      l('Ugali portion', 50),
+      l('Rice portion', 50),
+      l('Mukimo plain', 100),
+      l('Chips', 150),
+    ],
+  },
 ];
 
 /** A readable SKU from the section and the name: BER-TUSKER-LAGER, SPR-GILBEYS-250ML. */
@@ -256,13 +335,15 @@ export function buildMenu(input: { now: number; businessDate: IsoDate; ownerId: 
 
   MENU.forEach((section, s) => {
     const categoryId = seedId(`menu:category:${section.key}`);
-    categories.push({ id: categoryId, outletId, parentId: null, name: section.name, sortOrder: s + 1, routingTarget: 'bar', colourToken: section.colour, trackStock: true, status: 'active' });
+    const tracked = section.tracked !== false;
+    categories.push({ id: categoryId, outletId, parentId: null, name: section.name, sortOrder: s + 1, routingTarget: section.routing ?? 'bar', colourToken: section.colour, trackStock: tracked, status: 'active' });
     for (const line of section.lines) {
       const sku = skuOf(section.code, line.name);
       if (skus.has(sku)) throw new Error(`Two menu lines make the SKU ${sku}.`);
       skus.add(sku);
       const productId = seedId(`menu:product:${sku}`);
       const variantId = seedId(`menu:variant:${sku}`);
+      const options = line.options ?? [[null, line.price] as const];
       products.push({
         id: productId,
         outletId,
@@ -280,11 +361,16 @@ export function buildMenu(input: { now: number; businessDate: IsoDate; ownerId: 
         reorderQty: 1,
         leadTimeDays: 2,
         defaultSupplierId: null,
-        imageKey: null,
+        imageKey: menuImage(section.key, line.name),
         status: 'active',
       });
-      variants.push({ id: variantId, outletId, productId, name: line.name, kind: 'sealed', serveVolumeMl: null, depletionFactor: 1, barcode: null, isDefault: true, sortOrder: 1, status: 'active' });
-      priceListItems.push({ id: seedId(`menu:price:${sku}`), priceListId: standard, productVariantId: variantId, priceCents: shillings(line.price), minQty: null, status: 'active' });
+      options.forEach(([label, price], i) => {
+        // The first keeps the id a one-size line has always had, so a reseed never orphans it.
+        const id = i === 0 ? variantId : seedId(`menu:variant:${sku}:${i}`);
+        variants.push({ id, outletId, productId, name: label ? `${line.name}, ${label}` : line.name, kind: 'sealed', serveVolumeMl: null, depletionFactor: 1, barcode: null, isDefault: i === 0, sortOrder: i + 1, status: 'active' });
+        priceListItems.push({ id: i === 0 ? seedId(`menu:price:${sku}`) : seedId(`menu:price:${sku}:${i}`), priceListId: standard, productVariantId: id, priceCents: shillings(price), minQty: null, status: 'active' });
+      });
+      if (!tracked) continue;
       movements.push({
         id: seedId(`menu:opening:${sku}`),
         outletId,

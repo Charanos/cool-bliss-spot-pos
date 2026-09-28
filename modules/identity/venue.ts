@@ -36,6 +36,8 @@ export interface OutletInput {
   name: string;
   legalName: string;
   address: string;
+  phone?: string | null;
+  tills?: { bar: string | null; kitchen: string | null };
   businessDayCutover: string;
   taxRateBps: number;
   pricesTaxInclusive: boolean;
@@ -49,6 +51,22 @@ export interface OutletInput {
  * Change the outlet's details. The tax rate and whether prices include it change what every bill
  * says, so only an owner changes those; a manager can change the rest.
  */
+/** Phone numbers as the bill prints them: digits, spaces, plus, commas and slashes, or none. */
+function phoneOf(value: string | null | undefined): string | null {
+  const clean = (value ?? '').trim().replace(/\s+/g, ' ');
+  if (!clean) return null;
+  if (clean.length > 60 || !/^[0-9+ ,/()-]+$/.test(clean)) throw new DomainError('Enter phone numbers as digits, such as 0118 933 850, 0706 760 977.');
+  return clean;
+}
+
+/** An M-Pesa till or paybill number: five to ten digits, or none. */
+function tillOf(value: string | null | undefined, what: string): string | null {
+  const clean = (value ?? '').replace(/\s+/g, '');
+  if (!clean) return null;
+  if (!/^\d{5,10}$/.test(clean)) throw new DomainError(`${what} is 5 to 10 digits, such as 9293398.`);
+  return clean;
+}
+
 export function updateOutlet(input: OutletInput): Outlet {
   const { reason, actor } = requireReasoned(input);
   assertCan(actor.staffId, 'staff.manage', 'changing the outlet');
@@ -66,6 +84,8 @@ export function updateOutlet(input: OutletInput): Outlet {
     name: text(input.name, 'The outlet name', 60),
     legalName: text(input.legalName, 'The legal name', 100),
     address: text(input.address, 'The address', 200),
+    phone: phoneOf(input.phone),
+    tills: { bar: tillOf(input.tills?.bar, 'The bar till'), kitchen: tillOf(input.tills?.kitchen, 'The kitchen till') },
     businessDayCutover: input.businessDayCutover,
     taxRateBps: input.taxRateBps,
     pricesTaxInclusive: input.pricesTaxInclusive,
@@ -76,6 +96,8 @@ export function updateOutlet(input: OutletInput): Outlet {
     name: current.name,
     legalName: current.legalName,
     address: current.address,
+    phone: current.phone ?? null,
+    tills: { bar: current.tills?.bar ?? null, kitchen: current.tills?.kitchen ?? null },
     businessDayCutover: current.businessDayCutover,
     taxRateBps: current.taxRateBps,
     pricesTaxInclusive: current.pricesTaxInclusive,
