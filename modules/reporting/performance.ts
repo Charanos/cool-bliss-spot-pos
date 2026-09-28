@@ -145,11 +145,12 @@ export function performance(from: IsoDate, to: IsoDate, previous: { from: IsoDat
   });
   const costedItems = items.filter((i) => i.contribution !== null);
 
-  // Drawer payouts in the range: cash that left the drawer, with its reason.
+  // Cash paid out of the drawer in the range, refunds and spending alike, with its reason. Drops to
+  // the safe are not spending: the cash is still the business's.
   const sessions = new Set(settlement.drawerSessionsBetween(from, to).map((s) => s.id));
   const payouts = settlement
     .readTables()
-    .cashMovements.filter((m) => m.kind === 'payout' && sessions.has(m.drawerSessionId))
+    .cashMovements.filter((m) => (m.kind === 'payout' || m.kind === 'paid_out') && sessions.has(m.drawerSessionId))
     .map((m) => ({ id: m.id, at: m.occurredAt, amount: abs(m.amountCents), reason: m.reason, by: identity.displayName(m.createdBy) }))
     .sort((a, b) => b.at - a.at);
 

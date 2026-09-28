@@ -14,6 +14,8 @@ import * as trade from '@/modules/trade/service';
 
 export const dynamic = 'force-dynamic';
 
+const CATALOGUE_GENERATION = 2;
+
 /** A station token older than this is renewed on the next pull, so a tablet in daily use never lapses. */
 const RENEW_AFTER_MS = 24 * 60 * 60_000;
 
@@ -38,7 +40,9 @@ export async function GET(request: Request) {
   const data = dataset();
   const outlet = identity.outlet();
   const map = availability.map();
-  const catalogueVersion = catalogue.version();
+  // What a station holds is fetched again when the data changes, or when the rules that shape what is
+  // sent change in code. 2: menu photographs filled for products that had none.
+  const catalogueVersion = CATALOGUE_GENERATION * 1_000_000_000 + catalogue.version();
   const reset = epoch !== data.epoch;
 
   const body: Record<string, unknown> = {

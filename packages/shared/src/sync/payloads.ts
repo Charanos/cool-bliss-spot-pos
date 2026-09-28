@@ -132,7 +132,8 @@ export const billSettlePayload = z.object({
 
 export const drawerOpenPayload = z.object({ v: v1, sessionId: uuid, floatCents: centsString, openedAt: int() });
 
-export const drawerDropPayload = z.object({ v: v1, movementId: uuid, sessionId: id, amountCents: centsString, reason, at: int() });
+/** Cash in or out of an open drawer: to the safe, put in, or paid out. Entries from before `kind` are drops. */
+export const drawerDropPayload = z.object({ v: v1, movementId: uuid, sessionId: id, kind: z.optional(z.enum(['drop_to_safe', 'paid_in', 'paid_out'])), amountCents: centsString, reason, at: int() });
 
 export const outboxPayloads = {
   'line.serve': lineServePayload,

@@ -13,7 +13,7 @@ import { Dot } from '@bliss/ui/components/status';
 import { IconAlertTriangle, IconArrowRight, IconCheck, IconFlame, IconReceipt2, IconScale, IconUsers } from '@tabler/icons-react';
 import Link from 'next/link';
 
-/** Last night's four figures: what came in, what it made, who was served, and what went missing. */
+/** The night's four figures: what came in, what it made, who was served, and what went missing. */
 export function HeadlineMetrics(props: {
   netSales: Cents;
   cogs: Cents;
@@ -62,7 +62,7 @@ export function HeadlineMetrics(props: {
   );
 }
 
-/** Last night by the hour, with the busiest hour named above the chart. */
+/** The night by the hour, with the busiest hour named above the chart. */
 export function SalesByHour({ data }: { data: BarDatum[] }) {
   const peak = data.reduce((max, d) => (d.value > max.value ? d : max), data[0] ?? { key: '', label: '', value: 0n as Cents });
   const total = sum(data.map((d) => d.value));
@@ -90,7 +90,7 @@ export function SalesByHour({ data }: { data: BarDatum[] }) {
           }
         />
       ) : null}
-      <BarChart data={data} highlightKey={peak.key} caption="Sales by hour, last night" height={220} tooltipLabel={(d) => `${d.label}:00 to ${d.label}:59`} />
+      <BarChart data={data} highlightKey={peak.key} caption="Sales by hour" height={220} tooltipLabel={(d) => `${d.label}:00 to ${d.label}:59`} />
     </div>
   );
 }
@@ -151,14 +151,14 @@ export function TopMovers({ rows }: { rows: MoverRow[] }) {
   return (
     <DataTable
       id="overview-movers"
-      caption="Top movers last night"
+      caption="Top movers"
       rows={rows}
       columns={columns}
       rowKey={(r) => r.productId}
       toolbar={false}
       urlState={false}
       variant="naked"
-      empty={{ title: 'Nothing sold last night', body: 'The best sellers show here after a night of trading.' }}
+      empty={{ title: 'Nothing sold yet', body: 'The best sellers show here as the night trades.' }}
     />
   );
 }

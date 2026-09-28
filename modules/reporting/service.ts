@@ -25,6 +25,17 @@ export function clock() {
   return { now: d.now, lastNight: d.lastNight, current: d.currentBusinessDate, first: d.firstBusinessDate, tradingInProgress: d.tradingInProgress };
 }
 
+/**
+ * The night the Console shows: today's business day once anything has traded on it, or while its
+ * trading hours run, so breakfast and the evening alike show as they happen; otherwise the night
+ * before. The Tonight card and the overview read the same answer.
+ */
+export function nightInView(): { date: IsoDate; live: boolean } {
+  const c = clock();
+  const live = c.tradingInProgress || trade.tabsOn(c.current).length > 0;
+  return { date: live ? c.current : c.lastNight, live };
+}
+
 /** An amount with VAT taken out, when the outlet's prices include it. */
 export function exVat(amount: Cents): Cents {
   const outlet = identity.outlet();

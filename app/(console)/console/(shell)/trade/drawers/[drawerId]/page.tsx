@@ -1,5 +1,6 @@
 import { formatDateTime, formatIsoDate, formatTime, plural } from '@bliss/shared/format';
 import { ZERO, abs, compare, formatKes, isNegative, sum } from '@bliss/shared/money';
+import { CASH_OUT } from '@bliss/db/seed/types';
 import { Card, CardHeader } from '@bliss/ui/components/console/card';
 import { Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { Callout, DetailHeader, LedgerItem, LedgerList, MetaRow } from '@bliss/ui/components/console/section';
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ drawerId:
   return { title: d ? `Drawer, ${formatIsoDate(d.businessDate)}` : 'Drawer' };
 }
 
-const MOVEMENT = { opening_float: 'Float counted in', drop_to_safe: 'Dropped to the safe', payout: 'Paid out', adjustment: 'Adjusted' } as const;
+const MOVEMENT = { opening_float: 'Float counted in', drop_to_safe: 'Dropped to the safe', payout: 'Refund paid out', paid_in: 'Cash put in', paid_out: 'Cash paid out', adjustment: 'Adjusted' } as const;
 
 /**
  * One drawer session: the float, the cash that came in on each bill, what left it, the count, and
@@ -40,7 +41,7 @@ export default async function DrawerPage({ params }: { params: Promise<{ drawerI
   const tenders = settlement.tendersByBill();
   const cashIn = sum(settlement.cashTakenIn(d.id));
   const movements = settlement.cashMovementsFor(d.id);
-  const out = sum(movements.filter((m) => m.kind === 'drop_to_safe' || m.kind === 'payout').map((m) => m.amountCents));
+  const out = sum(movements.filter((m) => CASH_OUT.includes(m.kind)).map((m) => m.amountCents));
   const over = d.stage === 'closed' && d.varianceCents !== null && compare(abs(d.varianceCents), outlet.drawerVarianceThresholdCents) > 0;
   const title = `${device?.label ?? 'Drawer'}, ${formatIsoDate(d.businessDate)}`;
 
@@ -117,7 +118,7 @@ export default async function DrawerPage({ params }: { params: Promise<{ drawerI
           value={<Money value={cashIn} size="num-kpi" decimals="whole" />}
           detail={plural(bills.filter((b) => (tenders.get(b.id) ?? []).some((t) => t.kind === 'cash')).length, 'cash bill')}
         />
-        <Metric label="Taken out" icon={IconCash} value={<Money value={out} size="num-kpi" decimals="whole" />} detail="Drops to the safe and refunds" />
+        <Metric label="Taken out" icon={IconCash} value={<Money value={out} size="num-kpi" decimals="whole" />} detail="To the safe, refunds and cash paid out" />
         <Metric
           label="Variance"
           icon={IconScale}
@@ -169,15 +170,18 @@ export default async function DrawerPage({ params }: { params: Promise<{ drawerI
           <CardHeader band level="h2" titleId="drawer-cash" title="Cash in and out" subtitle="Everything but the sales." />
           {movements.length === 0 ? (
             <div className="px-20 py-20">
-              <EmptyState title="Nothing but sales" body="No float, drop or refund was recorded against this drawer." />
+              <EmptyState title="Nothing but sales" body="No float, drop, refund or cash in or out was recorded against this drawer." />
             </div>
           ) : (
             <LedgerList className="mx-8 my-8" label="Cash movements">
               {movements.map((m) => (
-                <LedgerItem key={m.id} tone={m.kind === 'opening_float' ? 'poured' : m.kind === 'payout' ? 'stop' : undefined}>
+                <LedgerItem key={m.id} tone={m.kind === 'opening_float' || m.kind === 'paid_in' ? 'poured' : CASH_OUT.includes(m.kind) ? 'stop' : undefined}>
                   <span className="flex items-baseline justify-between gap-12">
                     <span className="text-ui text-ink">{MOVEMENT[m.kind]}</span>
-                    <Money value={m.amountCents} size="num-md" />
+                    <span className="font-mono tabular text-num-md text-ink">
+                      {CASH_OUT.includes(m.kind) ? '−' : '+'}
+                      <Money value={m.amountCents} size="num-md" />
+                    </span>
                   </span>
                   <span className="block text-body-sm text-ink-subtle">
                     {formatTime(m.occurredAt, tz)}, {identity.displayName(m.createdBy)}

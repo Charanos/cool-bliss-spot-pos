@@ -3,6 +3,7 @@ import 'server-only';
 import { tradingClock } from '@bliss/db/seed/history';
 import type { ChangeRef, Dataset, SyncTable } from '@bliss/db/seed/types';
 import { Pool, type PoolClient } from 'pg';
+import { type ClearPlan, TRADE_COLLECTIONS, planClearTrade } from './clear-trade';
 import { fillMenuPhotos } from './menu-photos';
 import { COLLECTIONS, SCALARS, SCHEMA, SINGLETONS, WRITE_LOCK, databaseUrl, decode, encode, insertApplied, insertChanges, keyOf, upsertRows, writeMeta } from './records';
 
@@ -503,6 +504,45 @@ export async function withWrite<T>(command: () => T): Promise<T> {
       throw error;
     } finally {
       w.txn = null;
+      client.release();
+    }
+  });
+  s.queue = run.catch(() => undefined);
+  return run;
+}
+
+/**
+ * Clear trade from the database in one transaction, under the write lock: the trade rows go, the
+ * stock movements sales made go, the delivery lots get back what those sales drew, and a new epoch
+ * starts, so every station drops its copy and every server instance loads the outlet again. Nothing
+ * else is touched. Returns what was cleared.
+ */
+export async function clearTradeStored(epoch: string): Promise<ClearPlan['summary']> {
+  await boot();
+  const s = state();
+  const run = s.queue.then(async () => {
+    const client = await s.pool.connect();
+    try {
+      await client.query('begin');
+      await client.query('select pg_advisory_xact_lock($1)', [WRITE_LOCK]);
+      const latest = await versionOf(client);
+      if (latest > s.loaded) await catchUp(client, latest);
+      const plan = planClearTrade(s.data!);
+      const next = latest + 1;
+      await client.query('delete from bliss_record where collection = any($1::text[])', [[...TRADE_COLLECTIONS]]);
+      if (plan.movementIds.length > 0) await client.query(`delete from bliss_record where collection = 'movements' and id = any($1::text[])`, [plan.movementIds]);
+      if (plan.batches.length > 0) await upsertRows(client, plan.batches.map((b) => ({ collection: 'stockBatches', id: b.id, ord: null, data: encode(b) })), next);
+      await client.query('delete from bliss_change');
+      await client.query('delete from bliss_applied');
+      const data = s.data as unknown as Record<string, unknown>;
+      await writeMeta(client, { version: next, epoch, availabilityVersion: Number(data.availabilityVersion ?? 0) + 1 });
+      await client.query('commit');
+      await hydrate(client);
+      return plan.summary;
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
       client.release();
     }
   });

@@ -13,6 +13,7 @@ import * as trade from '@/modules/trade/service';
 import { CommandMenu } from './_components/shell/command-menu';
 import { CrumbProvider } from './_components/shell/crumbs';
 import { FitFrame } from './_components/shell/fit-frame';
+import { LiveRefresh } from './_components/shell/live-refresh';
 import { DeskNav, type DeskGroup, type DeskItem } from './_components/shell/desk-nav';
 import { SHEET_SCROLL_ID, SheetHeader } from './_components/shell/sheet-header';
 import type { ThemePreference } from './_actions/settings';
@@ -70,13 +71,13 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
     }),
   );
 
-  // Tonight while the business day trades; the night before once it has closed.
-  const night = clock.tradingInProgress ? clock.current : clock.lastNight;
+  // Tonight once the business day has traded or its hours run; the night before otherwise.
+  const { date: night, live } = reporting.nightInView();
   const byHour = reporting.salesByHour(night);
   const figures = byHour.map((h) => Number(h.value));
   const peakAt = figures.indexOf(Math.max(...figures));
   const tonight = {
-    label: clock.tradingInProgress ? 'Tonight' : 'Last night',
+    label: live ? 'Tonight' : 'Last night',
     netSales: settlement.netSales(night),
     bills: settlement.billsOn(night).filter((b) => b.status === 'settled').length,
     openTabs: trade.openTabs().length,
@@ -95,6 +96,7 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
             Skip to content
           </a>
           <FitFrame />
+          <LiveRefresh />
           <div className="flex h-dvh min-w-frame-min overflow-hidden bg-desk">
             <DeskNav
               venue={{ name: outlet.name, day: formatDayShort(clock.current), trading: clock.tradingInProgress }}

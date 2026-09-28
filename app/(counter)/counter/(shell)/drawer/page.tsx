@@ -4,6 +4,7 @@ import { formatElapsed, formatTime, plural } from '@bliss/shared/format';
 import { type Cents, ZERO, abs, formatKes, isNegative, isPositive, shillings, sum } from '@bliss/shared/money';
 import { countedTotal } from '@bliss/shared/settlement';
 import { Badge } from '@bliss/ui/components/badge';
+import { Segmented } from '@bliss/ui/components/choice';
 import { Button } from '@bliss/ui/components/button';
 import { InlineNotice } from '@bliss/ui/components/feedback';
 import { TextField } from '@bliss/ui/components/fields';
@@ -14,12 +15,12 @@ import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { Dot } from '@bliss/ui/components/status';
 import { useNow } from '@bliss/ui/hooks';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconArrowLeft, IconBuildingBank, IconCash, IconChevronRight, IconClockHour4, IconLock, IconReceipt, IconScale } from '@tabler/icons-react';
+import { IconArrowDownLeft, IconArrowLeft, IconArrowUpRight, IconArrowsExchange, IconCash, IconChevronRight, IconLock, IconReceipt, IconScale } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { FiguresRow, PageHeader } from '@/app/_pos/chrome';
-import { type OpenTabBlock, closeDrawer, countDrawer, drawerPreflight, dropCash, openDrawer } from '@/lib/pos/counter';
+import { type CashMove, type OpenTabBlock, closeDrawer, countDrawer, drawerPreflight, moveCash, openDrawer } from '@/lib/pos/counter';
 import { useDrawerState } from '@/lib/pos/counter-queries';
 import type { DrawerRow } from '@/lib/pos/db';
 import { haptic } from '@/lib/pos/haptics';
@@ -28,17 +29,48 @@ import { notify } from '@bliss/ui/components/notices';
 import { type Counts, DenominationCounter } from '../../_components/denominations';
 import { PANE, Pane } from '../../_components/parts';
 
-type Stage = 'idle' | 'drop' | 'blocked' | 'counting';
+type Stage = 'idle' | 'move' | 'blocked' | 'counting';
+
+type Movement = DrawerRow['drops'][number];
+
+/** What each movement is called, which way it goes, and the reasons a cashier reaches for. */
+const MOVES: Record<CashMove, { label: string; title: string; hint: string; quick: string[]; noun: string }> = {
+  paid_out: {
+    label: 'Cash out',
+    title: 'Cash paid out',
+    hint: 'Cash the business spent from the drawer: ice, charcoal, a delivery, transport. Take it out, then record it with what it was for.',
+    quick: ['Ice for the bar', 'Charcoal for shisha', 'Transport for stock'],
+    noun: 'paid out',
+  },
+  paid_in: {
+    label: 'Cash in',
+    title: 'Cash put in',
+    hint: 'Cash added to the drawer that is not a sale: change from the safe, a top-up of the float. Put it in, then record it.',
+    quick: ['Change from the safe', 'Float top-up', 'Owner added change'],
+    noun: 'put in',
+  },
+  drop_to_safe: {
+    label: 'To the safe',
+    title: 'Cash to the safe',
+    hint: 'Cash moved from the drawer to the safe, to keep the drawer light. Take it out first, then record it.',
+    quick: ['To the safe', 'Bank run', 'Float to the other till'],
+    noun: 'to the safe',
+  },
+};
+
+/** How a movement reads on the ledger. Rows from before kinds were sent are drops to the safe. */
+const MOVE_LABEL: Record<NonNullable<Movement['kind']>, string> = { drop_to_safe: 'To the safe', payout: 'Refund paid out', paid_in: 'Cash put in', paid_out: 'Cash paid out', adjustment: 'Adjusted' };
+const isIn = (m: Movement) => m.kind === 'paid_in';
 
 /**
  * The drawer. docs/14 section 7.
  *
  * The count is blind: this device is never told what the drawer should hold, and the server says so
- * only once the counted figure is committed. So this page shows the float, the bills taken and the
- * cash sent to the safe, and never the cash taken on bills: with that one figure a cashier could
+ * only once the counted figure is committed. So this page shows the float, the bills taken and every
+ * cash movement in or out (spent, put in, to the safe, refunded), and never the cash taken on bills: with that one figure a cashier could
  * work the expected total out in their head, and the count would stop being a count.
  *
- * Open, drop, count, close. Counting is refused while a tab is still open, because the drawer is
+ * Open, record cash in and out, count, close. Counting is refused while a tab is still open, because the drawer is
  * closed at the end of the day; the refusal lists those tabs and each one opens straight to settle.
  */
 export default function DrawerPage() {
@@ -52,6 +84,7 @@ export default function DrawerPage() {
   const [floatCounts, setFloatCounts] = useState<Counts>({});
   const [counts, setCounts] = useState<Counts>({});
   const [dropAmount, setDropAmount] = useState('');
+  const [moveKind, setMoveKind] = useState<CashMove>('paid_out');
   const [blocks, setBlocks] = useState<OpenTabBlock[]>([]);
   const [needsReason, setNeedsReason] = useState<{ needs: boolean; threshold: Cents } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -62,7 +95,9 @@ export default function DrawerPage() {
   const counted = open && open.status !== 'open' && open.varianceCents !== undefined && open.varianceCents !== null ? open : null;
   const floatTotal = countedTotal(floatCounts);
   const countTotal = countedTotal(counts);
-  const drops = open ? sum(open.drops.map((d) => d.amountCents)) : ZERO;
+  const moves = open?.drops ?? [];
+  const cashIn = sum(moves.filter(isIn).map((d) => d.amountCents));
+  const cashOut = sum(moves.filter((d) => !isIn(d)).map((d) => d.amountCents));
   // A count taken before a reload has lost the server's threshold, so any difference asks for a
   // reason: the server accepts one it did not need, and refuses a close that lacks one it did.
   const offCount = counted ? isPositive(counted.varianceCents ?? ZERO) || isNegative(counted.varianceCents ?? ZERO) : false;
@@ -187,24 +222,26 @@ export default function DrawerPage() {
                 ))}
               </ul>
             </Pane>
-          ) : stage === 'drop' ? (
-            /* ── A drop to the safe ─────────────────────────────────────── */
-            <div className={cx(PANE, 'flex max-w-[560px] flex-col gap-16 p-16 tablet:p-24')}>
+          ) : stage === 'move' ? (
+            /* ── Cash in or out ─────────────────────────────────────────── */
+            <div className={cx(PANE, 'flex max-w-[600px] flex-col gap-20 p-16 tablet:p-24')}>
+              <Segmented label="Which way the cash goes" size="lg" value={moveKind} onChange={setMoveKind} options={(Object.keys(MOVES) as CashMove[]).map((k) => ({ value: k, label: MOVES[k].label }))} className="self-start" />
               <div>
-                <h2 className="text-title text-ink">Cash to the safe</h2>
-                <p className="mt-4 text-body text-ink-muted">Take it out of the drawer first, then record it here with the reason.</p>
+                <h2 className="text-title text-ink">{MOVES[moveKind].title}</h2>
+                <p className="mt-4 text-body text-ink-muted">{MOVES[moveKind].hint}</p>
               </div>
               <TextField label="Amount" inputMode="numeric" mono value={dropAmount} onChange={(e) => setDropAmount(e.target.value.replace(/[^0-9]/g, '').slice(0, 7))} helper="Whole shillings." />
               <ReasonForm
-                quickReasons={['To the safe', 'Bank run', 'Float to the other till']}
-                confirmLabel={dropAmount ? `Record ${formatKes(shillings(Number(dropAmount)), { decimals: 'whole' })}` : 'Record the drop'}
+                key={moveKind}
+                quickReasons={MOVES[moveKind].quick}
+                confirmLabel={dropAmount ? `Record ${formatKes(shillings(Number(dropAmount)), { decimals: 'whole' })} ${MOVES[moveKind].noun}` : 'Record it'}
                 cancelLabel="Back"
                 onCancel={() => setStage('idle')}
                 onConfirm={async ({ reason }) => {
-                  if (!dropAmount) throw new Error('Enter the amount going to the safe.');
-                  await dropCash(shillings(Number(dropAmount)), reason);
+                  if (!dropAmount) throw new Error('Enter the amount.');
+                  await moveCash(moveKind, shillings(Number(dropAmount)), reason);
                   haptic('success');
-                  notify({ key: 'drawer:drop', title: `${formatKes(shillings(Number(dropAmount)), { decimals: 'whole' })} to the safe`, body: 'Recorded against this drawer, with the reason.' });
+                  notify({ key: 'drawer:move', title: `${formatKes(shillings(Number(dropAmount)), { decimals: 'whole' })} ${MOVES[moveKind].noun}`, body: 'Recorded against this drawer, with the reason. The count at close allows for it.' });
                   setDropAmount('');
                   setStage('idle');
                 }}
@@ -214,22 +251,27 @@ export default function DrawerPage() {
             /* ── Open: the day so far ───────────────────────────────────── */
             <>
               <FiguresRow label="This drawer" className="grid grid-cols-2 gap-8 pad:gap-16 desktop:grid-cols-4">
-                <MetricTile label="Opening float" icon={IconCash} tone="money" value={<Money value={open.openingFloatCents} size="num-lg" decimals="whole" />} subtitle={`Opened ${formatTime(open.openedAt, tz)}`} />
-                <MetricTile label="Open for" icon={IconClockHour4} tone="accent" value={<span className="font-mono tabular text-num-lg text-ink">{formatElapsed(now - open.openedAt)}</span>} subtitle="Since the float went in" />
+                <MetricTile label="Opening float" icon={IconCash} tone="money" value={<Money value={open.openingFloatCents} size="num-lg" decimals="whole" />} subtitle={`Opened ${formatTime(open.openedAt, tz)}, ${formatElapsed(now - open.openedAt)} ago`} />
                 <MetricTile label="Bills here" icon={IconReceipt} tone="poured" value={<span className="font-mono tabular text-num-lg text-ink">{open.cashBills}</span>} subtitle="Settled on this counter" />
-                <MetricTile label="To the safe" icon={IconBuildingBank} tone="neutral" value={<Money value={drops} size="num-lg" decimals="whole" />} subtitle={open.drops.length === 0 ? 'Nothing taken out' : plural(open.drops.length, 'drop')} />
+                <MetricTile label="Cash in" icon={IconArrowDownLeft} tone="accent" value={<Money value={cashIn} size="num-lg" decimals="whole" />} subtitle={moves.some(isIn) ? plural(moves.filter(isIn).length, 'time') : 'Nothing put in'} />
+                <MetricTile label="Cash out" icon={IconArrowUpRight} tone="neutral" value={<Money value={cashOut} size="num-lg" decimals="whole" />} subtitle={moves.some((m) => !isIn(m)) ? 'Spent, refunded and to the safe' : 'Nothing taken out'} />
               </FiguresRow>
 
-              <Pane title="Cash to the safe" aside={open.drops.length > 0 ? <Money value={drops} size="num-sm" tone="muted" /> : null}>
-                {open.drops.length === 0 ? (
-                  <p className="px-16 py-16 text-body text-ink-muted">Nothing has left the drawer. Record a drop whenever cash goes to the safe, so the count at close matches.</p>
+              <Pane title="Cash in and out" aside={moves.length > 0 ? <span className="font-mono tabular text-num-sm text-ink-subtle">{plural(moves.length, 'movement')}</span> : null}>
+                {moves.length === 0 ? (
+                  <p className="px-16 py-16 text-body text-ink-muted">Only sales so far. Record any cash that goes in or out, spent, put in, or taken to the safe, so the count at close matches.</p>
                 ) : (
                   <ul>
-                    {open.drops.map((d) => (
+                    {[...moves].sort((x, y) => y.occurredAt - x.occurredAt).map((d) => (
                       <li key={d.id} className="flex min-h-row items-center gap-12 border-t border-rule-raised/20 px-16 first:border-t-0">
                         <span className="w-[48px] shrink-0 font-mono tabular text-num-sm text-ink-subtle">{formatTime(d.occurredAt, tz)}</span>
-                        <span className="min-w-0 flex-1 truncate text-body text-ink-muted">{d.reason}</span>
-                        <Money value={d.amountCents} size="num-sm" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-body text-ink">{MOVE_LABEL[d.kind ?? 'drop_to_safe']}</span>
+                          <span className="block truncate text-body-sm text-ink-subtle">{d.reason}</span>
+                        </span>
+                        <span className={cx('shrink-0 font-mono tabular text-num-sm', isIn(d) ? 'text-poured' : 'text-ink')}>
+                          {isIn(d) ? '+' : '-'} {formatKes(d.amountCents, { decimals: 'whole' })}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -267,8 +309,8 @@ export default function DrawerPage() {
         </BaseAction>
       ) : live && stage === 'idle' ? (
         <BaseAction>
-          <Button variant="secondary" size="xl" icon={IconBuildingBank} onClick={() => setStage('drop')}>
-            Cash to safe
+          <Button variant="secondary" size="xl" icon={IconArrowsExchange} onClick={() => setStage('move')}>
+            Cash in or out
           </Button>
           <Button
             variant="primary"
@@ -343,7 +385,7 @@ function CountResult({ row, needsReason, threshold, busy, onClose }: { row: Draw
     <div className="flex flex-col gap-16 tablet:gap-24">
       <section aria-label="The count" className="grid grid-cols-1 gap-8 pad:grid-cols-3 pad:gap-16">
         <MetricTile label="Counted" icon={IconCash} tone="neutral" value={<Money value={row.countedCashCents ?? ZERO} size="num-lg" decimals="whole" />} subtitle="What is in the drawer" />
-        <MetricTile label="Expected" icon={IconScale} tone="accent" value={<Money value={row.expectedCashCents ?? ZERO} size="num-lg" decimals="whole" />} subtitle="Float, plus cash taken, less drops" />
+        <MetricTile label="Expected" icon={IconScale} tone="accent" value={<Money value={row.expectedCashCents ?? ZERO} size="num-lg" decimals="whole" />} subtitle="Float, cash taken and put in, less cash out" />
         <MetricTile
           label={word}
           icon={IconScale}

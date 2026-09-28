@@ -45,6 +45,7 @@ export const MOVEMENT_LABEL: Record<MovementType, string> = {
   count_adjustment: 'Count adjustment',
   return_to_supplier: 'Return to supplier',
   opening_balance: 'Opening balance',
+  sale_cover: 'Sold beyond the record',
   cost_set: 'Unit cost set',
 };
 

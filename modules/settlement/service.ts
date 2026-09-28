@@ -3,7 +3,8 @@ import 'server-only';
 import type { Bill, TenderKind } from '@bliss/shared/domain';
 import { type Cents, ZERO, add, isPositive, subtract, sum } from '@bliss/shared/money';
 import type { IsoDate } from '@bliss/shared/time';
-import type { DrawerSession } from '@bliss/db/seed/types';
+import { CASH_OUT, type DrawerSession } from '@bliss/db/seed/types';
+import { expectedCash } from '@bliss/shared/settlement';
 import { settlementTables } from './schema';
 
 /** Read-only views of settlement's tables, for another module's report. Reads go through the service. */
@@ -128,11 +129,23 @@ export function openDrawerFor(deviceId: string) {
 }
 
 /**
+ * What a drawer should hold: the float, the cash taken on bills and any cash put in, less what went
+ * to the safe, what was refunded and what was paid out for the business.
+ */
+export function expectedCashFor(session: DrawerSession): Cents {
+  const moves = settlementTables().cashMovements.filter((m) => m.drawerSessionId === session.id);
+  const out = moves.filter((m) => CASH_OUT.includes(m.kind)).map((m) => m.amountCents);
+  const paidIn = moves.filter((m) => m.kind === 'paid_in').map((m) => m.amountCents);
+  return expectedCash({ float: session.openingFloatCents, cashTaken: [...cashTakenIn(session.id), ...paidIn], drops: out });
+}
+
+/**
  * A drawer session as a device may see it. docs/01 R7: before the count is committed the expected
  * figure, the counted figure and the variance are absent from the object, not merely null.
  */
 export function drawerProjection(session: DrawerSession) {
-  const drops = settlementTables().cashMovements.filter((m) => m.drawerSessionId === session.id && (m.kind === 'drop_to_safe' || m.kind === 'payout'));
+  // Every cash movement but the float, in or out, with its kind: the drawer's own ledger.
+  const drops = settlementTables().cashMovements.filter((m) => m.drawerSessionId === session.id && m.kind !== 'opening_float');
   const base = {
     id: session.id,
     businessDate: session.businessDate,
@@ -141,7 +154,7 @@ export function drawerProjection(session: DrawerSession) {
     openedAt: session.openedAt,
     openingFloatCents: session.openingFloatCents,
     status: session.status,
-    drops: drops.map((d) => ({ id: d.id, amountCents: d.amountCents, reason: d.reason, occurredAt: d.occurredAt, createdBy: d.createdBy })),
+    drops: drops.map((d) => ({ id: d.id, kind: d.kind, amountCents: d.amountCents, reason: d.reason, occurredAt: d.occurredAt, createdBy: d.createdBy })),
     cashBills: cashBillCount(session.id),
   };
   if (session.countedCashCents === null) return base;

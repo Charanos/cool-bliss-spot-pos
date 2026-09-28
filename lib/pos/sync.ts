@@ -209,7 +209,8 @@ async function applyPull(body: PullBody) {
   const changed: string[] = [];
   const knownEpoch = await getMeta<string>(META.epoch);
   const reset = Boolean(knownEpoch && knownEpoch !== body.epoch);
-  await setMeta(META.autoBind, Boolean(body.autoBind));
+  // Written only when it changes: every live query that reads the meta table re-runs on a write.
+  if ((await getMeta<boolean>(META.autoBind)) !== Boolean(body.autoBind)) await setMeta(META.autoBind, Boolean(body.autoBind));
 
   await db.transaction('rw', db.tables, async () => {
     if (reset) await resetTrade();

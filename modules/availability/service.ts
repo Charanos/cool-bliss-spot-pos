@@ -100,10 +100,17 @@ export function hasUnitsInHouse(): boolean {
   return catalogue.products().some((p) => Boolean(p.unitsInHouse));
 }
 
+/**
+ * Raised when the rules that derive the map change in code, not in the data: every device holds a
+ * version it was given, so a new generation makes each fetch the map once more under the new rules.
+ * 2: the handover's placeholder stock no longer finishes an item after one sale.
+ */
+const RULES_GENERATION = 2;
+
 /** The derived map for every sellable variant, with the version a device compares before pushing. */
 export function map(): { version: number; computedAt: number; entries: AvailabilityEntry[] } {
   const computedAt = Date.now();
-  const version = dataset().availabilityVersion;
+  const version = RULES_GENERATION * 1_000_000_000 + dataset().availabilityVersion;
   const entries = catalogue.variants().map((v) => {
     const r = evaluate(v.id);
     return { productVariantId: v.id, state: r.state, qtyAvailable: r.qtyAvailable, threshold: r.threshold, reason: r.reason, computedAt, version };

@@ -312,6 +312,11 @@ export type MovementType =
   | 'count_adjustment'
   | 'return_to_supplier'
   | 'opening_balance'
+  /**
+   * A sale arrived for more than the record said was there: it was sold, so it was there. Put back
+   * before the sale so stock never reads below zero, and flagged so the item is counted.
+   */
+  | 'sale_cover'
   /** No stock moves: the unit cost is set by hand, until the next delivery brings its own. */
   | 'cost_set';
 

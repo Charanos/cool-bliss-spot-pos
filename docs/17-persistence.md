@@ -51,8 +51,8 @@ pnpm db:handover --yes
 Replaces everything stored with the outlet as handed over (docs/11 D-31): the outlet and its
 settings, the roles, the stock locations, the Standard price list, and one person, Dan, the
 owner. It also carries the real menu (`packages/db/seed/menu.ts`): the drinks from the Cool Bliss
-stock sheet (177 products in six categories, each opened with one on the Bar shelf until the first
-stock take replaces it), shisha pots, and the Bliss Kitchen menu (breakfast, snacks and meals, sent
+stock sheet (177 products in six categories, each "Not counted yet" and on sale until the first
+delivery or stock take records it, D-30), shisha pots, and the Bliss Kitchen menu (breakfast, snacks and meals, sent
 to the kitchen). Food keeps no stock. Shisha is counted by pots: the house owns four (the product's
 "How many you own"), the floor can sell one while fewer than four are out on tables not yet
 cleared, and each asks its flavour, one or two mixed, with a note for anything else. Every line is priced on the Standard list, and a
@@ -87,6 +87,17 @@ Adds whatever of the menu is not stored yet (the kitchen, shisha and its flavour
 handed over before them), fills a photograph only where a product has none and the pot count only
 where it is unset, and fills the outlet's phone and M-Pesa tills if empty. Prices, names and stock
 the owner has set are never touched. Running it again changes nothing.
+
+### Clearing trade after a trial run
+
+Console, Settings, Sync, **Clear trade** (owners only; type CLEAR and give a reason). It takes away
+every tab and what hangs off it, the bills and tenders, the shifts, the drawers and their cash, and
+refused station entries, and removes the stock movements those sales made, giving the delivery lots
+back what they drew. Tables and zones, staff, roles and PINs, devices, the menu and prices,
+suppliers, deliveries, counts and holds stay as they are, and so does the audit trail, which records
+the clear with its reason. It runs in one transaction under the write lock and starts a new epoch,
+so every station drops its copy of the trade at its next sync and every server instance reloads.
+It cannot be undone (modules/trade/clear.ts, modules/_data/clear-trade.ts).
 
 ### Development data
 

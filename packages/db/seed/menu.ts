@@ -3,7 +3,7 @@ import { shillings, ZERO } from '@bliss/shared/money';
 import type { IsoDate } from '@bliss/shared/time';
 import { seedId } from './ids';
 import { menuImage } from './menu-images';
-import { LOCATIONS, OUTLET } from './organisation';
+import { OUTLET } from './organisation';
 
 /**
  * The real menu, as printed on the Cool Bliss stock sheet and the Bliss Kitchen menu: every line
@@ -340,10 +340,11 @@ function skuOf(code: string, name: string): string {
   return [code, ...words].join('-').slice(0, 32).replace(/-+$/, '');
 }
 
-export function buildMenu(input: { now: number; businessDate: IsoDate; ownerId: string }) {
+// No stock is opened: every drink starts "Not counted yet" and on sale until its first delivery or
+// count (D-30, D-32). `movements` stays in the result, empty, for the callers that add it.
+export function buildMenu(_input: { now: number; businessDate: IsoDate; ownerId: string }) {
   const outletId = OUTLET.id;
   const standard = seedId('pricelist:standard');
-  const bar = LOCATIONS.find((x) => x.isDefaultSale)!.id;
   const categories: Category[] = [];
   const products: Product[] = [];
   const variants: ProductVariant[] = [];
@@ -399,25 +400,6 @@ export function buildMenu(input: { now: number; businessDate: IsoDate; ownerId: 
         variants.push({ id, outletId, productId, name: label ? `${line.name}, ${label}` : line.name, kind: 'sealed', serveVolumeMl: null, depletionFactor: 1, barcode: null, isDefault: i === 0, sortOrder: i + 1, status: 'active' });
         priceListItems.push({ id: i === 0 ? seedId(`menu:price:${sku}`) : seedId(`menu:price:${sku}:${i}`), priceListId: standard, productVariantId: id, priceCents: shillings(price), minQty: null, status: 'active' });
         if (line.choice) variantModifierGroups.push({ productVariantId: id, modifierGroupId: seedId(`menu:choice:${line.choice}`), sortOrder: 1 });
-      });
-      if (!tracked) continue;
-      movements.push({
-        id: seedId(`menu:opening:${sku}`),
-        outletId,
-        businessDate: input.businessDate,
-        productVariantId: variantId,
-        stockLocationId: bar,
-        stockBatchId: null,
-        qtyDelta: 1,
-        volumeDeltaMl: line.ml ?? null,
-        unitCostCents: ZERO,
-        movementType: 'opening_balance',
-        sourceType: 'opening',
-        sourceId: null,
-        reason: 'Placeholder until the first stock take',
-        occurredAt: input.now,
-        createdBy: input.ownerId,
-        deviceId: null,
       });
     }
   });
