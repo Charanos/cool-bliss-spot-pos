@@ -77,7 +77,7 @@ async function server(): Promise<HealthCheck[]> {
     });
   }
   const up = process.uptime() * 1000;
-  checks.push({ id: 'uptime', label: 'Server running for', status: 'info', value: formatElapsed(up), detail: `Node ${process.version}, build ${process.env.NEXT_PUBLIC_BLISS_VERSION ?? 'dev'}.` });
+  checks.push({ id: 'uptime', label: 'Server running for', status: 'info', value: uptime(up), detail: `Node ${process.version}, build ${process.env.NEXT_PUBLIC_BLISS_VERSION ?? 'dev'}.` });
   const heapMb = Math.round(mem.heapUsed / 1_048_576);
   checks.push({ id: 'memory', label: 'Memory', status: heapMb > 900 ? 'warn' : 'ok', value: `${heapMb} MB`, detail: `${Math.round(mem.rss / 1_048_576)} MB held by the process in all.` });
   const clock = reporting.clock();
@@ -196,3 +196,12 @@ export async function report(): Promise<HealthReport> {
 }
 
 export { worst as worstOf };
+
+/** How long the server has been up, in the unit that reads best: 12 min, 3h05, 2 days 4h. */
+function uptime(ms: number): string {
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 1) return 'Under a minute';
+  if (minutes < 60) return `${minutes} min`;
+  const days = Math.floor(minutes / 1440);
+  return days > 0 ? `${plural(days, 'day')} ${Math.floor((minutes % 1440) / 60)}h` : formatElapsed(ms);
+}
