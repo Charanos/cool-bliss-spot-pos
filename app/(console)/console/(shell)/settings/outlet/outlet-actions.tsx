@@ -11,6 +11,9 @@ export interface OutletDraft {
   name: string;
   legalName: string;
   address: string;
+  phone: string;
+  barTill: string;
+  kitchenTill: string;
   businessDayCutover: string;
   /** VAT as a percentage, such as 16. */
   taxRatePct: number;
@@ -51,12 +54,17 @@ export function OutletActions({ outlet, isOwner }: { outlet: OutletDraft; isOwne
         title="Edit the outlet"
         description="Stations pick up the change at their next sync. Every change is kept in the audit trail with your reason."
         submitLabel="Save changes"
-        onSubmit={() => updateOutlet({ ...f, taxRatePct: Number(taxPct.replace(',', '.')), lowStockDefault: Number(low), reason })}
+        onSubmit={() => updateOutlet({ ...f, tills: { bar: f.barTill || null, kitchen: f.kitchenTill || null }, taxRatePct: Number(taxPct.replace(',', '.')), lowStockDefault: Number(low), reason })}
       >
         <Fieldset legend="The outlet">
           <TextField label="Name" value={f.name} onChange={(e) => set('name', e.target.value)} required maxLength={60} />
           <TextField label="Registered as" value={f.legalName} onChange={(e) => set('legalName', e.target.value)} required maxLength={100} />
           <TextField label="Address" value={f.address} onChange={(e) => set('address', e.target.value)} required maxLength={200} className="desktop:col-span-2" />
+          <TextField label="Phone" value={f.phone} onChange={(e) => set('phone', e.target.value)} maxLength={60} inputMode="tel" placeholder="0118 933 850, 0706 760 977" helper="Printed on every bill. Optional." className="desktop:col-span-2" />
+        </Fieldset>
+        <Fieldset legend="M-Pesa tills" hint="Printed on bills and requested bills, so guests pay drinks to the bar and food to the kitchen.">
+          <TextField label="Bar till" value={f.barTill} onChange={(e) => set('barTill', e.target.value)} inputMode="numeric" placeholder="9293398" maxLength={12} />
+          <TextField label="Kitchen till" value={f.kitchenTill} onChange={(e) => set('kitchenTill', e.target.value)} inputMode="numeric" placeholder="1690018" maxLength={12} />
         </Fieldset>
         <Fieldset legend="Tax">
           <TextField

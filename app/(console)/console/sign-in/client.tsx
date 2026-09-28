@@ -93,12 +93,12 @@ export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSum
       {/* The photograph and the clock: a column beside the team on a wide screen, a band across the top of a tablet held upright. */}
       {/* The photograph fades out towards the top into the page itself, so in light the fade reads as one
           sheet of paper; only the photograph and the words laid over it keep the dark treatment. */}
-      <section className="relative hidden shrink-0 flex-col justify-between overflow-hidden p-24 pad:flex pad:h-sign-band pad:flex-row pad:items-end tablet:h-auto tablet:shrink tablet:flex-col tablet:items-stretch tablet:p-40 bg-page text-ink">
+      <section className="relative hidden shrink-0 flex-col justify-between overflow-hidden p-24 pad:flex pad:h-sign-band pad:flex-row pad:items-center tablet:h-auto tablet:shrink tablet:flex-col tablet:items-stretch tablet:p-40 bg-page text-ink">
         <div data-theme="dark" aria-hidden="true" className="pointer-events-none absolute inset-0">
           <PhotoBackdrop src={BACKDROP} />
         </div>
 
-        <div className="relative z-10 pad:self-start tablet:self-auto">
+        <div className="relative z-10 pad:self-center tablet:self-auto">
           <BlissWordmark size={80} label="Bliss" />
         </div>
 

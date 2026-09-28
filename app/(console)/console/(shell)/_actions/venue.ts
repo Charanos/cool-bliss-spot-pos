@@ -14,6 +14,8 @@ export async function updateOutlet(raw: {
   name: string;
   legalName: string;
   address: string;
+  phone?: string | null;
+  tills?: { bar: string | null; kitchen: string | null };
   businessDayCutover: string;
   taxRatePct: number;
   pricesTaxInclusive: boolean;
@@ -25,6 +27,8 @@ export async function updateOutlet(raw: {
     name: z.string().max(60),
     legalName: z.string().max(100),
     address: z.string().max(200),
+    phone: z.string().max(60).nullable().optional(),
+    tills: z.object({ bar: z.string().max(12).nullable(), kitchen: z.string().max(12).nullable() }).optional(),
     businessDayCutover: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Enter a time, such as 06:00.'),
     taxRatePct: z.number({ error: 'Enter VAT as a percentage.' }).min(0, 'VAT cannot be below zero.').max(50, 'VAT is at most 50 per cent.'),
     pricesTaxInclusive: z.boolean(),

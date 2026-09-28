@@ -24,7 +24,7 @@ import { haptic } from '@/lib/pos/haptics';
 import { notify } from '@bliss/ui/components/notices';
 import { PANE, Quiet } from '../../_components/parts';
 import { TenderPanel } from '../../_components/tender-panel';
-import { printUrl } from '@/lib/pos/api';
+import { openPrint } from '@/lib/pos/print';
 
 /** Whether the screen is at least this wide, following it as it turns. False until mounted. */
 function useMinWidth(px: number): boolean {
@@ -176,7 +176,7 @@ export default function QuickSalePage() {
         variant="secondary"
         size="xl"
         icon={IconPrinter}
-        onClick={() => window.open(printUrl(`/print/bill/${done.billId}`), '_blank')}
+        onClick={() => openPrint(`/print/bill/${done.billId}`)}
       >
         Print Final Receipt
       </Button>

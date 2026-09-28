@@ -2,8 +2,9 @@
  * Seed the outlet's database. docs/17-persistence.md.
  *
  *   pnpm db:seed           builds eight weeks of trading up to now and replaces what is stored
+ *   pnpm db:menu           adds whatever of the menu is missing to a database in use (scripts/db-menu.ts)
  *   pnpm db:handover       replaces what is stored with the outlet as handed over: the owner, the
- *                          roles, stock locations and the Standard price list, and nothing made up.
+ *                          roles, stock locations, the Standard price list and the real menu.
  *                          Asks for --yes, because everything else stored goes. The owner's PIN is
  *                          BLISS_OWNER_PIN, or 111111 when unset; change it in the Console at once.
  *
@@ -53,7 +54,7 @@ async function main() {
     await writeMeta(client, meta);
     await client.query('commit');
     console.log(`Seeded version ${version} in ${Date.now() - started}ms. Tonight is ${data.currentBusinessDate}; epoch ${data.epoch}.`);
-    if (handover) console.log(`Handed over: ${data.staff[0]!.displayName} is the owner. Sign in to the Console with the PIN given, then add the menu, people, zones, tables and devices.`);
+    if (handover) console.log(`Handed over: ${data.staff[0]!.displayName} is the owner. Sign in to the Console with the PIN given, then add people, zones, tables and devices. The menu is in, drinks at one each until the stock take.`);
   } catch (error) {
     await client.query('rollback').catch(() => undefined);
     throw error;

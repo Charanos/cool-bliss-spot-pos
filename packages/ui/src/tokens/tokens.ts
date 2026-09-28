@@ -267,6 +267,12 @@ export type SemanticColour = keyof (typeof themes)['dark'];
  */
 export const weight = { regular: 400, medium: 500 } as const;
 
+/**
+ * Printed tickets only, like the paper colours: a thermal head renders medium as thin as regular,
+ * so totals, till numbers and order counts print at 700. Never on a screen surface.
+ */
+export const printWeight = 700;
+
 export const type = {
   display: { size: 40, lineHeight: 44, tracking: '-0.025em', weight: 400 },
   'title-lg': { size: 28, lineHeight: 34, tracking: '-0.02em', weight: 400 },

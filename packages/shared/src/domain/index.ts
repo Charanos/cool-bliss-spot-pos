@@ -37,6 +37,13 @@ export interface Outlet {
   timezone: string;
   businessDayCutover: string;
   address: string;
+  /** Numbers guests call, as printed: "0118 933 850, 0706 760 977". Absent until set. */
+  phone?: string | null;
+  /**
+   * M-Pesa Buy Goods till numbers, printed on bills: drinks are paid to the bar's, food to the
+   * kitchen's. Absent until set; a bill then prints no till.
+   */
+  tills?: { bar: string | null; kitchen: string | null };
   currency: 'KES';
   taxRateBps: number;
   pricesTaxInclusive: boolean;

@@ -1021,6 +1021,14 @@
 @utility photo-mask {
   -webkit-mask-image: linear-gradient(to top, black 0%, black 55%, transparent 100%);
   mask-image: linear-gradient(to top, black 0%, black 55%, transparent 100%);
+
+  /* A tablet held upright shows it as a band across the top of the page: there it dissolves at both
+     edges, into the top of the screen and into the page below, so no hard line cuts it off. The
+     words on it sit in the solid middle. */
+  @media (min-width: 768px) and (max-width: 959.98px) {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 13%, black 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 13%, black 80%, transparent 100%);
+  }
 }
 
 /* A scrolling list whose foot fades into the desk, so a cut-off row reads as "more below". */
