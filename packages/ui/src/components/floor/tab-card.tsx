@@ -79,16 +79,18 @@ export function TabCard({ tableLabel, name, seats, showSeats, elapsed, total, wa
           </span>
         </span>
 
-        {/* Row 2: where it stands, then whose it is */}
-        <span className="flex min-h-24 min-w-0 items-center gap-8" aria-hidden="true">
-          {state ? (
-            <Signal tone={state.tone}>{state.text}</Signal>
-          ) : stage ? (
-            <StatePill tone={stage.tone} more={stage.more} live={stage.live}>
-              {stage.word}
-            </StatePill>
-          ) : null}
-          {!state && !mine && waiter ? <span className="min-w-0 truncate text-body-sm text-ink-subtle">{waiter}</span> : null}
+        {/* Row 2: where it stands on the left, whose it is across from it */}
+        <span className="flex min-h-24 min-w-0 items-center justify-between gap-8" aria-hidden="true">
+          <span className="flex min-w-0 items-center">
+            {state ? (
+              <Signal tone={state.tone}>{state.text}</Signal>
+            ) : stage ? (
+              <StatePill tone={stage.tone} more={stage.more} live={stage.live}>
+                {stage.word}
+              </StatePill>
+            ) : null}
+          </span>
+          {mine ? <span className="shrink-0 text-body-sm font-medium text-accent-text">Yours</span> : waiter ? <span className="min-w-0 truncate text-right text-body-sm text-ink-subtle">{waiter}</span> : null}
         </span>
 
         {/* The figures sit on a hairline at the foot, however tall the card grows. */}
@@ -97,7 +99,8 @@ export function TabCard({ tableLabel, name, seats, showSeats, elapsed, total, wa
         {/* Row 3: seats or tab name + total */}
         <span className="flex items-end justify-between gap-8 pt-4">
           <span className="min-w-0 flex-1 flex items-center" aria-hidden="true">
-            {showSeats && seats.length > 1 ? (
+            {/* Every tab shows its seats, one guest included, so no card reads as empty. */}
+            {seats.length > 0 ? (
               <SeatChipStack seats={seats.map((s) => ({ seatNo: s.seatNo, settled: s.settled }))} max={6} size="tile" overlapping />
             ) : name ? (
               <span className="truncate text-body text-ink-muted">{name}</span>

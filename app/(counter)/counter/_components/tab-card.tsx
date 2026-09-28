@@ -42,28 +42,30 @@ export function CounterTabCard({ tab, now, onOpen }: { tab: CounterTab; now: num
         <span className="shrink-0 font-mono tabular text-num-sm text-ink-subtle">{formatElapsed(now - tab.openedAt)}</span>
       </span>
 
-      <span className="flex min-w-0 flex-wrap items-center gap-x-8 gap-y-2 text-body-sm text-ink-subtle" aria-hidden="true">
-        <span className="truncate">{tab.waiter}</span>
-        {tab.tabNumber ? (
-          <>
-            <span className="text-ink-disabled">·</span>
-            <span className="font-mono text-num-sm">Tab {tab.tabNumber}</span>
-          </>
-        ) : null}
+      {/* Where it stands on the left; whose it is and its number across from it. */}
+      <span className="flex min-h-24 min-w-0 items-center justify-between gap-8" aria-hidden="true">
+        <span className="flex min-w-0 flex-wrap items-center gap-8">
+          <StatePill tone={stage.tone} more={stage.more} live={stage.live}>
+            {stage.word}
+          </StatePill>
+          {signal ? <Signal tone={signal.tone}>{signal.text}</Signal> : null}
+        </span>
+        <span className="flex shrink-0 items-center gap-6 text-body-sm text-ink-subtle">
+          <span className="max-w-card-preview truncate">{tab.waiter}</span>
+          {tab.tabNumber ? (
+            <>
+              <span className="text-ink-disabled">·</span>
+              <span className="font-mono text-num-sm">Tab {tab.tabNumber}</span>
+            </>
+          ) : null}
+        </span>
       </span>
 
-      <span className="flex min-h-24 min-w-0 flex-wrap items-center gap-8" aria-hidden="true">
-        <StatePill tone={stage.tone} more={stage.more} live={stage.live}>
-          {stage.word}
-        </StatePill>
-        {signal ? <Signal tone={signal.tone}>{signal.text}</Signal> : null}
-      </span>
-
-      <span className="flex-1" aria-hidden="true" />
+      <span aria-hidden="true" className="mt-auto h-px w-full bg-rule-raised/25" />
 
       <span className="flex items-end justify-between gap-8" aria-hidden="true">
         <span className="flex min-w-0 items-center">
-          {tab.showSeats && tab.seats.length > 1 ? <SeatChipStack seats={tab.seats} max={6} size="dense" overlapping /> : null}
+          {tab.seats.length > 0 ? <SeatChipStack seats={tab.seats} max={6} size="dense" overlapping /> : null}
         </span>
         <span className="flex shrink-0 flex-col items-end gap-2">
           <span className="caps text-ink-subtle">{tab.partSettled ? 'Still to pay' : 'To pay'}</span>
