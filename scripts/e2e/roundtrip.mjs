@@ -145,6 +145,37 @@ try {
     await shot(page, 'counter-settled');
   });
 
+  await check('The Floor sees it paid, still seated, within one sync', async () => {
+    const { page } = floor;
+    await page.goto(`${BASE}/floor/tabs`);
+    // Upright, the Floor shows one list at a time: paid tables sit with the open tabs.
+    await page.getByRole('radio', { name: /Open tabs/ }).click();
+    await page.getByRole('button', { name: `Guests have left ${table}. Clear the table` }).waitFor({ timeout: 12_000 });
+    await shot(page, 'floor-paid-seated');
+  });
+
+  await check('The Counter clears the table: History shows it at once, the Floor frees it', async () => {
+    const { page } = counter;
+    await page.goto(`${BASE}/counter/tabs`);
+    await page.getByRole('button', { name: `Guests have left ${table}. Clear the table` }).click({ timeout: 15_000 });
+    await page.getByRole('button', { name: `Guests have left ${table}. Clear the table` }).waitFor({ state: 'detached', timeout: 5_000 });
+    await page.getByRole('link', { name: /History/ }).first().click();
+    await page.waitForURL('**/counter/history');
+    const row = page.locator('main').getByText(table, { exact: true }).first();
+    await row.waitFor({ timeout: 10_000 });
+    const started = Date.now();
+    for (;;) {
+      const text = await page.locator('main').innerText();
+      const at = text.indexOf(table);
+      if (at >= 0 && /Cleared/.test(text.slice(at, at + 400))) break;
+      if (Date.now() - started > 8_000) throw new Error(`History did not show ${table} cleared within 8 seconds`);
+      await page.waitForTimeout(500);
+    }
+    await shot(page, 'counter-history-cleared');
+    const fl = floor.page;
+    await fl.getByRole('button', { name: `Guests have left ${table}. Clear the table` }).waitFor({ state: 'detached', timeout: 12_000 });
+  });
+
   await check('The Console shows the bill', async () => {
     const console = await station('console', { width: 1440, height: 900 }, null, 'Dan', '555555');
     // The current business day, whatever the clock: after the cutover the default range is last night.

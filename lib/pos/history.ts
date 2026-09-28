@@ -41,7 +41,7 @@ interface Cached {
 
 const INDEX = 'history.index';
 const KEEP = 12;
-const FOLLOW_MS = 15_000;
+const FOLLOW_MS = 8_000;
 
 function cacheKey(p: HistoryParams): string {
   return `history:${p.from}:${p.to}:${p.staffId ?? ''}:${p.thisDevice ? 'd' : ''}:${(p.q ?? '').trim().toLowerCase()}`;
@@ -75,8 +75,10 @@ async function fetchHistory(p: HistoryParams): Promise<HistoryResult> {
 export function useHistory(params: HistoryParams | null): { state: HistoryState; refresh: () => void } {
   const [state, setState] = useState<HistoryState>({ status: 'loading' });
   const [nonce, setNonce] = useState(0);
-  const { lastSyncedAt } = useSync();
+  const { lastSyncedAt, lastPushedAt } = useSync();
   const lastRead = useRef(0);
+  // When the read now showing was asked for: a push after that is not in it yet.
+  const readAsked = useRef(0);
   const key = params ? cacheKey(params) : null;
   const paramsRef = useRef(params);
   paramsRef.current = params;
@@ -104,6 +106,7 @@ export function useHistory(params: HistoryParams | null): { state: HistoryState;
     const wait = p.q?.trim() ? 280 : 0;
     const timer = window.setTimeout(async () => {
       setState((s) => (s.status === 'ready' || s.status === 'saved' ? { ...s, refreshing: true } : s));
+      readAsked.current = Date.now();
       try {
         const data = await fetchHistory(p);
         lastRead.current = Date.now();
@@ -128,7 +131,14 @@ export function useHistory(params: HistoryParams | null): { state: HistoryState;
     };
   }, [key, nonce]);
 
-  // Tonight moves: read again after each sync, no more than every fifteen seconds.
+  // Something this device did has just reached the server: read again straight away, so a settle or
+  // a cleared table is in History the moment it is on the server, not a cycle later.
+  useEffect(() => {
+    if (!followsTonight || !lastPushedAt || lastPushedAt <= readAsked.current) return;
+    setNonce((n) => n + 1);
+  }, [followsTonight, lastPushedAt, state.status]);
+
+  // Tonight moves on other devices too: read again after each sync, no more than every eight seconds.
   useEffect(() => {
     if (!followsTonight || !lastSyncedAt) return;
     if (Date.now() - lastRead.current < FOLLOW_MS) return;

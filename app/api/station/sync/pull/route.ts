@@ -8,7 +8,7 @@ import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as inventory from '@/modules/inventory/service';
 import * as pricing from '@/modules/pricing/service';
-import { bootstrap, changesSince, deviceDrawers } from '@/modules/sync/apply';
+import { bootstrap, changesSince, deviceDrawers, rowsForTabs } from '@/modules/sync/apply';
 import * as trade from '@/modules/trade/service';
 
 export const dynamic = 'force-dynamic';
@@ -102,6 +102,19 @@ export async function GET(request: Request) {
     for (const row of deviceDrawers(deviceId) as { id: string }[]) if (!known.has(row.id)) (feed.rows.drawers as unknown[]).push(row);
   }
   body.full = reset || since < 0;
+
+  // Tabs the device asks to have again whole, after holding back or losing their rows. Merged into
+  // the feed by id, the refetched row winning, since it is the server's current copy.
+  const refetch = (url.searchParams.get('refetch') ?? '').split(',').filter(Boolean).slice(0, 50);
+  if (!body.full && refetch.length > 0) {
+    const extra = rowsForTabs(refetch);
+    for (const key of Object.keys(extra) as (keyof typeof extra)[]) {
+      const add = extra[key] as { id: string }[];
+      if (add.length === 0) continue;
+      const have = new Set(add.map((r) => r.id));
+      (feed.rows[key] as unknown[]) = [...(feed.rows[key] as { id: string }[]).filter((r) => !have.has(r.id)), ...add];
+    }
+  }
 
   return wireResponse(body);
 }

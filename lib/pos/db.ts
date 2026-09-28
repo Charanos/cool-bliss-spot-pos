@@ -179,7 +179,10 @@ export const META = {
   lastPulledAt: 'cursor.lastPulledAt',
   lastPushedAt: 'cursor.lastPushedAt',
   tradeCursor: 'cursor.trade',
-  /** Set by signing out here: the next person types their PIN, even with a Console session open. */
+  /** Tabs whose server rows this device held back or lost, to be asked for again whole. */
+  refetchTabs: 'cursor.refetchTabs',
+  /** The business date trade from earlier nights was last cleared for. */
+  prunedFor: 'cursor.prunedFor',
   epoch: 'cursor.epoch',
   outlet: 'outlet',
   businessDate: 'businessDate',

@@ -144,7 +144,8 @@ export function history(query: HistoryQuery): HistoryResult {
         guests: t.guestCount,
         openedAt: t.openedAt,
         closedAt: t.closedAt,
-        clearedAt: t.clearedAt ?? (t.status === 'settled' ? t.closedAt : null),
+        // Null is a paid table still seated; absent is a tab from before clearing was recorded, read as cleared at close.
+        clearedAt: t.clearedAt === undefined ? (t.status === 'settled' ? t.closedAt : null) : t.clearedAt,
         state,
         lines,
         bills: tabBills,

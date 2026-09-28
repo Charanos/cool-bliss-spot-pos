@@ -13,7 +13,7 @@ import { META, posDb, getMeta, setMeta } from './db';
 import { newId } from './ids';
 import { pricingIndex } from './pricing';
 import type { BoundDevice, StaffSession } from './session';
-import { syncNow } from './sync';
+import { wakeSync } from './sync';
 
 /**
  * Floor mutations. docs/01-product-spec.md R3: every mutating action writes local state and an outbox
@@ -63,8 +63,9 @@ export async function enqueue<K extends OutboxKind>(ctx: Context, kind: K, aggre
   });
 }
 
+/** Every change sends at once, even straight after a network blip: an action never waits out a backoff. */
 export function afterCommit() {
-  void syncNow();
+  wakeSync();
 }
 
 /* ----------------------------------------------------------------- tabs */

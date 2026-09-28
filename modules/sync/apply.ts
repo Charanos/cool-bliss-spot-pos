@@ -200,6 +200,31 @@ export function changesSince(since: number, deviceId: string | null): { cursor: 
 }
 
 /**
+ * Everything the server has for these tabs now: the tab, its seats, orders, lines and modifiers, and
+ * the bills against it. A device asks for this after it held back the server's rows for a tab while
+ * its own changes were unsent, or after the server refused one of those changes, so its copy of the
+ * tab is the server's again rather than waiting for the next time something touches it.
+ */
+export function rowsForTabs(tabIds: readonly string[]): TradeRows {
+  const rows = empty();
+  if (tabIds.length === 0) return rows;
+  const data = dataset();
+  const ids = new Set(tabIds);
+  rows.tabs = data.tabs.filter((t) => ids.has(t.id));
+  rows.seats = data.seats.filter((s) => ids.has(s.tabId));
+  rows.orders = data.orders.filter((o) => ids.has(o.tabId));
+  rows.lines = data.lines.filter((l) => ids.has(l.tabId));
+  const lineIds = new Set((rows.lines as { id: string }[]).map((l) => l.id));
+  rows.lineModifiers = data.lineModifiers.filter((m) => lineIds.has(m.orderLineId));
+  const bills = data.bills.filter((b) => b.tabId !== null && ids.has(b.tabId));
+  const billIds = new Set(bills.map((b) => b.id));
+  rows.bills = bills;
+  rows.billLines = data.billLines.filter((l) => billIds.has(l.billId));
+  rows.tenders = data.tenders.filter((t) => billIds.has(t.billId));
+  return rows;
+}
+
+/**
  * What a device needs the first time it connects, or after a new epoch: every open tab with its
  * seats, orders, lines and modifiers, the bills already taken against those tabs, today's bills on
  * this device, and this device's open drawer.

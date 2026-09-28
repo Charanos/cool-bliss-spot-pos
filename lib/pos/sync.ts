@@ -20,7 +20,9 @@ import { META, posDb, getMeta, setMeta } from './db';
  *     bootstraps again.
  *  3. Rows for a tab this device still has unsent entries for are held back until those entries are
  *     acknowledged, so the server never overwrites a change the device has not sent yet.
- *  4. Drain the outbox in seq order. A rejection blocks that tab only.
+ *  4. Drain the outbox in seq order. A refusal takes the refused change off the device, refuses what
+ *     was already queued behind it on the same tab, and asks for the tab again whole; work done
+ *     after it sends as normal. Rows held back under point 3 are asked for again the same way.
  *  5. Repeat every five seconds while connected.
  */
 
@@ -32,6 +34,8 @@ export interface SyncSnapshot {
   unsentLines: number;
   rejected: number;
   lastSyncedAt: number | null;
+  /** When the server last took something this device sent. History reads again on it. */
+  lastPushedAt: number | null;
   bootstrapped: boolean;
   /** The most recent items that ran out or went on hold, for a polite announcement. */
   announcements: string[];
@@ -43,6 +47,7 @@ let snapshot: SyncSnapshot = {
   unsentLines: 0,
   rejected: 0,
   lastSyncedAt: null,
+  lastPushedAt: null,
   bootstrapped: false,
   announcements: [],
 };
@@ -113,6 +118,14 @@ interface PullBody {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- bulkPut over heterogeneous snapshot tables
 type AnyRows = any[];
 
+/** Remember tabs to ask the server for again whole, once nothing for them waits to send. */
+async function markRefetch(ids: Iterable<string>) {
+  const add = [...ids].filter(Boolean);
+  if (add.length === 0) return;
+  const known = (await getMeta<string[]>(META.refetchTabs)) ?? [];
+  await setMeta(META.refetchTabs, [...new Set([...known, ...add])].slice(-200));
+}
+
 /** Tabs this device still has unsent entries for. Their server rows wait until those land. */
 async function pendingAggregates(): Promise<Set<string>> {
   const pending = await posDb().outbox.where('status').anyOf('pending', 'inflight').toArray();
@@ -153,6 +166,19 @@ async function applyTrade(rows: TradeRows, full: boolean) {
   }
 
   const lineTab = new Map(rows.lines.map((l) => [l.id, l.tabId]));
+
+  // Rows held back for a tab with unsent changes are not lost: the tab is asked for again whole once
+  // those changes land or are refused, since the cursor moves past these rows now.
+  if (!full && held.size > 0) {
+    const skipped = new Set<string>();
+    for (const t of rows.tabs) if (held.has(t.id)) skipped.add(t.id);
+    for (const r of [...rows.seats, ...rows.orders, ...rows.lines]) if (r.tabId && held.has(r.tabId)) skipped.add(r.tabId);
+    for (const m of rows.lineModifiers) {
+      const tabId = lineTab.get(m.orderLineId);
+      if (tabId && held.has(tabId)) skipped.add(tabId);
+    }
+    await markRefetch(skipped);
+  }
 
   const tabs = rows.tabs.filter((t) => !held.has(t.id));
   if (tabs.length > 0) await db.tabs.bulkPut(tabs as AnyRows);
@@ -262,6 +288,8 @@ export async function pull(): Promise<void> {
     getMeta<{ id: string }>(META.deviceId),
   ]);
   const unsynced = await posDb().outbox.where('status').anyOf('pending', 'inflight', 'rejected').count();
+  const held = await pendingAggregates();
+  const refetch = ((await getMeta<string[]>(META.refetchTabs)) ?? []).filter((id) => !held.has(id)).slice(0, 50);
   const query = new URLSearchParams({
     catalogue: String(catalogueVersion ?? -1),
     availability: String(availabilityVersion ?? -1),
@@ -273,8 +301,15 @@ export async function pull(): Promise<void> {
     app: process.env.NEXT_PUBLIC_BLISS_VERSION ?? '',
     caps: capsForServer(readCaps(), activeDisplay()),
   });
+  if (refetch.length > 0) query.set('refetch', refetch.join(','));
   const { body } = await api.get<PullBody>(`/api/station/sync/pull?${query.toString()}`);
   await applyPull(body);
+  if (refetch.length > 0 && !body.authRequired) {
+    const sent = new Set(refetch);
+    const left = ((await getMeta<string[]>(META.refetchTabs)) ?? []).filter((id) => !sent.has(id));
+    await setMeta(META.refetchTabs, left);
+  }
+  await pruneEarlierNights(body.businessDate);
   // A device still showing someone signed in, whose sign-in the server no longer accepts (from before
   // station tokens, or withdrawn since), asks for the PIN again. Its outbox is kept and sends after.
   if (body.authRequired && (await getMeta(META.session))) {
@@ -301,9 +336,7 @@ export async function drain(): Promise<void> {
   const db = posDb();
   const pending = await db.outbox.where('status').anyOf('pending', 'inflight').sortBy('seq');
   if (pending.length === 0) return;
-  const rejectedAggregates = new Set((await db.outbox.where('status').equals('rejected').toArray()).map((e) => e.aggregateId));
-  const batch = pending.filter((e) => !rejectedAggregates.has(e.aggregateId)).slice(0, 50);
-  if (batch.length === 0) return;
+  const batch = pending.slice(0, 50);
 
   await db.outbox.bulkUpdate(batch.map((e) => ({ key: e.id, changes: { status: 'inflight' as const, attempts: e.attempts + 1 } })));
   let results: PushResult[];
@@ -316,22 +349,49 @@ export async function drain(): Promise<void> {
     throw error;
   }
 
-  await db.transaction('rw', db.outbox, db.lines, db.drawers, async () => {
+  const refetch = new Set<string>();
+  const answered = new Set(results.map((r) => r.id));
+  let acked = 0;
+  await db.transaction('rw', [db.outbox, db.lines, db.drawers, db.bills, db.billLines, db.tenders, db.meta], async () => {
     for (const result of results) {
       if (result.status === 'acked') {
+        acked += 1;
         await db.outbox.update(result.id, { status: 'acked', ackedAt: Date.now() });
         for (const lineId of result.stockConflictLineIds ?? []) await db.lines.update(lineId, { stockConflict: true });
-      } else {
-        await db.outbox.update(result.id, { status: 'rejected', rejectionCode: result.code ?? 'REJECTED', rejectionDetail: result.detail });
-        refused.push(result);
-        // A drawer the server refused to open never existed. Take the device's optimistic copy away,
-        // so the drawer the server does have, which the next pull brings, is the only one on screen.
-        const entry = batch.find((b) => b.id === result.id);
-        if (entry?.kind === 'drawer.open') await db.drawers.delete(entry.aggregateId);
+        continue;
       }
+      await db.outbox.update(result.id, { status: 'rejected', rejectionCode: result.code ?? 'REJECTED', rejectionDetail: result.detail });
+      refused.push(result);
+      const entry = batch.find((b) => b.id === result.id);
+      if (!entry) continue;
+      // Whatever was queued behind the refused change on the same tab, and not yet sent, depended on
+      // it, so it is refused with it. Anything done after this, on the tab as the server has it, sends.
+      const behind = await db.outbox
+        .where('aggregateId')
+        .equals(entry.aggregateId)
+        .filter((e) => (e.status === 'pending' || (e.status === 'inflight' && !answered.has(e.id))) && e.seq > entry.seq)
+        .toArray();
+      for (const e of behind) await db.outbox.update(e.id, { status: 'rejected', rejectionCode: 'BLOCKED', rejectionDetail: 'An earlier change to this tab was refused.' });
+      // The device's own copy of what was refused goes, and the tab is asked for again whole.
+      if (entry.kind === 'drawer.open') await db.drawers.delete(entry.aggregateId);
+      if (entry.kind === 'bill.settle') {
+        const billId = (entry.payload as { billId: string }).billId;
+        await db.bills.delete(billId);
+        await db.billLines.where('billId').equals(billId).delete();
+        await db.tenders.where('billId').equals(billId).delete();
+      }
+      refetch.add(entry.aggregateId);
+    }
+    // Anything sent that the server did not answer goes back in the queue, never left in flight.
+    for (const e of batch) {
+      if (answered.has(e.id)) continue;
+      const now = await db.outbox.get(e.id);
+      if (now?.status === 'inflight') await db.outbox.update(e.id, { status: 'pending' });
     }
   });
+  await markRefetch(refetch);
   await setMeta(META.lastPushedAt, Date.now());
+  if (acked > 0) publish({ lastPushedAt: Date.now() });
   for (const r of refused) {
     notify({
       tone: 'error',
@@ -429,6 +489,41 @@ export function startSync(): () => void {
     window.removeEventListener('online', wake);
     document.removeEventListener('visibilitychange', wake);
   };
+}
+
+/**
+ * Trade from earlier nights that is finished with (closed, and its table cleared) leaves this device
+ * once a new business day starts, so every query reads tonight, not the whole week. Once per day.
+ */
+async function pruneEarlierNights(businessDate: string | undefined) {
+  if (!businessDate || (await getMeta<string>(META.prunedFor)) === businessDate) return;
+  const db = posDb();
+  const held = await pendingAggregates();
+  await db.transaction('rw', [db.tabs, db.seats, db.orders, db.lines, db.lineModifiers, db.bills, db.billLines, db.tenders, db.meta], async () => {
+    const done = await db.tabs.filter((t) => t.businessDate < businessDate && (t.status === 'settled' || t.status === 'voided' || t.status === 'merged_into') && t.clearedAt !== null && !held.has(t.id)).toArray();
+    const tabIds = done.map((t) => t.id);
+    if (tabIds.length > 0) {
+      const lineIds = (await db.lines.where('tabId').anyOf(tabIds).toArray()).map((l) => l.id);
+      const billIds = (await db.bills.where('tabId').anyOf(tabIds).toArray()).map((b) => b.id);
+      await db.lineModifiers.where('orderLineId').anyOf(lineIds).delete();
+      await db.lines.where('tabId').anyOf(tabIds).delete();
+      await db.orders.where('tabId').anyOf(tabIds).delete();
+      await db.seats.where('tabId').anyOf(tabIds).delete();
+      await db.billLines.where('billId').anyOf(billIds).delete();
+      await db.tenders.where('billId').anyOf(billIds).delete();
+      await db.bills.bulkDelete(billIds);
+      await db.tabs.bulkDelete(tabIds);
+    }
+    // Quick sales from earlier nights go the same way.
+    const quick = await db.bills.filter((b) => b.tabId === null && b.businessDate < businessDate).toArray();
+    if (quick.length > 0) {
+      const ids = quick.map((b) => b.id);
+      await db.billLines.where('billId').anyOf(ids).delete();
+      await db.tenders.where('billId').anyOf(ids).delete();
+      await db.bills.bulkDelete(ids);
+    }
+    await setMeta(META.prunedFor, businessDate);
+  });
 }
 
 /** Manually reset backoff and immediately trigger a sync cycle. */
