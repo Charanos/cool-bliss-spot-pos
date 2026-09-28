@@ -76,7 +76,6 @@ const url = await page.evaluate(async () => {
   const r = await fetch('/api/handoff', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ from: 'console', to: 'counter' }) });
   return (await r.json()).url;
 });
-const ticket = new URL(url, BASE).searchParams.get('handoff');
 await page.goto(`${BASE}${url}`);
 await page.waitForURL((u) => u.pathname.startsWith('/counter/') && !u.pathname.endsWith('/sign-in'), { timeout: 20000 });
 check('a fresh ticket signs in', true);
@@ -98,7 +97,7 @@ await stationSignIn(p2, 'floor', 'Peter', '222222');
 check('a waiter sees no Console segment', (await p2.getByRole('button', { name: 'Switch to the Console' }).count()) === 0);
 const denied = await p2.evaluate(async () => {
   const token = await new Promise((resolve) => {
-    const open = indexedDB.open('bliss-floor');
+    const open = globalThis.indexedDB.open('bliss-floor');
     open.onsuccess = () => {
       const req = open.result.transaction('meta').objectStore('meta').get('station.token');
       req.onsuccess = () => resolve(req.result?.value ?? null);
