@@ -8,7 +8,7 @@ import * as identity from '../identity/service';
 import * as inventory from '../inventory/service';
 import * as settlement from '../settlement/service';
 import * as trade from '../trade/service';
-import { clock, costOfLines, exVat, lineCosts } from './service';
+import { clock, costedMargin, exVat, lineCosts } from './service';
 
 /**
  * Performance for a range of business days, built only from what Bliss records: settled bills,
@@ -65,9 +65,11 @@ export interface PerformanceReport {
   };
   margin: {
     revenueExVat: Cents;
-    cost: Cents;
-    grossProfit: Cents;
-    marginBps: number;
+    /** The sales after VAT that carry a cost: profit and margin are over these alone. */
+    costedRevenue: Cents;
+    cost: Cents | null;
+    grossProfit: Cents | null;
+    marginBps: number | null;
     uncosted: Cents;
   };
   categories: CategoryPerformance[];
@@ -91,7 +93,8 @@ export function performance(from: IsoDate, to: IsoDate, previous: { from: IsoDat
   const costs = lineCosts(lines);
   const rungUp = sum(lines.map((l) => l.lineTotalCents));
   const revenueExVat = exVat(rungUp);
-  const cost = costOfLines(lines);
+  // Profit only over the sales that carry a cost; the rest is shown as not costed, not as free.
+  const margin = costedMargin(lines);
   const uncosted = sum(lines.filter((l) => !costs.has(l.id)).map((l) => l.lineTotalCents));
 
   // By category.
@@ -181,7 +184,7 @@ export function performance(from: IsoDate, to: IsoDate, previous: { from: IsoDat
       averageBill: bills.length > 0 ? scale(settled, 1n, BigInt(bills.length)) : ZERO,
       deltaBps: isPositive(before) ? percentChangeBps(before, settled) : null,
     },
-    margin: { revenueExVat, cost, grossProfit: subtract(revenueExVat, cost), marginBps: shareBps(subtract(revenueExVat, cost), revenueExVat), uncosted },
+    margin: { revenueExVat, costedRevenue: margin.costedRevenue, cost: margin.cost, grossProfit: margin.grossProfit, marginBps: margin.marginBps, uncosted },
     categories,
     tenders: settlement.tenderMix(from, to),
     payouts: { total: sum(payouts.map((p) => p.amount)), rows: payouts },

@@ -45,16 +45,20 @@ export function exVat(amount: Cents): Cents {
 
 /**
  * Cost of goods per line, from the sale movements each line wrote, at the cost stored on each
- * movement. A line that wrote no movement (food, an untracked category) is absent: it has no
- * recorded cost, which is not the same as costing nothing.
+ * movement. Only lines whose every sale movement carries a cost are here. A line that wrote no
+ * movement (food, an untracked category), or was sold before its item had a unit cost, is absent:
+ * it has no recorded cost, which is not the same as costing nothing.
  */
 export function lineCosts(lines: readonly OrderLine[]): Map<string, Cents> {
   const ids = new Set(lines.map((l) => l.id));
   const out = new Map<string, Cents>();
+  const unknown = new Set<string>();
   for (const m of inventory.movements({ type: 'sale' })) {
     if (!m.sourceId || !ids.has(m.sourceId)) continue;
+    if (!isPositive(m.unitCostCents)) unknown.add(m.sourceId);
     out.set(m.sourceId, add(out.get(m.sourceId) ?? ZERO, multiplyByQuantity(m.unitCostCents, -m.qtyDelta)));
   }
+  for (const id of unknown) out.delete(id);
   return out;
 }
 
@@ -63,17 +67,34 @@ export function costOfLines(lines: readonly OrderLine[]): Cents {
   return sum([...lineCosts(lines).values()]);
 }
 
+/**
+ * Margin over the sales that carry a cost, and how much of the sales that is. With none costed,
+ * profit and margin are unknown (null), never the whole of the sales.
+ */
+export function costedMargin(lines: readonly OrderLine[]): { revenue: Cents; costedRevenue: Cents; cost: Cents | null; grossProfit: Cents | null; marginBps: number | null; coverageBps: number } {
+  const costs = lineCosts(lines);
+  const revenue = exVat(sum(lines.map((l) => l.lineTotalCents)));
+  const costedRevenue = exVat(sum(lines.filter((l) => costs.has(l.id)).map((l) => l.lineTotalCents)));
+  if (costs.size === 0) return { revenue, costedRevenue, cost: null, grossProfit: null, marginBps: null, coverageBps: 0 };
+  const cost = sum([...costs.values()]);
+  const grossProfit = subtract(costedRevenue, cost);
+  return { revenue, costedRevenue, cost, grossProfit, marginBps: shareBps(grossProfit, costedRevenue), coverageBps: isPositive(revenue) ? shareBps(costedRevenue, revenue) : 0 };
+}
+
 function linesOn(date: IsoDate) {
   return trade.linesBetween(date, date);
 }
 
 export interface Headline {
   netSales: Cents;
-  cogs: Cents;
-  grossProfit: Cents;
+  /** Null when none of the night's sales carry a cost. */
+  cogs: Cents | null;
+  grossProfit: Cents | null;
+  /** How much of the sales (after VAT) the cost figures cover, in basis points. */
+  costCoverageBps: number;
   salesDeltaBps: number | null;
   comparedWith: string;
-  grossMarginBps: number;
+  grossMarginBps: number | null;
   seatsServed: number;
   tabs: number;
   avgSeats: number;
@@ -86,18 +107,18 @@ export function headline(date: IsoDate): Headline {
   const previous = [7, 14, 21, 28].map((n) => settlement.netSales(addDays(date, -n))).filter((c) => isPositive(c));
   const baseline = previous.length > 0 ? scale(sum(previous), 1n, BigInt(previous.length)) : null;
   const lines = linesOn(date);
-  const revenue = exVat(sum(lines.map((l) => l.lineTotalCents)));
-  const cost = costOfLines(lines);
+  const m = costedMargin(lines);
   const tabs = trade.tabsOn(date).filter((t) => trade.linesFor(t.id).some((l) => l.status !== 'voided')).length;
   const seatsServed = trade.seatsServed(date);
   const variance = latestCommittedVariance();
   return {
     netSales,
-    cogs: cost,
-    grossProfit: subtract(revenue, cost),
+    cogs: m.cost,
+    grossProfit: m.grossProfit,
+    costCoverageBps: m.coverageBps,
     salesDeltaBps: baseline ? percentChangeBps(baseline, netSales) : null,
     comparedWith: `${formatWeekday(date).slice(0, 3)} avg`,
-    grossMarginBps: shareBps(subtract(revenue, cost), revenue),
+    grossMarginBps: m.marginBps,
     seatsServed,
     tabs,
     avgSeats: tabs > 0 ? seatsServed / tabs : 0,
@@ -165,14 +186,12 @@ export function topMovers(from: IsoDate, to: IsoDate, limit = 6): MoverRow[] {
   return [...byProduct.entries()]
     .map(([productId, own]) => {
       const value = sum(own.map((l) => l.lineTotalCents));
-      const revenue = exVat(value);
-      const costs = lineCosts(own);
       return {
         productId,
         name: catalogue.productById(productId)?.name ?? '',
         units: own.reduce((a, l) => a + l.qty, 0),
         value,
-        marginBps: costs.size === 0 ? null : shareBps(subtract(revenue, costOfLines(own)), revenue),
+        marginBps: costedMargin(own).marginBps,
       };
     })
     .sort((a, b) => compare(b.value, a.value))
@@ -447,7 +466,6 @@ export function salesByCategory(from: IsoDate, to: IsoDate) {
   return catalogue.categories().map((c) => {
     const own = byCat.get(c.id) ?? [];
     const value = sum(own.map((l) => l.lineTotalCents));
-    const revenue = exVat(value);
     return {
       categoryId: c.id,
       name: c.name,
@@ -456,7 +474,7 @@ export function salesByCategory(from: IsoDate, to: IsoDate) {
       value,
       shareBps: shareBps(value, total),
       // Null when none of its sales carry a recorded cost: the margin is unknown, not 100%.
-      marginBps: own.length > 0 && lineCosts(own).size === 0 ? null : shareBps(subtract(revenue, costOfLines(own)), revenue),
+      marginBps: costedMargin(own).marginBps,
     };
   });
 }
@@ -468,7 +486,8 @@ export interface SalesSummary {
   deltaBps: number | null;
   bills: number;
   averageBill: Cents;
-  grossMarginBps: number;
+  /** Over the sales that carry a cost; null when none do. */
+  grossMarginBps: number | null;
   discounts: Cents;
   voids: Cents;
   voidLines: number;
@@ -481,14 +500,13 @@ export function salesSummary(from: IsoDate, to: IsoDate, previous: { from: IsoDa
   const netSales = sum(bills.map(settlement.billNet));
   const before = sum(settled(previous.from, previous.to).map(settlement.billNet));
   const lines = trade.linesBetween(from, to);
-  const revenue = exVat(sum(lines.map((l) => l.lineTotalCents)));
   const voided = trade.voidedBetween(from, to);
   return {
     netSales,
     deltaBps: isPositive(before) ? percentChangeBps(before, netSales) : null,
     bills: bills.length,
     averageBill: bills.length > 0 ? scale(netSales, 1n, BigInt(bills.length)) : ZERO,
-    grossMarginBps: shareBps(subtract(revenue, costOfLines(lines)), revenue),
+    grossMarginBps: costedMargin(lines).marginBps,
     discounts: sum(bills.map((b) => b.discountCents)),
     voids: sum(voided.map((l) => l.lineTotalCents)),
     voidLines: voided.length,

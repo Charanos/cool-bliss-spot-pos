@@ -6,6 +6,19 @@ import { fresh, withWrite } from '../_data/store';
 import { TEST_TEMPLATE, whatsappEnv } from './config';
 import { notifyTables } from './service';
 import { catchUpNightSummary } from './triggers';
+import * as identity from '../identity/service';
+import * as inventory from '../inventory/service';
+
+/**
+ * Housekeeping that rides the same background write: a balance below zero, left from before sales
+ * were kept from going there, is brought back to zero and flagged Count needed (D-32). Recorded
+ * against the outlet's owner, with the reason, like the Stock page's button.
+ */
+function healBelowZero(): void {
+  if (inventory.belowZeroCount() === 0) return;
+  const owner = identity.staffList().find((s) => s.employmentStatus === 'active' && identity.roleFor(s.id)?.key === 'owner');
+  if (owner) inventory.coverNegatives({ staffId: owner.id, deviceId: null });
+}
 
 /**
  * The WhatsApp sender, docs/20: the WhatsApp Business Platform's Cloud API, from the business
@@ -57,6 +70,7 @@ export async function drain(options: { force?: boolean } = {}): Promise<{ sent: 
     const env = whatsappEnv();
     const claimed = await withWrite(() => {
       catchUpNightSummary();
+      healBelowZero();
       if (!env.configured) return [] as NotificationRecord[];
       const now = Date.now();
       const due = notifyTables()

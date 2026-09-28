@@ -2,7 +2,7 @@
 
 import type { StockLocationKind } from '@bliss/shared/domain';
 import { formatQty, plural } from '@bliss/shared/format';
-import type { Cents } from '@bliss/shared/money';
+import { type Cents, isPositive } from '@bliss/shared/money';
 import { Card, CardFooter, CardGroup, CardHeader, CardStats, Stat } from '@bliss/ui/components/console/card';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { SelectField, TextField } from '@bliss/ui/components/fields';
@@ -93,7 +93,7 @@ export function LocationsView({ rows, canEdit }: { rows: LocationRow[]; canEdit:
                 <Stat label="Units">{formatQty(r.units)}</Stat>
                 {r.value === null ? null : (
                   <Stat label="At cost">
-                    <Money value={r.value} currency={false} size="num-md" decimals="whole" />
+                    {isPositive(r.value) || r.units === 0 ? <Money value={r.value} currency={false} size="num-md" decimals="whole" /> : <span className="text-body-sm text-ink-subtle">Not costed</span>}
                   </Stat>
                 )}
               </CardStats>

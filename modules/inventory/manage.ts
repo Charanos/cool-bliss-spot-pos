@@ -12,7 +12,7 @@ import * as audit from '../audit/service';
 import * as catalogue from '../catalogue/service';
 import * as identity from '../identity/service';
 import { inventoryTables } from './schema';
-import { averageCost, onHand } from './service';
+import { averageCost, coverNegatives, onHand, recordMovement } from './service';
 
 /**
  * Managing what stock is made of and where it is kept: recipes, pour specs and stock locations.
@@ -215,4 +215,40 @@ export function setUnitCost(input: { variantId: string; costCents: Cents; actor:
   };
   movements.push(movement);
   record(input.actor, 'stock.cost_set', 'product_variant', stock, { unitCost: formatDecimal(before) }, { unitCost: formatDecimal(input.costCents) });
+}
+
+/**
+ * Set every stock-kept drink to one figure on hand, for a trial run before handover: each is counted
+ * to `qty` at the location the floor sells from, and to nothing anywhere else, recorded as a count adjustment with the reason, so
+ * the floor sells it down and shows it low and finished as it would on a real night. Anything below
+ * zero elsewhere is cleared first. Items counted by what is out on tables (shisha) and anything not
+ * stock-kept are left alone. Returns how many items moved.
+ */
+export function setTrialStock(input: { qty: number; reason: string; actor: Actor }): number {
+  const { reason, actor } = requireReasoned(input);
+  identity.assertCan(actor.staffId, 'stock.count.commit', 'setting stock for a trial run');
+  if (!Number.isInteger(input.qty) || input.qty < 0 || input.qty > 1000) throw new DomainError('Choose a whole number from 0 to 1,000.');
+  const locations = inventoryTables().locations.filter((l) => l.status === 'active');
+  const bar = locations.find((l) => l.isDefaultSale) ?? locations.find((l) => l.kind === 'service') ?? locations[0];
+  if (!bar) throw new DomainError('Add a stock location first.');
+  coverNegatives(actor);
+  let moved = 0;
+  for (const variant of catalogue.stockVariants()) {
+    const product = catalogue.productById(variant.productId);
+    const category = product ? catalogue.categoryById(product.categoryId) : null;
+    if (!product || product.status !== 'active' || !category?.trackStock || product.unitsInHouse) continue;
+    // The figure at the bar, and nothing held anywhere else, so the total is exactly `qty`.
+    let changed = false;
+    for (const l of inventoryTables().locations) {
+      const want = l.id === bar.id ? input.qty : 0;
+      const delta = Math.round((want - onHand(variant.id, l.id)) * 10_000) / 10_000;
+      if (delta === 0) continue;
+      recordMovement({ variantId: variant.id, locationId: l.id, qtyDelta: delta, type: 'count_adjustment', sourceType: 'trial_stock', sourceId: null, reason, actor });
+      changed = true;
+    }
+    if (changed) moved += 1;
+  }
+  bumpAvailabilityVersion();
+  audit.record({ outletId: identity.outlet().id, actorStaffId: actor.staffId, actorDeviceId: actor.deviceId ?? null, action: 'stock.trial_levels_set', entityType: 'outlet', entityId: identity.outlet().id, before: null, after: { qty: input.qty, items: moved, location: bar.name }, reason, severity: 'sensitive' });
+  return moved;
 }

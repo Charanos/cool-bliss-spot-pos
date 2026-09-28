@@ -2,7 +2,7 @@
 
 import { createUuidV7 } from '@bliss/shared/id';
 import { formatQty, plural } from '@bliss/shared/format';
-import { type Cents, compare, formatDecimal, formatKes, multiplyByQty, sum } from '@bliss/shared/money';
+import { type Cents, compare, formatDecimal, formatKes, isPositive, multiplyByQty, sum } from '@bliss/shared/money';
 import { Button } from '@bliss/ui/components/button';
 import { Card, CardFooter, CardHeader } from '@bliss/ui/components/console/card';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
@@ -66,7 +66,16 @@ export function ReorderView({ groups }: { groups: ReorderGroup[] }) {
         <Metric label="Suppliers to order from" icon={IconTruckDelivery} value={<CountUp value={groups.filter((g) => g.supplierId).length} />} detail={groups.some((g) => !g.supplierId) ? 'Some items have no supplier set' : 'One order each'} />
         <Metric label="Items to reorder" icon={IconPackages} value={<CountUp value={lines.length} delayMs={60} />} detail="At or below their reorder point" />
         <Metric label="Finished" icon={IconAlertTriangle} tone={finished > 0 ? 'stop' : 'default'} value={<CountUp value={finished} delayMs={120} />} detail={finished > 0 ? 'None left in the store' : 'Nothing has run out'} />
-        <Metric label="Estimated cost" icon={IconCash} value={<Money value={estimate} size="num-kpi" decimals="whole" />} detail="At the last price paid, in whole cases" />
+        {lines.some((l) => isPositive(l.unitCost)) ? (
+          <Metric
+            label="Estimated cost"
+            icon={IconCash}
+            value={<Money value={estimate} size="num-kpi" decimals="whole" />}
+            detail={lines.every((l) => isPositive(l.unitCost)) ? 'At the last price paid, in whole cases' : `At the last price paid; ${lines.filter((l) => !isPositive(l.unitCost)).length} items have no cost yet`}
+          />
+        ) : (
+          <Metric label="Estimated cost" icon={IconCash} value={<span className="font-sans text-title-section text-ink-muted">No costs yet</span>} detail="The first delivery or a unit cost on each item sets it" />
+        )}
       </MetricGrid>
 
       {groups.map((g) => (
@@ -194,7 +203,7 @@ function SupplierGroup({ group }: { group: ReorderGroup }) {
                     />
                   </td>
                   <td className="py-8 pl-12 pr-20 text-right">
-                    <Money value={multiplyByQty(l.unitCost, parsed(l.variantId))} currency={false} size="num-md" decimals="whole" tone={on ? 'default' : 'subtle'} />
+                    {isPositive(l.unitCost) ? <Money value={multiplyByQty(l.unitCost, parsed(l.variantId))} currency={false} size="num-md" decimals="whole" tone={on ? 'default' : 'subtle'} /> : <span className="text-body-sm text-ink-subtle">No cost yet</span>}
                   </td>
                 </tr>
               );

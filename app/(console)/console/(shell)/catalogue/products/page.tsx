@@ -53,9 +53,10 @@ export default async function ProductsPage() {
       effectiveThreshold: p.lowStockThreshold ?? outlet.lowStockDefault,
       tracked: category?.trackStock ?? false,
       supplier: procurement.supplierById(p.defaultSupplierId)?.name ?? null,
-      onHand: stock ? Math.round(inventory.onHand(stock.stockVariantId) * 100) / 100 : null,
+      // Never below zero on a card: a balance there is brought to zero in the background and flagged Count needed.
+      onHand: stock ? Math.max(0, Math.round(inventory.onHand(stock.stockVariantId) * 100) / 100) : null,
       counted: stock ? inventory.stockRecorded(stock.stockVariantId) : true,
-      needsCount: stock ? inventory.needsCount(stock.stockVariantId) : false,
+      needsCount: stock ? inventory.needsCount(stock.stockVariantId) || inventory.onHand(stock.stockVariantId) < 0 : false,
       ...unitCostOf(stock?.stockVariantId ?? sealed?.id ?? null, canCost),
       unit: p.containerVolumeMl ? 'btl' : 'units',
       status: p.status,

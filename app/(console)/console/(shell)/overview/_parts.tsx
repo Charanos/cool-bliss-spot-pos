@@ -16,10 +16,13 @@ import Link from 'next/link';
 /** The night's four figures: what came in, what it made, who was served, and what went missing. */
 export function HeadlineMetrics(props: {
   netSales: Cents;
-  cogs: Cents;
-  grossProfit: Cents;
+  cogs: Cents | null;
+  grossProfit: Cents | null;
   delta: { bps: number; against: string } | null;
-  marginBps: number;
+  /** Null when none of the sales carry a cost: the margin is unknown, not 100%. */
+  marginBps: number | null;
+  /** How much of the sales the cost covers, in basis points. */
+  costCoverageBps: number;
   seats: number;
   tabs: number;
   avgSeatsTenths: number;
@@ -40,8 +43,12 @@ export function HeadlineMetrics(props: {
         label="Gross margin"
         icon={IconScale}
         href="/console/reports/performance"
-        value={<CountUp value={props.marginBps} format={(n) => formatBps(Math.round(n))} delayMs={60} />}
-        detail={`${formatKes(props.grossProfit, { decimals: 'whole' })} after ${formatKes(props.cogs, { decimals: 'whole' })} cost`}
+        value={props.marginBps === null ? <span className="font-sans text-title-section text-ink-muted">Not costed</span> : <CountUp value={props.marginBps} format={(n) => formatBps(Math.round(n))} delayMs={60} />}
+        detail={
+          props.marginBps === null || props.grossProfit === null || props.cogs === null
+            ? 'Set unit costs to see profit'
+            : `${formatKes(props.grossProfit, { decimals: 'whole' })} after ${formatKes(props.cogs, { decimals: 'whole' })} cost${props.costCoverageBps < 9_950 ? `, on ${formatBps(props.costCoverageBps)} of sales` : ''}`
+        }
       />
       <Metric
         label="Guests served"

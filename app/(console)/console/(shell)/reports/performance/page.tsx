@@ -61,7 +61,11 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
 
       <MetricGrid>
         <Metric label="Settled" icon={IconReceipt} value={<Money value={r.sales.settled} size="num-kpi" decimals="whole" />} delta={r.sales.deltaBps === null ? null : { bps: r.sales.deltaBps, against: 'the days before' }} detail={r.sales.deltaBps === null ? plural(r.sales.bills, 'bill') : undefined} />
-        <Metric label="Gross profit" icon={IconScale} tone={isPositive(r.margin.grossProfit) ? 'poured' : 'stop'} value={<Money value={r.margin.grossProfit} size="num-kpi" decimals="whole" />} detail={`${formatBps(r.margin.marginBps)} of sales after VAT`} />
+        {r.margin.grossProfit === null || r.margin.marginBps === null ? (
+          <Metric label="Gross profit" icon={IconScale} value={<span className="font-sans text-title-section text-ink-muted">Not costed</span>} detail="Set unit costs to see profit" />
+        ) : (
+          <Metric label="Gross profit" icon={IconScale} tone={isPositive(r.margin.grossProfit) ? 'poured' : 'stop'} value={<Money value={r.margin.grossProfit} size="num-kpi" decimals="whole" />} detail={`${formatBps(r.margin.marginBps)} of costed sales after VAT`} />
+        )}
         <Metric label="VAT collected" icon={IconReceiptTax} value={<Money value={r.sales.vat} size="num-kpi" decimals="whole" />} detail="Included in settled bills" />
         <Metric label="Average bill" icon={IconCash} value={<Money value={r.sales.averageBill} size="num-kpi" decimals="whole" />} detail={plural(r.sales.bills, 'bill')} />
       </MetricGrid>
@@ -90,14 +94,15 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
         </Card>
 
         <Card aria-labelledby="perf-margin">
-          <CardHeader band level="h2" titleId="perf-margin" title="Margin" subtitle="Sales after VAT, less the cost on each sale" />
+          <CardHeader band level="h2" titleId="perf-margin" title="Margin" subtitle="Sales after VAT that carry a cost, less that cost" />
           <CardBody className="pt-16">
             <Totals
               items={[
                 { label: 'Sales after VAT', value: <Money value={r.margin.revenueExVat} size="num-md" decimals="whole" /> },
-                { label: 'Cost of what was sold', value: <Money value={r.margin.cost} size="num-md" decimals="whole" tone="muted" /> },
+                { label: 'Of which carry a cost', value: <Money value={r.margin.costedRevenue} size="num-md" decimals="whole" tone="muted" /> },
+                { label: 'Cost of what was sold', value: r.margin.cost === null ? <span className="text-ui text-ink-muted">Not costed</span> : <Money value={r.margin.cost} size="num-md" decimals="whole" tone="muted" /> },
               ]}
-              total={{ label: 'Gross profit', value: <Money value={r.margin.grossProfit} size="num-lg" decimals="whole" /> }}
+              total={{ label: 'Gross profit', value: r.margin.grossProfit === null ? <span className="text-ui text-ink-muted">Not costed</span> : <Money value={r.margin.grossProfit} size="num-lg" decimals="whole" /> }}
             />
           </CardBody>
         </Card>

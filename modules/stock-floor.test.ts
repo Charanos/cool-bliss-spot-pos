@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ownerActor } from '../test/actors';
 import * as catalogue from './catalogue/service';
 import * as inventory from './inventory/service';
+import * as inventoryManage from './inventory/manage';
 
 /**
  * Stock never reads below zero. A sale is recorded in full, because it happened; what the record
@@ -44,5 +45,18 @@ describe('stock never below zero', () => {
     inventory.coverNegatives(owner);
     expect(inventory.belowZeroCount()).toBe(0);
     expect(inventory.onHand(v.id, bar().id)).toBe(0);
+  });
+
+  it('sets every stock-kept drink to one figure for a trial run, and leaves shisha and food alone', () => {
+    const moved = inventoryManage.setTrialStock({ qty: 10, reason: 'Trial run with the staff before handover', actor: owner });
+    expect(moved).toBeGreaterThan(0);
+    for (const v of catalogue.stockVariants()) {
+      const product = catalogue.productById(v.productId)!;
+      const category = catalogue.categoryById(product.categoryId)!;
+      if (product.status !== 'active' || !category.trackStock || product.unitsInHouse) continue;
+      expect(inventory.onHand(v.id)).toBe(10);
+      expect(inventory.stockRecorded(v.id)).toBe(true);
+    }
+    expect(inventory.belowZeroCount()).toBe(0);
   });
 });

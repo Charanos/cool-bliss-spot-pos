@@ -75,6 +75,7 @@ export default function OverviewPage() {
         grossProfit={headline.grossProfit}
         delta={headline.salesDeltaBps === null ? null : { bps: headline.salesDeltaBps, against: headline.comparedWith }}
         marginBps={headline.grossMarginBps}
+        costCoverageBps={headline.costCoverageBps}
         seats={headline.seatsServed}
         tabs={headline.tabs}
         avgSeatsTenths={Math.round(headline.avgSeats * 10)}

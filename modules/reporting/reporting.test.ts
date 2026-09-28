@@ -40,7 +40,17 @@ describe('performance', () => {
     const { from, to, previous } = range();
     const report = performance(from, to, previous);
     expect(report.margin.revenueExVat).toBe(reporting.exVat(report.sales.rungUp));
-    expect(report.margin.grossProfit).toBe(subtract(report.margin.revenueExVat, report.margin.cost));
+    // Profit is over the sales that carry a cost; the rest is not costed, not free.
+    expect(report.margin.grossProfit).toBe(subtract(report.margin.costedRevenue, report.margin.cost!));
+  });
+
+  it('never calls a sale with no cost set free: it is left out of the margin', () => {
+    const lines = trade.linesBetween(range().from, range().to).filter((l) => l.status !== 'voided').slice(0, 40);
+    const m = reporting.costedMargin(lines);
+    const costs = reporting.lineCosts(lines);
+    for (const cost of costs.values()) expect(cost > 0n).toBe(true);
+    if (costs.size === 0) expect(m.marginBps).toBeNull();
+    else expect(m.costedRevenue <= m.revenue).toBe(true);
   });
 
   it('records the VAT inside each settled bill', () => {

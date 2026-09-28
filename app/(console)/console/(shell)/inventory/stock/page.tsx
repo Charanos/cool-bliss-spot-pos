@@ -5,9 +5,12 @@ import * as availability from '@/modules/availability/service';
 import * as catalogue from '@/modules/catalogue/service';
 import * as inventory from '@/modules/inventory/service';
 import * as identity from '@/modules/identity/service';
+import * as pricing from '@/modules/pricing/service';
+import { multiplyByQuantity } from '@bliss/shared/money';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { IconClipboardList } from '@tabler/icons-react';
 import { BelowZeroNotice } from './below-zero';
+import { TrialStock } from './trial-stock';
 import { StockTable } from './stock-table';
 import { ViewHeader } from '../../_components/workspace';
 
@@ -31,6 +34,10 @@ export interface StockRow {
   unit: string;
   unitCost: Cents;
   value: Cents;
+  /** What the guest pays for one, from the price list; null when it is not priced. */
+  price: Cents | null;
+  /** On hand at that price, the worth the price list gives it before any cost is known. */
+  retailValue: Cents | null;
   velocity: number;
   daysCover: number | null;
   state: AvailabilityState;
@@ -55,6 +62,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
   const locations = inventory.locations();
   const holds = inventory.activeHolds();
   const outlet = identity.outlet();
+  const actor = await identity.currentConsoleActor();
 
   const rows: StockRow[] = [];
   for (const variant of catalogue.stockVariants()) {
@@ -66,11 +74,13 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
     const velocity = inventory.velocityPerDay(variant.id);
     const totalOnHand = inventory.onHand(variant.id);
     const unitCost = inventory.averageCost(variant.id);
+    const sellPrice = pricing.currentPrice(sellable.id, Date.now())?.unitPriceCents ?? null;
     const variance = inventory.latestVariance(variant.id);
     const unit = product.containerVolumeMl && catalogue.variants().some((v) => v.productId === product.id && v.kind === 'serve') ? 'bottles' : 'units';
     const scopes = locationFilter ? locations.filter((l) => l.id === locationFilter) : [null];
     for (const location of scopes) {
-      const onHand = location ? inventory.onHand(variant.id, location.id) : totalOnHand;
+      const raw = location ? inventory.onHand(variant.id, location.id) : totalOnHand;
+      const onHand = Math.max(0, raw);
       if (location && location.kind === 'retail' && onHand === 0) continue;
       const threshold = product.lowStockThreshold ?? outlet.lowStockDefault;
       rows.push({
@@ -91,6 +101,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         unit,
         unitCost,
         value: inventory.valueAtCost(variant.id, Math.max(0, onHand)),
+        price: sellPrice,
+        retailValue: sellPrice === null ? null : multiplyByQuantity(sellPrice, Math.max(0, onHand)),
         velocity,
         daysCover: velocity > 0 ? totalOnHand / velocity : null,
         state: entry.state,
@@ -99,8 +111,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         holdReason: hold?.reason ?? null,
         variancePct: variance?.pct ?? null,
         counted: inventory.stockRecorded(variant.id),
-        needsCount: inventory.needsCount(variant.id),
-        attention: !inventory.stockRecorded(variant.id) || inventory.needsCount(variant.id) || onHand < 0 || entry.state !== 'available' || totalOnHand <= product.reorderPoint || totalOnHand <= threshold || (variance !== null && Math.abs(variance.pct) > 2),
+        needsCount: inventory.needsCount(variant.id) || raw < 0,
+        attention: !inventory.stockRecorded(variant.id) || inventory.needsCount(variant.id) || raw < 0 || entry.state !== 'available' || totalOnHand <= product.reorderPoint || totalOnHand <= threshold || (variance !== null && Math.abs(variance.pct) > 2),
       });
     }
   }
@@ -112,9 +124,12 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
       <ViewHeader
         page="/console/inventory/stock"
         actions={
-          <ButtonLink href="/console/inventory/counts/new" variant="outline" icon={IconClipboardList}>
-            Start a count
-          </ButtonLink>
+          <>
+            {identity.can(actor.staffId, 'stock.count.commit') ? <TrialStock /> : null}
+            <ButtonLink href="/console/inventory/counts/new" variant="outline" icon={IconClipboardList}>
+              Start a count
+            </ButtonLink>
+          </>
         }
       />
 
