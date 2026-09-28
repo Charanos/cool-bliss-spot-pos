@@ -55,7 +55,7 @@ export default async function SuppliersPage() {
       <div className="flex flex-col gap-32">
         <MetricGrid>
           <Metric label="Suppliers" icon={IconTruck} value={String(suppliers.filter((s) => s.status === 'active').length)} detail={suppliers.some((s) => s.status === 'archived') ? `${suppliers.filter((s) => s.status === 'archived').length} no longer used` : 'All in use'} />
-          <Metric label="Open orders" icon={IconTruckDelivery} href="/console/purchasing/orders" value={String(open.length)} detail={open.length > 0 ? formatKes(sum(open.map((o) => o.totalCents)), { decimals: 'whole' }) + ' on its way' : 'Nothing on its way'} />
+          <Metric label="Open orders" icon={IconTruckDelivery} href="/console/purchasing/orders" value={String(open.length)} detail={open.length > 0 ? formatKes(sum(open.map((o) => o.totalCents)), { decimals: 'round' }) + ' on its way' : 'Nothing on its way'} />
           <Metric label="Costs gone up" icon={IconTrendingUp} tone={rises.length > 0 ? 'attention' : 'default'} value={String(rises.length)} detail={rises.length > 0 ? `Largest ${formatBps(Math.max(...rises.map((c) => c.changeBps)), { signed: true })}` : 'No rises on the last delivery'} />
           <Metric label="Spent with them" icon={IconWallet} value={<Money value={sum(orders.filter((o) => o.status !== 'cancelled').map((o) => o.totalCents))} size="num-kpi" decimals="whole" />} detail="Every order raised" />
         </MetricGrid>

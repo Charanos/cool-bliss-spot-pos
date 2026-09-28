@@ -162,7 +162,7 @@ export function DrawersTable({
           icon={IconAlertTriangle}
           tone={flaggedCount > 0 ? 'stop' : 'default'}
           value={<CountUp value={flaggedCount} delayMs={120} />}
-          detail={`More than ${formatKes(threshold, { decimals: 'whole' })} out either way`}
+          detail={`More than ${formatKes(threshold, { decimals: 'round' })} out either way`}
         />
       </MetricGrid>
 

@@ -134,6 +134,14 @@ describe('format and parse', () => {
     expect(formatDecimal(cents(-5))).toBe('-0.05');
   });
 
+  it('rounds a headline figure to the nearest shilling, half up', () => {
+    expect(formatFigure(cents(43559402), { decimals: 'round' })).toBe('435,594');
+    expect(formatFigure(cents(1367339), { decimals: 'round' })).toBe('13,673');
+    expect(formatFigure(cents(65250), { decimals: 'round' })).toBe('653');
+    expect(formatFigure(cents(-110861), { decimals: 'round' })).toBe('-1,109');
+    expect(formatFigure(cents(-40), { decimals: 'round' })).toBe('0');
+  });
+
   it('formats a compact figure for a glance, half up to one decimal', () => {
     expect(formatKesCompact(shillings(640))).toBe('KES 640');
     expect(formatKesCompact(shillings(54120))).toBe('KES 54.1k');

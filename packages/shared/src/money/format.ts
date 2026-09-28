@@ -3,9 +3,10 @@ import { type Cents, cents, splitParts } from './cents';
 export interface FormatOptions {
   /**
    * `always` renders 12,450.00. `whole` drops .00 for a whole shilling amount, which is how
-   * button copy reads: "Settle KES 4,200".
+   * button copy reads: "Settle KES 4,200". `round` shows the nearest shilling, half up, for a
+   * headline figure that is read at a glance (KES 435,594); the cents stay in every table and CSV.
    */
-  decimals?: 'always' | 'whole';
+  decimals?: 'always' | 'whole' | 'round';
 }
 
 function groupThousands(digits: string): string {
@@ -18,8 +19,12 @@ function groupThousands(digits: string): string {
  */
 export function formatFigure(value: Cents, options: FormatOptions = {}): string {
   const { negative, shillings, cents: minor } = splitParts(value);
-  const whole = groupThousands(shillings.toString());
   const sign = negative ? '-' : '';
+  if (options.decimals === 'round') {
+    const rounded = shillings + (minor >= 50n ? 1n : 0n);
+    return `${rounded === 0n ? '' : sign}${groupThousands(rounded.toString())}`;
+  }
+  const whole = groupThousands(shillings.toString());
   if (options.decimals === 'whole' && minor === 0n) return `${sign}${whole}`;
   return `${sign}${whole}.${minor.toString().padStart(2, '0')}`;
 }

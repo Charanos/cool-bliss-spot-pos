@@ -134,7 +134,7 @@ export function ReceiptsTable({ rows, timezone, suppliers }: { rows: ReceiptRow[
       <DataTable
         renderGridCard={(r) => (
           <Card as="article" interactive className="group h-full" tone={r.state === 'short' ? 'low' : undefined}>
-            <CardMedia src={r.photo} title={`Delivery ${r.number}`} subtitle={r.supplier} href={`/console/purchasing/receipts/${r.id}`} meta={STATE[r.state]} />
+            <CardMedia src={r.photo} title={`Delivery ${r.number}`} subtitle={r.supplier} href={`/console/purchasing/receipts/${r.id}`} meta={STATE[r.state]} icon={<IconTruckDelivery size={24} stroke={1.5} />} />
             <KeyRows>
               <KeyRow label="Received">{formatDateTime(r.receivedAt, timezone)}</KeyRow>
               <KeyRow label="Units">{r.units}</KeyRow>

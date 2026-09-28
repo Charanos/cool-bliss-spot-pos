@@ -32,7 +32,7 @@ export function OverviewKpis({ d }: { d: OverviewData }) {
         detail={
           h.grossMarginBps === null || h.grossProfit === null
             ? 'Set unit costs to see profit'
-            : `${formatKes(h.grossProfit, { decimals: 'whole' })} profit${h.costCoverageBps < 9_950 ? ` on ${formatBps(h.costCoverageBps)} of sales` : ''}`
+            : `${formatKes(h.grossProfit, { decimals: 'round' })} profit${h.costCoverageBps < 9_950 ? ` on ${formatBps(h.costCoverageBps)} of sales` : ''}`
         }
       />
       <Metric
@@ -48,7 +48,7 @@ export function OverviewKpis({ d }: { d: OverviewData }) {
         href="/console/reports/voids"
         tone={s.voidLines > 0 ? 'attention' : 'default'}
         value={<Money value={takenBack} size="num-kpi" decimals="whole" tone={s.voidLines > 0 ? 'attention' : 'default'} />}
-        detail={s.voidLines > 0 || s.discounts > 0n ? `${plural(s.voidLines, 'line')} voided, ${formatKes(s.discounts, { decimals: 'whole' })} off` : 'Nothing voided or discounted'}
+        detail={s.voidLines > 0 || s.discounts > 0n ? `${plural(s.voidLines, 'line')} voided, ${formatKes(s.discounts, { decimals: 'round' })} off` : 'Nothing voided or discounted'}
       />
     </MetricGrid>
   );

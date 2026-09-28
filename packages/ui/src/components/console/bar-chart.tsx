@@ -94,7 +94,7 @@ export function BarChart({
                   onMouseEnter={() => setHover(d.key)}
                   onFocus={() => setHover(d.key)}
                   onBlur={() => setHover(null)}
-                  aria-label={`${d.label}, ${formatKes(d.value, { decimals: 'whole' })}`}
+                  aria-label={`${d.label}, ${formatKes(d.value, { decimals: 'round' })}`}
                   className="relative flex h-full min-w-0 flex-1 items-end justify-center outline-offset-0"
                 >
                   <span
@@ -112,7 +112,7 @@ export function BarChart({
           {hovered ? (
             <div role="status" className="pointer-events-none absolute -top-12 right-0 z-popover rounded-md border border-edge bg-card px-12 py-8 shadow-popover">
               <p className="label-caps text-ink-subtle">{tooltipLabel(hovered)}</p>
-              <p className="font-mono tabular text-num-md text-ink">{formatKes(hovered.value, { decimals: 'whole' })}</p>
+              <p className="font-mono tabular text-num-md text-ink">{formatKes(hovered.value, { decimals: 'round' })}</p>
             </div>
           ) : null}
         </div>
@@ -173,7 +173,7 @@ export function ShareBars({ rows }: { rows: readonly { key: string; label: strin
             </span>
             <span className="flex items-baseline gap-12 whitespace-nowrap">
               {r.detail ? <span className="font-mono tabular text-num-sm text-ink-subtle">{r.detail}</span> : null}
-              <span className="font-mono tabular text-num-md text-ink">{formatKes(r.value, { decimals: 'whole' })}</span>
+              <span className="font-mono tabular text-num-md text-ink">{formatKes(r.value, { decimals: 'round' })}</span>
             </span>
           </li>
         );

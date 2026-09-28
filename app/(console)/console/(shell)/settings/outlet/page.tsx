@@ -56,7 +56,7 @@ export default async function OutletPage() {
         <MetricGrid>
           <Metric label="VAT" icon={IconReceiptTax} value={formatBps(outlet.taxRateBps)} detail={outlet.pricesTaxInclusive ? 'Included in every price' : 'Added at the bill'} />
           <Metric label="Business day ends" icon={IconClockHour4} value={outlet.businessDayCutover} detail="Sales before this belong to the night before" />
-          <Metric label="Drawer allowed out by" icon={IconCash} value={formatKes(outlet.drawerVarianceThresholdCents, { decimals: 'whole' })} detail="Further out is flagged for review" />
+          <Metric label="Drawer allowed out by" icon={IconCash} value={formatKes(outlet.drawerVarianceThresholdCents, { decimals: 'round' })} detail="Further out is flagged for review" />
           <Metric label="Low stock line" icon={IconAlertTriangle} tone="attention" value={outlet.lowStockDefault} detail="Units, unless an item sets its own" />
         </MetricGrid>
         <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-2">

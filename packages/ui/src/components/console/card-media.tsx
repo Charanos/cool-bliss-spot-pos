@@ -20,6 +20,7 @@ export function CardMedia({
   meta,
   actions,
   tint,
+  icon,
   level = 'h3',
   className,
 }: {
@@ -34,6 +35,8 @@ export function CardMedia({
   actions?: ReactNode;
   /** The tint the initials sit on when there is no photograph, such as the category's colour class. */
   tint?: string;
+  /** Stands in for a missing photograph where an initial means nothing: a delivery note, a document. */
+  icon?: ReactNode;
   level?: HeadingLevel;
   className?: string;
 }) {
@@ -54,9 +57,15 @@ export function CardMedia({
   return (
     <div className={cx('grid h-media shrink-0 overflow-hidden border-b border-edge', failed ? (tint ?? 'card-band-strong') : 'bg-band-strong', className)} style={{ gridTemplateRows: '100%', gridTemplateColumns: '100%' }}>
       {failed ? (
-        <span aria-hidden="true" style={cell} className="flex select-none items-center justify-center font-mono text-num-xl text-ink-subtle media-zoom">
-          {initial}
-        </span>
+        icon ? (
+          <span aria-hidden="true" style={cell} className="texture-dots-accent flex select-none items-center justify-center text-ink-subtle media-zoom">
+            <span className="flex size-control-xl items-center justify-center rounded-pill bg-card text-ink-muted shadow-chip">{icon}</span>
+          </span>
+        ) : (
+          <span aria-hidden="true" style={cell} className="flex select-none items-center justify-center font-mono text-num-xl text-ink-subtle media-zoom">
+            {initial}
+          </span>
+        )
       ) : (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element -- an uploaded or catalogue image, sized by CSS */}

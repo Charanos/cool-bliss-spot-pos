@@ -156,13 +156,13 @@ export function StockTable({
       ) : null}
       <MetricGrid>
         {costed === 0 ? (
-          <Metric label="Stock at cost" icon={IconScale} value={<span className="font-sans text-title-section text-ink-muted">Not costed</span>} detail={`Worth ${formatKes(retailTotal, { decimals: 'whole' })} at selling price. Set unit costs for the value at cost.`} />
+          <Metric label="Stock at cost" icon={IconScale} value={<span className="font-sans text-title-section text-ink-muted">Not costed</span>} detail={`Worth ${formatKes(retailTotal, { decimals: 'round' })} at selling price. Set unit costs for the value at cost.`} />
         ) : (
           <Metric
             label="Stock at cost"
             icon={IconScale}
             value={<AnimatedMoney value={totalValuation} animation="metric.count" size="num-kpi" fromZeroOnMount decimals="whole" />}
-            detail={costed < rows.length ? `${costed} of ${rows.length} items costed. ${formatKes(retailTotal, { decimals: 'whole' })} at selling price.` : `${rows.length} tracked items, ${formatKes(retailTotal, { decimals: 'whole' })} at selling price`}
+            detail={costed < rows.length ? `${costed} of ${rows.length} items costed. ${formatKes(retailTotal, { decimals: 'round' })} at selling price.` : `${rows.length} tracked items, ${formatKes(retailTotal, { decimals: 'round' })} at selling price`}
           />
         )}
         <Metric

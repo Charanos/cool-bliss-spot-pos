@@ -56,16 +56,20 @@ export interface MoneyProps {
   tone?: MoneyTone;
   /** Hide the KES prefix inside dense columns where the header already says KES. */
   currency?: boolean;
-  decimals?: 'always' | 'whole';
+  /** Headline sizes (num-kpi and up) always show the nearest shilling: a figure read at a glance never carries cents. */
+  decimals?: 'always' | 'whole' | 'round';
   className?: string;
 }
+
+const HEADLINE = new Set<NumSize>(['num-kpi', 'num-xl', 'display', 'title-lg', 'title']);
 
 /**
  * KES in label type, the figure in JetBrains Mono. Negative values take a leading minus and the
  * Stop colour, never parentheses and never colour alone. docs/06-design-system.md section 3.
  */
-export function Money({ value, size = 'num', tone = 'default', currency = true, decimals = 'always', className }: MoneyProps) {
+export function Money({ value, size = 'num', tone = 'default', currency = true, decimals: asked = 'always', className }: MoneyProps) {
   const negative = isNegative(value);
+  const decimals = HEADLINE.has(size) ? 'round' : asked;
   // The visible parts are hidden from assistive technology and the whole amount is read once, as
   // words a screen reader pronounces: "KES 1,250.00", never "K E S" and a bare number.
   return (

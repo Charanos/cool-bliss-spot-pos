@@ -126,7 +126,7 @@ export default async function DrawerPage({ params }: { params: Promise<{ drawerI
           value={d.stage === 'closed' && d.varianceCents !== null ? <Money value={d.varianceCents} size="num-kpi" /> : 'Withheld'}
           detail={
             d.stage === 'closed' && d.countedCashCents !== null && d.expectedCashCents !== null
-              ? `Counted ${formatKes(d.countedCashCents, { decimals: 'whole' })} of ${formatKes(d.expectedCashCents, { decimals: 'whole' })} expected`
+              ? `Counted ${formatKes(d.countedCashCents, { decimals: 'round' })} of ${formatKes(d.expectedCashCents, { decimals: 'round' })} expected`
               : 'Shown once the count is committed'
           }
         />
