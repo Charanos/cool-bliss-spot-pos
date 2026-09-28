@@ -1,8 +1,10 @@
+import { after } from 'next/server';
 import { wireResponse } from '@/lib/wire';
 import { currentSeq } from '@/modules/_data/changes';
 import { dataset } from '@/modules/_data/source';
 import { fresh } from '@/modules/_data/store';
 import * as identity from '@/modules/identity/service';
+import { sampleVitals } from '@/modules/health/vitals';
 import { kickNotifications } from '@/modules/notify/send';
 
 export const dynamic = 'force-dynamic';
@@ -20,5 +22,7 @@ export async function GET(request: Request) {
   // change in the Console writes to): any of them moving means the page may read differently.
   const parts = [d.epoch, currentSeq(), d.catalogueVersion, d.availabilityVersion, d.movements.length, d.cashMovements.length, d.auditEvents.length];
   kickNotifications({ idle: true });
+  // The server's vital signs for Settings, Health, at most every 30 seconds, after the answer.
+  after(() => sampleVitals().catch(() => undefined));
   return wireResponse({ ok: true, pulse: parts.join(':') });
 }

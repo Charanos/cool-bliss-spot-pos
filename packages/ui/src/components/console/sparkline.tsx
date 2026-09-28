@@ -14,7 +14,7 @@ export function Sparkline({
 }: {
   values: readonly number[];
   label: string;
-  variant?: 'bars' | 'line';
+  variant?: 'bars' | 'line' | 'area';
   /** Which bar wears the accent: the highest, the last (now), or none. */
   highlight?: 'peak' | 'last' | 'none';
   className?: string;
@@ -23,17 +23,19 @@ export function Sparkline({
   const height = 28;
   const max = Math.max(0, ...values);
   const min = variant === 'line' ? Math.min(...values) : 0;
+  const lined = variant !== 'bars';
   const span = max - min || 1;
   const y = (v: number) => height - ((v - min) / span) * (height - 2) - 1;
 
   if (values.length === 0) return null;
 
-  if (variant === 'line') {
+  if (lined) {
     const step = values.length > 1 ? width / (values.length - 1) : width;
     const points = values.map((v, i) => `${(i * step).toFixed(2)},${y(v).toFixed(2)}`).join(' ');
     const last = values.length - 1;
     return (
       <svg role="img" aria-label={label} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className={cx('h-24 w-full overflow-visible', className)}>
+        {variant === 'area' ? <polygon points={`0,${height} ${points} ${(last * step).toFixed(2)},${height}`} className="fill-accent-wash" /> : null}
         <polyline points={points} fill="none" vectorEffect="non-scaling-stroke" className="stroke-chart" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
         <circle cx={last * step} cy={y(values[last]!)} r={2} className="fill-accent" />
       </svg>

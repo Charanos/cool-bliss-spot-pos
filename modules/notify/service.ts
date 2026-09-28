@@ -78,6 +78,47 @@ export function recent(limit = 50): NotificationRecord[] {
   return [...notifyTables().notifications].sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
 }
 
+export interface Delivery {
+  /** The last seven days in the outlet's time zone, oldest first, each split by how far its alerts got. */
+  days: { key: string; label: string; reached: number; sent: number; waiting: number; failed: number }[];
+  funnel: { created: number; sent: number; delivered: number; read: number; failed: number };
+  /** Alerts of each kind made in those seven days. */
+  byKind: Record<string, number>;
+}
+
+/** How the last seven days of alerts went, tests left out: per day, as a funnel, and per kind. */
+export function delivery(): Delivery {
+  const tz = identity.outlet().timezone;
+  const dayKey = (at: number) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const at = Date.now() - (6 - i) * 86_400_000;
+    return { key: dayKey(at), label: new Intl.DateTimeFormat('en-KE', { timeZone: tz, weekday: 'short' }).format(at), reached: 0, sent: 0, waiting: 0, failed: 0 };
+  });
+  const funnel = { created: 0, sent: 0, delivered: 0, read: 0, failed: 0 };
+  const byKind: Record<string, number> = {};
+  const since = Date.now() - 8 * 86_400_000;
+  for (const n of notifyTables().notifications) {
+    if (n.kind === 'test' || n.createdAt < since) continue;
+    const day = days.find((d) => d.key === dayKey(n.createdAt));
+    if (!day) continue;
+    funnel.created += 1;
+    byKind[n.kind] = (byKind[n.kind] ?? 0) + 1;
+    if (n.status === 'failed') {
+      funnel.failed += 1;
+      day.failed += 1;
+    } else if (n.status === 'queued' || n.status === 'sending') day.waiting += 1;
+    else {
+      funnel.sent += 1;
+      if (n.status === 'delivered' || n.status === 'read') {
+        funnel.delivered += 1;
+        day.reached += 1;
+      } else day.sent += 1;
+      if (n.status === 'read') funnel.read += 1;
+    }
+  }
+  return { days, funnel, byKind };
+}
+
 export interface SettingsInput {
   recipients: { name: string; phone: string; active: boolean }[];
   alerts: Record<OutletAlert, boolean>;
