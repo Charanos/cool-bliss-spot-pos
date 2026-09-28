@@ -5,7 +5,7 @@ import { InlineNotice } from '@bliss/ui/components/feedback';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { saveRule } from '../../_actions/menu';
-import { DaysField, Fieldset, FormDialog } from '../../_components/forms';
+import { DaysField, Fieldset, FormDialog, useOpenStamp } from '../../_components/forms';
 
 export interface RuleDraft {
   id: string;
@@ -28,9 +28,11 @@ const spans = (r: Pick<RuleDraft, 'startTime' | 'endTime'>): [number, number][] 
 export function RuleDialog({ open, onClose, target, overlays, others }: { open: boolean; onClose: () => void; target: RuleDraft | null; overlays: { value: string; label: string }[]; others: (RuleDraft & { status: string })[] }) {
   const router = useRouter();
   const [f, setF] = useState<Omit<RuleDraft, 'id'>>({ name: '', priceListId: '', daysOfWeek: [1, 2, 3, 4, 5], startTime: '17:00', endTime: '19:00', priority: 10 });
+  const stamp = useOpenStamp(open, target?.id);
   useEffect(() => {
     if (open) setF(target ? { ...target } : { name: '', priceListId: overlays[0]?.value ?? '', daysOfWeek: [1, 2, 3, 4, 5], startTime: '17:00', endTime: '19:00', priority: 10 });
-  }, [open, target, overlays]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [stamp]);
   const clashes = useMemo(() => {
     if (!/^\d{2}:\d{2}$/.test(f.startTime) || !/^\d{2}:\d{2}$/.test(f.endTime) || f.startTime === f.endTime) return [];
     const mine = spans(f);

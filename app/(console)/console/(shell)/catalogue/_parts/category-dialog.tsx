@@ -7,7 +7,7 @@ import { cx } from '@bliss/ui/lib/cx';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { saveCategory } from '../../_actions/menu';
-import { Fieldset, FormDialog } from '../../_components/forms';
+import { Fieldset, FormDialog, useOpenStamp } from '../../_components/forms';
 
 export interface CategoryDraft {
   id: string;
@@ -32,9 +32,11 @@ const COLOURS: { value: CategoryColourToken; label: string }[] = [
 export function CategoryDialog({ open, onClose, target }: { open: boolean; onClose: () => void; target: CategoryDraft | null }) {
   const router = useRouter();
   const [f, setF] = useState<Omit<CategoryDraft, 'id'>>({ name: '', colour: 'glacier', routingTarget: 'bar', trackStock: true });
+  const stamp = useOpenStamp(open, target?.id);
   useEffect(() => {
     if (open) setF({ name: target?.name ?? '', colour: target?.colour ?? 'glacier', routingTarget: target?.routingTarget ?? 'bar', trackStock: target?.trackStock ?? true });
-  }, [open, target]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [stamp]);
   const editing = Boolean(target);
   return (
     <FormDialog<{ id: string }>

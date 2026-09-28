@@ -10,7 +10,7 @@ import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { saveModifierGroup, setModifierGroupItems } from '../../_actions/menu';
-import { Fieldset, FormDialog } from '../../_components/forms';
+import { Fieldset, FormDialog, useOpenStamp } from '../../_components/forms';
 
 export interface ModifierGroupDraft {
   id: string;
@@ -33,13 +33,15 @@ export function ModifierGroupDialog({ open, onClose, target, stockItems }: { ope
   const [min, setMin] = useState('0');
   const [max, setMax] = useState('1');
   const [lines, setLines] = useState<Line[]>([line()]);
+  const stamp = useOpenStamp(open, target?.id);
   useEffect(() => {
     if (!open) return;
     setName(target?.name ?? '');
     setMin(String(target?.minSelect ?? 0));
     setMax(String(target?.maxSelect ?? 1));
     setLines(target?.options.length ? target.options.map((o) => line(o)) : [line()]);
-  }, [open, target]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [stamp]);
   const editing = Boolean(target);
   const set = (key: string, patch: Partial<Line>) => setLines((all) => all.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   return (
@@ -89,12 +91,14 @@ export function ModifierGroupDialog({ open, onClose, target, stockItems }: { ope
 export function ModifierItemsDialog({ open, onClose, groupId, groupName, items, selected }: { open: boolean; onClose: () => void; groupId: string; groupName: string; items: { id: string; name: string; category: string }[]; selected: readonly string[] }) {
   const [chosen, setChosen] = useState<Set<string>>(new Set(selected));
   const [q, setQ] = useState('');
+  const itemStamp = useOpenStamp(open, groupId);
   useEffect(() => {
     if (open) {
       setChosen(new Set(selected));
       setQ('');
     }
-  }, [open, selected]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [itemStamp]);
   const shown = useMemo(() => items.filter((i) => !q || `${i.name} ${i.category}`.toLowerCase().includes(q.toLowerCase())), [items, q]);
   const toggle = (id: string) =>
     setChosen((s) => {

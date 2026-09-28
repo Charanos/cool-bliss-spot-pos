@@ -6,7 +6,7 @@
  *   node scripts/e2e/first-night.mjs [base url]
  *
  * Dan, the owner, signs in with the handover PIN and sets the outlet up in the Console: a zone and a
- * table, a category and a product with a price, a waiter, and a Floor and a Counter device. Each
+ * table, a category and a product with a price (beside the menu the handover carries), a waiter, and a Floor and a Counter device. Each
  * device is paired with its code; the waiter signs in on the Floor (choosing their own PIN), opens
  * a tab and fires a round; Dan pours and settles it at the Counter, clears the table, and the
  * Console shows the bill, the stock and the audit.
@@ -89,7 +89,7 @@ try {
     await dialog().waitFor({ state: 'detached', timeout: 10_000 });
     await admin.goto(`${BASE}/console/catalogue/products`);
     await admin.getByRole('button', { name: 'Add a product' }).click();
-    await dialog().getByRole('textbox', { name: 'Name' }).fill('Tusker Lager');
+    await dialog().getByRole('textbox', { name: 'Name' }).fill('Trial lager');
     await choose(dialog(), 'Category', 'Beer');
     await dialog().getByRole('textbox', { name: 'Bottle size, ml' }).fill('500');
     await dialog().getByRole('textbox', { name: 'Price, KES' }).fill('300');
@@ -234,6 +234,8 @@ try {
     await admin.goto(`${BASE}/console/trade/shifts`);
     await admin.getByText('Wanjiru', { exact: false }).first().waitFor({ timeout: 20_000 });
     await admin.goto(`${BASE}/console/inventory/stock`);
+    // The handover menu opens with one of each on the shelf; the product added tonight is the one not counted.
+    await admin.getByPlaceholder('Search products').fill('Trial lager');
     await admin.getByText('Not counted yet').first().waitFor({ timeout: 20_000 });
     await shot(admin, 'console-stock');
     await admin.goto(`${BASE}/console/overview`);

@@ -6,7 +6,7 @@ import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { saveRecipe } from '../../_actions/menu';
-import { Fieldset, FormDialog } from '../../_components/forms';
+import { Fieldset, FormDialog, useOpenStamp } from '../../_components/forms';
 
 export interface RecipeDraft {
   id: string | null;
@@ -26,13 +26,15 @@ export function RecipeDialog({ open, onClose, target, items, stockItems }: { ope
   const [name, setName] = useState('');
   const [lines, setLines] = useState<Line[]>([]);
   const blank = (): Line => ({ key: `r${(nextKey += 1)}`, component: stockItems[0]?.value ?? '', qty: '', ml: '', waste: '0' });
+  const stamp = useOpenStamp(open, target?.id);
   useEffect(() => {
     if (!open) return;
     setVariantId(target?.variantId ?? items[0]?.value ?? '');
     setName(target?.name ?? '');
     setLines(target?.parts.length ? target.parts.map((p) => ({ key: `r${(nextKey += 1)}`, component: p.componentVariantId, qty: String(p.qty), ml: p.volumeMl ? String(p.volumeMl) : '', waste: String(p.wastagePct) })) : [blank()]);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when it opens
-  }, [open, target]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [stamp]);
   const set = (key: string, patch: Partial<Line>) => setLines((all) => all.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   const editing = Boolean(target?.id);
   return (

@@ -306,6 +306,19 @@ export function useCreateParam(open: () => void, allowed = true) {
   }, [params, allowed]);
 }
 
+/**
+ * A number that changes when a dialog opens, or opens on another record, and at no other time: the
+ * one thing a dialog's form resets on. A page refresh underneath hands the dialog new lists and new
+ * record objects with the same contents; resetting on those would wipe what was just typed and put
+ * every dropdown back to its first choice.
+ */
+export function useOpenStamp(open: boolean, key?: string | null): number {
+  const k = key ?? null;
+  const [s, setS] = useState({ n: 0, open: false, key: null as string | null });
+  if (open !== s.open || (open && k !== s.key)) setS({ n: open ? s.n + 1 : s.n, open, key: k });
+  return open ? s.n + (open !== s.open || k !== s.key ? 1 : 0) : 0;
+}
+
 /** Which dialog is open, and for which record: one piece of state per page. */
 export function useDialog<K extends string, T = null>() {
   const [state, setState] = useState<{ kind: K; target: T } | null>(null);

@@ -1,5 +1,6 @@
 import type { Staff } from '@bliss/shared/domain';
 import { PRICE_LISTS } from './catalogue';
+import { buildMenu } from './menu';
 import { tradingClock } from './history';
 import { LOCATIONS, OUTLET, ROLES, roleByKey, staffByKey } from './organisation';
 import type { Dataset } from './types';
@@ -9,10 +10,10 @@ import type { Dataset } from './types';
  * nothing made up in it. docs/17 section 3.
  *
  * Kept, because the product needs them before anything else can be entered: the outlet and its
- * settings, the roles, the stock locations (Store, Bar shelf, Counter) and the Standard price list,
- * with no prices on it. One person: Dan, the owner, who signs in to the Console with the PIN given
- * and adds everyone and everything else there. No products, categories, suppliers, zones, tables,
- * devices, trade, stock or audit history.
+ * settings, the roles, the stock locations (Store, Bar shelf, Counter) and the Standard price list.
+ * The real menu from the stock sheet (./menu), priced, with one of each on the Bar shelf until the
+ * stock take. One person: Dan, the owner, who signs in to the Console with the PIN given and adds
+ * everyone and everything else there. No suppliers, zones, tables, devices, trade or audit history.
  *
  * The PIN arrives already hashed, so this file never holds it and never needs the hashing code.
  */
@@ -36,6 +37,7 @@ export function buildHandoverDataset(input: { now?: number; ownerPinHash: string
     avatarUrl: null,
     contactNumber: null,
   };
+  const menu = buildMenu({ now, businessDate: clock.current, ownerId: owner.id });
   return {
     generatedAt: now,
     now,
@@ -52,14 +54,14 @@ export function buildHandoverDataset(input: { now?: number; ownerPinHash: string
     locations: LOCATIONS.map((l) => ({ ...l })),
     suppliers: [],
     catalogueVersion: 1,
-    categories: [],
-    products: [],
-    variants: [],
+    categories: menu.categories,
+    products: menu.products,
+    variants: menu.variants,
     modifierGroups: [],
     modifiers: [],
     variantModifierGroups: [],
     priceLists: PRICE_LISTS.filter((l) => l.kind === 'base').map((l) => ({ ...l })),
-    priceListItems: [],
+    priceListItems: menu.priceListItems,
     priceRules: [],
     recipes: [],
     pourSpecs: [],
@@ -73,7 +75,7 @@ export function buildHandoverDataset(input: { now?: number; ownerPinHash: string
     tenders: [],
     shifts: [],
     drawerSessions: [],
-    movements: [],
+    movements: menu.movements,
     holds: [],
     counts: [],
     countLines: [],

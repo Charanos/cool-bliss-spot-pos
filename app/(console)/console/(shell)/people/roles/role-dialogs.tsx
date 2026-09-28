@@ -4,7 +4,7 @@ import { SelectField, TextField } from '@bliss/ui/components/fields';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createRole, deleteRole, renameRole } from '../../_actions/venue';
-import { FormDialog, ReasonDialog } from '../../_components/forms';
+import { FormDialog, ReasonDialog, useOpenStamp } from '../../_components/forms';
 
 type Option = { value: string; label: string };
 
@@ -13,11 +13,13 @@ export function RoleFormDialog({ open, onClose, target, bases }: { open: boolean
   const router = useRouter();
   const [name, setName] = useState('');
   const [base, setBase] = useState('');
+  const stamp = useOpenStamp(open, target?.id);
   useEffect(() => {
     if (!open) return;
     setName(target?.name ?? '');
     setBase(bases[0]?.value ?? '');
-  }, [open, target, bases]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [stamp]);
   const editing = Boolean(target);
   return (
     <FormDialog

@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState, useTransition } from 'react';
 import { createZone, updateZone } from '../../_actions/people';
 import { useToast } from '@bliss/ui/components/console/toast';
+import { useOpenStamp } from '../../_components/forms';
 
 /** Add or edit a zone. The form resets to the zone being edited each time it opens. */
 export function ZoneDialog({ target, priceLists, open, onClose }: { target: Zone | null; priceLists: { value: string; label: string }[]; open: boolean; onClose: () => void }) {
@@ -22,6 +23,7 @@ export function ZoneDialog({ target, priceLists, open, onClose }: { target: Zone
   const [status, setStatus] = useState<Zone['status']>('active');
   const editing = Boolean(target);
 
+  const stamp = useOpenStamp(open, target?.id);
   useEffect(() => {
     if (!open) return;
     setName(target?.name ?? '');
@@ -29,7 +31,8 @@ export function ZoneDialog({ target, priceLists, open, onClose }: { target: Zone
     setListId(target?.defaultPriceListId ?? '');
     setStatus(target?.status ?? 'active');
     setError('');
-  }, [open, target]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
+  }, [stamp]);
 
   function save(event: FormEvent) {
     event.preventDefault();
