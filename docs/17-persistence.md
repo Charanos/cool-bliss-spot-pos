@@ -66,7 +66,9 @@ order:
 2. People, Zones and tables: the floor as it is.
 3. Catalogue: the menu is there; check the prices against the sheet, add photos, and add anything
    missing. Then run a full stock count, which replaces every opening one.
-4. Settings, Devices: register each tablet and the counter, and pair each with its code. A manager
+4. Settings, Devices: register each tablet and the counter. Open the Floor or Counter sign-in on
+   the device itself: it asks to pair first ("Pair this tablet"); enter the six-digit code there,
+   not as a PIN. A browser never takes a device without its code. A manager
    or owner who opens the Floor or the Counter from the Console needs none of this: their browser
    gets a device of its own, in their name ("Dan's browser, Floor"), listed there and withdrawn
    the same way.

@@ -59,7 +59,7 @@ export function ZoneDialog({ target, priceLists, open, onClose }: { target: Zone
       <form onSubmit={save} className="flex flex-col gap-24">
         {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}
         <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Terrace" autoComplete="off" required />
-        <div className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
+        <div className="grid grid-cols-1 gap-16 tablet:grid-cols-2">
           <SelectField
             label="Price list"
             value={listId}

@@ -171,7 +171,7 @@ export function FormDialog<R extends object>({
       footer={
         <>
           {summary ? (
-            <p aria-live="polite" className="mr-auto hidden min-w-0 truncate text-body-sm text-ink-muted desktop:block">
+            <p aria-live="polite" className="mr-auto hidden min-w-0 truncate text-body-sm text-ink-muted tablet:block">
               {summary}
             </p>
           ) : null}
@@ -185,12 +185,12 @@ export function FormDialog<R extends object>({
       }
     >
       {aside ? (
-        <div className="flex flex-col desktop:min-h-full desktop:flex-row">
+        <div className="flex flex-col tablet:min-h-full tablet:flex-row">
           {/* The column runs the full height of the dialog; what is in it stays in view as the fields scroll. */}
-          <aside className="shrink-0 border-b border-edge bg-band px-24 py-24 desktop:w-dialog-aside desktop:border-b-0 desktop:border-r">
-            <div className="flex flex-col gap-24 desktop:sticky desktop:top-24">{aside}</div>
+          <aside className="shrink-0 border-b border-edge bg-band px-24 py-24 tablet:w-dialog-aside tablet:border-b-0 tablet:border-r">
+            <div className="flex flex-col gap-24 tablet:sticky tablet:top-24">{aside}</div>
           </aside>
-          <form id={formId} onSubmit={submit} className="flex min-w-0 flex-1 flex-col gap-40 px-24 py-24 desktop:px-32">
+          <form id={formId} onSubmit={submit} className="flex min-w-0 flex-1 flex-col gap-40 px-24 py-24 tablet:px-32">
             {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}
             {children}
           </form>
@@ -211,7 +211,7 @@ export function FormDialog<R extends object>({
  */
 export function Fieldset({ legend, hint, step, columns = 2, children, className }: { legend?: string; hint?: string; step?: number; columns?: 1 | 2 | 3; children: ReactNode; className?: string }) {
   return (
-    <fieldset className={cx('grid grid-cols-1 gap-x-24 gap-y-20', columns === 2 ? 'desktop:grid-cols-2' : columns === 3 ? 'desktop:grid-cols-3' : null, className)}>
+    <fieldset className={cx('grid grid-cols-1 gap-x-24 gap-y-20', columns === 2 ? 'tablet:grid-cols-2' : columns === 3 ? 'tablet:grid-cols-3' : null, className)}>
       {legend && step ? (
         // A numbered step: the number in a ring, the name of the step, and what it is for under it.
         <legend className="mb-20 flex w-full items-start gap-12">
@@ -504,7 +504,7 @@ export function PhotoField({
  */
 export function ChoiceCards<T extends string>({ label, value, onChange, options }: { label: string; value: T; onChange: (value: T) => void; options: { value: T; title: string; detail: string; icon?: TablerIcon }[] }) {
   return (
-    <div role="radiogroup" aria-label={label} className="grid grid-cols-1 gap-12 desktop:col-span-2 desktop:grid-cols-2">
+    <div role="radiogroup" aria-label={label} className="grid grid-cols-1 gap-12 tablet:col-span-2 tablet:grid-cols-2">
       {options.map((o) => {
         const on = o.value === value;
         const Glyph = o.icon;

@@ -2,6 +2,7 @@
 
 import { cx } from '@bliss/ui/lib/cx';
 import { Photo } from '@bliss/ui/components/photo';
+import { SwitchingScreen } from '@bliss/ui/components/switching';
 import { IconCash, IconDeviceDesktop, IconDeviceTablet, IconKey, IconLogout, IconMoon, IconSelector, IconSun } from '@tabler/icons-react';
 import { useCallback, useLayoutEffect, useRef, useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
@@ -47,6 +48,12 @@ async function switchTo(to: 'floor' | 'counter') {
  */
 export function AccountMenu({ name, role, photo, theme: initialTheme, pin, compact }: AccountProps) {
   const [open, setOpen] = useState(false);
+  const [opening, setOpening] = useState<'floor' | 'counter' | null>(null);
+  const openStation = (to: 'floor' | 'counter') => {
+    setOpen(false);
+    setOpening(to);
+    void switchTo(to);
+  };
   const [changing, setChanging] = useState(false);
   const [theme, setLocalTheme] = useState(initialTheme);
   const [position, setPosition] = useState<{ bottom: number; left: number } | null>(null);
@@ -93,6 +100,12 @@ export function AccountMenu({ name, role, photo, theme: initialTheme, pin, compa
 
   return (
     <>
+      {opening
+        ? createPortal(
+            <SwitchingScreen to={opening === 'floor' ? 'Floor' : 'Counter'} name={name} fallback={`/${opening}/sign-in`} surface={theme === 'dark' ? 'dark' : 'light'} />,
+            document.body,
+          )
+        : null}
       <button
         ref={buttonRef}
         type="button"
@@ -167,11 +180,11 @@ export function AccountMenu({ name, role, photo, theme: initialTheme, pin, compa
                 ))}
               </div>
               <div role="group" aria-label="Stations" className="mt-4 border-t border-edge pt-4">
-                <button type="button" role="menuitem" className={item} onClick={() => void switchTo('floor')}>
+                <button type="button" role="menuitem" className={item} onClick={() => openStation('floor')}>
                   <IconDeviceTablet size={16} stroke={1.5} aria-hidden="true" className="text-ink-subtle" />
                   Open the Floor station
                 </button>
-                <button type="button" role="menuitem" className={item} onClick={() => void switchTo('counter')}>
+                <button type="button" role="menuitem" className={item} onClick={() => openStation('counter')}>
                   <IconCash size={16} stroke={1.5} aria-hidden="true" className="text-ink-subtle" />
                   Open the Counter station
                 </button>

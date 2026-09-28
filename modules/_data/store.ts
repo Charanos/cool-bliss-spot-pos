@@ -3,6 +3,7 @@ import 'server-only';
 import { tradingClock } from '@bliss/db/seed/history';
 import type { ChangeRef, Dataset, SyncTable } from '@bliss/db/seed/types';
 import { Pool, type PoolClient } from 'pg';
+import { fillMenuPhotos } from './menu-photos';
 import { COLLECTIONS, SCALARS, SCHEMA, SINGLETONS, WRITE_LOCK, databaseUrl, decode, encode, insertApplied, insertChanges, keyOf, upsertRows, writeMeta } from './records';
 
 /**
@@ -100,6 +101,7 @@ async function hydrate(db: PoolClient | Pool): Promise<void> {
   for (const key of SCALARS) data[key] = meta.get(key);
   data.changes = (await db.query('select seq, tbl, id from bliss_change order by seq')).rows.map((r) => ({ seq: Number(r.seq), table: r.tbl as SyncTable, id: String(r.id) }));
   data.applied = new Set((await db.query('select id from bliss_applied')).rows.map((r) => String(r.id)));
+  fillMenuPhotos(data as unknown as Dataset);
   s.data = liveClock(data as unknown as Dataset);
   s.loaded = version;
   s.checkedAt = Date.now();
@@ -174,6 +176,7 @@ async function catchUp(db: PoolClient | Pool, to: number): Promise<void> {
   for (const r of (await db.query('select key, value::text as value from bliss_meta where key = any($1::text[])', [[...SCALARS]])).rows) {
     data[String(r.key)] = decode(String(r.value));
   }
+  if (byCollection.has('products') || byCollection.has('categories')) fillMenuPhotos(data);
   s.loaded = to;
 }
 

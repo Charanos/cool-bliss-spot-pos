@@ -72,7 +72,7 @@ export function ModifierGroupDialog({ open, onClose, target, stockItems }: { ope
       <fieldset className="flex flex-col gap-8">
         <legend className="mb-8 label-caps text-ink-subtle">Options</legend>
         {lines.map((l, i) => (
-          <div key={l.key} className="grid grid-cols-1 items-end gap-8 desktop:grid-cols-[minmax(0,1.4fr)_120px_minmax(0,1.4fr)_40px]">
+          <div key={l.key} className="grid grid-cols-1 items-end gap-8 tablet:grid-cols-[minmax(0,1.4fr)_120px_minmax(0,1.4fr)_40px]">
             <TextField label="Option" hideLabel={i > 0} value={l.name} onChange={(e) => set(l.key, { name: e.target.value })} placeholder="Coke" />
             <TextField label="Adds, KES" hideLabel={i > 0} value={l.price} onChange={(e) => set(l.key, { price: e.target.value })} inputMode="decimal" />
             <SelectField label="Takes stock of" hideLabel={i > 0} value={l.linked} onChange={(e) => set(l.key, { linked: e.target.value })} options={[{ value: '', label: 'Nothing' }, ...stockItems]} />

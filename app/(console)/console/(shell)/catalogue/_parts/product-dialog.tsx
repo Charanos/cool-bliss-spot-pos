@@ -154,7 +154,7 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
       }}
     >
       <Fieldset step={1} legend="What it is" hint="Its name on the menu, and where it sits.">
-        <TextField label="Name" value={f.name} onChange={set('name')} placeholder="Tusker lager" required autoComplete="off" className="desktop:col-span-2" />
+        <TextField label="Name" value={f.name} onChange={set('name')} placeholder="Tusker lager" required autoComplete="off" className="tablet:col-span-2" />
         <SelectField label="Category" value={f.categoryId} onChange={set('categoryId')} options={categories} required helper={categories.length === 0 ? 'Add a category first, in Catalogue, Categories.' : undefined} />
         <TextField label="Brand" value={f.brand} onChange={set('brand')} placeholder="EABL" autoComplete="off" helper="Optional." />
       </Fieldset>
@@ -180,13 +180,13 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
       )}
 
       <Fieldset step={editing ? 2 : 3} legend="Cost, bottle and codes" hint="For stock value, margins and pour variance. All optional." columns={2}>
-        <TextField label="Unit cost, KES" value={f.cost} onChange={set('cost')} inputMode="decimal" placeholder="180" helper="What one bottle or can costs to buy. Deliveries update it." className="desktop:col-span-2" />
+        <TextField label="Unit cost, KES" value={f.cost} onChange={set('cost')} inputMode="decimal" placeholder="180" helper="What one bottle or can costs to buy. Deliveries update it." className="tablet:col-span-2" />
         <TextField label="Bottle size, ml" value={f.bottle} onChange={set('bottle')} inputMode="numeric" placeholder="500" helper="Empty for food and anything not poured." />
         <TextField label="Alcohol, %" value={f.abv} onChange={set('abv')} inputMode="decimal" placeholder="4.2" />
         <TextField label="SKU" value={f.sku} onChange={(e) => setF((x) => ({ ...x, sku: e.target.value.toUpperCase() }))} placeholder="Made from the name" helper="Left empty, one is made for it." autoComplete="off" />
         <TextField label="Barcode" value={f.barcode} onChange={set('barcode')} inputMode="numeric" placeholder="6161101600125" autoComplete="off" />
         <TextField label="How many you own" value={f.inHouse} onChange={set('inHouse')} inputMode="numeric" placeholder="4" helper="Only for what is served and handed back, like shisha pots. The floor stops selling it while all are out on tables." />
-        <SelectField label="Usual supplier" value={f.supplierId} onChange={set('supplierId')} options={[{ value: '', label: 'None yet' }, ...suppliers]} className="desktop:col-span-2" />
+        <SelectField label="Usual supplier" value={f.supplierId} onChange={set('supplierId')} options={[{ value: '', label: 'None yet' }, ...suppliers]} className="tablet:col-span-2" />
       </Fieldset>
     </FormDialog>
   );
