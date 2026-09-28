@@ -3,8 +3,10 @@ import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
 import { fontVariables } from '../fonts';
 import '../globals.css';
+import { BRAND_ICONS } from '@/app/brand-icons';
 
 export const metadata: Metadata = {
+  icons: BRAND_ICONS,
   title: { default: 'Bliss Console', template: '%s · Bliss Console' },
   description: 'Catalogue, stock, purchasing, people and reporting for Cool Bliss Spot.',
 };

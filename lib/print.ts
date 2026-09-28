@@ -44,6 +44,9 @@ export function attemptOf(a: string | undefined): number {
 }
 
 /** The lines under the name on every ticket: where the place is and how to call it. */
+/** The house line, under the logo on every ticket. */
+export const TAGLINE = 'Where cool meets bliss';
+
 export function brandLines(outlet: Outlet): string[] {
   return [outlet.address, outlet.phone ? `Tel ${outlet.phone}` : null].filter((x): x is string => Boolean(x));
 }

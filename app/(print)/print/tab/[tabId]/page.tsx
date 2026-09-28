@@ -1,7 +1,7 @@
 import { formatDateTime, formatQty } from '@bliss/shared/format';
 import { formatFigure, sum } from '@bliss/shared/money';
 import { tabLabel } from '@bliss/shared/trade';
-import { PRINT_RETRIES, attemptOf, brandLines, printAccess, retryHref, tillParts } from '@/lib/print';
+import { PRINT_RETRIES, TAGLINE, attemptOf, brandLines, printAccess, retryHref, tillParts } from '@/lib/print';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
 import * as trade from '@/modules/trade/service';
@@ -55,7 +55,7 @@ export default async function PrintTabPage({ params, searchParams }: { params: P
   return (
     <PrintPage>
       <Receipt>
-        <ReceiptBrand name={outlet.name} logoUrl="/brand/logo-ink.svg" lines={brandLines(outlet)} />
+        <ReceiptBrand name={outlet.name} tagline={TAGLINE} logoUrl="/brand/logo-ink.svg" lines={brandLines(outlet)} />
         <ReceiptBand title="Your bill" detail={tab.tabNumber ? `Tab ${tab.tabNumber}` : null} />
         <ReceiptFacts
           items={[

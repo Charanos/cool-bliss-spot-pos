@@ -65,7 +65,8 @@ export function CardMedia({
         </>
       )}
       {meta ? (
-        <div style={cell} className="z-raised m-12 self-start justify-self-end">
+        // On a solid backing of its own: a tinted chip straight on a photograph all but disappears.
+        <div style={cell} className="z-raised m-12 self-start justify-self-end rounded-pill bg-card shadow-chip">
           {meta}
         </div>
       ) : null}

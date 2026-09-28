@@ -54,6 +54,8 @@ export default async function ProductsPage() {
       tracked: category?.trackStock ?? false,
       supplier: procurement.supplierById(p.defaultSupplierId)?.name ?? null,
       onHand: stock ? Math.round(inventory.onHand(stock.stockVariantId) * 100) / 100 : null,
+      counted: stock ? inventory.stockRecorded(stock.stockVariantId) : true,
+      needsCount: stock ? inventory.needsCount(stock.stockVariantId) : false,
       ...unitCostOf(stock?.stockVariantId ?? sealed?.id ?? null, canCost),
       unit: p.containerVolumeMl ? 'btl' : 'units',
       status: p.status,

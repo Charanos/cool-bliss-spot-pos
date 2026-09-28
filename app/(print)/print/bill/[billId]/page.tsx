@@ -1,7 +1,7 @@
 import { formatDateTime, formatQty } from '@bliss/shared/format';
 import { formatFigure, isPositive, isZero, subtract, sum } from '@bliss/shared/money';
 import { tabLabel } from '@bliss/shared/trade';
-import { PRINT_RETRIES, attemptOf, brandLines, printAccess, retryHref, tillParts } from '@/lib/print';
+import { PRINT_RETRIES, TAGLINE, attemptOf, brandLines, printAccess, retryHref, tillParts } from '@/lib/print';
 import * as identity from '@/modules/identity/service';
 import * as settlement from '@/modules/settlement/service';
 import * as trade from '@/modules/trade/service';
@@ -62,7 +62,7 @@ export default async function PrintBillPage({ params, searchParams }: { params: 
   return (
     <PrintPage>
       <Receipt>
-        <ReceiptBrand name={outlet.name} logoUrl="/brand/logo-ink.svg" lines={brandLines(outlet)} />
+        <ReceiptBrand name={outlet.name} tagline={TAGLINE} logoUrl="/brand/logo-ink.svg" lines={brandLines(outlet)} />
         <ReceiptBand title={paid ? 'Receipt' : 'Bill'} detail={`No. ${bill.billNumber}`} />
         <ReceiptFacts
           items={[
@@ -108,7 +108,7 @@ export default async function PrintBillPage({ params, searchParams }: { params: 
           </>
         ) : null}
         {/* The tills print on every bill: a guest paying the next round by M-Pesa has them to hand. */}
-        <ReceiptPay parts={tillParts(outlet, lines, bill.totalCents).map((p) => (paid ? { ...p, amount: null } : p))} currency={outlet.currency} />
+        <ReceiptPay parts={tillParts(outlet, lines, bill.totalCents)} currency={outlet.currency} paid={paid} />
 
         <ReceiptFooter>
           <p className="text-[11px] italic">Asante, karibu tena</p>
