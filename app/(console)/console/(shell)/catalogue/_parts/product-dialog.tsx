@@ -22,6 +22,8 @@ export interface ProductDraft {
   abv: number | null;
   defaultSupplierId: string | null;
   imageKey: string | null;
+  /** What one bottle or can costs to buy, in shillings as typed ("180.00"); empty when never set. */
+  unitCost?: string;
 }
 
 type Option = { value: string; label: string };
@@ -38,7 +40,7 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
   const router = useRouter();
   const editing = Boolean(target);
   const requestId = useMemo(() => (open ? createUuidV7()() : ''), [open]);
-  const [f, setF] = useState({ name: '', brand: '', categoryId: '', sku: '', barcode: '', bottle: '', abv: '', supplierId: '', imageKey: null as string | null });
+  const [f, setF] = useState({ name: '', brand: '', categoryId: '', sku: '', barcode: '', bottle: '', abv: '', supplierId: '', imageKey: null as string | null, cost: '' });
   const [first, setFirst] = useState({ kind: 'sealed' as 'sealed' | 'serve', name: '', serve: '', price: '' });
   const [uploading, setUploading] = useState(false);
 
@@ -55,6 +57,7 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
       abv: target?.abv !== null && target?.abv !== undefined ? String(target.abv) : '',
       supplierId: target?.defaultSupplierId ?? '',
       imageKey: target?.imageKey ?? null,
+      cost: target?.unitCost ?? '',
     });
     setFirst({ kind: 'sealed', name: '', serve: '', price: '' });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- resets when it opens, never on a refresh underneath
@@ -71,6 +74,8 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
     abv: num(f.abv),
     defaultSupplierId: f.supplierId || null,
     imageKey: f.imageKey,
+    // Blank leaves the cost as it is; a figure sets it until the next delivery brings its own.
+    unitCost: f.cost.trim() === '' ? null : f.cost,
   };
 
   const categoryName = categories.find((c) => c.value === f.categoryId)?.label ?? '';
@@ -170,7 +175,8 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
         </Fieldset>
       )}
 
-      <Fieldset step={editing ? 2 : 3} legend="Bottle and codes" hint="For stock, deliveries and pour variance. All optional." columns={2}>
+      <Fieldset step={editing ? 2 : 3} legend="Cost, bottle and codes" hint="For stock value, margins and pour variance. All optional." columns={2}>
+        <TextField label="Unit cost, KES" value={f.cost} onChange={set('cost')} inputMode="decimal" placeholder="180" helper="What one bottle or can costs to buy. Deliveries update it." className="desktop:col-span-2" />
         <TextField label="Bottle size, ml" value={f.bottle} onChange={set('bottle')} inputMode="numeric" placeholder="500" helper="Empty for food and anything not poured." />
         <TextField label="Alcohol, %" value={f.abv} onChange={set('abv')} inputMode="decimal" placeholder="4.2" />
         <TextField label="SKU" value={f.sku} onChange={(e) => setF((x) => ({ ...x, sku: e.target.value.toUpperCase() }))} placeholder="Made from the name" helper="Left empty, one is made for it." autoComplete="off" />

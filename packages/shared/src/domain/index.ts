@@ -292,7 +292,9 @@ export type MovementType =
   | 'comp'
   | 'count_adjustment'
   | 'return_to_supplier'
-  | 'opening_balance';
+  | 'opening_balance'
+  /** No stock moves: the unit cost is set by hand, until the next delivery brings its own. */
+  | 'cost_set';
 
 export interface StockBatch {
   id: Id;

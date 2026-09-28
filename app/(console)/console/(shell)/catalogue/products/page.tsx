@@ -1,3 +1,4 @@
+import { type Cents, formatDecimal, isPositive } from '@bliss/shared/money';
 import type { Metadata } from 'next';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
@@ -10,12 +11,20 @@ import { type ProductRow, ProductsTable } from './products-table';
 
 export const metadata: Metadata = { title: 'Products' };
 
+/** A product's unit cost for its card and its edit form, or nothing for someone who may not see costs. */
+function unitCostOf(variantId: string | null, canCost: boolean): { costCents: Cents | null; unitCost?: string } {
+  if (!variantId || !canCost) return { costCents: null };
+  const cost = inventory.averageCost(variantId);
+  return isPositive(cost) ? { costCents: cost, unitCost: formatDecimal(cost) } : { costCents: null, unitCost: '' };
+}
+
 export default async function ProductsPage() {
   const actor = await identity.currentConsoleActor();
   const outlet = identity.outlet();
   const base = pricingManage.defaultList();
   const baseItems = base ? pricing.itemsFor(base.id) : [];
   const variants = catalogue.variants();
+  const canCost = identity.can(actor.staffId, 'cost.read');
 
   const rows: ProductRow[] = catalogue.products().map((p) => {
     const category = catalogue.categoryById(p.categoryId);
@@ -44,6 +53,7 @@ export default async function ProductsPage() {
       tracked: category?.trackStock ?? false,
       supplier: procurement.supplierById(p.defaultSupplierId)?.name ?? null,
       onHand: stock ? Math.round(inventory.onHand(stock.stockVariantId) * 100) / 100 : null,
+      ...unitCostOf(stock?.stockVariantId ?? sealed?.id ?? null, canCost),
       unit: p.containerVolumeMl ? 'btl' : 'units',
       status: p.status,
     };

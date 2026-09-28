@@ -48,24 +48,33 @@ export function CardMedia({
     if (img && img.complete && img.naturalWidth === 0) setFailed(true);
   }, []);
 
+  // Every layer shares one grid cell rather than being positioned, so nothing here becomes the box a
+  // stretched link measures from: the title's link covers the whole card, photograph and rows alike.
+  const cell = { gridArea: '1 / 1' } as const;
   return (
-    <div className={cx('relative h-media shrink-0 overflow-hidden border-b border-edge', failed ? (tint ?? 'card-band-strong') : 'bg-band-strong', className)}>
+    <div className={cx('grid h-media shrink-0 overflow-hidden border-b border-edge', failed ? (tint ?? 'card-band-strong') : 'bg-band-strong', className)} style={{ gridTemplateRows: '100%', gridTemplateColumns: '100%' }}>
       {failed ? (
-        <span aria-hidden="true" className="absolute inset-0 flex select-none items-center justify-center font-mono text-num-xl text-ink-subtle media-zoom">
+        <span aria-hidden="true" style={cell} className="flex select-none items-center justify-center font-mono text-num-xl text-ink-subtle media-zoom">
           {initial}
         </span>
       ) : (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element -- an uploaded or catalogue image, sized by CSS */}
-          <img ref={ref} src={src!} alt={alt} loading="lazy" onError={() => setFailed(true)} className="size-full object-cover media-zoom" />
-          <div aria-hidden="true" className="absolute inset-0 media-scrim" />
+          <img ref={ref} src={src!} alt={alt} loading="lazy" onError={() => setFailed(true)} style={cell} className="size-full object-cover media-zoom" />
+          <div aria-hidden="true" style={cell} className="media-scrim" />
         </>
       )}
-      {meta ? <div className="absolute right-12 top-12 z-raised">{meta}</div> : null}
-      {actions ? (
-        <div className="absolute left-12 top-12 z-raised flex gap-6 opacity-0 transition-hover group-hover:opacity-100 group-focus-within:opacity-100">{actions}</div>
+      {meta ? (
+        <div style={cell} className="z-raised m-12 self-start justify-self-end">
+          {meta}
+        </div>
       ) : null}
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 px-20 pb-16">
+      {actions ? (
+        <div style={cell} className="z-raised m-12 flex gap-6 self-start justify-self-start opacity-0 transition-hover group-hover:opacity-100 group-focus-within:opacity-100">
+          {actions}
+        </div>
+      ) : null}
+      <div style={cell} className="flex min-w-0 flex-col gap-2 self-end px-20 pb-16">
         <Heading className={cx('min-w-0 truncate text-title-section', failed ? 'text-ink' : 'text-on-scrim')}>
           {href ? (
             <Link href={href} className="link-stretched rounded-sm focus-visible:outline-offset-4">

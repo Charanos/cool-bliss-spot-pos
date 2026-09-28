@@ -11,9 +11,10 @@ import { LOCATIONS, OUTLET } from './organisation';
  * Every line opens with one in stock on the Bar shelf, so its stock counts as recorded from the
  * start. The stock take replaces these ones with what is really there, as count adjustments.
  *
- * Two lines on the sheet repeat a name at a different price (Martell VS, Remy Martin); they carry
- * their price in the name until the owner renames them. The sheet prints Smirnoff 750ml at 200,
- * which reads as a missing nought; it is entered at 2,000.
+ * Corrections from the owner over the sheet: Smirnoff 750ml is 2,000 (the sheet prints 200), Black
+ * Label is 5,000 and 6,000 for 750ml and a litre, and Martell VS and VSOP come in 750ml and a litre.
+ * Remy Martin appears twice at different prices; each carries its price in the name until the
+ * owner renames it.
  */
 
 interface Line {
@@ -154,7 +155,7 @@ export const MENU: Section[] = [
       ...sizes('Bond 7', [250, 650], [375, 900], [750, 1800]),
       ...sizes("Jack Daniel's", [375, 2500], [750, 4500], [1000, 5500]),
       ...sizes('Red Label', [375, 1500], [750, 2500], [1000, 2800]),
-      ...sizes('Black Label', [375, 2500], [750, 2800], [1000, 5000]),
+      ...sizes('Black Label', [375, 2500], [750, 5000], [1000, 6000]),
       ...sizes('Double Black', [750, 6500], [1000, 9000]),
       ...sizes('Grants', [750, 2800]),
       ...sizes('Camino', [750, 2500]),
@@ -169,7 +170,6 @@ export const MENU: Section[] = [
       ...sizes('Chivas', [750, 6500]),
       ...sizes("Ballantine's", [750, 3000]),
       ...sizes('Famous Grouse', [1000, 3500]),
-      ...sizes('Martell VS', [750, 8500]),
       l('Southern Comfort', 3500),
       l('Hamptons drum', 2000),
       l('Black & White', 1800),
@@ -181,8 +181,8 @@ export const MENU: Section[] = [
       l('Royal Circle', 2000),
       l('Hennessy VS', 7500),
       l('Hennessy VSOP', 12000),
-      l('Martell VS (8,000)', 8000),
-      l('Martell VSOP', 12000),
+      ...sizes('Martell VS', [750, 8500], [1000, 11500]),
+      ...sizes('Martell VSOP', [750, 11000], [1000, 13500]),
       l('Remy Martin (11,500)', 11500),
       l('Remy Martin (15,000)', 15000),
     ],
