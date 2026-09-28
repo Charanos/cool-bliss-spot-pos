@@ -12,6 +12,7 @@ import * as settlement from '@/modules/settlement/service';
 import * as trade from '@/modules/trade/service';
 import { CommandMenu } from './_components/shell/command-menu';
 import { CrumbProvider } from './_components/shell/crumbs';
+import { FitFrame } from './_components/shell/fit-frame';
 import { DeskNav, type DeskGroup, type DeskItem } from './_components/shell/desk-nav';
 import { SHEET_SCROLL_ID, SheetHeader } from './_components/shell/sheet-header';
 import type { ThemePreference } from './_actions/settings';
@@ -93,6 +94,7 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
           >
             Skip to content
           </a>
+          <FitFrame />
           <div className="flex h-dvh min-w-frame-min overflow-hidden bg-desk">
             <DeskNav
               venue={{ name: outlet.name, day: formatDayShort(clock.current), trading: clock.tradingInProgress }}

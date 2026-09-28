@@ -1,5 +1,8 @@
 'use client';
 
+import { createPortal } from 'react-dom';
+import { SwitchingScreen } from '@bliss/ui/components/switching';
+
 import { formatTime } from '@bliss/shared/format';
 import { ICON_STROKE, type TablerIcon } from '@bliss/ui/components/icon';
 import { Dot, type Tone } from '@bliss/ui/components/status';
@@ -56,8 +59,10 @@ export function SurfaceSwitcher({ current, console: withConsole = false }: { cur
     void switchTo(to);
   };
   const idle = 'flex h-control-sm items-center gap-6 rounded-dot px-12 text-body-sm text-ink-subtle press-feedback hover:bg-page hover:text-ink';
+  const NAMES = { floor: 'Floor', counter: 'Counter', console: 'Console' } as const;
   return (
     <nav aria-label="Surfaces" className="flex items-center gap-2 rounded-dot border border-rule-raised/30 bg-sunken/50 p-2">
+      {opening ? createPortal(<SwitchingScreen to={NAMES[opening]} fallback={opening === 'console' ? '/console/sign-in' : `/${opening}/sign-in`} />, document.body) : null}
       {SURFACES.map((s) => {
         const Glyph = s.icon;
         return s.key === current ? (

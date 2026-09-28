@@ -266,7 +266,7 @@ export function PinDialog({ target, policy, timezone, onClose }: { target: PinTa
               </div>
             )}
 
-            <div className="grid grid-cols-1 gap-16 border-t border-rule pt-16 desktop:grid-cols-2">
+            <div className="grid grid-cols-1 gap-16 border-t border-rule pt-16 tablet:grid-cols-2">
               <SelectField
                 label="Runs out"
                 value={expiry}

@@ -7,6 +7,7 @@ import { AmbientTerminalArtwork } from '@bliss/ui/components/artwork/frost-cryst
 import { BlissWordmark } from '@bliss/ui/components/brand';
 import { InlineNotice, Skeleton } from '@bliss/ui/components/feedback';
 import { PinPad } from '@bliss/ui/components/pin-pad';
+import { SwitchingScreen } from '@bliss/ui/components/switching';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconArrowLeft, IconLayoutDashboard } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
@@ -183,6 +184,9 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
       : pending
         ? 'Checking your PIN'
         : `Enter your ${length} digit PIN`;
+
+  // Arriving with a ticket: the whole screen says so until it is spent, as it was on the way here.
+  if (handoff) return <SwitchingScreen to={SURFACE_NAME[surface]} />;
 
   return (
     <div className="relative flex h-dvh flex-col tablet:grid tablet:grid-cols-[minmax(320px,2fr)_3fr] bg-page">

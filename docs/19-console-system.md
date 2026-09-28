@@ -191,7 +191,7 @@ the same way. Each is decoration beside something a page already says in words a
 - **States**: each workspace has a loading skeleton in its own shape and an error boundary; the
   Console has a not-found page. A workspace that needs a permission refuses itself on the server.
 
-Below 1280px the desk is icons; below 1024px the page scrolls sideways rather than crushing.
+Below 1280px the desk is icons; on a screen narrower than 1024px (an iPad held upright) the whole desk is scaled to fit, as on a laptop only smaller, rather than crushing or scrolling sideways, where a dialog would be cut off.
 
 ## 5. Copy
 
@@ -225,7 +225,7 @@ prototype language. The rewrites made in this pass, for reference:
 - [ ] Every table has its four states; filters, sort and view live in the URL.
 - [ ] Every control is reachable and operable by keyboard, with a visible focus ring; icon-only
       controls are labelled; dialogs trap focus and return it.
-- [ ] Correct in light and dark, at 1440 and 1280, and usable (scrolling, not clipped) at 1024.
+- [ ] Correct in light and dark, at 1440 and 1280, and usable at 1024, and scaled to fit below it.
 - [ ] Every write goes through `runAction` with a schema; the service enforces permission and rules.
 - [ ] A list page has its anatomy: `ViewHeader`, a `MetricGrid` of up to four toned metrics, a hero
       `Callout` only when something needs a person, then the table with a card view for anything

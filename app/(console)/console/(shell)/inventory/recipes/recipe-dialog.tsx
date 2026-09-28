@@ -54,7 +54,7 @@ export function RecipeDialog({ open, onClose, target, items, stockItems }: { ope
       <fieldset className="flex flex-col gap-8">
         <legend className="mb-8 label-caps text-ink-subtle">One serve takes</legend>
         {lines.map((l, i) => (
-          <div key={l.key} className="grid grid-cols-1 items-end gap-8 desktop:grid-cols-[minmax(0,2fr)_100px_100px_100px_40px]">
+          <div key={l.key} className="grid grid-cols-1 items-end gap-8 tablet:grid-cols-[minmax(0,2fr)_100px_100px_100px_40px]">
             <SelectField label="Stocked item" hideLabel={i > 0} value={l.component} onChange={(e) => set(l.key, { component: e.target.value })} options={stockItems} />
             <TextField label="Of a unit" hideLabel={i > 0} value={l.qty} onChange={(e) => set(l.key, { qty: e.target.value })} inputMode="decimal" placeholder="0.04" />
             <TextField label="Measure, ml" hideLabel={i > 0} value={l.ml} onChange={(e) => set(l.key, { ml: e.target.value })} inputMode="numeric" placeholder="30" />

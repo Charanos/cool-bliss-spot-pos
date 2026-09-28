@@ -11,6 +11,7 @@
     "./seed/history": "./seed/history.ts",
     "./seed/handover": "./seed/handover.ts",
     "./seed/menu": "./seed/menu.ts",
+    "./seed/menu-images": "./seed/menu-images.ts",
     "./seed/ids": "./seed/ids.ts",
     "./seed/types": "./seed/types.ts"
   },

@@ -66,11 +66,11 @@ export function TableDialog({ target, zones, open, onClose }: { target: ServiceT
     <ConsoleOverlay open={open} onClose={onClose} title={editing ? `Edit ${target?.label ?? 'the table'}` : 'Add a table'} description="Tablets show the change on their next sync." width="md">
       <form onSubmit={save} className="flex flex-col gap-24">
         {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}
-        <div className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
+        <div className="grid grid-cols-1 gap-16 tablet:grid-cols-2">
           <TextField label="Name" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="T12" autoComplete="off" required />
           <SelectField label="Zone" value={zoneId} onChange={(e) => setZoneId(e.target.value)} options={activeZones.map((z) => ({ value: z.id, label: z.name }))} required />
         </div>
-        <div className="grid grid-cols-1 gap-16 desktop:grid-cols-2">
+        <div className="grid grid-cols-1 gap-16 tablet:grid-cols-2">
           <TextField label="Seats" type="number" inputMode="numeric" min={1} max={40} value={seats} onChange={(e) => setSeats(e.target.value)} required />
           {editing ? (
             occupied ? (

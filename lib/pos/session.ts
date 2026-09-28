@@ -4,7 +4,7 @@ import type { PermissionKey, RoleKey } from '@bliss/shared/domain';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { api } from './api';
 import { wakeSync } from './sync';
-import { META, currentSurface, getMeta, posDb, setMeta } from './db';
+import { type DeviceEntry, META, currentSurface, getMeta, posDb, setMeta } from './db';
 
 export interface StaffSession {
   staffId: string;
@@ -17,6 +17,8 @@ export interface StaffSession {
 export interface BoundDevice {
   id: string;
   label: string;
+  /** How this browser came to hold it: its pairing code, a hand-over from the Console, or demo data. */
+  via?: 'code' | 'handoff' | 'auto';
 }
 
 /**
@@ -24,19 +26,25 @@ export interface BoundDevice {
  * Enrolment is a manager task in the Console; in development this device binds to the first active
  * device of its own surface: Floor 1 on the floor, Counter 1 at the counter.
  */
+const takeable = (d: DeviceEntry, surface: string) => d.kind === surface && d.status === 'active' && !d.pairing && !d.personal;
+
 export async function ensureDevice(): Promise<BoundDevice | null> {
   const stored = await getMeta<BoundDevice>(META.deviceId);
   const devices = (await posDb().devices.toArray()).sort((a, b) => a.label.localeCompare(b.label, 'en', { numeric: true }));
   // Kept while the venue still lists it. One it no longer knows (a handover, or removed) or withdrew
   // is let go, so this browser pairs again instead of being refused as "not registered".
   const current = stored ? devices.find((d) => d.id === stored.id) : undefined;
-  if (stored && (devices.length === 0 || (current && current.status === 'active'))) return stored;
+  // Someone's own browser is theirs only where the Console handed it over; anywhere else it is let go.
+  const keep = current && current.status === 'active' && (!current.personal || stored?.via === 'handoff');
+  if (stored && (devices.length === 0 || keep)) return stored;
   if (stored) await setMeta(META.deviceId, null);
   const surface = currentSurface();
-  // A device still waiting for its code is never taken: it is claimed with that code (claimDevice).
-  const first = devices.find((d) => d.kind === surface && d.status === 'active' && !d.pairing);
+  // Only with demo data, and never a device waiting for its code or someone's own browser: a real
+  // venue pairs each tablet with its code (claimDevice), so opening a station never takes one over.
+  if (!(await getMeta<boolean>(META.autoBind))) return null;
+  const first = devices.find((d) => takeable(d, surface));
   if (!first) return null;
-  const bound = { id: first.id, label: first.label };
+  const bound: BoundDevice = { id: first.id, label: first.label, via: 'auto' };
   await setMeta(META.deviceId, bound);
   // The first pull ran before this device knew who it was, so it carried nothing that belongs to a
   // device: its open drawer, its bills today. Rewind the cursor and pull the whole picture again,
@@ -64,11 +72,12 @@ export function useNeedsPairing(bootstrapped: boolean): boolean | undefined {
     if (!bootstrapped) return undefined;
     const bound = await getMeta<BoundDevice>(META.deviceId);
     const known = bound ? await posDb().devices.get(bound.id) : null;
-    if (known) return known.status !== 'active' || Boolean(known.pairing);
+    if (known) return known.status !== 'active' || Boolean(known.pairing) || (Boolean(known.personal) && bound?.via !== 'handoff');
     // Nothing bound, or bound to a device this browser has not heard of: pair, unless ensureDevice
     // has a paired one of this surface to take.
     const surface = currentSurface();
-    return !(await posDb().devices.toArray()).some((d) => d.kind === surface && d.status === 'active' && !d.pairing);
+    if (!(await getMeta<boolean>(META.autoBind))) return true;
+    return !(await posDb().devices.toArray()).some((d) => takeable(d, surface));
   }, [bootstrapped]);
 }
 
@@ -79,7 +88,7 @@ export async function claimDevice(code: string): Promise<SignInResult> {
     if (!body.ok || !body.device) return { ok: false, message: body.message ?? 'That code does not match.' };
     // Known here as paired at once; the next pull brings the rest.
     await posDb().devices.put({ id: body.device.id, label: body.device.label, kind: currentSurface(), status: 'active', pairing: false });
-    await rebind(body.device);
+    await rebind({ ...body.device, via: 'code' });
     return { ok: true };
   } catch {
     return { ok: false, message: 'No connection. Pairing needs the network once.' };
@@ -131,12 +140,12 @@ export async function redeemHandoff(ticket: string, spare: BoundDevice | null = 
   let device = await ensureDevice();
   // A manager or owner opening a station from the Console brings a browser of their own, made for
   // them by the server: used when this browser holds no device the venue still knows.
-  if (!device && spare) device = await rebind(spare);
+  if (!device && spare) device = await rebind({ ...spare, via: 'handoff' });
   if (!device) return { ok: false, message: 'This device is not registered to Cool Bliss Spot. A manager needs to add it in Console, Settings, Devices.' };
   try {
     const first = await api.post<SignInBody>('/api/station/identity', { action: 'continue', deviceId: device.id, ticket });
     if (first.status === 403 && spare && spare.id !== device.id) {
-      await rebind(spare);
+      await rebind({ ...spare, via: 'handoff' });
       return await settle((await api.post<SignInBody>('/api/station/identity', { action: 'continue', deviceId: spare.id, ticket })).body);
     }
     return await settle(first.body);

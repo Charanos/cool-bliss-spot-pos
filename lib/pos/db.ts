@@ -47,6 +47,8 @@ export interface DeviceEntry {
   status: string;
   /** Registered in the Console and waiting for its pairing code. */
   pairing?: boolean;
+  /** A manager's or owner's own browser, made when they opened a station from the Console. */
+  personal?: boolean;
 }
 
 export interface RecipeEntry {
@@ -170,6 +172,8 @@ export async function setMeta(key: string, value: unknown): Promise<void> {
 
 export const META = {
   deviceId: 'device.id',
+  /** Whether a browser may take a paired device without its code: demo data only. */
+  autoBind: 'device.autoBind',
   deviceSeq: 'device.outboxSeq',
   session: 'session',
   /** The signed station token from the last sign-in on this device. */

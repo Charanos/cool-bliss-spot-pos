@@ -110,7 +110,7 @@ export function StaffDialog({
       }
     >
       <Fieldset step={1} legend="Who they are" hint="The display name is what the floor, the tickets and the bills show.">
-        <TextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Wanjiru" autoComplete="off" required className="desktop:col-span-2" />
+        <TextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Wanjiru" autoComplete="off" required className="tablet:col-span-2" />
         <TextField label="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Jane" autoComplete="off" required />
         <TextField label="Contact number" type="tel" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="+254 712 345 678" autoComplete="off" helper="Optional." />
       </Fieldset>
@@ -124,7 +124,7 @@ export function StaffDialog({
           required
           disabled={target?.isSelf}
           helper={target?.isSelf ? 'Another manager changes your role.' : where}
-          className="desktop:col-span-2"
+          className="tablet:col-span-2"
         />
       </Fieldset>
 

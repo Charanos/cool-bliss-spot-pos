@@ -1,4 +1,5 @@
 import { businessDate } from '@bliss/shared/time';
+import { devDataEnabled } from '@/lib/dev';
 import { stationAuth } from '@/lib/station';
 import { wireResponse } from '@/lib/wire';
 import { dataset } from '@/modules/_data/source';
@@ -42,6 +43,8 @@ export async function GET(request: Request) {
 
   const body: Record<string, unknown> = {
     epoch: data.epoch,
+    // Only demo data lets a new browser take a paired device without its code; a real venue pairs each one.
+    autoBind: devDataEnabled(),
     reset,
     outlet: { id: outlet.id, name: outlet.name, timezone: outlet.timezone, cutover: outlet.businessDayCutover, drawerVarianceThresholdCents: outlet.drawerVarianceThresholdCents },
     businessDate: businessDate(Date.now(), outlet.timezone, outlet.businessDayCutover),
@@ -71,7 +74,7 @@ export async function GET(request: Request) {
           avatarUrl: s.avatarUrl ?? null,
         };
       });
-    body.devices = identity.devices().map((d) => ({ id: d.id, label: d.label, kind: d.kind, status: d.status, pairing: d.pairingPending }));
+    body.devices = identity.devices().map((d) => ({ id: d.id, label: d.label, kind: d.kind, status: d.status, pairing: Boolean(d.pairingExpiresAt) || d.pairingPending, personal: Boolean(d.personalTo) }));
   }
 
   if (reset || knownAvailability !== map.version) body.availability = map.entries;

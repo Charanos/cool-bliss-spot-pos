@@ -106,6 +106,7 @@ interface PullBody {
   tables?: unknown[];
   staff?: unknown[];
   devices?: unknown[];
+  autoBind?: boolean;
   availability?: AvailabilityEntry[];
   /** No valid station token came with the pull: no trade rows, and the device asks for a PIN. */
   authRequired?: boolean;
@@ -208,6 +209,7 @@ async function applyPull(body: PullBody) {
   const changed: string[] = [];
   const knownEpoch = await getMeta<string>(META.epoch);
   const reset = Boolean(knownEpoch && knownEpoch !== body.epoch);
+  await setMeta(META.autoBind, Boolean(body.autoBind));
 
   await db.transaction('rw', db.tables, async () => {
     if (reset) await resetTrade();
@@ -249,7 +251,11 @@ async function applyPull(body: PullBody) {
         await db.staff.clear();
         await db.staff.bulkPut(body.staff as AnyRows);
       }
-      if (body.devices) await db.devices.bulkPut(body.devices as AnyRows);
+      if (body.devices) {
+        // Replaced whole, so a device the venue removed (or a handover cleared) is not kept here.
+        await db.devices.clear();
+        await db.devices.bulkPut(body.devices as AnyRows);
+      }
       await setMeta(META.catalogueVersion, body.catalogueVersion);
     }
     if (body.availability) {
