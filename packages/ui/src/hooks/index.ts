@@ -161,9 +161,20 @@ export function useDismiss(ref: RefObject<HTMLElement | null>, open: boolean, on
       }
       pressedTrigger = null;
     };
+    // Scrolling the page away closes it; the settling of a scroll already under way when it opened,
+    // or a nudge of a few pixels, does not. Measured per scroller from the first scroll it makes.
+    const openedAt = Date.now();
+    const baseline = new Map<EventTarget, number>();
+    const position = (target: EventTarget | null) => (target instanceof Element ? target.scrollTop : window.scrollY);
     const onScroll = (event: Event) => {
       if (inside(event.target)) return;
-      latest.current();
+      const key = event.target ?? window;
+      const now = position(event.target);
+      if (Date.now() - openedAt < 250 || !baseline.has(key)) {
+        baseline.set(key, now);
+        return;
+      }
+      if (Math.abs(now - baseline.get(key)!) > 24) latest.current();
     };
     const onResize = () => latest.current();
     const onKey = (event: KeyboardEvent) => {

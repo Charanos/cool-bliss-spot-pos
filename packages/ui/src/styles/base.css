@@ -868,7 +868,7 @@
    fading at the ends, so it reads as a clear boundary on any screen without boxing the strip in. */
 @utility rule-strip {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-rule) 8%, var(--color-rule) 92%, transparent);
+  background: linear-gradient(90deg, transparent, var(--color-edge-strong) 6%, var(--color-edge-strong) 94%, transparent);
 }
 
 /* Right under a page header, the header's rule is the one above the strip: never two in a row. */

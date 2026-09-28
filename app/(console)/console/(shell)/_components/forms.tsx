@@ -186,8 +186,9 @@ export function FormDialog<R extends object>({
     >
       {aside ? (
         <div className="flex flex-col desktop:min-h-full desktop:flex-row">
-          <aside className="flex shrink-0 flex-col gap-24 border-b border-edge bg-band px-24 py-24 desktop:sticky desktop:top-0 desktop:w-dialog-aside desktop:self-start desktop:border-b-0 desktop:border-r">
-            {aside}
+          {/* The column runs the full height of the dialog; what is in it stays in view as the fields scroll. */}
+          <aside className="shrink-0 border-b border-edge bg-band px-24 py-24 desktop:w-dialog-aside desktop:border-b-0 desktop:border-r">
+            <div className="flex flex-col gap-24 desktop:sticky desktop:top-24">{aside}</div>
           </aside>
           <form id={formId} onSubmit={submit} className="flex min-w-0 flex-1 flex-col gap-40 px-24 py-24 desktop:px-32">
             {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}

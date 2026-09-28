@@ -38,7 +38,7 @@ async function check(name, fn) {
     console.log(results.at(-1));
   } catch (error) {
     await admin.screenshot({ path: `${SHOTS}/${String(step).padStart(2, '0')}-failed.png` }).catch(() => undefined);
-    results.push(`FAIL ${step}. ${name}: ${String(error.message ?? error).split('\n')[0].slice(0, 240)}`);
+    results.push(`FAIL ${step}. ${name}: ${String(error.message ?? error).split('\n').slice(0, 6).join(' | ').slice(0, 900)}`);
     console.log(results.at(-1));
     throw error;
   }
@@ -55,7 +55,7 @@ const admin = await consoleCtx.newPage();
 admin.on('pageerror', (e) => errors.push(`console: ${String(e).slice(0, 200)}`));
 const dialog = () => admin.locator('dialog[open]');
 const codes = {};
-let floorCtx, floor;
+let floorCtx, floor, counterCtx, counter;
 
 try {
   await check('Only the owner is on a fresh outlet, and signs in with the handover PIN', async () => {
@@ -169,6 +169,76 @@ try {
     await floor.getByRole('button', { name: /^Fire/ }).click();
     await floor.waitForTimeout(2500);
     await shot(floor, 'floor-fired');
+  });
+
+  await check('The Counter is paired and Dan signs in there', async () => {
+    counterCtx = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+    counter = await counterCtx.newPage();
+    counter.on('pageerror', (e) => errors.push(`counter: ${String(e).slice(0, 200)}`));
+    await counter.goto(`${BASE}/counter/sign-in`);
+    await counter.getByRole('button', { name: 'Dan Owner' }).click({ timeout: 20_000 });
+    await counter.waitForTimeout(600);
+    for (const d of '111111') await counter.keyboard.press(d);
+    await counter.getByText('Enter the pairing code from the Console').waitFor({ timeout: 10_000 });
+    for (const d of codes['Counter 1']) await counter.keyboard.press(d);
+    await counter.getByText(/Enter your 6 digit PIN/).waitFor({ timeout: 10_000 });
+    for (const d of '111111') await counter.keyboard.press(d);
+    await counter.waitForURL((u) => u.pathname.startsWith('/counter/') && !u.pathname.endsWith('/sign-in'), { timeout: 20_000 });
+  });
+
+  await check('The Counter sees the round and pours it', async () => {
+    await counter.goto(`${BASE}/counter/orders`);
+    await counter.getByText('Table 1', { exact: true }).first().waitFor({ timeout: 20_000 });
+    await shot(counter, 'counter-ticket');
+    const ours = counter.getByRole('article', { name: 'Table 1', exact: true }).getByRole('button', { name: 'Pour all' });
+    for (let i = 0; i < 6 && (await ours.count()) > 0; i += 1) {
+      await counter.keyboard.press('p');
+      await counter.waitForTimeout(1500);
+    }
+    if ((await ours.count()) > 0) throw new Error('Table 1 still has lines to pour');
+  });
+
+  await check('The Floor marks it served and asks for the bill', async () => {
+    await floor.getByRole('button', { name: /Mark served/ }).first().click({ timeout: 20_000 });
+    await floor.waitForTimeout(1500);
+    await floor.getByRole('button', { name: /Ask for the bill/ }).first().click({ timeout: 20_000 });
+    await floor.waitForTimeout(2500);
+  });
+
+  await check('Dan opens the drawer with a float and settles the table in cash', async () => {
+    await counter.goto(`${BASE}/counter/drawer`);
+    await counter.getByRole('heading', { name: 'Drawer', level: 1 }).waitFor({ timeout: 15_000 });
+    await counter.getByLabel('How many 1,000 notes').fill('2');
+    await counter.getByRole('button', { name: 'Open with KES 2,000' }).click();
+    await counter.getByText('Drawer open', { exact: true }).first().waitFor({ timeout: 15_000 });
+    await counter.goto(`${BASE}/counter/tabs`);
+    await counter.getByRole('button', { name: 'Settle Table 1', exact: true }).click({ timeout: 20_000 });
+    await counter.waitForURL('**/counter/tabs/**');
+    await counter.getByRole('button', { name: /^Exact/ }).first().click({ timeout: 15_000 });
+    await counter.getByRole('button', { name: /^Settle KES/ }).click({ timeout: 15_000 });
+    await counter.getByText(/Print Final Receipt|No change to give|Change/).first().waitFor({ timeout: 20_000 });
+    await shot(counter, 'counter-settled');
+  });
+
+  await check('The guests leave: the Counter clears the table, the Floor frees it', async () => {
+    await counter.goto(`${BASE}/counter/tabs`);
+    await counter.getByRole('button', { name: 'Guests have left Table 1. Clear the table' }).click({ timeout: 15_000 });
+    await floor.goto(`${BASE}/floor/tabs`);
+    await floor.getByRole('button', { name: /^Open a tab on Table 1/ }).first().waitFor({ timeout: 15_000 });
+  });
+
+  await check('The Console shows the bill, the shift and the switches in the audit', async () => {
+    await admin.goto(`${BASE}/console/trade/bills?view=table&range=tonight`);
+    await admin.getByText('Table 1', { exact: false }).first().waitFor({ timeout: 20_000 });
+    await shot(admin, 'console-bills');
+    await admin.goto(`${BASE}/console/trade/shifts`);
+    await admin.getByText('Wanjiru', { exact: false }).first().waitFor({ timeout: 20_000 });
+    await admin.goto(`${BASE}/console/inventory/stock`);
+    await admin.getByText('Not counted yet').first().waitFor({ timeout: 20_000 });
+    await shot(admin, 'console-stock');
+    await admin.goto(`${BASE}/console/overview`);
+    await admin.waitForTimeout(1200);
+    await shot(admin, 'console-overview');
   });
 } catch {
   // reported below
