@@ -484,14 +484,31 @@
  * ---------------------------------------------------------------------------------------------
  */
 
-/* A raised pane you can tap: a tab card, a table, a choice in a sheet. */
+/*
+ * A station card that is read rather than tapped whole: a Counter ticket, an order, a history record.
+ * The same frost as a tappable pane (86% raised over a saturated blur, a lit top edge); its border is
+ * the card's own, set beside it, so a state can colour it.
+ */
+@utility surface-card {
+  background-color: color-mix(in oklab, var(--color-raised) 86%, transparent);
+  box-shadow: 0 10px 28px -14px color-mix(in oklab, var(--color-page) 55%, transparent), inset 0 1px 0 color-mix(in oklab, var(--color-ink) 8%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+}
+
+/*
+ * A raised pane you can tap: a tab card, a table, a choice in a sheet. Frosted and mostly solid, so
+ * the artwork behind reads as a soft light rather than showing through the words: 86% of the raised
+ * colour over a saturated blur, a top edge that catches the light, and a hairline all round. What
+ * sits inside it (pills, seat chips, panels) is solid, never a second layer of glass.
+ */
 @utility surface-pane-interactive {
-  background-color: color-mix(in oklab, var(--color-raised) 70%, transparent);
+  background-color: color-mix(in oklab, var(--color-raised) 86%, transparent);
   border: none;
   border-radius: 16px;
-  box-shadow: 0 4px 20px -4px color-mix(in oklab, var(--color-page) 10%, transparent), inset 0 1px 1px color-mix(in oklab, var(--color-ink) 8%, transparent), inset 0 0 0 1px color-mix(in oklab, var(--color-ink) 3%, transparent);
-  -webkit-backdrop-filter: blur(24px);
-  backdrop-filter: blur(24px);
+  box-shadow: 0 10px 28px -14px color-mix(in oklab, var(--color-page) 55%, transparent), inset 0 1px 0 color-mix(in oklab, var(--color-ink) 10%, transparent), inset 0 0 0 1px color-mix(in oklab, var(--color-ink) 6%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
   transition:
     border-color var(--bliss-duration-hover) var(--bliss-ease-out),
     background-color var(--bliss-duration-hover) var(--bliss-ease-out),
@@ -847,6 +864,19 @@
   background: linear-gradient(90deg, transparent, var(--color-hairline) 20%, var(--color-hairline) 80%, transparent);
 }
 
+/* The rule that bounds a page's KPI strip, above and below: a full rule colour across the middle,
+   fading at the ends, so it reads as a clear boundary on any screen without boxing the strip in. */
+@utility rule-strip {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-rule) 8%, var(--color-rule) 92%, transparent);
+}
+
+/* Right under a page header, the header's rule is the one above the strip: never two in a row. */
+[data-page-head] + [data-metric-strip] > [data-strip-rule='top'],
+[data-page-head] + * > [data-metric-strip]:first-child > [data-strip-rule='top'] {
+  display: none;
+}
+
 @utility media-scrim {
   background: linear-gradient(to top, var(--color-scrim-media), transparent 72%);
 }
@@ -984,6 +1014,18 @@
   background-image: linear-gradient(to bottom, rgb(var(--card-tone-rgb) / 8%), transparent 112px);
 }
 
+/*
+ * The sign-in photograph, masked into the page rather than laid under flat shades: it dissolves to
+ * nothing towards the top, where the wordmark sits, holds its light through the lower middle, and
+ * softens along the inner edge where the sign-in column begins. Two masks, kept where both agree.
+ */
+@utility photo-mask {
+  -webkit-mask-image: linear-gradient(to top, black 0%, black 34%, transparent 100%), linear-gradient(to right, black 0%, black 58%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to top, black 0%, black 34%, transparent 100%), linear-gradient(to right, black 0%, black 58%, transparent 100%);
+  mask-composite: intersect;
+}
+
 /* A scrolling list whose foot fades into the desk, so a cut-off row reads as "more below". */
 @utility fade-foot {
   mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent);
@@ -1031,6 +1073,11 @@
 [data-display~='lite'] :is(*, *::before, *::after):not(.overlay-glass, .scrim-glass) {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+/* With no blur behind them, station cards are solid, so nothing shows through the words. */
+[data-display~='lite'] :is(.surface-card, .surface-pane-interactive) {
+  background-color: var(--color-raised);
 }
 
 /* Drawn once: a turning SVG with soft glows repaints every step, which an A8 cannot spare. */

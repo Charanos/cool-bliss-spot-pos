@@ -43,7 +43,7 @@ export function TicketCard({
       data-list-item=""
       aria-labelledby={`ticket-${ticket.orderId}`}
       className={cx(
-        'relative flex flex-col overflow-hidden rounded-sheet border bg-raised/70 backdrop-blur-glass tablet:rounded-sheet',
+        'relative flex flex-col overflow-hidden rounded-sheet border surface-card tablet:rounded-sheet',
         ranOut
           ? 'border-stop/40 glow-stop'
           : late

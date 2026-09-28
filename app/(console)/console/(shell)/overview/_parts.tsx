@@ -66,6 +66,16 @@ export function HeadlineMetrics(props: {
 export function SalesByHour({ data }: { data: BarDatum[] }) {
   const peak = data.reduce((max, d) => (d.value > max.value ? d : max), data[0] ?? { key: '', label: '', value: 0n as Cents });
   const total = sum(data.map((d) => d.value));
+  // Nothing fired yet, as on a new outlet's first day: say so, rather than draw an axis of noughts.
+  if (data.every((d) => d.value === 0n)) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-12 px-20 py-72 text-center">
+        <IconTile icon={IconFlame} tone="neutral" />
+        <p className="text-body font-medium text-ink">No sales by the hour yet</p>
+        <p className="measure text-body-sm text-ink-muted">Once a night has been traded, each hour&apos;s takings show here, with the busiest named above them.</p>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-20 px-20 py-16">
       {data.length > 0 ? (

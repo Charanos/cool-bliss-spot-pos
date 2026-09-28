@@ -40,13 +40,13 @@ export function DeviceCard() {
   };
 
   return (
-    <section aria-labelledby="device-title" className="flex flex-col gap-20 rounded-card border border-rule-raised bg-raised p-20">
+    <section aria-labelledby="device-title" className="flex flex-col gap-20 rounded-sheet border border-rule-raised/40 p-20 surface-card tablet:p-24">
       <header className="flex items-start gap-12">
-        <span aria-hidden="true" className="flex size-control-md shrink-0 items-center justify-center rounded-md text-ink-muted">
+        <span aria-hidden="true" className="flex size-control-md shrink-0 items-center justify-center rounded-control bg-accent-wash text-accent-text">
           <Glyph size={20} stroke={ICON_STROKE} />
         </span>
         <div className="flex min-w-0 flex-col gap-2">
-          <h2 id="device-title" className="text-title-section text-ink">
+          <h2 id="device-title" className="text-title font-medium text-ink">
             This device
           </h2>
           <p className="text-body-sm text-ink-muted">

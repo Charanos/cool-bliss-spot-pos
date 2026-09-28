@@ -151,7 +151,7 @@ export function TabRecord({ tab, tz, now, staffId, onOpen }: { tab: HistoryTab; 
   const settledAt = tab.bills.reduce<number | null>((m, b) => (b.settledAt && (!m || b.settledAt > m) ? b.settledAt : m), null);
 
   return (
-    <li className={cx('overflow-hidden rounded-sheet border bg-raised/70 backdrop-blur-glass transition-colors', open ? 'border-rule-raised/70' : 'border-rule-raised/40', live && 'border-l-2 border-l-accent/60')}>
+    <li className={cx('overflow-hidden rounded-sheet border surface-card transition-colors', open ? 'border-rule-raised/70' : 'border-rule-raised/40', live && 'border-l-2 border-l-accent/60')}>
       <button
         type="button"
         aria-expanded={open}

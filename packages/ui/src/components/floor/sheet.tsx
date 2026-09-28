@@ -105,11 +105,14 @@ export function ChoiceChip({ on, onClick, children, extra }: { on: boolean; onCl
       aria-pressed={on}
       onClick={onClick}
       className={cx(
-        'inline-flex min-h-target-floor items-center gap-8 rounded-pill border px-16 text-body press-feedback transition-hover',
-        on ? 'border-accent/50 bg-accent-wash font-medium text-accent-text' : 'border-rule-raised/40 bg-control/60 text-ink-muted hover:bg-control hover:text-ink',
+        'inline-flex min-h-chip items-center gap-6 rounded-pill border pl-12 pr-16 text-body-sm font-medium press-feedback transition-hover',
+        on ? 'border-accent/50 bg-accent-wash text-accent-text' : 'border-rule-raised/40 bg-control text-ink-muted hover:border-rule-raised hover:text-ink',
       )}
     >
-      {on ? <IconCheck size={16} stroke={2} aria-hidden="true" /> : null}
+      {/* The tick has its own room whether shown or not, so a chip never changes width when chosen. */}
+      <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center">
+        {on ? <IconCheck size={14} stroke={2.25} /> : <span className="size-6 rounded-dot bg-current opacity-40" />}
+      </span>
       <span>{children}</span>
       {extra ? <span className={cx('font-mono tabular text-num-sm', on ? 'text-accent-text' : 'text-ink-subtle')}>{extra}</span> : null}
     </button>

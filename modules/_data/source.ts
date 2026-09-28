@@ -2,7 +2,9 @@ import 'server-only';
 
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { buildHandoverDataset } from '@bliss/db/seed/handover';
 import { buildDataset } from '@bliss/db/seed/history';
+import { hashPin } from '../identity/credentials';
 import type { Dataset } from '@bliss/db/seed/types';
 import { storeDataset, storeEnabled } from './store';
 
@@ -50,7 +52,8 @@ export function dataset(): Dataset {
     checkedAt = now;
   }
   if (!globalForData.__blissDataset || globalForData.__blissRevision !== current) {
-    globalForData.__blissDataset = buildDataset(now);
+    // BLISS_DATASET=handover runs in memory on the outlet as handed over, to rehearse a first night.
+    globalForData.__blissDataset = process.env.BLISS_DATASET === 'handover' ? buildHandoverDataset({ now, ownerPinHash: hashPin(process.env.BLISS_OWNER_PIN ?? '111111') }) : buildDataset(now);
     globalForData.__blissRevision = current;
   }
   return globalForData.__blissDataset;

@@ -35,18 +35,25 @@ export function evaluate(variantId: string): AvailabilityResult & { threshold: n
   let hasActiveHold = held.has(variantId);
 
   if (recipe) {
+    for (const c of recipe.components) if (held.has(c.componentVariantId)) hasActiveHold = true;
+  }
+  if (recipe && recipe.components.some((c) => inventory.stockRecorded(c.componentVariantId))) {
     tracked = true;
     qty = Math.min(
       ...recipe.components.map((c) => {
         if (held.has(c.componentVariantId)) hasActiveHold = true;
-        return servesFromStock(inventory.onHand(c.componentVariantId), c.qty);
+        // A part whose stock was never recorded does not stop the drink; the parts that are counted do.
+        return inventory.stockRecorded(c.componentVariantId) ? servesFromStock(inventory.onHand(c.componentVariantId), c.qty) : UNTRACKED_QTY;
       }),
     );
     threshold = Math.max(LAST_FEW_SERVES + 1, outletDefault);
   } else if (tracked) {
     const stock = catalogue.stockVariantFor(variantId);
-    if (stock) {
-      if (held.has(stock.stockVariantId)) hasActiveHold = true;
+    // Stock never received, counted or opened: nothing says the shelf is empty, so it sells, and
+    // the Console lists it as not counted yet. Depletion starts to count once stock is recorded.
+    if (stock && held.has(stock.stockVariantId)) hasActiveHold = true;
+    if (stock && !inventory.stockRecorded(stock.stockVariantId)) tracked = false;
+    else if (stock) {
       const units = inventory.onHand(stock.stockVariantId);
       qty = variant.kind === 'serve' ? servesFromStock(units, stock.factor) : Math.floor(units + 1e-9);
       const productThreshold = product.lowStockThreshold ?? outletDefault;

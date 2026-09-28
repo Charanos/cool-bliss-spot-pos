@@ -94,6 +94,8 @@ export function FormDialog<R extends object>({
   toast,
   icon: Glyph,
   disabled,
+  aside,
+  summary,
   children,
 }: {
   open: boolean;
@@ -106,7 +108,14 @@ export function FormDialog<R extends object>({
   disabled?: boolean;
   submitLabel: string;
   submitVariant?: ButtonVariant;
-  width?: 'md' | 'lg';
+  width?: 'md' | 'lg' | 'xl';
+  /**
+   * A column beside the fields, from a desktop up: what the record will look like, its photograph,
+   * and its facts as they stand. Above the fields on anything narrower. Makes the dialog two panes.
+   */
+  aside?: ReactNode;
+  /** One line at the foot, beside the actions: the record as entered so far, read back. */
+  summary?: ReactNode;
   /** Run the action. Its refusal is shown; its success closes the dialog. */
   onSubmit: () => Promise<ActionResult<R>>;
   /** After success, before the page refreshes: go to the new record, show a one-time code. */
@@ -150,7 +159,8 @@ export function FormDialog<R extends object>({
       onClose={onClose}
       title={title}
       description={description}
-      width={width}
+      width={aside ? 'xl' : width}
+      flush={Boolean(aside)}
       leading={
         Glyph ? (
           <span className="flex size-control-md items-center justify-center rounded-control bg-accent-wash text-accent-text">
@@ -160,6 +170,11 @@ export function FormDialog<R extends object>({
       }
       footer={
         <>
+          {summary ? (
+            <p aria-live="polite" className="mr-auto hidden min-w-0 truncate text-body-sm text-ink-muted desktop:block">
+              {summary}
+            </p>
+          ) : null}
           <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
             Cancel
           </Button>
@@ -169,10 +184,22 @@ export function FormDialog<R extends object>({
         </>
       }
     >
-      <form id={formId} onSubmit={submit} className="flex flex-col gap-32 pt-8">
-        {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}
-        {children}
-      </form>
+      {aside ? (
+        <div className="flex flex-col desktop:min-h-full desktop:flex-row">
+          <aside className="flex shrink-0 flex-col gap-24 border-b border-edge bg-band px-24 py-24 desktop:sticky desktop:top-0 desktop:w-dialog-aside desktop:self-start desktop:border-b-0 desktop:border-r">
+            {aside}
+          </aside>
+          <form id={formId} onSubmit={submit} className="flex min-w-0 flex-1 flex-col gap-40 px-24 py-24 desktop:px-32">
+            {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}
+            {children}
+          </form>
+        </div>
+      ) : (
+        <form id={formId} onSubmit={submit} className="flex flex-col gap-32 pt-8">
+          {error ? <InlineNotice tone="stop">{error}</InlineNotice> : null}
+          {children}
+        </form>
+      )}
     </ConsoleOverlay>
   );
 }
@@ -181,10 +208,21 @@ export function FormDialog<R extends object>({
  * A group of fields: a heading in capitals running into a hairline, an optional line saying what the
  * group is for, then the fields, two columns on a desktop.
  */
-export function Fieldset({ legend, hint, columns = 2, children, className }: { legend?: string; hint?: string; columns?: 1 | 2 | 3; children: ReactNode; className?: string }) {
+export function Fieldset({ legend, hint, step, columns = 2, children, className }: { legend?: string; hint?: string; step?: number; columns?: 1 | 2 | 3; children: ReactNode; className?: string }) {
   return (
     <fieldset className={cx('grid grid-cols-1 gap-x-24 gap-y-20', columns === 2 ? 'desktop:grid-cols-2' : columns === 3 ? 'desktop:grid-cols-3' : null, className)}>
-      {legend ? (
+      {legend && step ? (
+        // A numbered step: the number in a ring, the name of the step, and what it is for under it.
+        <legend className="mb-20 flex w-full items-start gap-12">
+          <span aria-hidden="true" className="mt-2 flex size-24 shrink-0 items-center justify-center rounded-dot bg-accent-wash font-mono text-label font-medium text-accent-text ring-1 ring-inset ring-accent/25">
+            {step}
+          </span>
+          <span className="flex min-w-0 flex-col gap-2">
+            <span className="text-body font-medium text-ink">{legend}</span>
+            {hint ? <span className="text-body-sm text-ink-muted">{hint}</span> : null}
+          </span>
+        </legend>
+      ) : legend ? (
         <legend className="mb-16 flex w-full flex-col gap-4">
           <span className="flex items-center gap-12">
             <span className="label-caps shrink-0 text-ink-subtle">{legend}</span>
@@ -330,10 +368,13 @@ export function PhotoField({
   shape = 'square',
   helper = 'A photograph for the floor tile and the Console. JPEG, PNG or WebP.',
   onUploading,
+  layout = 'row',
 }: {
   value: string | null;
   onChange: (url: string | null) => void;
   name: string;
+  /** `panel` is a full-width drop zone for the side column of a two-pane form. */
+  layout?: 'row' | 'panel';
   disabled?: boolean;
   shape?: 'square' | 'round';
   helper?: string;
@@ -359,6 +400,46 @@ export function PhotoField({
     void take(file);
   }
   const initial = name.trim().charAt(0).toUpperCase();
+  if (layout === 'panel') {
+    return (
+      <div className="flex flex-col gap-8">
+        <label
+          onDragOver={(e) => {
+            e.preventDefault();
+            setOver(true);
+          }}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setOver(false);
+            void take(e.dataTransfer.files?.[0]);
+          }}
+          className={cx(
+            'group relative flex min-h-row-floor cursor-pointer items-center gap-12 rounded-card border px-12 py-12 transition-hover focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
+            over ? 'border-dashed border-accent bg-accent-wash' : 'border-dashed border-edge-strong bg-card hover:border-accent hover:bg-accent-wash',
+          )}
+        >
+          <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={choose} disabled={uploading || disabled} aria-label="Choose a photograph" />
+          <span aria-hidden="true" className="flex size-control-md shrink-0 items-center justify-center rounded-control bg-accent-wash text-accent-text">
+            <IconPhotoPlus size={18} stroke={1.5} />
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="text-body-sm font-medium text-ink">{uploading ? 'Uploading' : value ? 'Change the photograph' : 'Add a photograph'}</span>
+            <span className={cx('text-label', error ? 'text-stop' : 'text-ink-subtle')}>{error || 'Drop it here, or click. JPEG, PNG or WebP.'}</span>
+          </span>
+          {uploading ? <span aria-hidden="true" className="absolute inset-0 animate-breathe rounded-card bg-scrim" /> : null}
+        </label>
+        {value ? (
+          <button type="button" onClick={() => onChange(null)} className="inline-flex w-fit items-center gap-6 rounded-sm text-label text-ink-subtle transition-hover hover:text-stop">
+            <IconTrash size={14} stroke={1.5} aria-hidden="true" />
+            Remove it
+          </button>
+        ) : (
+          <span className="text-label text-ink-subtle">{helper}</span>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="flex items-center gap-20">
       <label
@@ -400,6 +481,58 @@ export function PhotoField({
         ) : null}
       </div>
     </div>
+  );
+}
+
+/**
+ * A choice between a few ways, as cards: a name and a line saying what it means, the chosen one
+ * ringed in the accent. A radio group underneath, so arrows and a screen reader work as usual.
+ */
+export function ChoiceCards<T extends string>({ label, value, onChange, options }: { label: string; value: T; onChange: (value: T) => void; options: { value: T; title: string; detail: string; icon?: TablerIcon }[] }) {
+  return (
+    <div role="radiogroup" aria-label={label} className="grid grid-cols-1 gap-12 desktop:col-span-2 desktop:grid-cols-2">
+      {options.map((o) => {
+        const on = o.value === value;
+        const Glyph = o.icon;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => onChange(o.value)}
+            className={cx(
+              'flex items-start gap-12 rounded-card border px-16 py-12 text-left transition-hover',
+              on ? 'border-accent bg-accent-wash ring-1 ring-inset ring-accent/40' : 'border-edge bg-card hover:border-edge-strong hover:bg-band',
+            )}
+          >
+            {Glyph ? (
+              <span aria-hidden="true" className={cx('mt-2 flex size-control-sm shrink-0 items-center justify-center rounded-control', on ? 'bg-accent text-accent-ink' : 'bg-band text-ink-subtle')}>
+                <Glyph size={16} stroke={1.5} />
+              </span>
+            ) : null}
+            <span className="flex min-w-0 flex-col gap-2">
+              <span className={cx('text-body-sm font-medium', on ? 'text-accent-text' : 'text-ink')}>{o.title}</span>
+              <span className="text-label text-ink-muted">{o.detail}</span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The record's facts as they stand, in the side column: a label and a value on each line. */
+export function FactList({ facts }: { facts: { label: string; value: ReactNode; muted?: boolean }[] }) {
+  return (
+    <dl className="flex flex-col">
+      {facts.map((f) => (
+        <div key={f.label} className="flex items-baseline justify-between gap-12 border-t border-edge py-8 first:border-t-0 first:pt-0">
+          <dt className="text-label text-ink-subtle">{f.label}</dt>
+          <dd className={cx('min-w-0 truncate text-right text-body-sm', f.muted ? 'text-ink-subtle' : 'text-ink')}>{f.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

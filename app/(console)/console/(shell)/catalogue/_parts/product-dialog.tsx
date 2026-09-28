@@ -3,13 +3,13 @@
 import { SelectField, TextField } from '@bliss/ui/components/fields';
 import { ProductTile, type TileGlyph } from '@bliss/ui/components/floor/product-tile';
 import { shillings } from '@bliss/shared/money';
-import { IconBottle } from '@tabler/icons-react';
+import { IconBottle, IconGlassFull } from '@tabler/icons-react';
 import { createUuidV7 } from '@bliss/shared/id';
 import { useRouter } from 'next/navigation';
 import { assetUrl } from '@/lib/assets';
 import { useEffect, useMemo, useState } from 'react';
 import { createProduct, updateProduct } from '../../_actions/menu';
-import { Fieldset, FormDialog, PhotoField } from '../../_components/forms';
+import { ChoiceCards, FactList, Fieldset, FormDialog, PhotoField } from '../../_components/forms';
 
 export interface ProductDraft {
   id: string;
@@ -76,6 +76,12 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
   const priceShs = Number(first.price.replace(/,/g, ''));
   const tileName = editing ? f.name : first.name || (first.kind === 'sealed' ? (f.bottle ? `${f.name} ${f.bottle}ml` : f.name) : f.name ? `${f.name} tot` : '');
 
+  const categoryLabel = categoryName || 'Choose one';
+  const priceShown = Number.isFinite(priceShs) && priceShs > 0 ? `KES ${priceShs.toLocaleString('en-KE')}` : null;
+  const summary = f.name.trim()
+    ? [tileName || f.name.trim(), editing ? categoryName : first.kind === 'sealed' ? 'sold sealed' : `poured${first.serve ? `, ${first.serve} ml` : ''}`, editing ? null : (priceShown ?? 'no price yet')].filter(Boolean).join(' · ')
+    : 'Start with its name.';
+
   return (
     <FormDialog<{ id?: string }>
       icon={IconBottle}
@@ -85,6 +91,38 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
       title={editing ? `Edit ${target!.name}` : 'Add a product'}
       description={editing ? 'Its name, codes, bottle and supplier. How it is sold and its prices are on its page.' : 'It goes on sale at the next sync, at the price you set.'}
       submitLabel={editing ? 'Save changes' : 'Add product'}
+      summary={summary}
+      aside={
+        <>
+          {/* What a waiter will tap, as they will see it, while it is being typed. */}
+          <figure className="flex flex-col gap-12">
+            <figcaption className="label-caps text-ink-subtle">On the floor</figcaption>
+            <div data-theme="dark" className="pointer-events-none mx-auto w-tile-preview rounded-card bg-page p-8 shadow-lift" aria-hidden="true">
+              <ProductTile
+                variantId="preview"
+                name={tileName || 'New product'}
+                price={Number.isFinite(priceShs) && priceShs > 0 ? shillings(priceShs) : null}
+                state="available"
+                reason={null}
+                qtyAvailable={0}
+                category="glacier"
+                glyph={glyph}
+                imageUrl={assetUrl(f.imageKey, 256, 256)}
+                onAdd={() => undefined}
+                onLongPress={() => undefined}
+              />
+            </div>
+          </figure>
+          <PhotoField layout="panel" value={assetUrl(f.imageKey, 128, 128)} name={f.name} helper="Optional. Shown on the floor tile and in the Console." onChange={(url) => setF((x) => ({ ...x, imageKey: url }))} onUploading={setUploading} />
+          <FactList
+            facts={[
+              { label: 'Category', value: categoryLabel, muted: !categoryName },
+              ...(editing ? [] : [{ label: 'Sold as', value: first.kind === 'sealed' ? 'Sealed' : 'Poured serve' }, { label: 'Price', value: priceShown ?? 'Not set', muted: !priceShown }]),
+              { label: 'SKU', value: f.sku.trim() || 'Made from the name', muted: !f.sku.trim() },
+            ]}
+          />
+        </>
+      }
       onSubmit={() =>
         editing
           ? updateProduct({ id: target!.id, ...fields })
@@ -104,56 +142,39 @@ export function ProductDialog({ open, onClose, target, categories, suppliers }: 
         if (!editing && 'id' in result && result.id) router.push(`/console/catalogue/products/${result.id}`);
       }}
     >
-      {/* The photograph beside the tile it makes: what a waiter will tap, as they will see it. */}
-      <div className="grid grid-cols-1 items-center gap-24 desktop:grid-cols-[minmax(0,1fr)_auto]">
-        <PhotoField value={assetUrl(f.imageKey, 128, 128)} name={f.name} onChange={(url) => setF((x) => ({ ...x, imageKey: url }))} onUploading={setUploading} />
-        <figure className="flex flex-col items-center gap-8">
-          <div data-theme="dark" className="pointer-events-none w-tile-preview rounded-card bg-page p-8" aria-hidden="true">
-            <ProductTile
-              variantId="preview"
-              name={tileName || 'New product'}
-              price={Number.isFinite(priceShs) && priceShs > 0 ? shillings(priceShs) : null}
-              state="available"
-              reason={null}
-              qtyAvailable={0}
-              category="glacier"
-              glyph={glyph}
-              imageUrl={assetUrl(f.imageKey, 256, 256)}
-              onAdd={() => undefined}
-              onLongPress={() => undefined}
-            />
-          </div>
-          <figcaption className="text-label text-ink-subtle">On the floor</figcaption>
-        </figure>
-      </div>
-      <Fieldset legend="The product" hint="What it is and where it comes from.">
-        <TextField label="Name" value={f.name} onChange={set('name')} placeholder="Gilbeys gin" required autoComplete="off" />
-        <TextField label="Brand" value={f.brand} onChange={set('brand')} placeholder="Gilbeys" autoComplete="off" />
-        <SelectField label="Category" value={f.categoryId} onChange={set('categoryId')} options={categories} required />
-        <SelectField label="Usual supplier" value={f.supplierId} onChange={set('supplierId')} options={[{ value: '', label: 'None yet' }, ...suppliers]} />
+      <Fieldset step={1} legend="What it is" hint="Its name on the menu, and where it sits.">
+        <TextField label="Name" value={f.name} onChange={set('name')} placeholder="Tusker lager" required autoComplete="off" className="desktop:col-span-2" />
+        <SelectField label="Category" value={f.categoryId} onChange={set('categoryId')} options={categories} required helper={categories.length === 0 ? 'Add a category first, in Catalogue, Categories.' : undefined} />
+        <TextField label="Brand" value={f.brand} onChange={set('brand')} placeholder="EABL" autoComplete="off" helper="Optional." />
       </Fieldset>
-      <Fieldset legend="Codes and bottle" hint="For stock, deliveries and pour variance." columns={2}>
-        <TextField label="SKU" value={f.sku} onChange={(e) => setF((x) => ({ ...x, sku: e.target.value.toUpperCase() }))} placeholder="SPR-GLB-750" helper="Letters, numbers and dashes." required autoComplete="off" />
-        <TextField label="Barcode" value={f.barcode} onChange={set('barcode')} inputMode="numeric" placeholder="6161101600125" autoComplete="off" />
-        <TextField label="Bottle size, ml" value={f.bottle} onChange={set('bottle')} inputMode="numeric" placeholder="750" helper="Leave empty for food and anything not poured." />
-        <TextField label="Alcohol, %" value={f.abv} onChange={set('abv')} inputMode="decimal" placeholder="40" />
-      </Fieldset>
+
       {editing ? null : (
-        <Fieldset legend="How it is first sold" hint="More ways to sell it, such as a tot and a double, are added on its page." columns={2}>
-          <SelectField
+        <Fieldset step={2} legend="How it is first sold" hint="A tot and a double, or a bottle and a glass, are added on its page after." columns={2}>
+          <ChoiceCards
             label="Sold as"
             value={first.kind}
-            onChange={(e) => setFirst((x) => ({ ...x, kind: e.target.value as 'sealed' | 'serve' }))}
+            onChange={(kind) => setFirst((x) => ({ ...x, kind }))}
             options={[
-              { value: 'sealed', label: 'A sealed bottle, can or plate' },
-              { value: 'serve', label: 'A serve poured from a bottle' },
+              { value: 'sealed', title: 'Sealed', detail: 'A bottle, can or plate, sold whole.', icon: IconBottle },
+              { value: 'serve', title: 'Poured', detail: 'A measure poured from a bottle.', icon: IconGlassFull },
             ]}
           />
-          <TextField label="Called" value={first.name} onChange={(e) => setFirst((x) => ({ ...x, name: e.target.value }))} placeholder={first.kind === 'sealed' ? 'Gilbeys 750ml' : 'Tot'} helper="What the floor tile says." />
-          {first.kind === 'serve' ? <TextField label="Serve, ml" value={first.serve} onChange={(e) => setFirst((x) => ({ ...x, serve: e.target.value }))} inputMode="numeric" placeholder="25" required /> : null}
-          <TextField label="Price, KES" value={first.price} onChange={(e) => setFirst((x) => ({ ...x, price: e.target.value }))} inputMode="decimal" placeholder="1,480" helper="On the base list. VAT is included." required />
+          <TextField label="Price, KES" value={first.price} onChange={(e) => setFirst((x) => ({ ...x, price: e.target.value }))} inputMode="decimal" placeholder="300" helper="On the Standard list. VAT included." required />
+          {first.kind === 'serve' ? (
+            <TextField label="Serve, ml" value={first.serve} onChange={(e) => setFirst((x) => ({ ...x, serve: e.target.value }))} inputMode="numeric" placeholder="25" required />
+          ) : (
+            <TextField label="On the tile as" value={first.name} onChange={(e) => setFirst((x) => ({ ...x, name: e.target.value }))} placeholder={f.name ? (f.bottle ? `${f.name} ${f.bottle}ml` : f.name) : 'Tusker lager 500ml'} helper="Optional. The name and size by default." />
+          )}
         </Fieldset>
       )}
+
+      <Fieldset step={editing ? 2 : 3} legend="Bottle and codes" hint="For stock, deliveries and pour variance. All optional." columns={2}>
+        <TextField label="Bottle size, ml" value={f.bottle} onChange={set('bottle')} inputMode="numeric" placeholder="500" helper="Empty for food and anything not poured." />
+        <TextField label="Alcohol, %" value={f.abv} onChange={set('abv')} inputMode="decimal" placeholder="4.2" />
+        <TextField label="SKU" value={f.sku} onChange={(e) => setF((x) => ({ ...x, sku: e.target.value.toUpperCase() }))} placeholder="Made from the name" helper="Left empty, one is made for it." autoComplete="off" />
+        <TextField label="Barcode" value={f.barcode} onChange={set('barcode')} inputMode="numeric" placeholder="6161101600125" autoComplete="off" />
+        <SelectField label="Usual supplier" value={f.supplierId} onChange={set('supplierId')} options={[{ value: '', label: 'None yet' }, ...suppliers]} className="desktop:col-span-2" />
+      </Fieldset>
     </FormDialog>
   );
 }

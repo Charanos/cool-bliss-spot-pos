@@ -126,7 +126,7 @@ export function OrderCard({
       className={cx(
         paneClass({ emphasis }),
         'group relative flex w-full flex-col justify-between rounded-sheet tablet:rounded-sheet p-12 tablet:p-20 text-left transition-all duration-300 min-h-[200px] cursor-pointer select-none',
-        'bg-raised/70 backdrop-blur-glass border',
+        'surface-card border',
         isNeedsYou && 'border-stop/40 hover:border-stop/70 glow-stop',
         isPoured && 'border-poured/45 hover:border-poured/75 glow-poured',
         isServed && 'border-served/40 hover:border-served/70 glow-served',

@@ -38,6 +38,8 @@ export interface StockRow {
   holdReason: string | null;
   variancePct: number | null;
   attention: boolean;
+  /** Stock never received, counted or opened: it sells, and needs its first count or delivery. */
+  counted: boolean;
 }
 
 /**
@@ -93,7 +95,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         holdId: hold?.id ?? null,
         holdReason: hold?.reason ?? null,
         variancePct: variance?.pct ?? null,
-        attention: entry.state !== 'available' || totalOnHand <= product.reorderPoint || totalOnHand <= threshold || (variance !== null && Math.abs(variance.pct) > 2),
+        counted: inventory.stockRecorded(variant.id),
+        attention: !inventory.stockRecorded(variant.id) || entry.state !== 'available' || totalOnHand <= product.reorderPoint || totalOnHand <= threshold || (variance !== null && Math.abs(variance.pct) > 2),
       });
     }
   }

@@ -171,7 +171,7 @@ export function DeskNav({
           more workspace. */}
       <div className="shrink-0 p-8">
         <div className="flex flex-col gap-4 rounded-card bg-desk-well p-4 shadow-well">
-          <Workspace item={settings} pathname={pathname} folded={folded} labelClass={label} expanded={expanded === settings.href} onExpand={(open) => setOpened(open ? settings.href : '')} />
+          <Workspace rise item={settings} pathname={pathname} folded={folded} labelClass={label} expanded={expanded === settings.href} onExpand={(open) => setOpened(open ? settings.href : '')} />
           <div className={cx('justify-center', collapsed ? 'flex' : 'hidden')}>{toggleButton('')}</div>
           <div className="border-t border-hairline pt-4">
             <AccountMenu {...account} compact={collapsed} />
@@ -217,7 +217,10 @@ function Workspace({
   labelClass,
   expanded,
   onExpand,
+  rise = false,
 }: {
+  /** At the foot of the desk: its pages open upward, above it, as the account menu does. */
+  rise?: boolean;
   item: DeskItem;
   pathname: string;
   folded: 'true' | 'below';
@@ -229,7 +232,7 @@ function Workspace({
   const pages = item.pages && item.pages.length > 1 ? item.pages : null;
   const listId = useId();
   const anchor = useRef<HTMLDivElement>(null);
-  const [flyout, setFlyout] = useState<{ top: number; left: number } | null>(null);
+  const [flyout, setFlyout] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
   const timer = useRef<number | null>(null);
   const wideOnly = folded === 'true' ? 'hidden' : 'hidden desktop:flex';
 
@@ -237,7 +240,7 @@ function Workspace({
     if (!pages || (folded === 'below' && window.matchMedia('(min-width: 1280px)').matches)) return;
     if (timer.current) window.clearTimeout(timer.current);
     const r = anchor.current?.getBoundingClientRect();
-    if (r) setFlyout({ top: r.top, left: r.right + 8 });
+    if (r) setFlyout(rise ? { bottom: window.innerHeight - r.bottom, left: r.right + 8 } : { top: r.top, left: r.right + 8 });
   };
   const hideFlyout = () => {
     if (timer.current) window.clearTimeout(timer.current);
@@ -245,7 +248,7 @@ function Workspace({
   };
 
   return (
-    <div ref={anchor} onMouseEnter={showFlyout} onMouseLeave={hideFlyout}>
+    <div ref={anchor} onMouseEnter={showFlyout} onMouseLeave={hideFlyout} className={rise ? 'flex flex-col-reverse' : undefined}>
       <div className="relative flex items-center">
         <Link
           href={item.href}
@@ -276,7 +279,7 @@ function Workspace({
             aria-label={expanded ? `Hide the pages in ${item.label}` : `Show the pages in ${item.label}`}
             className={cx('focus-ring-desk absolute right-4 size-row-compact items-center justify-center rounded-sm text-ink-subtle transition-hover hover:bg-desk-hover hover:text-ink', wideOnly)}
           >
-            <IconChevronDown size={14} stroke={1.75} aria-hidden="true" className={cx('transition-hover', expanded ? 'rotate-180' : null)} />
+            <IconChevronDown size={14} stroke={1.75} aria-hidden="true" className={cx('transition-hover', expanded !== rise ? 'rotate-180' : null)} />
           </button>
         ) : null}
       </div>
@@ -317,7 +320,7 @@ function Workspace({
               onKeyDown={(e) => e.key === 'Escape' && setFlyout(null)}
               onMouseEnter={() => timer.current && window.clearTimeout(timer.current)}
               onMouseLeave={hideFlyout}
-              style={{ top: flyout.top, left: flyout.left }}
+              style={{ top: flyout.top, bottom: flyout.bottom, left: flyout.left }}
               className="fixed z-popover w-popover-min rounded-md border border-edge bg-card p-4 shadow-popover"
             >
               <p className="label-caps px-8 pb-4 pt-6 text-ink-subtle">{item.label}</p>

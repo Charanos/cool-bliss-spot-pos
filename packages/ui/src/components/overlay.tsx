@@ -33,7 +33,9 @@ export interface OverlayProps {
   /** Pixels kept clear at the bottom for a base layer that must stay visible. */
   bottomOffset?: number;
   /** Width of the panel. Sheets span the content region by default. */
-  width?: 'sm' | 'md' | 'lg' | 'full';
+  width?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  /** The body without its own padding, for a layout that sets its own (a two-pane form). */
+  flush?: boolean;
   /** Where the sheet sits horizontally within the viewport, for sheets over one column. */
   align?: 'start' | 'center' | 'end';
   onOpened?: () => void;
@@ -51,6 +53,7 @@ const widthClass = {
   sm: 'w-[min(440px,calc(100vw-32px))]',
   md: 'w-[min(580px,calc(100vw-32px))]',
   lg: 'w-[min(720px,calc(100vw-32px))]',
+  xl: 'w-[min(960px,calc(100vw-32px))]',
   full: 'w-[calc(100vw-32px)]',
 } as const;
 
@@ -62,6 +65,7 @@ const sheetWidthClass = {
   sm: 'w-full pad:w-[min(440px,calc(100vw-32px))]',
   md: 'w-full pad:w-[min(580px,calc(100vw-32px))]',
   lg: 'w-full pad:w-[min(720px,calc(100vw-32px))]',
+  xl: 'w-full pad:w-[min(960px,calc(100vw-32px))]',
   full: 'w-full pad:w-[calc(100vw-32px)]',
 } as const;
 
@@ -89,6 +93,7 @@ export function Overlay({
   eyebrow,
   leading,
   footer,
+  flush = false,
   children,
   bottomOffset = 0,
   width = 'md',
@@ -253,7 +258,7 @@ export function Overlay({
             onScroll={measure}
             className={cx(
               'min-h-0 flex-1 overflow-y-auto overscroll-contain',
-              solid ? cx('px-24', footer ? 'pb-16' : 'pb-24', hideTitle ? 'pt-24' : 'pt-4') : cx('px-16 pad:px-32', footer ? 'pb-16 pad:pb-24' : 'pb-20 pad:pb-32', hideTitle ? 'pt-20 pad:pt-32' : 'pt-4'),
+              flush ? null : solid ? cx('px-24', footer ? 'pb-16' : 'pb-24', hideTitle ? 'pt-24' : 'pt-4') : cx('px-16 pad:px-32', footer ? 'pb-16 pad:pb-24' : 'pb-20 pad:pb-32', hideTitle ? 'pt-20 pad:pt-32' : 'pt-4'),
             )}
           >
             <SurfaceContext.Provider value={surface}>{children}</SurfaceContext.Provider>

@@ -135,17 +135,17 @@ export function ToneChip({ tone, children, dot = true, className }: { tone: Tone
 const pillTone = washTone;
 
 /**
- * A state on a card: a tinted pill with a dot and a word or two. One line always, the same height
- * on every screen (24, 28 from `pad`), so it never pushes the title it sits beside onto a second
- * line. Put the long form in `more`: it shows from `pad` up and drops away on a phone.
+ * A state on a card: a slim tinted pill with a dot and a word or two, 24px on every screen. One
+ * line always, so it never pushes the title beside it onto a second line. The long form in `more`
+ * reads quieter, from `pad` up.
  */
 export function StatePill({ tone, children, more, live, className }: { tone: Tone; children: React.ReactNode; more?: React.ReactNode; live?: boolean; className?: string }) {
   return (
-    <span className={cx('inline-flex h-24 shrink-0 items-center gap-6 whitespace-nowrap rounded-dot px-8 text-label font-medium pad:h-row-compact pad:px-12', pillTone[tone], className)}>
+    <span className={cx('inline-flex h-24 shrink-0 items-center gap-6 whitespace-nowrap rounded-pill pl-8 pr-12 text-label font-medium', pillTone[tone], className)}>
       <Dot tone={tone} className={live ? 'animate-breathe' : undefined} />
       <span>
         {children}
-        {more ? <span className="hidden pad:inline"> {more}</span> : null}
+        {more ? <span className="hidden font-regular opacity-80 pad:inline"> {more}</span> : null}
       </span>
     </span>
   );

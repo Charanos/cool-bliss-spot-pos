@@ -308,13 +308,16 @@ export function PageHeader({
 }
 
 /**
- * A row of figures that opens a page, under a header without its own rule: the rule sits beneath
- * the figures, so the header and its numbers read as one block and the working list starts after.
+ * A row of figures that opens a page, under a header without its own rule: bounded by a rule above
+ * and below with the same room on each side, so the figures stand apart from the header and from
+ * the working list that starts after them. The same boundary as the Console's KPI strip.
  */
 export function FiguresRow({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
   return (
-    <section aria-label={label} className={cx('border-b border-rule-raised/30 pb-16 tablet:pb-24', className)}>
-      {children}
+    <section aria-label={label} className="flex flex-col gap-16 tablet:gap-24">
+      <div aria-hidden="true" className="rule-strip" />
+      <div className={className}>{children}</div>
+      <div aria-hidden="true" className="rule-strip" />
     </section>
   );
 }

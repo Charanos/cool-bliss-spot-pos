@@ -20,6 +20,7 @@
     "budget": "node scripts/bundle-budget.mjs",
     "ci": "pnpm tokens:check && pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm legacy && pnpm budget",
     "db:seed": "tsx --env-file=.env.local scripts/db-seed.ts",
+    "db:handover": "tsx --conditions=react-server --env-file=.env.local scripts/db-seed.ts --handover",
     "legacy": "node scripts/check-legacy-browsers.mjs"
   },
   "dependencies": {

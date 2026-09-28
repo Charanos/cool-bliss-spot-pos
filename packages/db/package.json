@@ -9,6 +9,7 @@
     "./seed/organisation": "./seed/organisation.ts",
     "./seed/floor": "./seed/floor.ts",
     "./seed/history": "./seed/history.ts",
+    "./seed/handover": "./seed/handover.ts",
     "./seed/ids": "./seed/ids.ts",
     "./seed/types": "./seed/types.ts"
   },
