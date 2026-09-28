@@ -25,12 +25,14 @@ export default async function WhatsappPage() {
   // A real alert getting through means its template is approved; the test uses WhatsApp's own.
   const approved = messages.some((m) => m.kind !== 'test' && reached(m));
   const receipts = messages.some((m) => m.status === 'delivered' || m.status === 'read');
+  const delivery = notify.delivery();
 
   return (
     <>
       <ViewHeader page="/console/settings/whatsapp" />
       <WhatsappView
         canManage={identity.can(actor.staffId, 'staff.manage')}
+        now={Date.now()}
         timezone={identity.outlet().timezone}
         webhookUrl={`https://${host}/api/whatsapp/webhook`}
         setup={{
@@ -47,10 +49,17 @@ export default async function WhatsappPage() {
           alerts: s.alerts,
           voidAlert: formatFigure(s.voidAlertCents, { decimals: 'whole' }).replace(/,/g, ''),
         }}
+        lastTo={Object.fromEntries(
+          s.recipients.map((r) => {
+            const last = messages.find((m) => m.to === r.phone);
+            return [displayPhone(r.phone), last ? { status: last.status, at: last.updatedAt } : null];
+          }),
+        )}
+        delivery={delivery}
         templates={ALERT_ORDER.map((k) => {
           const t = TEMPLATES[k];
           const last = messages.find((m) => m.kind === k);
-          return { ...t, sample: render(t.body, t.example), last: last ? { text: last.preview, at: last.createdAt } : null };
+          return { ...t, sample: render(t.body, t.example), last: last ? { text: last.preview, at: last.createdAt, status: last.status } : null, week: delivery.byKind[k] ?? 0 };
         })}
         messages={messages.map((m) => ({ id: m.id, kind: m.kind, to: displayPhone(m.to), preview: m.preview, status: m.status, attempts: m.attempts, error: m.lastError, at: m.createdAt }))}
       />

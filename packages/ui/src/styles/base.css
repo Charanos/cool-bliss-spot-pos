@@ -1198,3 +1198,57 @@
     inset-inline: min(0px, calc((100% - 44px) / 2));
   }
 }
+
+/*
+ * Gauges draw in once, on arrival: a ring sweeps to its value, a bar or column grows from its
+ * baseline. The final shape is set on the element itself, so a browser that skips the animation,
+ * or someone who asked for less motion, sees it straight away.
+ */
+@keyframes bliss-ring-sweep {
+  from {
+    stroke-dasharray: 0 100;
+  }
+}
+
+@keyframes bliss-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes bliss-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@utility gauge-sweep {
+  animation: bliss-ring-sweep 900ms var(--ease-out) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility gauge-grow-x {
+  transform-origin: left center;
+  animation: bliss-grow-x 700ms var(--ease-out) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility gauge-grow-y {
+  transform-origin: center bottom;
+  animation: bliss-grow-y 700ms var(--ease-out) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+/* Something that has just arrived (a message bubble, a save bar) rises into place once. */
+@utility enter-rise {
+  animation: bliss-notice-in 320ms var(--ease-out) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

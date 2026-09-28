@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { formatAgo, formatDateTime, formatElapsed, plural } from '@bliss/shared/format';
-import { isPositive } from '@bliss/shared/money';
+import { type Cents, isPositive } from '@bliss/shared/money';
 import { dataset } from '../_data/source';
 import { ping, storeEnabled } from '../_data/store';
 import * as catalogue from '../catalogue/service';
@@ -14,6 +14,7 @@ import * as reporting from '../reporting/service';
 import * as settlement from '../settlement/service';
 import * as sync from '../sync/service';
 import * as trade from '../trade/service';
+import { type VitalSample, sampleVitals, vitals } from './vitals';
 
 /**
  * The app's vital signs, for Console, Settings, Health. Every check reads what is true now and says
@@ -39,11 +40,40 @@ export interface HealthSystem {
   checks: HealthCheck[];
 }
 
+export type HealthTone = 'poured' | 'low' | 'stop' | 'info' | 'accent' | 'neutral';
+
+export interface StationTile {
+  id: string;
+  label: string;
+  kind: 'floor' | 'counter' | 'bar' | 'console';
+  state: 'online' | 'offline' | 'pairing' | 'never';
+  lastSeenAt: number | null;
+  unsynced: number;
+  who: string | null;
+  version: string;
+  behind: boolean;
+  personal: boolean;
+}
+
 export interface HealthReport {
   at: number;
   status: HealthStatus;
+  /** 100 with nothing wrong; a problem costs 12, a thing to look at 4. */
+  score: number;
   counts: Record<'ok' | 'warn' | 'fail', number>;
   systems: HealthSystem[];
+  /** Every problem, then everything to look at, each with the system it belongs to. */
+  attention: (HealthCheck & { system: HealthSystem['key'] })[];
+  vitals: { samples: readonly VitalSample[]; latest: VitalSample; since: number; node: string; build: string; uptimeMs: number };
+  stations: StationTile[];
+  trade: { hours: { key: string; label: string; value: Cents }[]; openTabs: number; drawers: number; shifts: number; bills: number; lastBillAt: number | null };
+  stock: {
+    tracked: number;
+    segments: { key: string; label: string; value: number; tone: HealthTone }[];
+    coverage: { key: string; label: string; done: number; total: number }[];
+  };
+  alerts: { configured: boolean } & notify.Delivery;
+  setup: { done: number; total: number };
 }
 
 const HOUR = 3_600_000;
@@ -181,7 +211,83 @@ function setup(): HealthCheck[] {
   ];
 }
 
+
+function stationTiles(): StationTile[] {
+  const version = process.env.NEXT_PUBLIC_BLISS_VERSION ?? '';
+  const order = { online: 0, pairing: 1, offline: 2, never: 3 } as const;
+  return identity
+    .devices()
+    .filter((d) => d.status === 'active')
+    .map((d): StationTile => ({
+      id: d.id,
+      label: d.label,
+      kind: d.kind,
+      state: d.pairingPending ? 'pairing' : d.online ? 'online' : d.lastSeenAt ? 'offline' : 'never',
+      lastSeenAt: d.lastSeenAt,
+      unsynced: d.unsyncedCount,
+      who: d.signedInStaffId ? identity.displayName(d.signedInStaffId) : null,
+      version: d.appVersion,
+      behind: Boolean(version && d.appVersion && d.appVersion !== version),
+      personal: Boolean(d.personalTo),
+    }))
+    .sort((a, b) => order[a.state] - order[b.state] || Number(a.personal) - Number(b.personal) || a.label.localeCompare(b.label));
+}
+
+function tradeFigures(): HealthReport['trade'] {
+  const clock = reporting.clock();
+  const bills = settlement.billsOn(clock.current).filter((b) => b.status !== 'open');
+  const settled = bills.map((b) => b.settledAt ?? 0).filter((t) => t > 0);
+  return {
+    hours: reporting.salesByHour(clock.current).map((h) => ({ key: h.hour, label: h.hour, value: h.value })),
+    openTabs: trade.openTabs().length,
+    drawers: settlement.drawerSessions().filter((s) => s.status !== 'closed').length,
+    shifts: dataset().shifts.filter((s) => s.status === 'open').length,
+    bills: bills.length,
+    lastBillAt: settled.length > 0 ? Math.max(...settled) : null,
+  };
+}
+
+function stockFigures(): HealthReport['stock'] {
+  const products = catalogue.products().filter((p) => p.status === 'active');
+  const variants = catalogue.variants().filter((v) => v.status === 'active' && products.some((p) => p.id === v.productId));
+  const tracked = catalogue.stockVariants().filter((v) => {
+    const p = catalogue.productById(v.productId);
+    return p?.status === 'active' && catalogue.categoryById(p.categoryId)?.trackStock && !p.unitsInHouse;
+  });
+  // Each item in exactly one state, the most pressing first.
+  let below = 0;
+  let recount = 0;
+  let uncounted = 0;
+  let good = 0;
+  for (const v of tracked) {
+    if (inventory.onHand(v.id) < 0) below += 1;
+    else if (inventory.needsCount(v.id)) recount += 1;
+    else if (!inventory.stockRecorded(v.id)) uncounted += 1;
+    else good += 1;
+  }
+  return {
+    tracked: tracked.length,
+    segments: [
+      { key: 'good', label: 'In good order', value: good, tone: 'poured' },
+      { key: 'uncounted', label: 'Not counted yet', value: uncounted, tone: 'info' },
+      { key: 'recount', label: 'Count needed', value: recount, tone: 'low' },
+      { key: 'below', label: 'Below zero', value: below, tone: 'stop' },
+    ],
+    coverage: [
+      { key: 'priced', label: 'Priced', done: variants.filter((v) => pricing.currentPrice(v.id)).length, total: variants.length },
+      { key: 'counted', label: 'Counted', done: tracked.length - uncounted, total: tracked.length },
+      { key: 'costed', label: 'Costed', done: tracked.filter((v) => isPositive(inventory.averageCost(v.id))).length, total: tracked.length },
+      { key: 'photos', label: 'Photos', done: products.filter((p) => p.imageKey).length, total: products.length },
+    ],
+  };
+}
+
+function alertFigures(): HealthReport['alerts'] {
+  return { configured: whatsappEnv().configured, ...notify.delivery() };
+}
+
 export async function report(): Promise<HealthReport> {
+  const latest = await sampleVitals({ force: true });
   const systems: HealthSystem[] = [];
   const add = (key: HealthSystem['key'], title: string, good: string, checks: HealthCheck[]) => systems.push({ key, title, summary: summarise(checks, good), checks });
   add('server', 'Server and database', 'Answering, and up to date', await server());
@@ -192,10 +298,29 @@ export async function report(): Promise<HealthReport> {
   add('setup', 'Set-up', 'Everything in place', setup());
   const all = systems.flatMap((s) => s.checks);
   const counts = { ok: all.filter((c) => c.status === 'ok').length, warn: all.filter((c) => c.status === 'warn').length, fail: all.filter((c) => c.status === 'fail').length };
-  return { at: Date.now(), status: worst(all), counts, systems };
+  const attention = systems
+    .flatMap((s) => s.checks.map((c) => ({ ...c, system: s.key })))
+    .filter((c) => c.status === 'fail' || c.status === 'warn')
+    .sort((a, b) => (a.status === b.status ? 0 : a.status === 'fail' ? -1 : 1));
+  const setupChecks = systems.find((s) => s.key === 'setup')!.checks;
+  const samples = vitals();
+  return {
+    at: Date.now(),
+    status: worst(all),
+    score: Math.max(0, 100 - counts.fail * 12 - counts.warn * 4),
+    counts,
+    systems,
+    attention,
+    vitals: { samples, latest, since: samples[0]?.at ?? latest.at, node: process.version, build: process.env.NEXT_PUBLIC_BLISS_VERSION ?? 'dev', uptimeMs: process.uptime() * 1000 },
+    stations: stationTiles(),
+    trade: tradeFigures(),
+    stock: stockFigures(),
+    alerts: alertFigures(),
+    setup: { done: setupChecks.filter((c) => c.status === 'ok').length, total: setupChecks.length },
+  };
 }
 
-export { worst as worstOf };
+export { worst as worstOf, uptime as formatUptime };
 
 /** How long the server has been up, in the unit that reads best: 12 min, 3h05, 2 days 4h. */
 function uptime(ms: number): string {
