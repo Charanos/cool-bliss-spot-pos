@@ -71,7 +71,7 @@ export function PulsePanel({ d }: { d: OverviewData }) {
     { icon: IconDatabase, label: 'Checks', value: h.counts.fail + h.counts.warn > 0 ? `${h.counts.fail + h.counts.warn} to see to` : `All ${h.counts.ok} pass`, tone, href: '/console/settings/health' },
   ];
   return (
-    <Panel id="overview-pulse" icon={IconActivityHeartbeat} tone={tone} title="System health" subtitle={h.status === 'fail' ? 'Something needs fixing' : h.status === 'warn' ? 'Running, a few things to look at' : 'Everything is healthy'} href="/console/settings/health" hrefLabel="Health" className="tablet:col-span-2 desktop:col-span-1">
+    <Panel id="overview-pulse" icon={IconActivityHeartbeat} tone={tone} title="System health" subtitle={h.status === 'fail' ? 'Something needs fixing' : h.status === 'warn' ? 'Running, a few things to look at' : 'Everything is healthy'} href="/console/settings/health" hrefLabel="Health">
       <div className="flex items-center gap-20 px-20 py-16">
         <RingGauge value={h.score / 100} tone={tone} size="lg" label={`Health score ${h.score} of 100`}>
           <span className="font-mono tabular text-num-kpi text-ink">{h.score}</span>

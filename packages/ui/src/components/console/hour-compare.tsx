@@ -22,7 +22,7 @@ export function HourCompare({ hours, usualLabel, caption, height = 240 }: { hour
   const peak = hours.reduce((m, h) => (h.tonight > m.tonight ? h : m), hours[0] ?? { hour: '', tonight: 0, usual: null });
   const hasUsual = hours.some((h) => (h.usual ?? 0) > 0);
   return (
-    <figure aria-label={caption} className="flex w-full flex-col gap-8">
+    <figure aria-label={caption} className="flex w-full flex-col gap-8 min-w-0 overflow-hidden">
       <ul aria-hidden="true" className="flex flex-wrap items-center gap-x-16 gap-y-4 text-micro text-ink-muted">
         <li className="flex items-center gap-6">
           <span className="size-8 rounded-sm bg-accent" />
@@ -36,7 +36,7 @@ export function HourCompare({ hours, usualLabel, caption, height = 240 }: { hour
         ) : null}
       </ul>
       <div style={{ height }} aria-hidden="true">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <ComposedChart data={hours as HourPair[]} margin={{ top: 12, right: 8, bottom: 0, left: 0 }} barCategoryGap="22%">
             <CartesianGrid vertical={false} stroke="var(--color-grid)" strokeDasharray="2 4" />
             <XAxis dataKey="hour" tickFormatter={(h: string) => h.slice(0, 2)} tickLine={false} axisLine={false} tick={{ fill: 'var(--color-ink-subtle)', fontSize: 10, fontFamily: 'var(--font-mono)' }} />

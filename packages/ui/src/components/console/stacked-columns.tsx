@@ -37,7 +37,7 @@ export function StackedColumns({ data, series, caption, height = 140, className 
   const rows = data.map((d) => ({ key: d.key, label: d.label, total: series.reduce((a, s) => a + (d.values[s.key] ?? 0), 0), ...d.values }));
   const top = series.at(-1)?.key;
   return (
-    <figure aria-label={caption} className={cx('flex flex-col gap-8', className)}>
+    <figure aria-label={caption} className={cx('flex flex-col gap-8 min-w-0 overflow-hidden', className)}>
       <ul aria-hidden="true" className="flex flex-wrap gap-x-16 gap-y-4">
         {series.map((s) => (
           <li key={s.key} className="flex items-center gap-6 text-micro text-ink-muted">
@@ -47,7 +47,7 @@ export function StackedColumns({ data, series, caption, height = 140, className 
         ))}
       </ul>
       <div style={{ height }} aria-hidden="true">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <BarChart data={rows} margin={{ top: 16, right: 4, bottom: 0, left: 0 }} barCategoryGap="24%">
             <CartesianGrid vertical={false} stroke="var(--color-grid)" strokeDasharray="2 4" />
             <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-ink-subtle)', fontSize: 10, fontFamily: 'var(--font-mono)' }} />
