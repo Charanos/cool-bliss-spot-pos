@@ -38,7 +38,7 @@ export function Panel({
   children: ReactNode;
 }) {
   return (
-    <Card aria-labelledby={`${id}-title`} tone={cardTone} className={cx('h-full', className)}>
+    <Card aria-labelledby={`${id}-title`} tone={cardTone} className={className}>
       <CardHeader band level="h2" titleId={`${id}-title`} icon={icon} tone={tone} title={title} subtitle={subtitle} meta={meta} actions={actions} />
       <div className="flex flex-1 flex-col">{children}</div>
       {href ? <PanelLink href={href}>{hrefLabel ?? 'Open'}</PanelLink> : null}

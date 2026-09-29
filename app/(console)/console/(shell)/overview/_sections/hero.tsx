@@ -61,7 +61,7 @@ export function OverviewHero({ d }: { d: OverviewData }) {
           </p>
         </div>
 
-        <div className="flex min-h-[260px] flex-col gap-8 rounded-control bg-card/60 px-16 pb-8 pt-12 shadow-chip">
+        <div className="flex flex-col gap-8 rounded-control bg-card/60 px-16 pb-8 pt-12 shadow-chip">
           <p className="flex items-baseline justify-between gap-12 text-body-sm">
             <span className="text-ink-muted">The last seven nights</span>
             <Money value={weekTotal} size="num-sm" decimals="round" tone="muted" />

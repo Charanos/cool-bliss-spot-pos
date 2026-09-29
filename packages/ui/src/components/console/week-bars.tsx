@@ -25,9 +25,9 @@ export function WeekBars({ nights, currentKey, height = 150, caption }: { nights
   const traded = nights.filter((n) => n.shillings > 0);
   const usual = traded.length > 1 ? Math.round(traded.reduce((a, n) => a + n.shillings, 0) / traded.length) : null;
   return (
-    <figure aria-label={caption} className="w-full">
+    <figure aria-label={caption} className="w-full min-w-0 overflow-hidden">
       <div style={{ height }} aria-hidden="true">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <BarChart data={nights as NightBar[]} margin={{ top: 18, right: 36, bottom: 0, left: 4 }} barCategoryGap="18%">
             <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-ink-subtle)', fontSize: 10, fontFamily: 'var(--font-mono)' }} />
             {usual !== null ? (
