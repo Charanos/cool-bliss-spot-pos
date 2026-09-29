@@ -82,7 +82,7 @@ export function costedMargin(lines: readonly OrderLine[]): { revenue: Cents; cos
 }
 
 function linesOn(date: IsoDate) {
-  return trade.linesBetween(date, date);
+  return settlement.soldLinesBetween(date, date);
 }
 
 export interface Headline {
@@ -132,7 +132,7 @@ export function salesByHour(date: IsoDate) {
   const hours = [16, 17, 18, 19, 20, 21, 22, 23, 0, 1];
   const buckets = new Map<number, Cents>(hours.map((h) => [h, ZERO]));
   for (const line of linesOn(date)) {
-    const firedAt = trade.orderFiredAt(line.orderId);
+    const firedAt = trade.orderFiredAt(line.orderId) ?? line.servedAt;
     if (!firedAt) continue;
     const hour = zonedParts(firedAt, tz).hour;
     if (!buckets.has(hour)) continue;
@@ -176,7 +176,7 @@ export interface MoverRow {
 }
 
 export function topMovers(from: IsoDate, to: IsoDate, limit = 6): MoverRow[] {
-  const lines = trade.linesBetween(from, to);
+  const lines = settlement.soldLinesBetween(from, to);
   const byProduct = new Map<string, OrderLine[]>();
   for (const l of lines) {
     const product = catalogue.productOfVariant(l.productVariantId);
@@ -456,7 +456,7 @@ export function salesByDay(from: IsoDate, to: IsoDate) {
 }
 
 export function salesByCategory(from: IsoDate, to: IsoDate) {
-  const lines = trade.linesBetween(from, to);
+  const lines = settlement.soldLinesBetween(from, to);
   const byCat = new Map<string, OrderLine[]>();
   for (const l of lines) {
     const cat = catalogue.categoryOfVariant(l.productVariantId);
@@ -499,7 +499,7 @@ export function salesSummary(from: IsoDate, to: IsoDate, previous: { from: IsoDa
   const bills = settled(from, to);
   const netSales = sum(bills.map(settlement.billNet));
   const before = sum(settled(previous.from, previous.to).map(settlement.billNet));
-  const lines = trade.linesBetween(from, to);
+  const lines = settlement.soldLinesBetween(from, to);
   const voided = trade.voidedBetween(from, to);
   return {
     netSales,

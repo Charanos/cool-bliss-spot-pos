@@ -149,7 +149,17 @@ export default function TabScreen() {
       setOverlay({ kind: 'modifiers', variantId });
       return;
     }
-    const name = grid?.tiles.find((t) => t.variantId === variantId)?.name ?? 'Item';
+    const tile = grid?.tiles.find((t) => t.variantId === variantId);
+    const name = tile?.name ?? 'Item';
+    // Never more on the tab than is on the shelf: count every seat's unfired lines of this item.
+    if (tile && tile.qtyAvailable < 999) {
+      let drafted = 0;
+      for (const group of detail.groups) for (const { line, state } of group.lines) if (state === 'draft' && line.productVariantId === variantId) drafted += line.qty;
+      if (drafted + 1 > Math.floor(tile.qtyAvailable)) {
+        notify({ key: `short:${variantId}`, tone: 'warning', title: `Only ${Math.max(0, Math.floor(tile.qtyAvailable))} ${name} left`, body: drafted > 0 ? 'All of them are already on this tab.' : 'The bar has none to pour.' });
+        return;
+      }
+    }
     void run(() => addItem({ tabId, seat: detail.selected, seatName, variantId, name }));
   };
   searchAdd.current = onAdd;

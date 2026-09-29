@@ -1,10 +1,11 @@
 import 'server-only';
 
-import type { Bill, TenderKind } from '@bliss/shared/domain';
+import type { Bill, OrderLine, TenderKind } from '@bliss/shared/domain';
 import { type Cents, ZERO, add, isPositive, subtract, sum } from '@bliss/shared/money';
 import type { IsoDate } from '@bliss/shared/time';
 import { CASH_OUT, type DrawerSession } from '@bliss/db/seed/types';
 import { expectedCash } from '@bliss/shared/settlement';
+import * as trade from '../trade/service';
 import { settlementTables } from './schema';
 
 /** Read-only views of settlement's tables, for another module's report. Reads go through the service. */
@@ -228,4 +229,48 @@ export function cashMovementsFor(sessionId: string) {
   return settlementTables()
     .cashMovements.filter((m) => m.drawerSessionId === sessionId)
     .sort((a, b) => a.occurredAt - b.occurredAt);
+}
+
+/**
+ * Everything sold on business dates in [from, to]: every fired line on a tab, and every item of a
+ * quick sale at the counter, which is sold straight onto a bill with no tab or order. A quick sale's
+ * item is given the shape of a line (its id is the bill line's, the same id its stock movement
+ * carries, so its cost is found) and counts as served when the bill was settled. Voided bills give
+ * their items back. Every report of what sold reads this, so the counter's sales are never missed.
+ */
+export function soldLinesBetween(from: IsoDate, to: IsoDate): OrderLine[] {
+  const t = settlementTables();
+  const quick = new Map(t.bills.filter((b) => b.tabId === null && b.status !== 'voided' && b.businessDate >= from && b.businessDate <= to).map((b) => [b.id, b]));
+  const extra: OrderLine[] = [];
+  if (quick.size > 0) {
+    for (const bl of t.billLines) {
+      const bill = quick.get(bl.billId);
+      if (!bill || bl.orderLineId !== null || !bl.productVariantId) continue;
+      const at = bill.settledAt ?? 0;
+      extra.push({
+        id: bl.id,
+        outletId: bill.outletId,
+        orderId: `quick:${bill.id}`,
+        tabId: `quick:${bill.id}`,
+        tabSeatId: null,
+        productVariantId: bl.productVariantId,
+        qty: bl.qty,
+        unitPriceCents: bl.unitPriceCents,
+        lineTotalCents: bl.lineTotalCents,
+        priceDerivation: [],
+        note: null,
+        status: 'served',
+        stockConflict: false,
+        servedAt: at,
+        servedBy: bill.settledBy,
+        voidedBy: null,
+        voidedAt: null,
+        voidReason: null,
+        createdBy: bill.settledBy ?? '',
+        deviceId: bill.deviceId ?? '',
+        clientCreatedAt: at,
+      });
+    }
+  }
+  return [...trade.linesBetween(from, to), ...extra];
 }

@@ -3,10 +3,11 @@
 import { useEffect } from 'react';
 
 /** The Console's narrowest desk, in CSS pixels (the frame-min token). */
-const FRAME = 1024;
+const FRAME = 768;
 
 /**
- * A screen narrower than the desk, an iPad held upright, is shown the whole desk scaled to fit, the
+ * The desk lays itself out from an iPad held upright (768) upwards, in both orientations. Only a
+ * screen narrower than that, a phone, is shown the whole desk scaled to fit, the
  * same as a laptop only smaller, rather than a page wider than the screen. A dialog is fixed to the
  * screen, so on a wider page it would be cut off at the edge, with nothing to scroll to. Wider
  * screens are left as they are. The sign-in, outside the desk, gets its own width back on the way out.

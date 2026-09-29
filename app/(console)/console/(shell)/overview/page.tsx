@@ -57,17 +57,17 @@ export default async function OverviewPage() {
         <AttentionPanel d={d} />
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-24 tablet:grid-cols-2">
         <LiveFloor d={d} />
         <MoneyPanel d={d} />
       </div>
 
-      <div className="grid grid-cols-1 items-stretch gap-24 desktop:grid-cols-2">
+      <div className="grid grid-cols-1 items-stretch gap-24 tablet:grid-cols-2">
         <CategoriesPanel d={d} />
         <MoversPanel d={d} />
       </div>
 
-      <div className="grid grid-cols-1 items-stretch gap-24 desktop:grid-cols-3">
+      <div className="grid grid-cols-1 items-stretch gap-24 tablet:grid-cols-2 desktop:grid-cols-3">
         <StockPanel d={d} />
         <TeamPanel d={d} />
         <PulsePanel d={d} />

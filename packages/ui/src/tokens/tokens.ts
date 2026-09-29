@@ -368,7 +368,7 @@ export const size = {
   /** The Console content column. */
   'page-max': 1440,
   /** Below this the Console scrolls sideways rather than crushing its columns. */
-  'frame-min': 1024,
+  'frame-min': 768,
   /** A nav item in the Console rail. */
   'rail-item': 32,
   /** A toolbar search field, and a popover list's width and height limits. */

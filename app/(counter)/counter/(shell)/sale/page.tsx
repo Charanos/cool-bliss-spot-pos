@@ -88,9 +88,15 @@ export default function QuickSalePage() {
       const item = catalogue?.items.find((i) => i.variantId === variantId);
       if (!item?.price || item.state === 'finished') return;
       const price = item.price;
+      const qty = (cartRef.current.find((l) => l.variantId === variantId)?.qty ?? 0) + 1;
+      // Never more than is on the shelf: the last one is the last one.
+      if (qty > shelfLimit(item.qtyAvailable)) {
+        haptic('error');
+        notify({ key: `sale:${variantId}`, tone: 'warning', title: `Only ${Math.max(0, Math.floor(item.qtyAvailable))} ${item.name} left`, body: 'That is all the stock records hold. Receive or count more in the Console to sell more.' });
+        return;
+      }
       setDone(null);
       setTenders([]);
-      const qty = (cartRef.current.find((l) => l.variantId === variantId)?.qty ?? 0) + 1;
       setCart((c) => {
         const found = c.find((l) => l.variantId === variantId);
         return found ? c.map((l) => (l.variantId === variantId ? { ...l, qty: l.qty + 1 } : l)) : [...c, { variantId, name: item.name, unitPrice: price, qty: 1 }];
@@ -209,7 +215,7 @@ export default function QuickSalePage() {
               <Stepper
                 value={line.qty}
                 min={0}
-                max={99}
+                max={shelfLimit(catalogue?.items.find((i) => i.variantId === line.variantId)?.qtyAvailable ?? 0)}
                 size="md"
                 label={`How many ${line.name}`}
                 onChange={(qty) => {
@@ -337,4 +343,9 @@ export default function QuickSalePage() {
       </BaseAction>
     </div>
   );
+}
+
+/** How many of an item one sale may hold: what is on the shelf, or 99 for what is not kept in stock. */
+function shelfLimit(qtyAvailable: number): number {
+  return qtyAvailable >= 999 ? 99 : Math.max(0, Math.floor(qtyAvailable));
 }

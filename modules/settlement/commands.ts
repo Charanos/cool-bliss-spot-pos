@@ -9,6 +9,7 @@ import type { OutboxPayload } from '@bliss/shared/sync';
 import { businessDate } from '@bliss/shared/time';
 import { CommandRejected, touch } from '../_data/changes';
 import * as audit from '../audit/service';
+import * as availability from '../availability/service';
 import * as catalogue from '../catalogue/service';
 import * as identity from '../identity/service';
 import * as inventory from '../inventory/service';
@@ -111,6 +112,18 @@ function planQuickSale(p: OutboxPayload<'bill.settle'>): Planned {
     if (!price || price.unitPriceCents !== cents(item.unitPriceCents)) mismatch();
     return { productVariantId: variant.id, qty: item.qty, unitPriceCents: price.unitPriceCents, description: variant.name };
   });
+  // Never sell over the counter what the shelf does not hold: the same item may appear twice.
+  const wanted = new Map<string, number>();
+  for (const i of quickItems) wanted.set(i.productVariantId, (wanted.get(i.productVariantId) ?? 0) + i.qty);
+  for (const [variantId, qty] of wanted) {
+    const a = availability.evaluate(variantId);
+    if (a.qtyAvailable >= 999) continue;
+    const left = Math.max(0, Math.floor(a.qtyAvailable));
+    if (a.state === 'finished' || qty > left) {
+      const name = catalogue.variantById(variantId)?.name ?? 'This item';
+      throw new CommandRejected('VALIDATION_FAILED', left === 0 ? `${name} is finished: the stock records hold none.` : `Only ${left} ${name} left, not ${qty}. Take fewer, or receive more first.`);
+    }
+  }
   return { lines: [], subtotal: sum(quickItems.map((i) => multiplyByQty(i.unitPriceCents, i.qty))), seatId: null, quickItems };
 }
 
