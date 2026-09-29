@@ -9,7 +9,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { atmosphere, breakpoints, clarity, colour, consoleElevation, elevation, fontFamily, motion, printWeight, radius, size, space, themes, type, weight } from '../packages/ui/src/tokens/tokens';
+import { atmosphere, breakpoints, clarity, colour, consoleElevation, elevation, fontFamily, motion, printWeights, radius, size, space, themes, type, weight } from '../packages/ui/src/tokens/tokens';
 
 const OUT = resolve(import.meta.dirname, '../packages/ui/src/styles/tokens.css');
 
@@ -50,7 +50,7 @@ push(`  --font-sans: ${fontFamily.sans};`);
 push(`  --font-mono: ${fontFamily.mono};`);
 push(`  --font-weight-regular: ${weight.regular};`);
 push(`  --font-weight-medium: ${weight.medium};`);
-push(`  --font-weight-print: ${printWeight};`);
+for (const [name, value] of Object.entries(printWeights)) push(`  --font-weight-${name}: ${value};`);
 push();
 for (const [name, t] of Object.entries(type)) {
   push(`  --text-${name}: ${px(t.size)};`);

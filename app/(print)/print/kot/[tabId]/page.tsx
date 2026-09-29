@@ -52,7 +52,7 @@ export default async function PrintKotPage({ params, searchParams }: { params: P
         return (
           <Receipt key={side}>
             <ReceiptBand title={`${ROUTE[side]} order`} detail={formatTime(firedAt, tz)} />
-            <p className="py-4 text-center text-[22px] font-medium leading-[1.15] tracking-[0.02em]">{label}</p>
+            <p className="py-4 text-center text-[22px] font-print-strong leading-[1.15]">{label}</p>
             <ReceiptFacts
               items={[
                 zone ? { label: 'Area', value: zone } : null,
@@ -75,7 +75,7 @@ export default async function PrintKotPage({ params, searchParams }: { params: P
               );
             })}
             <ReceiptFooter>
-              <p className="text-[9px] uppercase tracking-[0.22em]">{side === 'kitchen' ? 'No ticket, no plate' : 'No ticket, no pour'}</p>
+              <p className="text-[10px] font-print-strong uppercase tracking-[0.14em]">{side === 'kitchen' ? 'No ticket, no plate' : 'No ticket, no pour'}</p>
               <p>Printed {formatDateTime(Date.now(), tz)}</p>
             </ReceiptFooter>
           </Receipt>

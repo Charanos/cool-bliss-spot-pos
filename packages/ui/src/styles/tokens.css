@@ -27,7 +27,9 @@
   --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, monospace;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
+  --font-weight-print-body: 600;
   --font-weight-print: 700;
+  --font-weight-print-strong: 800;
 
   --text-display: 40px;
   --text-display--line-height: 44px;
