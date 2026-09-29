@@ -1,5 +1,6 @@
 'use client';
 
+import { isCounted } from '@bliss/shared/availability';
 import type { AvailabilityReason, AvailabilityState } from '@bliss/shared/domain';
 import { type Cents, formatKes } from '@bliss/shared/money';
 import { IconBottle, IconBowlChopsticks, IconBeer, IconGlassCocktail, IconGlassFull, IconBottleFilled, IconPlus } from '@tabler/icons-react';
@@ -63,7 +64,7 @@ export interface ProductTileProps {
  * (or the item's photograph, small), the name on two lines, the price and the add mark. The whole
  * tile is the target; press feedback runs before any state change; the tap adds the line locally.
  *
- *   available  normal
+ *   available  "12 in stock" in the corner, quiet, for anything kept in stock
  *   low        "3 left" in the corner, attention colour
  *   last_few   the same, stronger
  *   finished   dimmed, one word in the corner ("Finished", "On hold"), not tappable, still focusable
@@ -77,6 +78,8 @@ export const ProductTile = memo(function ProductTile({ variantId, name, price, r
   const uncounted = finished && reason === 'not_counted';
   const low = state === 'low' || state === 'last_few';
   const count = Math.max(0, Math.floor(qtyAvailable));
+  // Only an item kept in stock has a count to show: food and the like report more than any shelf holds.
+  const counted = isCounted(qtyAvailable);
 
   const press = useLongPress({
     onPressStart: () => ref.current && !finished && tilePressDown(ref.current),
@@ -87,7 +90,7 @@ export const ProductTile = memo(function ProductTile({ variantId, name, price, r
     onLongPress: () => onLongPress(variantId),
   });
 
-  const stateWords = finished ? (held ? ', on hold' : uncounted ? ', not counted yet' : ', finished') : low ? `, ${count} left` : '';
+  const stateWords = finished ? (held ? ', on hold' : uncounted ? ', not counted yet' : ', finished') : low ? `, ${count} left` : counted ? `, ${count} in stock` : '';
   const Glyph = GLYPH[glyph];
   const tint = CATEGORY_COLOR[category] ?? 'var(--color-ink-subtle)';
 
@@ -121,6 +124,8 @@ export const ProductTile = memo(function ProductTile({ variantId, name, price, r
           <span className="py-2 text-caps caps text-ink-muted">{held ? 'On hold' : uncounted ? 'Not counted' : 'Finished'}</span>
         ) : low ? (
           <span className={cx('rounded-sm px-6 py-2 font-mono tabular text-num-sm', state === 'last_few' ? 'bg-low-wash text-low' : 'text-low')}>{count} left</span>
+        ) : counted ? (
+          <span className="py-2 font-mono tabular text-num-sm text-ink-subtle">{count} in stock</span>
         ) : null}
       </span>
 

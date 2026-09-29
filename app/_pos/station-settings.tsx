@@ -1,6 +1,6 @@
 'use client';
 
-import { formatAgo, formatTime } from '@bliss/shared/format';
+import { formatBuild, formatAgo, formatTime } from '@bliss/shared/format';
 import { Button } from '@bliss/ui/components/button';
 import { ConnectionChip } from '@bliss/ui/components/connection-chip';
 import { Switch } from '@bliss/ui/components/fields';
@@ -170,7 +170,7 @@ export function StationSettings({ surface, extra }: { surface: 'floor' | 'counte
           {extra}
         </div>
         <p className="mt-24 text-center text-body-sm text-ink-subtle">
-          Bliss {process.env.NEXT_PUBLIC_BLISS_VERSION ?? ''}
+          Bliss {formatBuild(process.env.NEXT_PUBLIC_BLISS_VERSION)}
           {outlet ? ` · ${outlet.name}` : ''}
         </p>
       </div>

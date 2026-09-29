@@ -35,6 +35,17 @@ export interface AvailabilityResult {
  *   qty <= threshold                 -> low
  *   otherwise                        -> available
  */
+/**
+ * What an item that is not kept in stock reports as available: more than any shelf holds. A count
+ * at or above it is not a count, and no screen shows it as one.
+ */
+export const UNTRACKED_QTY = 999;
+
+/** Whether a quantity available is a real count of what is in the building. */
+export function isCounted(qtyAvailable: number): boolean {
+  return qtyAvailable < UNTRACKED_QTY;
+}
+
 export function evaluateAvailability(input: AvailabilityInput): AvailabilityResult {
   const qty = input.qtyAvailable;
   if (input.hasActiveHold) return { state: 'finished', reason: 'hold', qtyAvailable: qty };

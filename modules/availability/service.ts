@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { type AvailabilityResult, LAST_FEW_SERVES, evaluateAvailability, servesFromStock } from '@bliss/shared/availability';
+import { type AvailabilityResult, LAST_FEW_SERVES, UNTRACKED_QTY, evaluateAvailability, servesFromStock } from '@bliss/shared/availability';
 import type { AvailabilityEntry } from '@bliss/shared/domain';
 import { dataset } from '../_data/source';
 import * as catalogue from '../catalogue/service';
@@ -14,8 +14,6 @@ import * as inventory from '../inventory/service';
  * Holds are placed on a stock variant, so a hold on Smirnoff 750ml stops the tot, the double, the
  * bottle and the Smirnoff and Coke recipe that uses it.
  */
-
-const UNTRACKED_QTY = 999;
 
 export function evaluate(variantId: string): AvailabilityResult & { threshold: number } {
   const variant = catalogue.variantById(variantId);

@@ -1,4 +1,4 @@
-import { formatAgo } from '@bliss/shared/format';
+import { formatBuild, formatAgo } from '@bliss/shared/format';
 import { Card, CardHeader, IconTile } from '@bliss/ui/components/console/card';
 import { TrendChart, type TrendPoint } from '@bliss/ui/components/console/trend-chart';
 import { ICON_STROKE, type TablerIcon } from '@bliss/ui/components/icon';
@@ -233,7 +233,7 @@ export function StationTileView({ s }: { s: health.StationTile }) {
           <span className="text-ink-muted">{s.who ?? 'Nobody signed in'}</span>
           <span className={cx('ml-auto font-mono tabular', s.unsynced > 0 ? 'text-low' : 'text-ink-subtle')}>{s.unsynced > 0 ? `${s.unsynced} to send` : 'All sent'}</span>
         </span>
-        {warn && s.behind ? <span className="text-micro text-low">Running {s.version}: reload for the latest.</span> : null}
+        {warn && s.behind ? <span className="text-micro text-low">Running {formatBuild(s.version)}: reload for the latest.</span> : null}
       </Link>
     </li>
   );

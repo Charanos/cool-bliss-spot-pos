@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { formatAgo, formatDateTime, formatElapsed, plural } from '@bliss/shared/format';
+import { formatBuild, formatAgo, formatDateTime, formatElapsed, plural } from '@bliss/shared/format';
 import { type Cents, isPositive } from '@bliss/shared/money';
 import { dataset } from '../_data/source';
 import { ping, storeEnabled } from '../_data/store';
@@ -107,7 +107,7 @@ async function server(): Promise<HealthCheck[]> {
     });
   }
   const up = process.uptime() * 1000;
-  checks.push({ id: 'uptime', label: 'Server running for', status: 'info', value: uptime(up), detail: `Node ${process.version}, build ${process.env.NEXT_PUBLIC_BLISS_VERSION ?? 'dev'}.` });
+  checks.push({ id: 'uptime', label: 'Server running for', status: 'info', value: uptime(up), detail: `Node ${process.version}, build ${formatBuild(process.env.NEXT_PUBLIC_BLISS_VERSION) || 'dev'}.` });
   const heapMb = Math.round(mem.heapUsed / 1_048_576);
   checks.push({ id: 'memory', label: 'Memory', status: heapMb > 900 ? 'warn' : 'ok', value: `${heapMb} MB`, detail: `${Math.round(mem.rss / 1_048_576)} MB held by the process in all.` });
   const clock = reporting.clock();
@@ -131,7 +131,7 @@ function stations(): HealthCheck[] {
     const detail = d.pairingPending
       ? 'Waiting for its pairing code.'
       : d.online
-        ? `${who ? `${who} signed in. ` : ''}${d.unsyncedCount > 0 ? `${plural(d.unsyncedCount, 'change')} not yet sent.` : 'Everything sent.'}${version && d.appVersion && d.appVersion !== version ? ` Running ${d.appVersion}; reloading gets ${version}.` : ''}`
+        ? `${who ? `${who} signed in. ` : ''}${d.unsyncedCount > 0 ? `${plural(d.unsyncedCount, 'change')} not yet sent.` : 'Everything sent.'}${version && d.appVersion && d.appVersion !== version ? ` Running ${formatBuild(d.appVersion)}; reloading gets ${formatBuild(version)}.` : ''}`
         : seen === null
           ? 'Never seen.'
           : `Last seen ${formatAgo(seen)}.${d.unsyncedCount > 0 ? ` Held ${plural(d.unsyncedCount, 'change')} then.` : ''}`;

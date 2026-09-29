@@ -2,6 +2,7 @@
 
 import { FilterChips } from '@bliss/ui/components/choice';
 import { EmptyState, Skeleton } from '@bliss/ui/components/feedback';
+import { isCounted } from '@bliss/shared/availability';
 import { ProductTile } from '@bliss/ui/components/floor/product-tile';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Money } from '@bliss/ui/components/money';
@@ -133,6 +134,8 @@ export function ItemGrid({
                         <span className="caps block text-low">{t.qtyAvailable} left</span>
                       ) : finished ? (
                         <span className="caps block text-ink-subtle">Finished</span>
+                      ) : isCounted(t.qtyAvailable) ? (
+                        <span className="block font-mono tabular text-num-sm text-ink-subtle">{Math.max(0, Math.floor(t.qtyAvailable))} in stock</span>
                       ) : null}
                     </span>
                     {t.price ? <Money value={t.price} size="num" tone={finished ? 'disabled' : 'default'} decimals="whole" /> : null}
