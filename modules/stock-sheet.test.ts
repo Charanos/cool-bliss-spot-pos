@@ -116,7 +116,7 @@ describe('the stock sheet for Monday 28 September', () => {
     // A cost set by hand: what an item costs is not trade, and must outlive starting again.
     inventoryManage.setUnitCost({ variantId: sealed('Tusker Lager').id, costCents: shillings(150), actor: ownerActor() });
     expect(onHand('Tusker Lager')).toBe(43);
-    expect(onHand('KO')).toBe(21);
+    expect(onHand('KO')).toBe(10);
   });
 });
 
@@ -130,7 +130,11 @@ describe('starting again from the sheet', () => {
     expect(summary.stockMovements).toBeGreaterThan(0);
 
     expect(onHand('Tusker Lager')).toBe(33);
-    expect(onHand('KO')).toBe(20);
+    expect(onHand('KO')).toBe(9);
+    expect(onHand('Hunters Gold')).toBe(0);
+    expect(onHand('Hunters Dry')).toBe(14);
+    expect(onHand('Summit')).toBe(20);
+    expect(onHand('Chivas 750ml')).toBe(1);
     expect(onHand('KC 250ml')).toBe(36);
     expect(onHand('Pall Mall Red')).toBe(84);
     expect(onHand('Tusker Ndimu')).toBe(0);
