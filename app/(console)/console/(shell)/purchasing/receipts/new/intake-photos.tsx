@@ -95,7 +95,7 @@ export function IntakePhotos({ urls, onChange }: { urls: string[]; onChange: (ur
                     <img src={url} alt="" className="size-full object-cover" />
                   )}
                 </button>
-                <span className="absolute right-4 top-4 opacity-0 transition-hover group-focus-within:opacity-100 group-hover:opacity-100">
+                <span className="absolute right-4 top-4 mouse:opacity-0 transition-hover mouse:group-focus-within:opacity-100 mouse:group-hover:opacity-100">
                   <IconButton icon={IconTrash} label={`Remove photo ${i + 1}`} size="xs" variant="secondary" onClick={() => onChange(urls.filter((u) => u !== url))} />
                 </span>
               </li>

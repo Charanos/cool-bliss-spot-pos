@@ -323,7 +323,7 @@ export function DataTable<Row>({
           </div>
         ))}
         {rowActions ? (
-          <div role="cell" className="relative z-raised flex justify-end desktop:opacity-0 desktop:group-hover:opacity-100 desktop:group-focus-within:opacity-100 transition-hover">
+          <div role="cell" className="relative z-raised flex justify-end desktop:mouse:opacity-0 desktop:mouse:group-hover:opacity-100 desktop:mouse:group-focus-within:opacity-100 transition-hover">
             <OverflowMenu label="Row actions" size="sm" items={rowActions(row)} />
           </div>
         ) : null}

@@ -41,9 +41,11 @@ export function OverflowMenu({
     if (!open || !buttonRef.current || !menuRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
     const menu = menuRef.current.getBoundingClientRect();
-    const below = rect.bottom + 4 + menu.height <= window.innerHeight;
+    // The layout viewport, where a fixed box is placed; window.innerHeight is the visual one and shrinks on an iPad.
+    const view = document.documentElement;
+    const below = rect.bottom + 4 + menu.height <= view.clientHeight - 8;
     const top = below ? rect.bottom + 4 : Math.max(8, rect.top - 4 - menu.height);
-    const left = align === 'end' ? Math.max(8, rect.right - menu.width) : Math.min(window.innerWidth - menu.width - 8, rect.left);
+    const left = align === 'end' ? Math.max(8, rect.right - menu.width) : Math.max(8, Math.min(view.clientWidth - menu.width - 8, rect.left));
     setPosition({ top, left });
     menuRef.current.querySelector<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])')?.focus({ preventScroll: true });
   }, [open, align]);

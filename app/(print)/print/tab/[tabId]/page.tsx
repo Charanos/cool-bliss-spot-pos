@@ -85,7 +85,7 @@ export default async function PrintTabPage({ params, searchParams }: { params: P
         <ReceiptRule strong />
         <ReceiptTotalRow label={`To pay ${outlet.currency}`} value={kes(total)} bold large />
 
-        <ReceiptPay parts={tillParts(outlet, lines, total)} currency={outlet.currency} />
+        <ReceiptPay parts={tillParts(outlet, lines, total)} currency={outlet.currency} total={kes(total)} />
 
         <ReceiptFooter>
           <p className="text-[11px] italic">Asante, karibu tena</p>

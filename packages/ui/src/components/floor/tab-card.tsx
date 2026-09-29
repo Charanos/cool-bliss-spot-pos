@@ -6,7 +6,7 @@ import { Money } from '../money';
 import type { ReactNode } from 'react';
 import { CARD_ACTION_ROOM } from '../card-action';
 import { Signal, StatePill, type Tone } from '../status';
-import { InviteButton, PaneButton, SeatChipStack } from '../working';
+import { InviteButton, SeatChipStack, paneClass } from '../working';
 import { IconPlus } from '@tabler/icons-react';
 import { ICON_STROKE } from '../icon';
 
@@ -37,7 +37,7 @@ export interface TabCardProps {
 }
 
 /**
- * A tab card on the Floor tab list. Composed from PaneButton per docs/13-floor-tabs-revamp.md §3.
+ * A tab card on the Floor tab list: a pane (paneClass, docs/13-floor-tabs-revamp.md §3) with a button laid over it.
  *
  * Reading order: label + elapsed → seats (or tab name) → hairline → state signal + total.
  * The button's accessible name is built, not scraped, so a screen reader hears the full picture.
@@ -68,47 +68,55 @@ export function TabCard({ tableLabel, name, seats, showSeats, elapsed, total, wa
 
   return (
     <div className="relative min-w-0">
-      <PaneButton emphasis={emphasis} aria-label={accessibleName} onClick={onOpen} className={cx('flex w-full min-h-card-tab flex-col items-stretch gap-8 p-12 pad:p-16', action ? CARD_ACTION_ROOM : null)}>
-        {/* Row 1: label + elapsed */}
-        <span className="flex items-baseline gap-8">
-          <span className="min-w-0 flex-1 truncate text-title font-medium text-ink" title={tableLabel}>
-            {tableLabel}
-          </span>
-          <span className="shrink-0 font-mono tabular text-num-sm text-ink-subtle" aria-hidden="true">
-            {elapsed}
-          </span>
-        </span>
+      {/*
+        The card is a pane with its rows laid out in ordinary boxes, and the tap is a button laid over
+        it. Not a button that holds the rows: Safari treats a button's contents as its own thing
+        (shrunk to fit, aligned by rules a div does not have), and that put every row of the card
+        against the left edge on the iPad. Nothing here depends on how a browser lays out a button.
+      */}
+      <div className={cx(paneClass({ emphasis }), 'flex w-full min-h-card-tab flex-col p-12 pad:p-16', action ? CARD_ACTION_ROOM : null)}>
+        <div aria-hidden="true" className="flex min-w-0 flex-1 flex-col gap-8">
+          {/* Row 1: label + elapsed */}
+          <div className="flex items-baseline gap-8">
+            <span className="min-w-0 flex-1 truncate text-title font-medium text-ink" title={tableLabel}>
+              {tableLabel}
+            </span>
+            <span className="shrink-0 font-mono tabular text-num-sm text-ink-subtle">{elapsed}</span>
+          </div>
 
-        {/* Row 2: where it stands on the left, whose it is across from it */}
-        <span className="flex min-h-24 min-w-0 items-center justify-between gap-8" aria-hidden="true">
-          <span className="flex min-w-0 items-center">
-            {state ? (
-              <Signal tone={state.tone}>{state.text}</Signal>
-            ) : stage ? (
-              <StatePill tone={stage.tone} more={stage.more} live={stage.live}>
-                {stage.word}
-              </StatePill>
-            ) : null}
-          </span>
-          {mine ? <span className="shrink-0 text-body-sm font-medium text-accent-text">Yours</span> : waiter ? <span className="min-w-0 truncate text-right text-body-sm text-ink-subtle">{waiter}</span> : null}
-        </span>
+          {/* Row 2: where it stands on the left, whose it is across from it */}
+          <div className="flex min-h-24 min-w-0 items-center justify-between gap-8">
+            <div className="flex min-w-0 items-center">
+              {state ? (
+                <Signal tone={state.tone}>{state.text}</Signal>
+              ) : stage ? (
+                <StatePill tone={stage.tone} more={stage.more} live={stage.live}>
+                  {stage.word}
+                </StatePill>
+              ) : null}
+            </div>
+            {mine ? <span className="shrink-0 text-body-sm font-medium text-accent-text">Yours</span> : waiter ? <span className="min-w-0 truncate text-right text-body-sm text-ink-subtle">{waiter}</span> : null}
+          </div>
 
-        {/* The figures sit on a hairline at the foot, however tall the card grows. */}
-        <span aria-hidden="true" className="mt-auto h-px w-full bg-rule-raised/25" />
+          {/* The figures sit on a hairline at the foot, however tall the card grows. */}
+          <div className="mt-auto h-px w-full bg-rule-raised/25" />
 
-        {/* Row 3: seats or tab name + total */}
-        <span className="flex items-end justify-between gap-8 pt-4">
-          <span className="min-w-0 flex-1 flex items-center" aria-hidden="true">
-            {/* Every tab shows its seats, one guest included, so no card reads as empty. */}
-            {seats.length > 0 ? (
-              <SeatChipStack seats={seats.map((s) => ({ seatNo: s.seatNo, settled: s.settled }))} max={6} size="tile" overlapping />
-            ) : name ? (
-              <span className="truncate text-body text-ink-muted">{name}</span>
-            ) : null}
-          </span>
-          <Money value={total} size="num-lg" decimals="whole" tone={mine ? 'money' : 'default'} className="shrink-0" />
-        </span>
-      </PaneButton>
+          {/* Row 3: seats or tab name + total */}
+          <div className="flex items-end justify-between gap-8 pt-4">
+            <div className="flex min-w-0 flex-1 items-center">
+              {/* Every tab shows its seats, one guest included, so no card reads as empty. */}
+              {seats.length > 0 ? (
+                <SeatChipStack seats={seats.map((s) => ({ seatNo: s.seatNo, settled: s.settled }))} max={6} size="tile" overlapping />
+              ) : name ? (
+                <span className="truncate text-body text-ink-muted">{name}</span>
+              ) : null}
+            </div>
+            <Money value={total} size="num-lg" decimals="whole" tone={mine ? 'money' : 'default'} className="shrink-0" />
+          </div>
+        </div>
+        {/* Last in the pane, so it paints over the rows; the card's own action sits above it. */}
+        <button type="button" aria-label={accessibleName} onClick={onOpen} className="absolute inset-0 rounded-card" />
+      </div>
       {action}
     </div>
   );

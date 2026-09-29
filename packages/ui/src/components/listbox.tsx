@@ -52,10 +52,14 @@ export function ListboxPopup({
     if (!trigger || !list) return;
     const rect = trigger.getBoundingClientRect();
     const box = list.getBoundingClientRect();
-    const below = rect.bottom + 6 + box.height <= window.innerHeight - 8;
+    // A fixed box is placed in the layout viewport (clientHeight, clientWidth). window.innerHeight is the
+    // visual one, which on an iPad shrinks with the toolbar and the keyboard and made the list flip up
+    // or land off the edge.
+    const view = document.documentElement;
+    const below = rect.bottom + 6 + box.height <= view.clientHeight - 8;
     setPosition({
       top: below ? rect.bottom + 6 : Math.max(8, rect.top - 6 - box.height),
-      left: Math.max(8, Math.min(window.innerWidth - Math.max(box.width, rect.width) - 8, rect.left)),
+      left: Math.max(8, Math.min(view.clientWidth - Math.max(box.width, rect.width) - 8, rect.left)),
       minWidth: rect.width,
     });
     list.focus({ preventScroll: true });

@@ -71,7 +71,10 @@ export function AccountMenu({ name, role, photo, theme: initialTheme, pin, compa
   useLayoutEffect(() => {
     if (!open || !buttonRef.current || !menuRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    setPosition({ bottom: window.innerHeight - rect.top + 6, left: rect.left });
+    // `bottom` on a fixed box is measured from the layout viewport, which is documentElement.clientHeight.
+    // window.innerHeight is the visual one: on an iPad it shrinks with the toolbar and the keyboard, and the
+    // menu then floated that much too low.
+    setPosition({ bottom: document.documentElement.clientHeight - rect.top + 6, left: rect.left });
     menuRef.current.querySelector<HTMLElement>('[role^="menuitem"]')?.focus({ preventScroll: true });
   }, [open]);
 

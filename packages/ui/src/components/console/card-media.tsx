@@ -80,7 +80,7 @@ export function CardMedia({
         </div>
       ) : null}
       {actions ? (
-        <div style={cell} className="z-raised m-12 flex gap-6 self-start justify-self-start opacity-0 transition-hover group-hover:opacity-100 group-focus-within:opacity-100">
+        <div style={cell} className="z-raised m-12 flex gap-6 self-start justify-self-start mouse:opacity-0 transition-hover mouse:group-hover:opacity-100 mouse:group-focus-within:opacity-100">
           {actions}
         </div>
       ) : null}

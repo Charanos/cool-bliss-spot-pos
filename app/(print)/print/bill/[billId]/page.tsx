@@ -108,7 +108,7 @@ export default async function PrintBillPage({ params, searchParams }: { params: 
           </>
         ) : null}
         {/* The tills print on every bill: a guest paying the next round by M-Pesa has them to hand. */}
-        <ReceiptPay parts={tillParts(outlet, lines, bill.totalCents)} currency={outlet.currency} paid={paid} />
+        <ReceiptPay parts={tillParts(outlet, lines, bill.totalCents)} currency={outlet.currency} paid={paid} viaMpesa={tenders.length > 0 && tenders.every((tn) => tn.kind === 'mpesa')} total={kes(bill.totalCents)} />
 
         <ReceiptFooter>
           <p className="text-[11px] italic">Asante, karibu tena</p>
