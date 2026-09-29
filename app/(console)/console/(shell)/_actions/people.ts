@@ -86,6 +86,12 @@ export async function setEmploymentStatus(raw: { staffId: string; status: 'activ
   );
 }
 
+/** Everyone but the signed-in owner has left. Owners only, and it says RESET. */
+export async function leaveAllExceptMe(raw: { confirm: string; reason: string }): Promise<ActionResult<{ left: number }>> {
+  if (raw.confirm.trim().toUpperCase() !== 'RESET') return { ok: false, message: 'Type RESET to confirm.' };
+  return runAction(z.object({ reason }), { reason: raw.reason }, (input, actor) => ({ left: identity.leaveAllExceptMe({ ...input, actor }) }), { revalidate: PEOPLE });
+}
+
 export async function unlockPin(raw: { staffId: string }): Promise<ActionResult> {
   return runAction(
     z.object({ staffId: id('person') }),

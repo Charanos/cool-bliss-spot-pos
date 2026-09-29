@@ -6,6 +6,7 @@ import * as reporting from '@/modules/reporting/service';
 import * as trade from '@/modules/trade/service';
 import { ViewHeader } from '../../_components/workspace';
 import { staffRow } from './staff-row';
+import { LeaveAll } from './leave-all';
 import { type StaffRow, StaffTable } from './staff-table';
 
 export const metadata: Metadata = { title: 'Staff' };
@@ -32,6 +33,9 @@ export default async function StaffPage() {
         policy={policy}
         now={Date.now()}
       />
+      {identity.roleFor(actor.staffId)?.key === 'owner' ? (
+        <LeaveAll others={identity.staffList().filter((s) => s.id !== actor.staffId && s.employmentStatus !== 'left').length} me={identity.staffById(actor.staffId)?.displayName ?? 'You'} />
+      ) : null}
     </>
   );
 }
