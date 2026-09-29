@@ -218,6 +218,41 @@ export function setUnitCost(input: { variantId: string; costCents: Cents; actor:
 }
 
 /**
+ * Put back the unit costs an outlet held before its stock records were cleared, as one cost-setting
+ * movement each that moves no stock, and one audit entry for the lot. What an item costs is business
+ * knowledge, not trade, so starting stock again from a sheet must not lose it.
+ */
+export function restoreUnitCosts(costs: ReadonlyMap<string, Cents>, actor: Actor): number {
+  const { locations, movements } = inventoryTables();
+  const location = locations.find((l) => l.isDefaultReceipt && l.status === 'active') ?? locations.find((l) => l.status === 'active');
+  if (!location || costs.size === 0) return 0;
+  const outlet = identity.outlet();
+  const now = Date.now();
+  for (const [variantId, costCents] of costs) {
+    movements.push({
+      id: createId(),
+      outletId: outlet.id,
+      businessDate: businessDate(now, outlet.timezone, outlet.businessDayCutover),
+      productVariantId: variantId,
+      stockLocationId: location.id,
+      stockBatchId: null,
+      qtyDelta: 0,
+      volumeDeltaMl: null,
+      unitCostCents: costCents,
+      movementType: 'cost_set',
+      sourceType: 'cost',
+      sourceId: null,
+      reason: 'Unit cost kept when stock started again from a sheet',
+      occurredAt: now,
+      createdBy: actor.staffId,
+      deviceId: null,
+    });
+  }
+  record(actor, 'stock.costs_restored', 'outlet', outlet.id, null, { items: costs.size });
+  return costs.size;
+}
+
+/**
  * Set every stock-kept drink to one figure on hand, for a trial run before handover: each is counted
  * to `qty` at the location the floor sells from, and to nothing anywhere else, recorded as a count adjustment with the reason, so
  * the floor sells it down and shows it low and finished as it would on a real night. Anything below

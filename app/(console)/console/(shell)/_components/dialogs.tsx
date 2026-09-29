@@ -1,14 +1,15 @@
 'use client';
 
-import { formatKes, multiplyByQuantity } from '@bliss/shared/money';
+import { formatDecimal, formatKes, multiplyByQuantity, parseKes } from '@bliss/shared/money';
 import type { Cents } from '@bliss/shared/money';
 import { ConsoleOverlay } from '@bliss/ui/components/console/dialog';
+import { Button } from '@bliss/ui/components/button';
 import { SelectField, TextField } from '@bliss/ui/components/fields';
 import { ReasonForm } from '@bliss/ui/components/reason-form';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@bliss/ui/components/console/toast';
 import { useState } from 'react';
-import { placeHold, releaseHold, writeOff } from '../_actions/inventory';
+import { placeHold, releaseHold, setUnitCost, writeOff } from '../_actions/inventory';
 import { resolveDeadLetter, withdrawDevice } from '../_actions/settings';
 import type { ActionResult } from '../_lib/action-result';
 
@@ -43,6 +44,54 @@ export function HoldDialog({ target, onClose }: { target: { variantId: string; n
           </div>
         </ReasonForm>
       ) : null}
+    </ConsoleOverlay>
+  );
+}
+
+/** What one unit costs to buy, set by hand: the stock value and margin read from it until a delivery brings its own cost. */
+export function UnitCostDialog({ target, onClose }: { target: { variantId: string; name: string; unitCost: Cents } | null; onClose: () => void }) {
+  const router = useRouter();
+  const notify = useToast();
+  const [value, setValue] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const key = target?.variantId ?? '';
+  const [seen, setSeen] = useState('');
+  if (key !== seen) {
+    setSeen(key);
+    setValue(target && target.unitCost > 0n ? formatDecimal(target.unitCost) : '');
+    setError(null);
+  }
+  const save = async () => {
+    if (!target) return;
+    setBusy(true);
+    setError(null);
+    const r = await setUnitCost({ variantId: target.variantId, cost: value });
+    setBusy(false);
+    if (!r.ok) return setError(r.message);
+    notify({ title: `${target.name} costs ${formatKes(parseKes(value), { decimals: 'round' })} a unit` });
+    onClose();
+    router.refresh();
+  };
+  return (
+    <ConsoleOverlay open={Boolean(target)} onClose={onClose} title={target ? `What does ${target.name} cost?` : ''} description="One unit, as you buy it. Stock value and margin read from this until a delivery brings its own cost." width="md">
+      <form
+        className="flex flex-col gap-16 pb-16"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+      >
+        <TextField label="Cost of one unit (KES)" value={value} onChange={(e) => setValue(e.target.value)} inputMode="decimal" size="md" error={error ?? undefined} />
+        <div className="flex justify-end gap-8">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" loading={busy} disabled={value.trim() === ''}>
+            Save cost
+          </Button>
+        </div>
+      </form>
     </ConsoleOverlay>
   );
 }

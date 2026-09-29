@@ -8,7 +8,7 @@ import * as stockSheet from '@/modules/inventory/stock-sheet';
 import { revalidatePath } from 'next/cache';
 import * as identity from '@/modules/identity/service';
 import { isUserFacing } from '@/modules/_data/errors';
-import { type ActionResult, id, optionalText, reason, runAction } from '../_lib/action';
+import { type ActionResult, id, kes, optionalText, reason, runAction } from '../_lib/action';
 
 /** Inventory actions. docs/19 section 3: validated here, ruled in the inventory service. */
 
@@ -34,6 +34,13 @@ export async function writeOff(raw: { variantId: string; locationId: string; qty
   });
   return runAction(schema, raw, (input, actor) => {
     inventory.writeOff({ ...input, actor });
+  });
+}
+
+/** What one unit of an item costs to buy, set by hand: the ledger's cost until a delivery brings its own. */
+export async function setUnitCost(raw: { variantId: string; cost: string }): Promise<ActionResult> {
+  return runAction(z.object({ variantId: id('item'), cost: kes('the unit cost') }), raw, (input, actor) => {
+    inventoryManage.setUnitCost({ variantId: input.variantId, costCents: input.cost, actor });
   });
 }
 
