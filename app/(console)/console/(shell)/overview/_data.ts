@@ -107,7 +107,7 @@ export async function loadOverview() {
     onShift: onNow.length,
     categories,
     stock: { ...report.stock, reorder: reorder.length, reorderCost: sum(reorder.map((r) => r.estimatedCost)), belowZero: inventory.belowZeroCount() },
-    health: { score: report.score, status: report.status, counts: report.counts, stations: report.stations, alerts: report.alerts, attention: report.attention.length },
+    health: { score: report.score, status: report.status, counts: report.counts, stations: report.stations, alerts: report.alerts, attention: report.attention.length, issues: report.attention.slice(0, 4).map((c) => ({ id: `${c.system}-${c.id}`, label: c.label, value: c.value, status: c.status, href: c.href ?? `/console/settings/health#health-${c.system}` })), vitals: { dbMs: report.vitals.latest.dbMs, heapMb: report.vitals.latest.heapMb, loopMs: report.vitals.latest.loopMs, uptimeMs: report.vitals.uptimeMs } },
   };
 }
 

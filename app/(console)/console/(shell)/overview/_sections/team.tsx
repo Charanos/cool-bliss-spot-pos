@@ -73,27 +73,73 @@ export function PulsePanel({ d }: { d: OverviewData }) {
   return (
     <Panel id="overview-pulse" icon={IconActivityHeartbeat} tone={tone} title="System health" subtitle={h.status === 'fail' ? 'Something needs fixing' : h.status === 'warn' ? 'Running, a few things to look at' : 'Everything is healthy'} href="/console/settings/health" hrefLabel="Health">
       <div className="flex items-center gap-20 px-20 py-16">
-        <RingGauge value={h.score / 100} tone={tone} size="md" label={`Health score ${h.score} of 100`}>
-          <span className="font-mono tabular text-num-md text-ink">{h.score}</span>
+        <RingGauge value={h.score / 100} tone={tone} size="lg" label={`Health score ${h.score} of 100`}>
+          <span className="font-mono tabular text-num-kpi text-ink">{h.score}</span>
+          <span className="label-caps text-ink-subtle">of 100</span>
         </RingGauge>
-        <ul className="flex min-w-0 flex-1 flex-col gap-4">
-          {rows.map((r) => {
-            const Glyph = r.icon;
-            return (
-              <li key={r.label}>
-                <Link href={r.href} className="group -mx-8 flex items-center gap-8 rounded-md px-8 py-4 transition-hover hover:bg-band">
-                  <Glyph size={16} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0 text-ink-subtle" />
-                  <span className="min-w-0 flex-1 truncate text-body-sm text-ink">{r.label}</span>
-                  <span className="flex shrink-0 items-center gap-6 text-micro text-ink-muted">
-                    <Dot tone={r.tone} />
-                    {r.value}
-                  </span>
+        <dl className="grid flex-1 grid-cols-3 gap-8">
+          {(
+            [
+              ['Passing', h.counts.ok, 'text-poured'],
+              ['To look at', h.counts.warn, h.counts.warn > 0 ? 'text-low' : 'text-ink'],
+              ['Problems', h.counts.fail, h.counts.fail > 0 ? 'text-stop' : 'text-ink'],
+            ] as const
+          ).map(([k, n, c]) => (
+            <div key={k} className="flex flex-col gap-2 rounded-control bg-band px-8 py-8 text-center">
+              <dd className={cx('font-mono tabular text-num-md', c)}>{n}</dd>
+              <dt className="text-micro text-ink-subtle">{k}</dt>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <dl className="grid grid-cols-3 border-y border-edge">
+        {(
+          [
+            ['Database', h.vitals.dbMs === null ? 'In memory' : `${h.vitals.dbMs} ms`, (h.vitals.dbMs ?? 0) > 500],
+            ['Memory', `${h.vitals.heapMb} MB`, h.vitals.heapMb > 1024],
+            ['Wait', `${h.vitals.loopMs} ms`, h.vitals.loopMs > 100],
+          ] as const
+        ).map(([k, v, bad]) => (
+          <div key={k} className="flex flex-col gap-2 border-l border-edge px-16 py-12 first:border-l-0">
+            <dt className="label-caps text-ink-subtle">{k}</dt>
+            <dd className={cx('font-mono tabular text-num-sm', bad ? 'text-low' : 'text-ink')}>{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <ul className="flex flex-col gap-2 px-12 py-8">
+        {rows.map((r) => {
+          const Glyph = r.icon;
+          return (
+            <li key={r.label}>
+              <Link href={r.href} className="group flex items-center gap-8 rounded-md px-8 py-6 transition-hover hover:bg-band">
+                <Glyph size={16} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0 text-ink-subtle" />
+                <span className="min-w-0 flex-1 truncate text-body-sm text-ink">{r.label}</span>
+                <span className="flex shrink-0 items-center gap-6 text-micro text-ink-muted">
+                  <Dot tone={r.tone} />
+                  {r.value}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+      {h.issues.length > 0 ? (
+        <div className="flex flex-col border-t border-edge">
+          <p className="px-20 pb-4 pt-12 label-caps text-ink-subtle">To see to</p>
+          <ul className="flex flex-col pb-8">
+            {h.issues.map((c) => (
+              <li key={c.id}>
+                <Link href={c.href} className="group flex items-center gap-8 px-20 py-6 transition-hover hover:bg-band">
+                  <Dot tone={c.status === 'fail' ? 'stop' : 'low'} className={c.status === 'fail' ? 'animate-breathe' : undefined} />
+                  <span className="min-w-0 flex-1 truncate text-body-sm text-ink">{c.label}</span>
+                  <span className={cx('max-w-[40%] shrink-0 truncate font-mono text-micro', c.status === 'fail' ? 'text-stop' : 'text-low')}>{c.value}</span>
+                  <IconChevronRight size={14} stroke={ICON_STROKE} aria-hidden="true" className="shrink-0 text-ink-subtle" />
                 </Link>
               </li>
-            );
-          })}
-        </ul>
-      </div>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </Panel>
   );
 }
