@@ -27,7 +27,7 @@ export function OverviewHero({ d }: { d: OverviewData }) {
 
   return (
     <section aria-labelledby="overview-hero" className="texture-dots-accent relative overflow-hidden rounded-card bg-accent-wash px-24 py-24 desktop:px-32 desktop:py-32">
-      <div className="grid grid-cols-1 items-end gap-24 desktop:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] desktop:gap-40">
+      <div className="grid grid-cols-1 items-stretch gap-24 desktop:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] desktop:gap-40">
         <div className="flex min-w-0 flex-col gap-16">
           <p className="flex flex-wrap items-center gap-8 label-caps text-accent-text">
             <span aria-hidden="true" className={cx('size-dot rounded-dot', d.live ? 'animate-breathe bg-poured' : 'bg-ink-subtle')} />
@@ -61,7 +61,7 @@ export function OverviewHero({ d }: { d: OverviewData }) {
           </p>
         </div>
 
-        <div className="flex flex-col gap-8">
+        <div className="flex min-h-[260px] flex-col gap-8 rounded-control bg-card/60 px-16 pb-8 pt-12 shadow-chip">
           <p className="flex items-baseline justify-between gap-12 text-body-sm">
             <span className="text-ink-muted">The last seven nights</span>
             <Money value={weekTotal} size="num-sm" decimals="round" tone="muted" />
@@ -70,7 +70,7 @@ export function OverviewHero({ d }: { d: OverviewData }) {
             <WeekBars
               caption="Net sales over the last seven nights"
               currentKey={d.date}
-              height={170}
+              height={230}
               nights={d.week.map((w) => ({ key: w.date, label: formatWeekday(w.date).slice(0, 3), title: `${formatWeekday(w.date)} ${formatIsoDate(w.date)}`, shillings: Math.round(Number(w.value) / 100), tabs: w.tabs }))}
             />
           ) : (
