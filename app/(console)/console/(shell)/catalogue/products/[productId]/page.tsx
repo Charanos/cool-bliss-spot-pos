@@ -22,7 +22,7 @@ import * as inventory from '@/modules/inventory/service';
 import * as pricing from '@/modules/pricing/service';
 import * as procurement from '@/modules/procurement/service';
 import * as reporting from '@/modules/reporting/service';
-import * as trade from '@/modules/trade/service';
+import * as settlement from '@/modules/settlement/service';
 import { EntityLink } from '../../../_components/entity-link';
 import { RecordCrumb } from '../../../_components/shell/crumbs';
 import { ProductActions, VariantsCard, type VariantRow } from '../../_parts/product-record';
@@ -85,7 +85,7 @@ export default async function ProductPage({ params }: { params: Promise<{ produc
   // The last fortnight, day by day: how many sold, and what they brought in.
   const to = reporting.clock().lastNight;
   const days = Array.from({ length: DAYS }, (_, i) => addDays(to, i - DAYS + 1));
-  const daily = days.map((d) => trade.linesBetween(d, d).filter((l) => variantIds.has(l.productVariantId)));
+  const daily = days.map((d) => settlement.soldLinesBetween(d, d).filter((l) => variantIds.has(l.productVariantId)));
   const soldByDay = daily.map((lines) => lines.reduce((n, l) => n + l.qty, 0));
   const takings = sum(daily.flat().map((l) => l.lineTotalCents));
   const sold = soldByDay.reduce((a, b) => a + b, 0);

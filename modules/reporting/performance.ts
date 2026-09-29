@@ -88,7 +88,7 @@ export function performance(from: IsoDate, to: IsoDate, previous: { from: IsoDat
   const settled = sum(bills.map(settlement.billNet));
   const before = sum(settlement.billsBetween(previous.from, previous.to).filter((b) => b.status !== 'open').map(settlement.billNet));
 
-  const lines = trade.linesBetween(from, to);
+  const lines = settlement.soldLinesBetween(from, to);
   const voided = trade.voidedBetween(from, to);
   const costs = lineCosts(lines);
   const rungUp = sum(lines.map((l) => l.lineTotalCents));

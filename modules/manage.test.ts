@@ -18,6 +18,7 @@ import * as pricingManage from './pricing/manage';
 import * as pricing from './pricing/service';
 import * as procurementManage from './procurement/manage';
 import * as procurement from './procurement/service';
+import * as reporting from './reporting/service';
 import * as corrections from './settlement/corrections';
 import * as settlement from './settlement/service';
 import { type IncomingEntry, applyEntry } from './sync/apply';
@@ -46,7 +47,7 @@ const lastAudit = () => {
 };
 
 /** A quick sale at the counter, settled in the tender given. */
-function quickSale(kind: 'mpesa' | 'cash', qty = 2) {
+function quickSale(kind: 'mpesa' | 'cash', qty = 2, expected: 'acked' | 'rejected' = 'acked') {
   const variantId = variantIdFor('tusker', 'bottle');
   const unit = pricing.currentPrice(variantId, Date.now())!.unitPriceCents;
   const subtotal = multiplyByQty(unit, qty);
@@ -73,8 +74,8 @@ function quickSale(kind: 'mpesa' | 'cash', qty = 2) {
       settledAt: Date.now(),
     }),
   );
-  expect(result.status).toBe('acked');
-  return { bill: settlement.billById(billId)!, variantId, due };
+  expect(result.status).toBe(expected);
+  return { bill: settlement.billById(billId)!, variantId, due, result };
 }
 
 describe('the menu', () => {
@@ -103,9 +104,10 @@ describe('the menu', () => {
     expect(catalogue.version()).toBeGreaterThan(before);
     const variant = catalogue.variants().find((v) => v.productId === product.id)!;
     expect(pricing.currentPrice(variant.id)?.unitPriceCents).toBe(cents(250_000));
-    // Its stock was never received or counted, so it sells, and the Console lists it as not counted.
+    // Its stock was never received or counted, so none is on the shelf: it cannot be sold until a
+    // delivery or a count records some, and the Console lists it as not counted.
     expect(inventory.stockRecorded(variant.id)).toBe(false);
-    expect(availability.evaluate(variant.id).state).toBe('available');
+    expect(availability.evaluate(variant.id)).toMatchObject({ state: 'finished', reason: 'stock', qtyAvailable: 0 });
     // The same request again adds nothing.
     const again = catalogueManage.createProduct(
       { categoryId: spirits.id, name: 'Test Gin', brand: 'Test', sku: 'SPR-TST-750', barcode: null, containerVolumeMl: 750, abv: 40, defaultSupplierId: null, imageKey: null, firstVariant: { name: '750ml', kind: 'sealed', serveVolumeMl: null, depletionFactor: 1 }, basePriceCents: cents(250_000), requestId: 'test-gin-once', actor },
@@ -336,5 +338,30 @@ describe('the venue', () => {
     inventory.reverseWriteOff({ groupId: group, reason: 'It was the wrong item', actor });
     expect(inventory.onHand(tusker)).toBeCloseTo(before, 6);
     expect(() => inventory.reverseWriteOff({ groupId: group, reason: 'Trying the same again', actor })).toThrow(/already/);
+  });
+});
+
+describe('selling what is on the shelf', () => {
+  it('refuses a quick sale for more than the stock holds, and takes nothing', () => {
+    // Last in this file: it sets the whole bar to three of everything.
+    inventoryManage.setTrialStock({ qty: 3, reason: 'A short shelf for the test', actor: ownerActor() });
+    const variantId = variantIdFor('tusker', 'bottle');
+    const left = Math.floor(availability.evaluate(variantId).qtyAvailable);
+    expect(left).toBe(3);
+    const bills = dataset().bills.length;
+    const stock = inventory.onHand(variantId);
+    const { result } = quickSale('mpesa', left + 5, 'rejected');
+    expect(JSON.stringify(result)).toMatch(/Only \d+ .* left/);
+    expect(dataset().bills.length).toBe(bills);
+    expect(inventory.onHand(variantId)).toBeCloseTo(stock, 6);
+  });
+
+  it('counts a quick sale in every report of what sold, with its cost', () => {
+    const { bill, variantId } = quickSale('mpesa', 2);
+    const sold = settlement.soldLinesBetween(bill.businessDate, bill.businessDate).filter((l) => l.id.startsWith(`${bill.id}:`));
+    expect(sold).toHaveLength(1);
+    expect(sold[0]).toMatchObject({ productVariantId: variantId, qty: 2, status: 'served' });
+    const product = catalogue.productOfVariant(variantId)!;
+    expect(reporting.topMovers(bill.businessDate, bill.businessDate, 50).some((m) => m.productId === product.id)).toBe(true);
   });
 });

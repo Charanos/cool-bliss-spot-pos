@@ -17,7 +17,7 @@ import * as identity from '@/modules/identity/service';
 import * as pricingManage from '@/modules/pricing/manage';
 import * as pricing from '@/modules/pricing/service';
 import * as reporting from '@/modules/reporting/service';
-import * as trade from '@/modules/trade/service';
+import * as settlement from '@/modules/settlement/service';
 import { RecordCrumb } from '../../../_components/shell/crumbs';
 import { CategoryActions } from './category-actions';
 
@@ -41,7 +41,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   const baseItems = base ? pricing.itemsFor(base.id) : [];
   const to = reporting.clock().lastNight;
   const from = addDays(to, -DAYS + 1);
-  const lines = trade.linesBetween(from, to).filter((l) => catalogue.productOfVariant(l.productVariantId)?.categoryId === category.id);
+  const lines = settlement.soldLinesBetween(from, to).filter((l) => catalogue.productOfVariant(l.productVariantId)?.categoryId === category.id);
   const takings = sum(lines.map((l) => l.lineTotalCents));
   const byProduct = new Map<string, Cents>();
   for (const l of lines) {

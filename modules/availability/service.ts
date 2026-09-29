@@ -44,22 +44,24 @@ export function evaluate(variantId: string): AvailabilityResult & { threshold: n
   if (recipe) {
     for (const c of recipe.components) if (held.has(c.componentVariantId)) hasActiveHold = true;
   }
-  if (recipe && recipe.components.some((c) => inventory.stockRecorded(c.componentVariantId))) {
+  if (recipe && recipe.components.some((c) => isKept(c.componentVariantId))) {
     tracked = true;
     qty = Math.min(
       ...recipe.components.map((c) => {
         if (held.has(c.componentVariantId)) hasActiveHold = true;
-        // A part whose stock was never recorded does not stop the drink; the parts that are counted do.
-        return inventory.stockRecorded(c.componentVariantId) ? servesFromStock(inventory.onHand(c.componentVariantId), c.qty) : UNTRACKED_QTY;
+        // A part kept in stock stops the drink when it runs out, and so does one never counted or
+        // received: stock that was never recorded is not there to pour. Parts not kept in stock do not.
+        if (!isKept(c.componentVariantId)) return UNTRACKED_QTY;
+        return inventory.stockRecorded(c.componentVariantId) ? servesFromStock(inventory.onHand(c.componentVariantId), c.qty) : 0;
       }),
     );
     threshold = Math.max(LAST_FEW_SERVES + 1, outletDefault);
   } else if (tracked) {
     const stock = catalogue.stockVariantFor(variantId);
-    // Stock never received, counted or opened: nothing says the shelf is empty, so it sells, and
-    // the Console lists it as not counted yet. Depletion starts to count once stock is recorded.
+    // Stock never received or counted is not on the shelf: it cannot be sold until a delivery or a
+    // count records it. The Console lists it as not counted yet.
     if (stock && held.has(stock.stockVariantId)) hasActiveHold = true;
-    if (stock && !inventory.stockRecorded(stock.stockVariantId)) tracked = false;
+    if (stock && !inventory.stockRecorded(stock.stockVariantId)) qty = 0;
     else if (stock) {
       const units = inventory.onHand(stock.stockVariantId);
       qty = variant.kind === 'serve' ? servesFromStock(units, stock.factor) : Math.floor(units + 1e-9);
@@ -77,6 +79,12 @@ export function evaluate(variantId: string): AvailabilityResult & { threshold: n
     threshold,
   });
   return { ...result, threshold };
+}
+
+/** Whether a variant's stock is kept: its product is active in a category that tracks stock. */
+function isKept(variantId: string): boolean {
+  const product = catalogue.productOfVariant(variantId);
+  return Boolean(product && catalogue.categoryById(product.categoryId)?.trackStock && !product.unitsInHouse);
 }
 
 /** Tabs still at their table: open, being settled or paid but not yet cleared. */
@@ -104,8 +112,9 @@ export function hasUnitsInHouse(): boolean {
  * Raised when the rules that derive the map change in code, not in the data: every device holds a
  * version it was given, so a new generation makes each fetch the map once more under the new rules.
  * 2: the handover's placeholder stock no longer finishes an item after one sale.
+ * 3: stock never counted or received is not on the shelf, so it does not sell.
  */
-const RULES_GENERATION = 2;
+const RULES_GENERATION = 3;
 
 /** The derived map for every sellable variant, with the version a device compares before pushing. */
 export function map(): { version: number; computedAt: number; entries: AvailabilityEntry[] } {
