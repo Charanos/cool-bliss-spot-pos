@@ -20,3 +20,22 @@ export function SheetNotice({ sheets }: { sheets: readonly { id: string; title: 
     </Callout>
   );
 }
+
+/** After booking, the way back to the sheet: to read what was booked, or for the owner to start again from it. */
+export function SheetBaselineLink({ sheets }: { sheets: readonly { id: string; title: string }[] }) {
+  if (sheets.length === 0) return null;
+  const last = sheets[sheets.length - 1]!;
+  return (
+    <Callout
+      tone="info"
+      title={`Stock was set from ${last.title}`}
+      action={
+        <ButtonLink href={`/console/inventory/stock/sheets/${last.id}`} variant="outline" icon={IconClipboardList}>
+          Open the sheet
+        </ButtonLink>
+      }
+    >
+      If placeholder or trial stock has crept in since, open the sheet and use Start again from this sheet. It clears sales and stock records and sets the shelf back to the sheet.
+    </Callout>
+  );
+}

@@ -11,7 +11,7 @@ import { ButtonLink } from '@bliss/ui/components/button-link';
 import { IconClipboardList } from '@tabler/icons-react';
 import * as stockSheet from '@/modules/inventory/stock-sheet';
 import { BelowZeroNotice } from './below-zero';
-import { SheetNotice } from './sheet-notice';
+import { SheetBaselineLink, SheetNotice } from './sheet-notice';
 import { TrialStock } from './trial-stock';
 import { StockTable } from './stock-table';
 import { ViewHeader } from '../../_components/workspace';
@@ -138,6 +138,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
       />
 
     {identity.can(actor.staffId, 'stock.count.commit') ? <SheetNotice sheets={stockSheet.sheetsToBook()} /> : null}
+    {identity.roleFor(actor.staffId)?.key === 'owner' ? <SheetBaselineLink sheets={stockSheet.sheetsBooked()} /> : null}
     {belowZero > 0 ? <BelowZeroNotice count={belowZero} /> : null}
     <StockTable
       rows={rows}
