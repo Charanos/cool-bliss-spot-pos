@@ -1,4 +1,4 @@
-import { formatDateTime, formatQty } from '@bliss/shared/format';
+import { formatDate, formatQty, formatTime } from '@bliss/shared/format';
 import { formatFigure, isPositive, isZero, subtract, sum } from '@bliss/shared/money';
 import { tabLabel } from '@bliss/shared/trade';
 import { PRINT_RETRIES, TAGLINE, attemptOf, brandLines, printAccess, retryHref, tillParts } from '@/lib/print';
@@ -19,6 +19,7 @@ import {
   ReceiptRule,
   ReceiptSection,
   ReceiptTenderRow,
+  ReceiptThanks,
   ReceiptTotalRow,
 } from '@bliss/ui/components/thermal-receipt';
 
@@ -66,7 +67,9 @@ export default async function PrintBillPage({ params, searchParams }: { params: 
         <ReceiptBand title={paid ? 'Receipt' : 'Bill'} detail={`No. ${bill.billNumber}`} />
         <ReceiptFacts
           items={[
-            { label: 'Date', value: formatDateTime(timestamp, tz) },
+            // Date and time on lines of their own: together they wrap on a 58mm roll.
+            { label: 'Date', value: formatDate(timestamp, tz) },
+            { label: 'Time', value: formatTime(timestamp, tz) },
             { label: 'Table', value: table },
             zone ? { label: 'Area', value: zone } : null,
             { label: 'Sale', value: SCOPE_LABEL[bill.scope] },
@@ -111,7 +114,7 @@ export default async function PrintBillPage({ params, searchParams }: { params: 
         <ReceiptPay parts={tillParts(outlet, lines, bill.totalCents)} currency={outlet.currency} paid={paid} viaMpesa={tenders.length > 0 && tenders.every((tn) => tn.kind === 'mpesa')} total={kes(bill.totalCents)} />
 
         <ReceiptFooter>
-          <p className="text-[11px] italic">Asante, karibu tena</p>
+          <ReceiptThanks>Asante, karibu tena</ReceiptThanks>
           <p>{paid ? 'Keep this receipt for your records.' : 'Pay at the counter, or by M-Pesa above.'}</p>
           <p>Prices include VAT. Not a tax invoice.</p>
         </ReceiptFooter>

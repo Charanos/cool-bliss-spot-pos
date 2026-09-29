@@ -1,4 +1,4 @@
-import { formatDateTime, formatQty } from '@bliss/shared/format';
+import { formatDate, formatQty, formatTime } from '@bliss/shared/format';
 import { formatFigure, sum } from '@bliss/shared/money';
 import { tabLabel } from '@bliss/shared/trade';
 import { PRINT_RETRIES, TAGLINE, attemptOf, brandLines, printAccess, retryHref, tillParts } from '@/lib/print';
@@ -17,6 +17,7 @@ import {
   ReceiptPay,
   ReceiptRule,
   ReceiptSection,
+  ReceiptThanks,
   ReceiptTotalRow,
 } from '@bliss/ui/components/thermal-receipt';
 
@@ -59,7 +60,8 @@ export default async function PrintTabPage({ params, searchParams }: { params: P
         <ReceiptBand title="Your bill" detail={tab.tabNumber ? `Tab ${tab.tabNumber}` : null} />
         <ReceiptFacts
           items={[
-            { label: 'Printed', value: formatDateTime(Date.now(), tz) },
+            { label: 'Date', value: formatDate(Date.now(), tz) },
+            { label: 'Printed at', value: formatTime(Date.now(), tz) },
             { label: 'Table', value: tabLabel({ tableLabel: table?.label, name: tab.name, walkUpNo: tab.walkUpNo }) },
             zone ? { label: 'Area', value: zone } : null,
             server ? { label: 'Served by', value: identity.displayName(server) } : null,
@@ -88,7 +90,7 @@ export default async function PrintTabPage({ params, searchParams }: { params: P
         <ReceiptPay parts={tillParts(outlet, lines, total)} currency={outlet.currency} total={kes(total)} />
 
         <ReceiptFooter>
-          <p className="text-[11px] italic">Asante, karibu tena</p>
+          <ReceiptThanks>Asante, karibu tena</ReceiptThanks>
           <p>Prices include VAT. Not a receipt: yours prints once the bill is paid.</p>
         </ReceiptFooter>
       </Receipt>
