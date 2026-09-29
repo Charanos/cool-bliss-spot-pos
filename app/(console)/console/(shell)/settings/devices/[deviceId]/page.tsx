@@ -1,4 +1,4 @@
-import { formatAgo, formatDate, formatDateTime, formatIsoDate, plural } from '@bliss/shared/format';
+import { formatBuild, formatAgo, formatDate, formatDateTime, formatIsoDate, plural } from '@bliss/shared/format';
 import { sum } from '@bliss/shared/money';
 import { addDays } from '@bliss/shared/time';
 import { Card, CardHeader, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
@@ -90,7 +90,7 @@ export default async function DevicePage({ params }: { params: Promise<{ deviceI
             items={[
               { value: KIND[device.kind] ?? device.kind },
               { icon: IconCalendar, value: `Registered ${formatDate(device.enrolledAt, tz)} by ${identity.displayName(device.enrolledBy)}` },
-              device.appVersion ? { icon: IconVersions, value: `Version ${device.appVersion}` } : null,
+              device.appVersion ? { icon: IconVersions, value: `Build ${formatBuild(device.appVersion)}` } : null,
               device.signedInStaffId
                 ? {
                     icon: IconUser,

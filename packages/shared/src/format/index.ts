@@ -70,6 +70,18 @@ export function formatAgo(ms: number): string {
 }
 
 /** "1 line", "3 lines". */
+/**
+ * How a build is shown to a person: the commit it was made from, nothing else. A device reports
+ * "0.1.0+c656e29"; the package number never changes and says nothing, so it is dropped. Comparisons
+ * between builds stay on the full string; only display goes through here.
+ */
+export function formatBuild(version: string | null | undefined): string {
+  const v = (version ?? '').trim();
+  if (v === '') return '';
+  const plus = v.indexOf('+');
+  return plus >= 0 ? v.slice(plus + 1) : v;
+}
+
 export function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }

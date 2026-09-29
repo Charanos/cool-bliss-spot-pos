@@ -1,7 +1,7 @@
 'use client';
 
 import type { DeviceStatus } from '@bliss/shared/domain';
-import { formatAgo, formatDate, plural } from '@bliss/shared/format';
+import { formatBuild, formatAgo, formatDate, plural } from '@bliss/shared/format';
 import { Button } from '@bliss/ui/components/button';
 import { Card, CardBand, IconTile, KeyRow, KeyRows } from '@bliss/ui/components/console/card';
 import { type Column, DataTable, NumCell, StackCell } from '@bliss/ui/components/console/data-table';
@@ -76,10 +76,10 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
       header: 'Version',
       width: '110px',
       sortValue: (r) => r.appVersion,
-      csv: (r) => r.appVersion,
+      csv: (r) => formatBuild(r.appVersion),
       cell: (r) => (
         <span className="flex flex-col">
-          <NumCell tone="muted">{r.appVersion}</NumCell>
+          <NumCell tone="muted">{formatBuild(r.appVersion)}</NumCell>
           {r.status === 'active' && r.appVersion !== latestVersion ? <span className="text-body-sm text-low">Update waiting</span> : null}
         </span>
       ),
@@ -105,7 +105,7 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
           detail={heldOrdersCount > 0 ? 'They send when the device reconnects' : 'Every device has sent everything'}
         />
         <Metric label="Floor tablets" icon={IconDeviceTablet} value={<CountUp value={tabletsCount} delayMs={120} />} detail="Used by waiters on the floor" />
-        <Metric label="Latest version" icon={IconCheck} value={latestVersion || 'None'} detail={outdated > 0 ? `${plural(outdated, 'device')} not yet updated` : 'Every device is up to date'} tone={outdated > 0 ? 'attention' : 'default'} />
+        <Metric label="Latest build" icon={IconCheck} value={formatBuild(latestVersion) || 'None'} detail={outdated > 0 ? `${plural(outdated, 'device')} not yet updated` : 'Every device is up to date'} tone={outdated > 0 ? 'attention' : 'default'} />
       </MetricGrid>
 
       <p className="measure text-body-sm text-ink-muted">Each tablet keeps working without a connection and sends what it holds when it reconnects. A device that is lost or stolen is withdrawn here, and its PIN sessions end.</p>
@@ -156,8 +156,8 @@ export function DevicesTable({ rows, now: serverNow, latestVersion, timezone, ca
                 <KeyRow label="Not yet sent" tone={r.unsynced > 0 ? 'low' : undefined}>
                   {r.unsynced > 0 ? r.unsynced : 'None'}
                 </KeyRow>
-                <KeyRow label="Version" tone={r.status === 'active' && r.appVersion && r.appVersion !== latestVersion ? 'low' : undefined}>
-                  {r.appVersion || 'Not yet'}
+                <KeyRow label="Build" tone={r.status === 'active' && r.appVersion && r.appVersion !== latestVersion ? 'low' : undefined}>
+                  {formatBuild(r.appVersion) || 'Not yet'}
                 </KeyRow>
                 <KeyRow label="Registered">{formatDate(r.enrolledAt, timezone)}</KeyRow>
               </KeyRows>

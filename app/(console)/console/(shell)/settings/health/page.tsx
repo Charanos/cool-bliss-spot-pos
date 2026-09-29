@@ -1,4 +1,4 @@
-import { formatAgo, formatTime } from '@bliss/shared/format';
+import { formatBuild, formatAgo, formatTime } from '@bliss/shared/format';
 import { BarChart } from '@bliss/ui/components/console/bar-chart';
 import { Card, CardHeader } from '@bliss/ui/components/console/card';
 import { Funnel, RingGauge, SegmentBar } from '@bliss/ui/components/console/gauges';
@@ -139,7 +139,7 @@ export default async function HealthPage() {
                   ['Up for', `${up.value}${up.unit ? ` ${up.unit}` : ''}`],
                   ['Readings', String(v.samples.length)],
                   ['Node', v.node.replace(/^v/, '')],
-                  ['Build', v.build],
+                  ['Build', formatBuild(v.build)],
                 ] as const
               ).map(([k, val]) => (
                 <div key={k} className="flex items-baseline gap-6">
