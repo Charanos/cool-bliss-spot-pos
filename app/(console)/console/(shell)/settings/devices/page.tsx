@@ -27,7 +27,8 @@ export default async function DevicesPage() {
     enrolledAt: d.enrolledAt,
     revokedReason: d.revokedReason,
   }));
-  const latest = rows.map((r) => r.appVersion).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0] ?? '';
+  // The build this server runs is the one every station should be on, not the newest a device reports.
+  const latest = process.env.NEXT_PUBLIC_BLISS_VERSION ?? '';
   return (
     <>
       <ViewHeader page="/console/settings/devices" />

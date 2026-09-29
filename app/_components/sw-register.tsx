@@ -23,7 +23,8 @@ export async function recoverFromStaleBuild(): Promise<void> {
     // Storage blocked: recover anyway, once per page life.
   }
   try {
-    if ('caches' in window) await caches.delete('bliss-pages');
+    // Page copies are kept per build (bliss-pages-<build>); every one goes.
+    if ('caches' in window) await Promise.all((await caches.keys()).filter((k) => k.startsWith('bliss-pages')).map((k) => caches.delete(k)));
     const registration = await navigator.serviceWorker?.getRegistration();
     registration?.waiting?.postMessage({ type: 'bliss:apply-update' });
   } finally {

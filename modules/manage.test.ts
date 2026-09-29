@@ -365,3 +365,20 @@ describe('selling what is on the shelf', () => {
     expect(reporting.topMovers(bill.businessDate, bill.businessDate, 50).some((m) => m.productId === product.id)).toBe(true);
   });
 });
+
+describe('a walk up always has a zone to open in', () => {
+  it('puts a Main floor zone back when the venue has none active, and leaves a venue with one alone', () => {
+    const zones = dataset().zones;
+    const saved = zones.map((z) => ({ ...z }));
+    try {
+      expect(trade.ensureWalkUpZone()).toBe(false);
+      for (const z of zones) z.status = 'archived';
+      expect(trade.ensureWalkUpZone()).toBe(true);
+      const live = trade.zones().filter((z) => z.status === 'active');
+      expect(live.map((z) => z.name)).toEqual(['Main floor']);
+      expect(trade.ensureWalkUpZone()).toBe(false);
+    } finally {
+      zones.splice(0, zones.length, ...saved);
+    }
+  });
+});
