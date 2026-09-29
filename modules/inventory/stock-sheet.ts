@@ -8,7 +8,10 @@ import { type Cents, ZERO, formatKes, multiplyByQty, shillings, sum } from '@bli
 import type { Actor } from '@bliss/shared/reason';
 import { type IsoDate, businessDayWindow } from '@bliss/shared/time';
 import { DomainError } from '../_data/errors';
+import { type BaselineSummary, applyClearBaseline, planClearBaseline } from '../_data/clear-trade';
 import { dataset } from '../_data/source';
+import { clearBaselineStored, storeEnabled, withWrite } from '../_data/store';
+import { checkReason } from '@bliss/shared/reason';
 import * as audit from '../audit/service';
 import * as catalogueManage from '../catalogue/manage';
 import * as catalogue from '../catalogue/service';
@@ -447,4 +450,62 @@ export function applySheet(input: { sheetId: string; reason: string; actor: Acto
     severity: 'sensitive',
   });
   return { billNumber: bill.billNumber, items: resolved.length };
+}
+
+/* ------------------------------------------------------------ starting again */
+
+/** What starting again from a sheet would take away, for the Console to say before it asks. */
+export function baselineSummary(): BaselineSummary {
+  return planClearBaseline(dataset());
+}
+
+/**
+ * Start the outlet again from a stock sheet: all of trade and every record of stock go (the ledger
+ * with its placeholders and trial stock, deliveries, counts, holds, purchase orders), then the sheet
+ * is booked on the clean record, so its counts are the only stock the outlet has, its night the first
+ * the reports know, and nothing earlier sits on top. The outlet as set up stays: staff and PINs,
+ * devices, zones and tables, the menu with its prices, tots and sticks, suppliers, the audit trail.
+ * Owners only, with a reason. Every station starts clean at its next pull.
+ *
+ * The sheet is checked before anything goes, so an outlet is never left cleared with no baseline.
+ */
+export async function resetToSheet(input: { sheetId: string; reason: string; actor: Actor; now?: number }): Promise<{ summary: BaselineSummary; billNumber: number }> {
+  const { actor } = input;
+  if (identity.roleFor(actor.staffId)?.key !== 'owner') throw new DomainError('Only an owner can start the outlet again from a stock sheet.');
+  const check = checkReason(input.reason);
+  if (!check.ok) throw new DomainError(check.message);
+  const sheet = sheetById(input.sheetId);
+  if (!sheet) throw new DomainError('That stock sheet is not here.');
+  const plan = planSheet(sheet, input.now);
+  if (plan.missing.length > 0) throw new DomainError(`${plan.missing.join(', ')} ${plan.missing.length === 1 ? 'is' : 'are'} not on the menu. Nothing was cleared.`);
+  if (!pricingManage.defaultList()) throw new DomainError('The menu has no base price list. Nothing was cleared.');
+
+  const epoch = `baseline:${Date.now().toString(36)}`;
+  let summary: BaselineSummary;
+  if (storeEnabled()) summary = await clearBaselineStored(epoch);
+  else {
+    const data = dataset();
+    summary = planClearBaseline(data);
+    applyClearBaseline(data, epoch);
+  }
+
+  const booked = await withWrite(() => {
+    const result = applySheet({ sheetId: sheet.id, reason: check.reason, actor, now: input.now });
+    // The outlet's record starts on the sheet's night: the reports begin there.
+    dataset().firstBusinessDate = sheet.businessDate;
+    audit.record({
+      outletId: identity.outlet().id,
+      actorStaffId: actor.staffId,
+      actorDeviceId: actor.deviceId ?? null,
+      action: 'outlet.reset_to_stock_sheet',
+      entityType: 'stock_sheet',
+      entityId: sheet.id,
+      before: summary,
+      after: { title: sheet.title, businessDate: sheet.businessDate, billNumber: result.billNumber, items: result.items },
+      reason: check.reason,
+      severity: 'sensitive',
+    });
+    return result;
+  });
+  return { summary, billNumber: booked.billNumber };
 }

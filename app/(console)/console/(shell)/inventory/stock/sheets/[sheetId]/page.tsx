@@ -13,6 +13,7 @@ import * as identity from '@/modules/identity/service';
 import * as stockSheet from '@/modules/inventory/stock-sheet';
 import { RecordCrumb } from '../../../../_components/shell/crumbs';
 import { BookSheet } from './book-sheet';
+import { ResetToSheet } from './reset-to-sheet';
 
 export async function generateMetadata({ params }: { params: Promise<{ sheetId: string }> }): Promise<Metadata> {
   const { sheetId } = await params;
@@ -36,6 +37,7 @@ export default async function StockSheetPage({ params }: { params: Promise<{ she
   const actor = await identity.currentConsoleActor();
   const tz = identity.outlet().timezone;
   const canBook = identity.can(actor.staffId, 'stock.count.commit') && identity.can(actor.staffId, 'price.write');
+  const isOwner = identity.roleFor(actor.staffId)?.key === 'owner';
 
   const sections = [...new Set(plan.rows.map((r) => r.section))];
   const variances = plan.rows.filter((r) => r.variance !== 0);
@@ -197,6 +199,7 @@ export default async function StockSheetPage({ params }: { params: Promise<{ she
           />
         </div>
       </Card>
+      {isOwner && plan.missing.length === 0 ? <ResetToSheet sheetId={plan.id} title={plan.title} counts={stockSheet.baselineSummary()} /> : null}
     </div>
   );
 }
