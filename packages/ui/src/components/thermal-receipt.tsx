@@ -179,35 +179,44 @@ export function ReceiptTotalRow({ label, value, bold = false, large = false }: {
 }
 
 /**
- * How to pay by M-Pesa: the till for each part of the bill, in a fine rounded frame so it is found
- * at once. With one part, one till; with drinks and food, each till with what is paid to it.
+ * The M-Pesa tills a bill is paid to. Before it is paid, each till shows what to send it; once paid,
+ * the same figure with the word Paid, so a receipt for food and drinks says how much went to the bar
+ * till and how much to the kitchen's, not just that it was paid. With two tills, the parts add up to
+ * the bill's total, and the last line says so.
  */
-/**
- * Where to pay by M-Pesa: each till with what goes to it, side by side, so a guest paying drinks and
- * food separately reads both at a glance. `paid` marks a receipt already settled.
- */
-export function ReceiptPay({ parts, currency = 'KES', paid = false }: { parts: readonly { label: string; till: string; amount?: string | null }[]; currency?: string; paid?: boolean }) {
+export function ReceiptPay({ parts, currency = 'KES', paid = false, viaMpesa = true, total }: { parts: readonly { label: string; till: string; amount?: string | null }[]; currency?: string; paid?: boolean; /** A paid bill settled wholly by M-Pesa went to the tills; paid any other way, the tills are only how it splits. */ viaMpesa?: boolean; total?: string | null }) {
   if (parts.length === 0) return null;
   return (
     <section className="mt-12 rounded-[6px] border border-paper-ink px-12 py-8">
-      <p className={cx(caps, 'text-center')}>M-Pesa · Buy Goods</p>
+      <p className={cx(caps, 'text-center')}>{!paid ? 'M-Pesa · Buy Goods' : viaMpesa ? 'Paid to the tills · M-Pesa Buy Goods' : 'Split by till'}</p>
       <div className="mt-6 flex flex-col">
         {parts.map((p) => (
           <div key={p.label} className="flex flex-col border-t border-dotted border-paper-ink py-6 first:border-t-0 first:pt-0 last:pb-0">
             <span className="text-[9.5px]">{p.label}</span>
             <span className="flex items-baseline justify-between gap-8">
               <span className="font-mono text-[17px] font-print leading-[1.2] tracking-[0.12em]">{p.till}</span>
-              {paid ? (
-                <span className="text-[10px] uppercase tracking-[0.2em]">Paid</span>
-              ) : p.amount ? (
-                <span className="font-mono text-[15px] font-print leading-[1.2] tabular-nums">
-                  <span className="text-[10px] font-regular">{currency} </span>
-                  {p.amount}
+              {p.amount ? (
+                <span className="flex items-baseline gap-6 font-mono text-[15px] font-print leading-[1.2] tabular-nums">
+                  {paid && viaMpesa ? <span className="font-sans text-[9px] uppercase tracking-[0.2em]">Paid</span> : null}
+                  <span>
+                    <span className="text-[10px] font-regular">{currency} </span>
+                    {p.amount}
+                  </span>
                 </span>
+              ) : paid && viaMpesa ? (
+                <span className="text-[10px] uppercase tracking-[0.2em]">Paid</span>
               ) : null}
             </span>
           </div>
         ))}
+        {parts.length > 1 && total ? (
+          <div className="mt-2 flex items-baseline justify-between border-t border-paper-ink pt-4 text-[10px]">
+            <span className="uppercase tracking-[0.2em]">{paid ? (viaMpesa ? 'Paid in all' : 'Total') : 'Both tills'}</span>
+            <span className="font-mono tabular-nums">
+              {currency} {total}
+            </span>
+          </div>
+        ) : null}
       </div>
     </section>
   );

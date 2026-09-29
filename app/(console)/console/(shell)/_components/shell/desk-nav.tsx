@@ -4,6 +4,7 @@ import type { Cents } from '@bliss/shared/money';
 import { BlissMark } from '@bliss/ui/components/brand';
 import { Sparkline } from '@bliss/ui/components/console/sparkline';
 import { AnimatedMoney } from '@bliss/ui/components/money';
+import { useDismiss } from '@bliss/ui/hooks';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconArrowUpRight, IconChevronDown, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand } from '@tabler/icons-react';
 import Link from 'next/link';
@@ -210,6 +211,15 @@ function CountPill({ count, tone, folded, className }: { count: number; tone?: '
  * One workspace on the desk. Open, its pages hang beneath it on a guide line; folded, they open in a
  * flyout beside the icon, on hover or from the keyboard.
  */
+/** Focus that came from the keyboard, not from a tap or a click. */
+function keyboardFocus(el: HTMLElement): boolean {
+  try {
+    return el.matches(':focus-visible');
+  } catch {
+    return false;
+  }
+}
+
 function Workspace({
   item,
   pathname,
@@ -236,11 +246,16 @@ function Workspace({
   const timer = useRef<number | null>(null);
   const wideOnly = folded === 'true' ? 'hidden' : 'hidden desktop:flex';
 
+  const flyoutRef = useRef<HTMLDivElement>(null);
+  // A flyout is for a pointer that hovers and a keyboard that tabs. A finger has neither: iPad Safari
+  // sends mouseenter when an icon is tapped and never sends the mouseleave, so each tapped workspace
+  // left its flyout open and they piled up over the page. Touch goes straight to the workspace.
+  useDismiss(flyoutRef, flyout !== null, () => setFlyout(null));
   const showFlyout = () => {
     if (!pages || (folded === 'below' && window.matchMedia('(min-width: 1280px)').matches)) return;
     if (timer.current) window.clearTimeout(timer.current);
     const r = anchor.current?.getBoundingClientRect();
-    if (r) setFlyout(rise ? { bottom: window.innerHeight - r.bottom, left: r.right + 8 } : { top: r.top, left: r.right + 8 });
+    if (r) setFlyout(rise ? { bottom: document.documentElement.clientHeight - r.bottom, left: r.right + 8 } : { top: r.top, left: r.right + 8 });
   };
   const hideFlyout = () => {
     if (timer.current) window.clearTimeout(timer.current);
@@ -248,13 +263,13 @@ function Workspace({
   };
 
   return (
-    <div ref={anchor} onMouseEnter={showFlyout} onMouseLeave={hideFlyout} className={rise ? 'flex flex-col-reverse' : undefined}>
+    <div ref={anchor} onPointerEnter={(e) => e.pointerType === 'mouse' && showFlyout()} onPointerLeave={(e) => e.pointerType === 'mouse' && hideFlyout()} className={rise ? 'flex flex-col-reverse' : undefined}>
       <div className="relative flex items-center">
         <Link
           href={item.href}
           aria-current={active && pathname === item.href ? 'page' : undefined}
           title={item.label}
-          onFocus={showFlyout}
+          onFocus={(e) => keyboardFocus(e.currentTarget) && showFlyout()}
           onKeyDown={(e) => e.key === 'Escape' && setFlyout(null)}
           className={cx(
             'focus-ring-desk group relative flex h-nav-row min-w-0 flex-1 items-center gap-12 rounded-md text-ui transition-hover',
@@ -314,12 +329,13 @@ function Workspace({
       {flyout && pages && typeof document !== 'undefined'
         ? createPortal(
             <div
+              ref={flyoutRef}
               role="menu"
               tabIndex={-1}
               aria-label={item.label}
               onKeyDown={(e) => e.key === 'Escape' && setFlyout(null)}
-              onMouseEnter={() => timer.current && window.clearTimeout(timer.current)}
-              onMouseLeave={hideFlyout}
+              onPointerEnter={(e) => e.pointerType === 'mouse' && timer.current && window.clearTimeout(timer.current)}
+              onPointerLeave={(e) => e.pointerType === 'mouse' && hideFlyout()}
               style={{ top: flyout.top, bottom: flyout.bottom, left: flyout.left }}
               className="fixed z-popover w-popover-min rounded-md border border-edge bg-card p-4 shadow-popover"
             >

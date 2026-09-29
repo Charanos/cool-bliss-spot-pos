@@ -216,7 +216,8 @@ function StationsPopover({ stations, timezone }: { stations: readonly StationSta
   useLayoutEffect(() => {
     if (!open || !buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    setPosition({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+    // `right` on a fixed box is measured from the layout viewport, not the visual one (innerWidth).
+    setPosition({ top: rect.bottom + 6, right: document.documentElement.clientWidth - rect.right });
   }, [open]);
 
   return (
