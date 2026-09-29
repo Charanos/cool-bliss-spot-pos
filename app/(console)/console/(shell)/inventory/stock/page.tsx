@@ -6,7 +6,8 @@ import * as catalogue from '@/modules/catalogue/service';
 import * as inventory from '@/modules/inventory/service';
 import * as identity from '@/modules/identity/service';
 import * as pricing from '@/modules/pricing/service';
-import { multiplyByQuantity } from '@bliss/shared/money';
+import * as procurement from '@/modules/procurement/service';
+import { ZERO, isPositive, multiplyByQuantity } from '@bliss/shared/money';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { IconClipboardList } from '@tabler/icons-react';
 import * as stockSheet from '@/modules/inventory/stock-sheet';
@@ -35,6 +36,8 @@ export interface StockRow {
   onHand: number;
   unit: string;
   unitCost: Cents;
+  /** True when the cost is the supplier's price list, because nothing has been received or costed by hand yet. */
+  costFromSupplier: boolean;
   value: Cents;
   /** What the guest pays for one, from the price list; null when it is not priced. */
   price: Cents | null;
@@ -66,6 +69,10 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
   const outlet = identity.outlet();
   const actor = await identity.currentConsoleActor();
 
+  // What the supplier's price list says one costs, for an item no delivery or hand-set cost has priced yet.
+  const listCost = new Map<string, Cents>();
+  for (const sp of procurement.supplierProducts()) if (isPositive(sp.lastCostCents) && !listCost.has(sp.productVariantId)) listCost.set(sp.productVariantId, sp.lastCostCents);
+
   const rows: StockRow[] = [];
   for (const variant of catalogue.stockVariants()) {
     const product = catalogue.productById(variant.productId)!;
@@ -75,7 +82,9 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
     const hold = holds.find((h) => h.productVariantId === variant.id) ?? null;
     const velocity = inventory.velocityPerDay(variant.id);
     const totalOnHand = inventory.onHand(variant.id);
-    const unitCost = inventory.averageCost(variant.id);
+    const ledgerCost = inventory.averageCost(variant.id);
+    const costFromSupplier = !isPositive(ledgerCost) && listCost.has(variant.id);
+    const unitCost = isPositive(ledgerCost) ? ledgerCost : (listCost.get(variant.id) ?? ZERO);
     const sellPrice = pricing.currentPrice(sellable.id, Date.now())?.unitPriceCents ?? null;
     const variance = inventory.latestVariance(variant.id);
     const serves = catalogue.variants().filter((v) => v.productId === product.id && v.kind === 'serve' && v.status === 'active');
@@ -104,7 +113,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         onHand,
         unit,
         unitCost,
-        value: inventory.valueAtCost(variant.id, Math.max(0, onHand)),
+        costFromSupplier,
+        value: multiplyByQuantity(unitCost, Math.max(0, onHand)),
         price: sellPrice,
         retailValue: sellPrice === null ? null : multiplyByQuantity(sellPrice, Math.max(0, onHand)),
         velocity,

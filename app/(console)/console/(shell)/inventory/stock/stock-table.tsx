@@ -13,11 +13,11 @@ import { assetUrl } from '@/lib/assets';
 import { CountUp, Metric, MetricGrid } from '@bliss/ui/components/console/metric';
 import { AnimatedMoney, Money } from '@bliss/ui/components/money';
 import { StatusChip, ToneChip } from '@bliss/ui/components/status';
-import { IconAlertTriangle, IconBan, IconHistory, IconLock, IconLockOpen, IconScale, IconShoppingCart } from '@tabler/icons-react';
+import { IconAlertTriangle, IconBan, IconCoin, IconHistory, IconLock, IconLockOpen, IconScale, IconShoppingCart } from '@tabler/icons-react';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { HoldDialog, ReleaseHoldDialog, WriteOffDialog } from '../../_components/dialogs';
+import { HoldDialog, ReleaseHoldDialog, UnitCostDialog, WriteOffDialog } from '../../_components/dialogs';
 import { ProductThumb } from '../../_components/product-thumb';
 import { UrlSelect } from '../../_components/url-select';
 import type { StockRow } from './page';
@@ -50,6 +50,7 @@ export function StockTable({
   const [hold, setHold] = useState<{ variantId: string; name: string } | null>(null);
   const [release, setRelease] = useState<{ holdId: string; name: string } | null>(null);
   const [writeOff, setWriteOff] = useState<StockRow | null>(null);
+  const [costing, setCosting] = useState<StockRow | null>(null);
 
   const columns: Column<StockRow>[] = [
     {
@@ -81,7 +82,7 @@ export function StockTable({
         </span>
       ),
     },
-    { key: 'unitCost', header: 'Unit cost', width: '96px', align: 'right', sortValue: (r) => r.unitCost, csv: (r) => formatDecimal(r.unitCost), cell: (r) => (isPositive(r.unitCost) ? <Money value={r.unitCost} currency={false} size="num-md" tone="muted" /> : <span className="text-body-sm text-ink-subtle">Not set</span>) },
+    { key: 'unitCost', header: 'Unit cost', width: '96px', align: 'right', sortValue: (r) => r.unitCost, csv: (r) => formatDecimal(r.unitCost), cell: (r) => (isPositive(r.unitCost) ? <Money value={r.unitCost} currency={false} size="num-md" tone="muted" /> : <button type="button" onClick={(e) => { e.stopPropagation(); setCosting(r); }} className="text-body-sm text-accent-text hover:underline">Set cost</button>) },
     { key: 'price', header: 'Sells at', width: '96px', align: 'right', sortValue: (r) => r.price, csv: (r) => (r.price === null ? '' : formatDecimal(r.price)), cell: (r) => (r.price === null ? <span className="text-body-sm text-ink-subtle">No price</span> : <Money value={r.price} currency={false} size="num-md" decimals="whole" tone="muted" />) },
     { key: 'value', header: 'Value at cost', width: '110px', align: 'right', sortValue: (r) => r.value, csv: (r) => (isPositive(r.unitCost) ? formatDecimal(r.value) : ''), cell: (r) => (isPositive(r.unitCost) ? <Money value={r.value} currency={false} size="num-md" decimals="whole" /> : <span className="text-body-sm text-ink-subtle">Not costed</span>) },
     { key: 'velocity', header: 'Sells a day', width: '100px', align: 'right', sortValue: (r) => r.velocity, csv: (r) => r.velocity.toFixed(2), cell: (r) => <NumCell tone="muted">{r.velocity.toFixed(r.velocity < 10 ? 1 : 0)}</NumCell> },
@@ -250,7 +251,15 @@ export function StockTable({
                 {formatQty(r.onHand, r.unit === 'bottles' ? 2 : 0)} {r.unit === 'bottles' ? 'btl' : ''}
               </KeyRow>
               <KeyRow label="Sells at">{r.price === null ? 'No price' : <Money value={r.price} currency={false} size="num-md" decimals="whole" />}</KeyRow>
-              <KeyRow label="Unit cost">{isPositive(r.unitCost) ? <Money value={r.unitCost} currency={false} size="num-md" tone="muted" /> : 'Not set'}</KeyRow>
+              <KeyRow label="Unit cost">
+                {isPositive(r.unitCost) ? (
+                  <Money value={r.unitCost} currency={false} size="num-md" tone="muted" />
+                ) : (
+                  <button type="button" onClick={() => setCosting(r)} className="text-accent-text hover:underline">
+                    Set cost
+                  </button>
+                )}
+              </KeyRow>
               <KeyRow label="Value at cost">{isPositive(r.unitCost) ? <Money value={r.value} currency={false} size="num-md" decimals="whole" /> : 'Not costed'}</KeyRow>
               <KeyRow label="Sells a day">{r.velocity.toFixed(r.velocity < 10 ? 1 : 0)}</KeyRow>
               <KeyRow label="Lasts" tone={r.daysCover !== null && r.daysCover < 2 ? 'low' : undefined}>
@@ -270,10 +279,12 @@ export function StockTable({
           r.holdId
             ? { key: 'release', label: 'Take off hold', icon: IconLockOpen, onSelect: () => setRelease({ holdId: r.holdId!, name: r.variant }) }
             : { key: 'hold', label: 'Put on hold', icon: IconLock, onSelect: () => setHold({ variantId: r.variantId, name: r.variant }) },
+          { key: 'cost', label: isPositive(r.unitCost) ? 'Change unit cost' : 'Set unit cost', icon: IconCoin, onSelect: () => setCosting(r) },
           { key: 'writeoff', label: 'Write off with a reason', icon: IconBan, destructive: true, onSelect: () => setWriteOff(r) },
         ]}
       />
       <HoldDialog target={hold} onClose={() => setHold(null)} />
+      <UnitCostDialog target={costing ? { variantId: costing.variantId, name: costing.variant, unitCost: costing.unitCost } : null} onClose={() => setCosting(null)} />
       <ReleaseHoldDialog target={release} onClose={() => setRelease(null)} />
       <WriteOffDialog
         target={writeOff ? { variantId: writeOff.variantId, name: writeOff.variant, unitCost: writeOff.unitCost, locationId: writeOff.locationId, unit: writeOff.unit } : null}

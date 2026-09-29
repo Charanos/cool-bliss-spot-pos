@@ -4,7 +4,7 @@ import { MENU, skuOf } from '@bliss/db/seed/menu';
 import { menuImage } from '@bliss/db/seed/menu-images';
 import { seedId } from '@bliss/db/seed/ids';
 import type { Product, ProductVariant, TenderKind } from '@bliss/shared/domain';
-import { type Cents, ZERO, formatKes, multiplyByQty, shillings, sum } from '@bliss/shared/money';
+import { type Cents, ZERO, formatKes, isPositive, multiplyByQty, shillings, sum } from '@bliss/shared/money';
 import type { Actor } from '@bliss/shared/reason';
 import { type IsoDate, businessDayWindow } from '@bliss/shared/time';
 import { DomainError } from '../_data/errors';
@@ -20,6 +20,7 @@ import * as pricingManage from '../pricing/manage';
 import * as pricing from '../pricing/service';
 import * as settlementCommands from '../settlement/commands';
 import * as settlement from '../settlement/service';
+import * as inventoryManage from './manage';
 import * as inventory from './service';
 import { SHEET_2026_09_28 } from './sheets/2026-09-28';
 
@@ -485,6 +486,13 @@ export async function resetToSheet(input: { sheetId: string; reason: string; act
   if (plan.missing.length > 0) throw new DomainError(`${plan.missing.join(', ')} ${plan.missing.length === 1 ? 'is' : 'are'} not on the menu. Nothing was cleared.`);
   if (!pricingManage.defaultList()) throw new DomainError('The menu has no base price list. Nothing was cleared.');
 
+  // What each item costs is kept: clearing the ledger clears the costs it carries, and they are not trade.
+  const keptCosts = new Map<string, Cents>();
+  for (const v of catalogue.stockVariants()) {
+    const cost = inventory.averageCost(v.id);
+    if (isPositive(cost)) keptCosts.set(v.id, cost);
+  }
+
   const epoch = `baseline:${Date.now().toString(36)}`;
   let summary: BaselineSummary;
   if (storeEnabled()) summary = await clearBaselineStored(epoch);
@@ -495,6 +503,7 @@ export async function resetToSheet(input: { sheetId: string; reason: string; act
   }
 
   const booked = await withWrite(() => {
+    inventoryManage.restoreUnitCosts(keptCosts, actor);
     const result = applySheet({ sheetId: sheet.id, reason: check.reason, actor, now: input.now });
     // The outlet's record starts on the sheet's night: the reports begin there.
     dataset().firstBusinessDate = sheet.businessDate;

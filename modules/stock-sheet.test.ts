@@ -4,6 +4,7 @@ import { ownerActor } from '../test/actors';
 import { dataset } from './_data/source';
 import * as availability from './availability/service';
 import * as catalogue from './catalogue/service';
+import * as inventoryManage from './inventory/manage';
 import * as inventory from './inventory/service';
 import { SHEET_2026_09_28 } from './inventory/sheets/2026-09-28';
 import * as stockSheet from './inventory/stock-sheet';
@@ -112,6 +113,8 @@ describe('the stock sheet for Monday 28 September', () => {
     const bar = inventory.locations().find((l) => l.isDefaultSale)!;
     inventory.recordMovement({ variantId: sealed('Tusker Lager').id, locationId: bar.id, qtyDelta: 10, type: 'count_adjustment', sourceType: 'trial_stock', sourceId: null, reason: 'Trial run with the staff before handover', actor: ownerActor() });
     inventory.recordMovement({ variantId: sealed('KO').id, locationId: bar.id, qtyDelta: 1, type: 'opening_balance', sourceType: 'opening', sourceId: null, reason: 'Placeholder until the first stock take', actor: ownerActor() });
+    // A cost set by hand: what an item costs is not trade, and must outlive starting again.
+    inventoryManage.setUnitCost({ variantId: sealed('Tusker Lager').id, costCents: shillings(150), actor: ownerActor() });
     expect(onHand('Tusker Lager')).toBe(43);
     expect(onHand('KO')).toBe(21);
   });
@@ -132,7 +135,10 @@ describe('starting again from the sheet', () => {
     expect(onHand('Pall Mall Red')).toBe(84);
     expect(onHand('Tusker Ndimu')).toBe(0);
     // Every movement in the ledger now comes from the sheet.
-    expect(inventory.movements().every((m) => m.sourceType === 'stock_sheet' || m.sourceType === 'order_line')).toBe(true);
+    expect(inventory.movements().every((m) => m.sourceType === 'stock_sheet' || m.sourceType === 'order_line' || m.sourceType === 'cost')).toBe(true);
+    // What Tusker costs to buy is kept, and the stock is valued from it.
+    expect(inventory.averageCost(sealed('Tusker Lager').id)).toBe(shillings(150));
+    expect(inventory.valueAtCost(sealed('Tusker Lager').id, 33)).toBe(shillings(4950));
     // One bill, the sheet's night, and the reports start there.
     expect(settlement.billsBetween('2026-01-01', '2026-12-31').map((b) => b.businessDate)).toEqual(['2026-09-28']);
     expect(dataset().firstBusinessDate).toBe('2026-09-28');
