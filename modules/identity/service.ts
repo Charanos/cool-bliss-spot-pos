@@ -512,6 +512,36 @@ export function setEmploymentStatus(input: { staffId: string; status: Employment
 }
 
 /**
+ * Start the team again: everyone but the owner making the change has left, and every session of theirs
+ * ends. Their records stay (bills and the audit trail name them); they just cannot sign in. Nobody
+ * comes back from it: a person who returns is added as a new person, as with any other departure.
+ */
+export function leaveAllExceptMe(input: { reason: string; actor: Actor }): number {
+  const { reason, actor } = requireReasoned(input);
+  assertCan(actor.staffId, 'staff.manage', 'managing staff');
+  if (roleFor(actor.staffId)?.key !== 'owner') throw new DomainError('Only an owner can start the team again.');
+  const going = staffList().filter((s) => s.id !== actor.staffId && s.employmentStatus !== 'left');
+  for (const person of going) {
+    const before = { employmentStatus: person.employmentStatus };
+    person.employmentStatus = 'left';
+    person.pinVersion = (person.pinVersion ?? 0) + 1;
+    audit.record({
+      outletId: person.outletId,
+      actorStaffId: actor.staffId,
+      action: 'staff.left',
+      entityType: 'staff',
+      entityId: person.id,
+      before,
+      after: { employmentStatus: 'left' },
+      reason,
+      severity: 'sensitive',
+    });
+  }
+  if (going.length > 0) bumpCatalogueVersion();
+  return going.length;
+}
+
+/**
  * N-09: grant or remove one permission on a role. The owner role is fixed, so nobody can remove the
  * last way back in; and nobody edits the role they hold themselves.
  */
