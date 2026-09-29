@@ -330,7 +330,7 @@ export const MENU: Section[] = [
 ];
 
 /** A readable SKU from the section and the name: BER-TUSKER-LAGER, SPR-GILBEYS-250ML. */
-function skuOf(code: string, name: string): string {
+export function skuOf(code: string, name: string): string {
   const words = name
     .toUpperCase()
     .replace(/[^A-Z0-9 ]+/g, ' ')

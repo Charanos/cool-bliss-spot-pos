@@ -9,7 +9,9 @@ import * as pricing from '@/modules/pricing/service';
 import { multiplyByQuantity } from '@bliss/shared/money';
 import { ButtonLink } from '@bliss/ui/components/button-link';
 import { IconClipboardList } from '@tabler/icons-react';
+import * as stockSheet from '@/modules/inventory/stock-sheet';
 import { BelowZeroNotice } from './below-zero';
+import { SheetNotice } from './sheet-notice';
 import { TrialStock } from './trial-stock';
 import { StockTable } from './stock-table';
 import { ViewHeader } from '../../_components/workspace';
@@ -76,7 +78,9 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
     const unitCost = inventory.averageCost(variant.id);
     const sellPrice = pricing.currentPrice(sellable.id, Date.now())?.unitPriceCents ?? null;
     const variance = inventory.latestVariance(variant.id);
-    const unit = product.containerVolumeMl && catalogue.variants().some((v) => v.productId === product.id && v.kind === 'serve') ? 'bottles' : 'units';
+    const serves = catalogue.variants().filter((v) => v.productId === product.id && v.kind === 'serve' && v.status === 'active');
+    // Kept by the stick when a pack is sold as twenty of them; by the bottle when it is poured.
+    const unit = serves.some((v) => v.serveVolumeMl === null && v.depletionFactor > 1) ? 'sticks' : product.containerVolumeMl && serves.length > 0 ? 'bottles' : 'units';
     const scopes = locationFilter ? locations.filter((l) => l.id === locationFilter) : [null];
     for (const location of scopes) {
       const raw = location ? inventory.onHand(variant.id, location.id) : totalOnHand;
@@ -133,6 +137,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         }
       />
 
+    {identity.can(actor.staffId, 'stock.count.commit') ? <SheetNotice sheets={stockSheet.sheetsToBook()} /> : null}
     {belowZero > 0 ? <BelowZeroNotice count={belowZero} /> : null}
     <StockTable
       rows={rows}

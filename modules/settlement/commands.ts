@@ -380,3 +380,61 @@ export function closeDrawer(input: { sessionId: string; reason: string | null; a
   });
   return drawerProjection(session);
 }
+
+/**
+ * A bill for sales made off Bliss and booked afterwards, from a paper stock sheet: settled on the day
+ * they were made, its lines at the prices written, each taking stock as a sale then, and its payments
+ * as the sheet records them. Nothing is checked against today's prices or shelf, because it already
+ * happened. docs/05 section 2.4. Idempotent on the bill id.
+ */
+export function recordBookedBill(input: {
+  billId: string;
+  businessDate: string;
+  settledAt: number;
+  lines: { productVariantId: string; description: string; qty: number; unitPriceCents: Cents }[];
+  tenders: { id: string; kind: Exclude<Tender['kind'], 'cash'>; amountCents: Cents; reference: string }[];
+  actor: Actor;
+}): Bill {
+  const t = settlementTables();
+  const existing = t.bills.find((b) => b.id === input.billId);
+  if (existing) return existing;
+  const outlet = identity.outlet();
+  const subtotal = sum(input.lines.map((l) => multiplyByQty(l.unitPriceCents, l.qty)));
+  const { due, rounding } = amountDue(subtotal);
+  const check = checkTenders(due, input.tenders.map((x) => ({ kind: x.kind, amountCents: x.amountCents, tenderedCents: null })));
+  if (!check.ok) throw new CommandRejected('TENDER_MISMATCH', `The sheet's sales come to ${formatKes(due)} and its payments do not: ${check.message}`);
+  // A booked bill names the counter it would have been settled at, or the Console when there is none.
+  const deviceId = identity.devices().find((d) => d.kind === 'counter' && d.status === 'active')?.id ?? 'console';
+  const bill: Bill = {
+    id: input.billId,
+    outletId: outlet.id,
+    businessDate: input.businessDate,
+    tabId: null,
+    tabSeatId: null,
+    billNumber: t.bills.reduce((max, b) => Math.max(max, b.billNumber), 0) + 1,
+    scope: 'quick_sale',
+    splitGroupId: null,
+    subtotalCents: subtotal,
+    discountCents: ZERO,
+    taxCents: outlet.pricesTaxInclusive ? scale(subtotal, BigInt(outlet.taxRateBps), BigInt(10_000 + outlet.taxRateBps)) : ZERO,
+    totalCents: subtotal,
+    roundingCents: rounding,
+    status: 'settled',
+    settledAt: input.settledAt,
+    settledBy: input.actor.staffId,
+    deviceId,
+  };
+  t.bills.push(bill);
+  const lineIds = input.lines.map((l, i) => {
+    const id = `${bill.id}:q${i}`;
+    t.billLines.push({ id, billId: bill.id, orderLineId: null, productVariantId: l.productVariantId, description: l.description, seatNo: null, seatLabel: null, qty: l.qty, unitPriceCents: l.unitPriceCents, lineTotalCents: multiplyByQty(l.unitPriceCents, l.qty) });
+    inventory.recordSale({ lineId: id, productVariantId: l.productVariantId, qty: l.qty, modifiers: [], actor: input.actor, preferLocationKind: 'service', at: input.settledAt });
+    return id;
+  });
+  const tenders: Tender[] = input.tenders.map((x) => ({ id: x.id, billId: bill.id, kind: x.kind, amountCents: x.amountCents, tenderedCents: null, changeCents: null, reference: x.reference, createdBy: input.actor.staffId, deviceId, createdAt: input.settledAt }));
+  t.tenders.push(...tenders);
+  touch('bills', bill.id);
+  touch('billLines', ...lineIds);
+  touch('tenders', ...tenders.map((x) => x.id));
+  return bill;
+}
