@@ -152,7 +152,9 @@ Icons are PNG at 192, 512 and maskable — iOS reads `apple-touch-icon` and has 
 reloads once; `app/global-error.tsx` catches anything else with a calm screen.
 
 **Every build has a name.** `next.config.ts` names the build once (`BLISS_BUILD_ID`, else the
-commit, else the time of the build) and stamps it into the server, the pages
+commit, else the time of the build). The commit alone, never the commit and a time: two servers built
+from the same code must give it the same name, or a station talking to both is told of a newer build
+on every other pull and stamps it into the server, the pages
 (`NEXT_PUBLIC_BLISS_BUILD`, and `data-build` on a station's `<html>`) and the worker (the revision
 of `/offline`). Each pull carries the server's build; the Console's Devices page compares every
 device's with the server's own, not with the newest a device reports.
@@ -171,9 +173,11 @@ into a failed import. `lib/pos/updates.ts` lets the new build in at a free momen
   sale.
 - A restart that did not bring the named build is tried again after three minutes, then ten,
   thirty, and hourly, so a half-finished deploy cannot reload a tablet all night.
-- One quiet line under the top bar says a newer version is out, with Restart now (refused while
-  anything waits to send) and Later, which puts the line away for twenty minutes and does not keep
-  the old build.
+- One quiet line under the top bar says a newer version is out, with Restart now and Later, which
+  puts the line away for twenty minutes and does not keep the old build. Restart now always goes:
+  what waits to send is in the tablet's database and sends after the reload. It drops the saved page
+  copies first, so a slow network cannot hand back the old page; tapped again after a restart that
+  came back on the same old build, it restarts clean, without the worker or any saved copy.
 - Settings, The app on this device, shows this build, the server's, and whether the app opens with
   no network, with Check for a newer version and Repair the app (drops the worker and its caches and
   loads the app fresh; the device's orders and sign-in are in its own database and stay).

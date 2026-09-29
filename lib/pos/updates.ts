@@ -161,12 +161,41 @@ async function maybeApply(reason: 'server' | 'idle' | 'returned' | 'sign-in'): P
   await restart();
 }
 
-async function restart(): Promise<void> {
+/** Drop this build's saved page copies, so the reload that follows cannot be answered by one of them. */
+async function dropPageCopies() {
+  try {
+    if ('caches' in window) await Promise.all((await caches.keys()).filter((k) => k.startsWith('bliss-pages')).map((k) => caches.delete(k)));
+  } catch {
+    // Storage blocked: the reload still asks the network first.
+  }
+}
+
+/**
+ * Restart into the newer build. The waiting worker takes over and the page reloads. With no worker
+ * waiting (it failed to install, or the server's build is ahead of any worker), the saved page copies
+ * go first, so a slow network cannot hand back the old page. A restart asked for again within a few
+ * minutes, because the first one came back on the same old build, starts clean: the worker and every
+ * saved copy go, and the page loads straight from the network. The orders on the tablet are in its
+ * own database and are untouched.
+ */
+async function restart(clean = false): Promise<void> {
   noteTried();
   publish({ applying: true });
+  if (clean) {
+    try {
+      const all = (await navigator.serviceWorker?.getRegistrations()) ?? [];
+      await Promise.all(all.map((r) => r.unregister()));
+      if ('caches' in window) await Promise.all((await caches.keys()).map((k) => caches.delete(k)));
+    } catch {
+      // Blocked: the reload below still goes to the network first.
+    }
+    window.location.reload();
+    return;
+  }
   // Look once more, so a worker that finished installing a moment ago is the one that takes over.
   await registration?.update().catch(() => {});
   const waiting = registration?.waiting;
+  await dropPageCopies();
   if (waiting) {
     reloading = true;
     waiting.postMessage({ type: 'bliss:apply-update' });
@@ -174,7 +203,6 @@ async function restart(): Promise<void> {
     window.setTimeout(() => window.location.reload(), 6000);
     return;
   }
-  // No worker to wait for: pages come from the network first, so a reload is the new build.
   window.location.reload();
 }
 
@@ -251,12 +279,13 @@ export function startUpdates(): () => void {
 export type ApplyResult = { ok: true } | { ok: false; message: string };
 
 /** Restart into the new build now, from the bar or Settings. Refused while anything waits to send. */
+/**
+ * Restart into the newer build now, from the bar or Settings. A person asked, so it goes ahead even
+ * with changes waiting to send: they are kept on the tablet and send after the restart, as after any
+ * reload. Asked again after a restart that did not take, it restarts clean.
+ */
 export async function applyUpdate(): Promise<ApplyResult> {
-  const count = await unsent();
-  if (count > 0) {
-    return { ok: false, message: `This tablet still has ${count === 1 ? 'a change' : `${count} changes`} to send. Restart once it says synced.` };
-  }
-  await restart();
+  await restart(triedRecently());
   return { ok: true };
 }
 
