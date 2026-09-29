@@ -9,7 +9,6 @@ import { useLongPress } from '../../hooks';
 import { cx } from '../../lib/cx';
 import { type CategoryColour } from '../../lib/seat';
 import { tilePressDown, tilePressUp } from '../../motion/floor';
-import { ICON_STROKE } from '../icon';
 import { Money } from '../money';
 import { Photo } from '../photo';
 
@@ -60,11 +59,11 @@ export interface ProductTileProps {
 /**
  * The product tile, the most tapped object in the system. docs/06-design-system.md section 6.3.
  *
- * Compact, so a tablet held upright shows a whole category without scrolling: the category's mark
- * (or the item's photograph, small), the name on two lines, the price and the add mark. The whole
+ * Photograph-led: the item's picture fills the top of the tile, with the stock over its corner, and
+ * the name on two lines, the price and the add mark beneath. The whole
  * tile is the target; press feedback runs before any state change; the tap adds the line locally.
  *
- *   available  "12 in stock" in the corner, quiet, for anything kept in stock
+ *   available  "12 in stock" over the photograph's corner, quiet, for anything kept in stock
  *   low        "3 left" in the corner, attention colour
  *   last_few   the same, stronger
  *   finished   dimmed, one word in the corner ("Finished", "On hold"), not tappable, still focusable
@@ -103,47 +102,56 @@ export const ProductTile = memo(function ProductTile({ variantId, name, price, r
       aria-label={`${name}${price ? `, ${formatKes(price)}` : ''}${stateWords}${inCart > 0 ? `, ${inCart} added` : ''}`}
       data-variant-id={variantId}
       className={cx(
-        'group relative flex h-tile min-w-0 flex-col justify-between gap-6 rounded-card border bg-raised p-12 text-left transition-colors duration-150',
+        'group relative flex h-tile-photo min-w-0 flex-col overflow-hidden rounded-card border bg-raised text-left transition-colors duration-150',
         inCart > 0 ? 'border-accent/60' : 'border-rule',
-        finished ? 'cursor-default opacity-45' : 'mouse:hover:border-hairline active:bg-control-hover',
+        finished ? 'cursor-default' : 'mouse:hover:border-hairline active:bg-control-hover',
       )}
     >
-      {inCart > 0 ? <span key={`ring-${inCart}`} aria-hidden="true" className="flash pointer-events-none absolute inset-0 rounded-card" /> : null}
+      {inCart > 0 ? <span key={`ring-${inCart}`} aria-hidden="true" className="flash pointer-events-none absolute inset-0 z-10 rounded-card" /> : null}
 
-      <span className="flex items-start justify-between gap-8">
+      {/* The photograph, edge to edge; a tinted plate with the category's mark when there is none. */}
+      <span className={cx('relative block min-h-0 flex-1 overflow-hidden', finished && 'opacity-45 grayscale')}>
         <Photo
           src={imageUrl}
-          className="size-control-sm shrink-0 rounded-md object-cover"
+          className="absolute inset-0 size-full object-cover transition-transform duration-200 mouse:group-hover:scale-105"
           fallback={
-            <span aria-hidden="true" className="flex size-control-sm shrink-0 items-center justify-start" style={{ color: tint }}>
-              <Glyph size={18} stroke={ICON_STROKE} />
+            <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center" style={{ color: tint }}>
+              <span className="absolute inset-0" style={{ backgroundColor: tint, opacity: 0.14 }} />
+              <Glyph size={40} stroke={1.25} className="relative" />
             </span>
           }
         />
+        {/* A soft foot so the corner labels read over any photograph. */}
+        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-scrim/40 to-transparent" />
+      </span>
+
+      {/* What the tile says about stock, over the photograph's corner. */}
+      <span className="pointer-events-none absolute right-6 top-6 flex max-w-full">
         {finished ? (
-          <span className="py-2 text-caps caps text-ink-muted">{held ? 'On hold' : uncounted ? 'Not counted' : 'Finished'}</span>
+          <span className="rounded-pill bg-page/85 px-8 py-2 text-caps caps text-ink-muted">{held ? 'On hold' : uncounted ? 'Not counted' : 'Finished'}</span>
         ) : low ? (
-          <span className={cx('rounded-sm px-6 py-2 font-mono tabular text-num-sm', state === 'last_few' ? 'bg-low-wash text-low' : 'text-low')}>{count} left</span>
+          <span className={cx('rounded-pill px-8 py-2 font-mono tabular text-num-sm', state === 'last_few' ? 'bg-low text-page' : 'bg-page/85 text-low')}>{count} left</span>
         ) : counted ? (
-          <span className="py-2 font-mono tabular text-num-sm text-ink-subtle">{count} in stock</span>
+          <span className="rounded-pill bg-page/80 px-8 py-2 font-mono tabular text-micro text-ink-muted">{count} in stock</span>
         ) : null}
       </span>
 
-      <span className="line-clamp-2 text-ui font-medium text-ink" title={name}>
-        {name}
-      </span>
-
-      <span className="flex items-center justify-between gap-8">
-        {price ? <Money value={price} size="num" tone={ruled ? 'accent' : finished ? 'disabled' : 'default'} decimals="whole" /> : <span className="text-body-sm text-ink-subtle">No price</span>}
-        {inCart > 0 ? (
-          <span key={`count-${inCart}`} aria-hidden="true" className="bump flex h-24 min-w-24 items-center justify-center rounded-dot bg-accent px-6 font-mono tabular text-num-sm text-accent-ink">
-            ×{inCart}
-          </span>
-        ) : (
-          <span aria-hidden="true" className="flex size-24 shrink-0 items-center justify-center rounded-dot bg-accent-wash text-accent-text">
-            <IconPlus size={15} stroke={2.25} />
-          </span>
-        )}
+      <span className={cx('flex shrink-0 flex-col gap-4 px-12 pb-12 pt-8', finished && 'opacity-45')}>
+        <span className="line-clamp-2 min-h-[2.5em] text-ui font-medium text-ink" title={name}>
+          {name}
+        </span>
+        <span className="flex items-center justify-between gap-8">
+          {price ? <Money value={price} size="num" tone={ruled ? 'accent' : finished ? 'disabled' : 'default'} decimals="whole" /> : <span className="text-body-sm text-ink-subtle">No price</span>}
+          {inCart > 0 ? (
+            <span key={`count-${inCart}`} aria-hidden="true" className="bump flex h-24 min-w-24 items-center justify-center rounded-dot bg-accent px-6 font-mono tabular text-num-sm text-accent-ink">
+              ×{inCart}
+            </span>
+          ) : (
+            <span aria-hidden="true" className="flex size-24 shrink-0 items-center justify-center rounded-dot bg-accent-wash text-accent-text">
+              <IconPlus size={15} stroke={2.25} />
+            </span>
+          )}
+        </span>
       </span>
     </button>
   );
