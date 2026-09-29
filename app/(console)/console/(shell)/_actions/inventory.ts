@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import * as inventory from '@/modules/inventory/service';
 import * as inventoryManage from '@/modules/inventory/manage';
+import * as stockSheet from '@/modules/inventory/stock-sheet';
 import { type ActionResult, id, optionalText, reason, runAction } from '../_lib/action';
 
 /** Inventory actions. docs/19 section 3: validated here, ruled in the inventory service. */
@@ -38,6 +39,11 @@ export async function setTrialStock(raw: { qty: number; reason: string }): Promi
   return runAction(z.object({ qty: z.number({ error: 'Enter a whole number.' }).int('Enter a whole number.').min(0, 'Zero or more.').max(1000, 'At most 1,000.'), reason }), raw, (input, actor) => ({
     moved: inventoryManage.setTrialStock({ ...input, actor }),
   }));
+}
+
+/** Book a paper stock sheet: the menu it needs, its opening and closing counts, and its night's sales. */
+export async function applyStockSheet(raw: { sheetId: string; reason: string }): Promise<ActionResult<{ billNumber: number; items: number }>> {
+  return runAction(z.object({ sheetId: id('stock sheet'), reason }), raw, (input, actor) => stockSheet.applySheet({ ...input, actor }), { revalidate: ['/console'] });
 }
 
 /** Bring every balance below zero back to zero, each flagged for a count. */

@@ -87,9 +87,11 @@ export function stockRecorded(variantId: string): boolean {
 export function onHand(variantId: string, locationId?: string | null, at?: number): number {
   const { movements, locations } = inventoryTables();
   if (at !== undefined) {
+    // Every row is read: a movement recorded for an earlier moment (a stock sheet booked the day
+    // after) is appended after later ones, so the ledger is in the order it was written, not by time.
     let total = 0;
     for (const m of movements) {
-      if (m.occurredAt > at) break;
+      if (m.occurredAt > at) continue;
       if (m.productVariantId === variantId && (!locationId || m.stockLocationId === locationId)) total += m.qtyDelta;
     }
     return Math.round(total * 10_000) / 10_000;
@@ -166,11 +168,13 @@ export function recordMovement(input: {
   actor: Actor;
   /** A receipt brings its own cost; the moving average is recomputed from it. Anything else moves at average. */
   unitCostCents?: Cents;
+  /** When it happened, for a movement booked after the fact (a paper stock sheet). Now by default. */
+  at?: number;
 }): StockMovement {
   const needsReason = input.type.startsWith('write_off') || input.type === 'count_adjustment' || input.type === 'comp' || input.type === 'staff_drink';
   if (needsReason && !checkReason(input.reason ?? '').ok) throw new DomainError('Reason needs at least 10 characters. Say what happened, not just "mistake".');
   const outlet = identity.outlet();
-  const now = Date.now();
+  const now = input.at ?? Date.now();
   const movement: StockMovement = {
     id: nextId(),
     outletId: outlet.id,
@@ -696,6 +700,8 @@ export interface SaleInput {
   actor: Actor;
   /** A quick sale takes stock from the retail location when it holds the bottle. */
   preferLocationKind?: 'retail' | 'service';
+  /** When it was sold, for a sale booked after the fact. Now by default. */
+  at?: number;
 }
 
 /**
@@ -784,7 +790,7 @@ export function recordSale(input: SaleInput) {
   for (const [variantId, amount] of depletionFor(input)) {
     if (amount === 0) continue;
     const locationId = saleLocation(variantId, amount, input.preferLocationKind);
-    coverSale({ variantId, locationId, amount, sourceId: input.lineId, actor: input.actor });
+    coverSale({ variantId, locationId, amount, sourceId: input.lineId, actor: input.actor, at: input.at });
     const deductions = depleteBatches(variantId, amount);
     for (const { batchId, qty } of deductions) {
       if (qty <= 0) continue;
@@ -798,6 +804,7 @@ export function recordSale(input: SaleInput) {
         sourceId: input.lineId,
         reason: null,
         actor: input.actor,
+        at: input.at,
       });
     }
   }
@@ -816,23 +823,24 @@ const round4 = (n: number) => Math.round(n * 10_000) / 10_000;
  *
  * A balance already below zero, from before this rule, is brought back to zero the same way.
  */
-function coverSale(input: { variantId: string; locationId: string; amount: number; sourceId: string; actor: Actor }) {
-  let short = round4(input.amount - onHand(input.variantId, input.locationId));
+function coverSale(input: { variantId: string; locationId: string; amount: number; sourceId: string; actor: Actor; at?: number }) {
+  const { at } = input;
+  let short = round4(input.amount - onHand(input.variantId, input.locationId, at));
   if (short <= 0) return;
   const elsewhere = locations()
     .filter((l) => l.id !== input.locationId)
-    .map((l) => ({ id: l.id, qty: onHand(input.variantId, l.id) }))
+    .map((l) => ({ id: l.id, qty: onHand(input.variantId, l.id, at) }))
     .filter((l) => l.qty > 0)
     .sort((a, b) => b.qty - a.qty);
   for (const from of elsewhere) {
     if (short <= 0) break;
     const qty = round4(Math.min(from.qty, short));
-    recordMovement({ variantId: input.variantId, locationId: from.id, qtyDelta: -qty, type: 'transfer_out', sourceType: 'sale_restock', sourceId: input.sourceId, reason: null, actor: input.actor });
-    recordMovement({ variantId: input.variantId, locationId: input.locationId, qtyDelta: qty, type: 'transfer_in', sourceType: 'sale_restock', sourceId: input.sourceId, reason: null, actor: input.actor });
+    recordMovement({ variantId: input.variantId, locationId: from.id, qtyDelta: -qty, type: 'transfer_out', sourceType: 'sale_restock', sourceId: input.sourceId, reason: null, actor: input.actor, at });
+    recordMovement({ variantId: input.variantId, locationId: input.locationId, qtyDelta: qty, type: 'transfer_in', sourceType: 'sale_restock', sourceId: input.sourceId, reason: null, actor: input.actor, at });
     short = round4(short - qty);
   }
   if (short <= 0) return;
-  recordMovement({ variantId: input.variantId, locationId: input.locationId, qtyDelta: short, type: 'sale_cover', sourceType: 'order_line', sourceId: input.sourceId, reason: 'Sold beyond the recorded stock. Count it.', actor: input.actor });
+  recordMovement({ variantId: input.variantId, locationId: input.locationId, qtyDelta: short, type: 'sale_cover', sourceType: 'order_line', sourceId: input.sourceId, reason: 'Sold beyond the recorded stock. Count it.', actor: input.actor, at });
 }
 
 /** Items whose stock was sold beyond the record since they were last counted or received. */

@@ -221,11 +221,15 @@ function productFields(input: ProductInput, t: ReturnType<typeof catalogueTables
 
 function variantFields(input: { name: string; kind: VariantKind; serveVolumeMl: number | null; depletionFactor: number }, containerMl: number | null) {
   if (input.kind !== 'sealed' && input.kind !== 'serve') throw new DomainError('Choose whether it is sold sealed or by the serve.');
-  const serveVolumeMl = input.kind === 'serve' ? whole(input.serveVolumeMl, 'The serve in ml', { min: 1, max: 5_000 }) : null;
+  const serveVolumeMl = input.kind === 'serve' ? whole(input.serveVolumeMl ?? null, 'The serve in ml', { min: 1, max: 5_000 }) : null;
   let depletionFactor = input.kind === 'sealed' ? 1 : Number(input.depletionFactor);
   // A serve from a known bottle: the share of the bottle is the serve over the bottle.
   if (input.kind === 'serve' && serveVolumeMl && containerMl && (!depletionFactor || depletionFactor <= 0)) depletionFactor = serveVolumeMl / containerMl;
-  if (!Number.isFinite(depletionFactor) || depletionFactor <= 0 || depletionFactor > 1) throw new DomainError('How much of a bottle a serve takes is more than 0 and at most 1.');
+  // A serve poured by the ml takes at most the bottle. One sold by the unit takes whole units of
+  // what is kept: a pack of 20 cigarettes takes 20 of the sticks the stock is counted in.
+  if (input.kind === 'serve' && serveVolumeMl === null) {
+    if (!Number.isInteger(depletionFactor) || depletionFactor < 1 || depletionFactor > 1000) throw new DomainError('A serve sold by the unit takes a whole number of stock units, from 1 to 1,000.');
+  } else if (!Number.isFinite(depletionFactor) || depletionFactor <= 0 || depletionFactor > 1) throw new DomainError('How much of a bottle a serve takes is more than 0 and at most 1.');
   return { name: name(input.name, 'The name of how it is sold', 40), kind: input.kind, serveVolumeMl, depletionFactor: Math.round(depletionFactor * 10_000) / 10_000 };
 }
 
