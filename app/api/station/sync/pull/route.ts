@@ -57,6 +57,8 @@ export async function GET(request: Request) {
     catalogueVersion,
     availabilityVersion: map.version,
     serverTime: Date.now(),
+    // The build the server runs. A station on another one fetches it at its next free moment.
+    build: process.env.NEXT_PUBLIC_BLISS_BUILD ?? '',
   };
 
   if (reset || knownCatalogue !== catalogueVersion) {
@@ -97,7 +99,7 @@ export async function GET(request: Request) {
     deviceId: auth.device.id,
     staffId: auth.staff.id,
     unsyncedCount: Math.max(0, Math.min(10_000, Number(url.searchParams.get('unsynced') ?? 0) || 0)),
-    appVersion: (url.searchParams.get('app') ?? '').slice(0, 20) || 'unknown',
+    appVersion: (url.searchParams.get('app') ?? '').slice(0, 40) || 'unknown',
     capabilities: identity.parseCapabilities(url.searchParams.get('caps')),
   };
   if (identity.presenceChanged(sighting)) await withWrite(() => identity.notePresence(sighting));

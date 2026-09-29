@@ -14,6 +14,7 @@ declare global {
 declare const self: WorkerGlobalScope & {
   skipWaiting(): Promise<void>;
   addEventListener(type: 'message', listener: (event: { data?: unknown }) => void): void;
+  addEventListener(type: 'activate', listener: (event: { waitUntil(promise: Promise<unknown>): void }) => void): void;
 };
 
 /**
@@ -30,9 +31,9 @@ declare const self: WorkerGlobalScope & {
  *     would tell it an order was accepted that the server never saw. Both are worse than being
  *     offline, which the device already handles. /api is NetworkOnly, deliberately, forever.
  *  2. The shell is cached so a tablet that opens in a dead spot still starts. Pages are network
- *     first with no timeout: a slow connection waits for this build rather than booting an older
- *     cached page whose code the server no longer has, and the last good copy answers only when
- *     the network is actually gone.
+ *     first, and their copies are kept per build, so a copy never boots against another build's
+ *     code. A station page falls back to its copy after four seconds; a Console page, whose figures
+ *     are in the page, waits for the network and uses its copy only when the network is gone.
  *
  * The worker also never takes over on its own. `skipWaiting` is false: a new build waits until the
  * page asks for it, because swapping the JavaScript under a waiter mid-order is how a POS loses an
@@ -41,8 +42,20 @@ declare const self: WorkerGlobalScope & {
 
 const YEAR = 365 * 24 * 60 * 60;
 
+/**
+ * This worker's build, from the /offline entry next.config.ts stamps with it. Page copies are kept
+ * under it, so a copy is only ever served to the build that made it: a page never boots against
+ * code from another build, which is what made a network timeout unsafe before.
+ */
+const MANIFEST = self.__SW_MANIFEST;
+const BUILD = (MANIFEST ?? []).map((e) => (typeof e === 'string' ? null : e.url === '/offline' ? e.revision : null)).find(Boolean) ?? 'dev';
+const PAGES = `bliss-pages-${BUILD}`;
+
+/** The stations run from their own database; a copy of their page is as good as a fresh one. */
+const isStation = (path: string) => path.startsWith('/floor') || path.startsWith('/counter');
+
 const serwist = new Serwist({
-  precacheEntries: self.__SW_MANIFEST,
+  precacheEntries: MANIFEST,
   precacheOptions: { cleanupOutdatedCaches: true, concurrency: 10 },
   skipWaiting: false,
   clientsClaim: true,
@@ -82,10 +95,23 @@ const serwist = new Serwist({
       handler: new StaleWhileRevalidate({ cacheName: 'bliss-app-meta' }),
     },
     {
-      // Rule 2. A page, or the router's own payload for one.
+      // Rule 2, the stations. Venue Wi-Fi that is connected with no way out holds a request rather
+      // than failing it, and a tablet opening in that spot waited a minute for a blank screen. After
+      // four seconds this build's own copy of the page answers; the page is drawn from the device's
+      // database either way, and the sync cycle catches up once the network does.
+      matcher: ({ request, url, sameOrigin }) => sameOrigin && isStation(url.pathname) && (request.mode === 'navigate' || url.searchParams.has('_rsc')),
+      handler: new NetworkFirst({
+        cacheName: PAGES,
+        networkTimeoutSeconds: 4,
+        plugins: [new CacheableResponsePlugin({ statuses: [200] })],
+      }),
+    },
+    {
+      // Rule 2, the Console. Its pages carry the figures in the page itself, so it waits for the
+      // network however long that takes, and a copy answers only when the network is actually gone.
       matcher: ({ request, url, sameOrigin }) => sameOrigin && (request.mode === 'navigate' || url.searchParams.has('_rsc')),
       handler: new NetworkFirst({
-        cacheName: 'bliss-pages',
+        cacheName: PAGES,
         plugins: [new CacheableResponsePlugin({ statuses: [200] })],
       }),
     },
@@ -101,6 +127,13 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+/** Once this build is in charge, the page copies of every other build go. */
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => (k === 'bliss-pages' || k.startsWith('bliss-pages-')) && k !== PAGES).map((k) => caches.delete(k)))),
+  );
+});
 
 /**
  * A waiting build takes over only when a client asks, which the app does at a moment that costs

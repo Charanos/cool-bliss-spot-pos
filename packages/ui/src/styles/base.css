@@ -6,6 +6,17 @@
     opacity: 1;
   }
 
+  /* Safari 15 (the iPad) gives every button align-items: flex-start in its own stylesheet, where
+     Chrome leaves it normal. A card built as a button with its rows in a column then shrinks each
+     row to its words and lines them up on the left: the pill, the waiter, the seats and the total all
+     bunched together. Back to normal, so a button lays out as any other box; an items-* class still wins. */
+  button,
+  [type='button'],
+  [type='submit'],
+  [type='reset'] {
+    align-items: normal;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;

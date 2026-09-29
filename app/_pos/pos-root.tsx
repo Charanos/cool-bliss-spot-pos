@@ -7,7 +7,7 @@ import { primeStationToken, setForcedOffline } from '@/lib/pos/api';
 import { META, getMeta } from '@/lib/pos/db';
 import { ensureDevice } from '@/lib/pos/session';
 import { pruneAcked, startSync, useSync } from '@/lib/pos/sync';
-import { startUpdates } from '@/lib/pos/updates';
+import { OWN_BUILD, startUpdates } from '@/lib/pos/updates';
 import { refreshHaptics } from '@/lib/pos/haptics';
 import { initDisplay } from '@/lib/pos/display';
 import { useKeepAwake } from '@/lib/pos/wake';
@@ -22,6 +22,8 @@ export function PosRoot({ children }: { children: ReactNode }) {
   useKeepAwake();
 
   useEffect(() => {
+    // Which build this page runs, readable from the page itself when a device needs looking at.
+    document.documentElement.dataset.build = OWN_BUILD || 'development';
     initMotion();
     // After motion: a Lite device then turns the motion engine's low power on.
     initDisplay();

@@ -130,9 +130,14 @@ Two habits it protects against, both easy to fall into:
 1. **Nothing that talks to the server is ever cached.** A cached pull hands the device rows from a
    moment that has passed on top of rows it already has; a cached push response tells it an order
    was accepted that the server never saw. `/api/*` is `NetworkOnly`, deliberately, forever.
-2. **The shell is cached so a tablet in a dead spot still starts.** Pages are `NetworkFirst` with
-   a four second timeout, so a waiter never works against a stale build while the network is fine,
-   and the last good copy answers when it is not. `/offline` is precached as the fallback for a
+2. **The shell is cached so a tablet in a dead spot still starts.** Every script, style and font of
+   the build is precached. Pages are `NetworkFirst`, and their copies are kept per build
+   (`bliss-pages-<build>`), so a copy never boots against another build's code; a new build's
+   worker deletes the other builds' copies when it takes over. A station page (`/floor`, `/counter`)
+   falls back to its copy after four seconds: it is drawn from the device's own database either way,
+   and venue Wi-Fi that is connected with no way out holds a request for a minute or more rather
+   than failing it. A Console page carries its figures in the page, so it waits for the network and
+   uses its copy only when the network is gone. `/offline` is precached as the fallback for a
    navigation with neither.
 
 Build output is cache first and immutable. Fonts and the menu's photographs are cache first with
@@ -142,18 +147,43 @@ waiter holds a phone upright and a tablet on its side, and locking to landscape 
 devices. Its scope is the whole origin, so the surface switcher stays inside the installed app.
 Icons are PNG at 192, 512 and maskable — iOS reads `apple-touch-icon` and has never supported SVG.
 
-**A stale build heals itself.** Pages are network first with no timeout, so a slow connection waits
-for the current build rather than booting an older cached page whose code the server has replaced.
-If a chunk from an older build still fails to load, `app/_components/sw-register.tsx` drops the
-cached pages, lets the waiting worker take over and reloads once; `app/global-error.tsx` catches
-anything else with a calm screen. The artwork's full-screen blur filters are gone: the flares are
-soft gradients already, and the blur cost a tablet's GPU for nothing.
+**A stale build heals itself.** If a chunk from an older build fails to load,
+`app/_components/sw-register.tsx` drops the page copies, lets the waiting worker take over and
+reloads once; `app/global-error.tsx` catches anything else with a calm screen.
 
-**A new build never takes over on its own.** `skipWaiting` is false. The running page holds
-references to chunks the new build has renamed, so activating mid-order turns the next tap into a
-failed import. A waiting build is reported by `lib/pos/updates.ts`, the shell offers it in one
-quiet line, and restarting is refused while the outbox still holds anything. `reloadOnOnline` is
-off for the same reason: coming back into range must not reload the page under someone's hands.
+**Every build has a name.** `next.config.ts` names the build once (`BLISS_BUILD_ID`, else the
+commit, else the time of the build) and stamps it into the server, the pages
+(`NEXT_PUBLIC_BLISS_BUILD`, and `data-build` on a station's `<html>`) and the worker (the revision
+of `/offline`). Each pull carries the server's build; the Console's Devices page compares every
+device's with the server's own, not with the newest a device reports.
+
+**New builds arrive by themselves, never mid-order.** `skipWaiting` is false: the running page
+holds references to chunks the new build has renamed, so activating mid-order turns the next tap
+into a failed import. `lib/pos/updates.ts` lets the new build in at a free moment instead:
+
+- A pull whose build differs from the page's says a newer build is out at once. The browser is also
+  asked to look for a new worker when the app comes back to the screen (`visibilitychange`,
+  `pageshow`; a Home Screen app on iPad does not reliably fire `focus`), when the network returns,
+  and every fifteen minutes.
+- It restarts by itself on a sign-in screen after a few quiet seconds, and elsewhere once the
+  screen has been left alone for a minute and a half, or has just come back after half a minute
+  away, provided nothing waits to send, no sheet or dialog is open, and nobody is inside a tab or a
+  sale.
+- A restart that did not bring the named build is tried again after three minutes, then ten,
+  thirty, and hourly, so a half-finished deploy cannot reload a tablet all night.
+- One quiet line under the top bar says a newer version is out, with Restart now (refused while
+  anything waits to send) and Later, which puts the line away for twenty minutes and does not keep
+  the old build.
+- Settings, The app on this device, shows this build, the server's, and whether the app opens with
+  no network, with Check for a newer version and Repair the app (drops the worker and its caches and
+  loads the app fresh; the device's orders and sign-in are in its own database and stay).
+
+`reloadOnOnline` is off: coming back into range must not reload the page under someone's hands.
+
+**Requests give up rather than hang.** A station request is abandoned after 12 seconds (a read) or
+25 (a push) and treated as offline, so the sync cycle is never stuck behind a request the network
+is holding, and the tablet says Offline instead of nothing. A push cut off after it landed is
+harmless: the server acknowledges an entry it already applied without applying it again.
 
 ## 5. Offline, honestly
 

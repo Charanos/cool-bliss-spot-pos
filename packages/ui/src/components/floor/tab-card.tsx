@@ -68,7 +68,7 @@ export function TabCard({ tableLabel, name, seats, showSeats, elapsed, total, wa
 
   return (
     <div className="relative min-w-0">
-      <PaneButton emphasis={emphasis} aria-label={accessibleName} onClick={onOpen} className={cx('flex w-full min-h-card-tab flex-col gap-8 p-12 pad:p-16', action ? CARD_ACTION_ROOM : null)}>
+      <PaneButton emphasis={emphasis} aria-label={accessibleName} onClick={onOpen} className={cx('flex w-full min-h-card-tab flex-col items-stretch gap-8 p-12 pad:p-16', action ? CARD_ACTION_ROOM : null)}>
         {/* Row 1: label + elapsed */}
         <span className="flex items-baseline gap-8">
           <span className="min-w-0 flex-1 truncate text-title font-medium text-ink" title={tableLabel}>

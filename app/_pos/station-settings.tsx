@@ -18,6 +18,7 @@ import { signOut, useDevice, useSession } from '@/lib/pos/session';
 import { syncNow, useSync } from '@/lib/pos/sync';
 import { canKeepAwake } from '@/lib/pos/wake';
 import { PageHeader } from './chrome';
+import { AppCopyPanel } from './app-copy-panel';
 import { DeviceCard } from './device-card';
 
 /**
@@ -136,6 +137,8 @@ export function StationSettings({ surface, extra }: { surface: 'floor' | 'counte
               </Figure>
             </dl>
           </Panel>
+
+          <AppCopyPanel />
 
           <Panel title="On this device" id="settings-habits" icon={IconAdjustmentsHorizontal} lede="Habits of this device only. The venue, its menu and its prices are set in the Console.">
             <div className="flex flex-col gap-4 rounded-card bg-sunken/80 px-16 py-8">

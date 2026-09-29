@@ -10,6 +10,7 @@ import { haptic } from './haptics';
 import { activeDisplay } from './display';
 import { capsForServer, readCaps } from './device-caps';
 import { META, posDb, getMeta, setMeta } from './db';
+import { noteServerBuild } from './updates';
 
 /**
  * Sync, docs/02 section 6, docs/05 section 2.9 and docs/14 section 4.
@@ -112,6 +113,8 @@ interface PullBody {
   authRequired?: boolean;
   /** A renewed station token, when the one sent is getting old. */
   stationToken?: string;
+  /** The build the server runs; another one than this page's means a newer build is out. */
+  build?: string;
   trade: TradeRows;
 }
 
@@ -311,6 +314,7 @@ export async function pull(): Promise<void> {
   });
   if (refetch.length > 0) query.set('refetch', refetch.join(','));
   const { body } = await api.get<PullBody>(`/api/station/sync/pull?${query.toString()}`);
+  if (body.build) noteServerBuild(body.build);
   await applyPull(body);
   if (refetch.length > 0 && !body.authRequired) {
     const sent = new Set(refetch);
