@@ -204,10 +204,20 @@ export function StockTable({
         search={{ placeholder: 'Search products', test: (r, q) => r.product.toLowerCase().includes(q) || r.variant.toLowerCase().includes(q) }}
         filters={[
           { kind: 'select', key: 'category', label: 'Category', options: categories, test: (r, v) => r.categoryId === v },
+          {
+            kind: 'select',
+            key: 'stocked',
+            label: 'Stock',
+            options: [
+              { value: 'in', label: 'In stock' },
+              { value: 'out', label: 'Out of stock' },
+            ],
+            test: (r, v) => (v === 'in' ? r.onHand > 0 : r.onHand <= 0),
+          },
           { kind: 'toggle', key: 'attention', label: 'Needs attention', test: (r) => r.attention },
         ]}
         exportName="stock"
-        emptyFiltered={{ title: 'No items match', body: 'Clear the category, the toggle or the search to see all stock.' }}
+        emptyFiltered={{ title: 'No items match', body: 'Clear the category, the stock view, the toggle or the search to see all stock.' }}
         exportDate={exportDate}
         empty={{
           title: 'Nothing is tracked yet',
