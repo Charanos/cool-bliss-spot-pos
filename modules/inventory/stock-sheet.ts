@@ -138,6 +138,11 @@ export function sheetsToBook(now = Date.now()): { id: string; title: string; ite
   return SHEETS.filter((s) => !settlement.billById(billIdFor(s)) && businessDayWindow(s.businessDate, outlet.timezone, outlet.businessDayCutover).start + 10 * MINUTE < now).map((s) => ({ id: s.id, title: s.title, items: s.counts.length }));
 }
 
+/** Sheets already booked, oldest first: kept reachable so the owner can start again from one. */
+export function sheetsBooked(): { id: string; title: string }[] {
+  return SHEETS.filter((s) => settlement.billById(billIdFor(s))).map((s) => ({ id: s.id, title: s.title }));
+}
+
 /** Stock units a sale line takes from the item it is counted as: a tot a share of the bottle. */
 function stockTaken(sheet: StockSheet, product: Product | null, sale: StockSheet['sales'][number]): number {
   if (sale.way === 'tot') {
