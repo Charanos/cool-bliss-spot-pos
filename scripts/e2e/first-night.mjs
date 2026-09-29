@@ -155,12 +155,26 @@ try {
     await shot(floor, 'floor-tabs');
   });
 
+  await check('Before service he puts stock on the shelf: nothing uncounted can be sold', async () => {
+    // A fresh outlet holds no recorded stock, so every drink kept in stock reads Not counted and the
+    // Floor cannot sell it. A count or a delivery puts it on sale; here, trial stock does the same.
+    await admin.goto(`${BASE}/console/inventory/stock`);
+    await admin.getByRole('button', { name: 'Trial stock' }).click({ timeout: 15_000 });
+    const dialog = admin.locator('dialog[open]');
+    await dialog.getByRole('button', { name: 'Trial run with the staff before handover' }).click();
+    await dialog.getByRole('button', { name: /^Set every drink to 10/ }).click();
+    await admin.getByText('Trial stock set').first().waitFor({ timeout: 15_000 });
+    await shot(admin, 'console-trial-stock');
+  });
+
   await check('She opens a tab on Table 1 and fires a round', async () => {
     await floor.getByRole('button', { name: /^Open a tab on Table 1/ }).first().click({ timeout: 15_000 });
     await floor.getByRole('button', { name: /^Open tab/ }).click();
     await floor.waitForURL('**/floor/tabs/**', { timeout: 15_000 });
     await floor.waitForTimeout(1500);
-    const tile = floor.locator('button[data-variant-id]:not([aria-disabled="true"])').first();
+    await floor.reload();
+    await floor.waitForTimeout(2500);
+    const tile = floor.locator('button[data-variant-id]:not([aria-disabled="true"])').filter({ hasNotText: 'Shisha' }).first();
     await tile.click({ timeout: 15_000 });
     await tile.click();
     await floor.getByRole('button', { name: /^Fire/ }).click();
@@ -254,9 +268,10 @@ try {
     await admin.goto(`${BASE}/console/trade/shifts`);
     await admin.getByText('Wanjiru', { exact: false }).first().waitFor({ timeout: 20_000 });
     await admin.goto(`${BASE}/console/inventory/stock`);
-    // The handover menu opens with one of each on the shelf; the product added tonight is the one not counted.
+    // Trial stock put every drink on the shelf, the product added tonight too: none reads Not counted.
     await admin.getByPlaceholder('Search products').fill('Trial lager');
-    await admin.getByText('Not counted yet').first().waitFor({ timeout: 20_000 });
+    await admin.getByText('Trial lager').first().waitFor({ timeout: 20_000 });
+    if (await admin.getByText('Not counted, not on sale').count()) throw new Error('A drink still reads not counted after trial stock.');
     await shot(admin, 'console-stock');
     await admin.goto(`${BASE}/console/overview`);
     await admin.waitForTimeout(1200);

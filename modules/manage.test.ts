@@ -107,7 +107,7 @@ describe('the menu', () => {
     // Its stock was never received or counted, so none is on the shelf: it cannot be sold until a
     // delivery or a count records some, and the Console lists it as not counted.
     expect(inventory.stockRecorded(variant.id)).toBe(false);
-    expect(availability.evaluate(variant.id)).toMatchObject({ state: 'finished', reason: 'stock', qtyAvailable: 0 });
+    expect(availability.evaluate(variant.id)).toMatchObject({ state: 'finished', reason: 'not_counted', qtyAvailable: 0 });
     // The same request again adds nothing.
     const again = catalogueManage.createProduct(
       { categoryId: spirits.id, name: 'Test Gin', brand: 'Test', sku: 'SPR-TST-750', barcode: null, containerVolumeMl: 750, abv: 40, defaultSupplierId: null, imageKey: null, firstVariant: { name: '750ml', kind: 'sealed', serveVolumeMl: null, depletionFactor: 1 }, basePriceCents: cents(250_000), requestId: 'test-gin-once', actor },

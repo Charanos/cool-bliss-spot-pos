@@ -24,11 +24,11 @@ import type { StockRow } from './page';
 
 function stateChip(row: StockRow) {
   if (row.reason === 'hold') return <StatusChip status="on_hold" />;
+  // Never received or counted: not on sale until a delivery or a count records some.
+  if (row.reason === 'not_counted' || !row.counted) return <ToneChip tone="low">Not counted, not on sale</ToneChip>;
   if (row.state === 'finished') return <StatusChip status="finished" />;
   if (row.state === 'last_few') return <StatusChip status="last_few" />;
   if (row.state === 'low') return <StatusChip status="low" />;
-  // Never received or counted: on sale, and waiting for its first delivery, count or opening figure.
-  if (!row.counted) return <ToneChip tone="info">Not counted yet</ToneChip>;
   // More went out than the record held: the shelf needs counting to know what is really there.
   if (row.needsCount || row.onHand < 0) return <ToneChip tone="low">Count needed</ToneChip>;
   return <span className="sr-only">Available</span>;
