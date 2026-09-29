@@ -2,6 +2,7 @@ import type { Staff } from '@bliss/shared/domain';
 import { PRICE_LISTS } from './catalogue';
 import { buildMenu } from './menu';
 import { tradingClock } from './history';
+import { seedId } from './ids';
 import { LOCATIONS, OUTLET, ROLES, roleByKey, staffByKey } from './organisation';
 import type { Dataset } from './types';
 
@@ -12,8 +13,8 @@ import type { Dataset } from './types';
  * Kept, because the product needs them before anything else can be entered: the outlet and its
  * settings, the roles, the stock locations (Store, Bar shelf, Counter) and the Standard price list.
  * The real menu from the stock sheet (./menu), priced, with one of each on the Bar shelf until the
- * stock take. One person: Dan, the owner, who signs in to the Console with the PIN given and adds
- * everyone and everything else there. No suppliers, zones, tables, devices, trade or audit history.
+ * stock take. One zone, Main floor, so a walk up opens on the first night. One person: Dan, the owner, who signs in to the Console with the PIN given and adds
+ * everyone and everything else there. No suppliers, tables, devices, trade or audit history.
  *
  * The PIN arrives already hashed, so this file never holds it and never needs the hashing code.
  */
@@ -49,7 +50,8 @@ export function buildHandoverDataset(input: { now?: number; ownerPinHash: string
     roles: ROLES.map((r) => ({ ...r, permissions: [...r.permissions] })),
     staff: [owner],
     devices: [],
-    zones: [],
+    // One zone so a walk up opens on the first night; tables and more zones are the manager's to add.
+    zones: [{ id: seedId('zone:main-floor'), outletId: OUTLET.id, name: 'Main floor', sortOrder: 1, defaultPriceListId: null, status: 'active' }],
     tables: [],
     locations: LOCATIONS.map((l) => ({ ...l })),
     suppliers: [],

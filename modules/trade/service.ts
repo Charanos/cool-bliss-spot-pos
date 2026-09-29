@@ -288,6 +288,21 @@ export function createZone(input: { name: string; sortOrder: number; defaultPric
   return zone;
 }
 
+/**
+ * Walk ups open in a zone, so a venue always has one to open them in. A new venue is handed over with
+ * no zones, and a manager can archive the last one; either way the next station pull puts back a
+ * Main floor zone rather than leaving the Floor's Walk up button doing nothing. Returns whether it added one.
+ */
+export function ensureWalkUpZone(): boolean {
+  const { zones } = tradeTables();
+  if (zones.some((z) => z.status === 'active')) return false;
+  const archived = zones.find((z) => z.name.toLowerCase() === 'main floor');
+  if (archived) archived.status = 'active';
+  else zones.push({ id: createId(), outletId: outlet().id, name: 'Main floor', sortOrder: 0, defaultPriceListId: null, status: 'active' });
+  bumpCatalogueVersion();
+  return true;
+}
+
 export function updateZone(input: { zoneId: string; name: string; sortOrder: number; defaultPriceListId: string | null; status: CatalogueStatus; actor: Actor }) {
   assertCan(input.actor.staffId, 'staff.manage', 'updating zones');
   const zone = zoneById(input.zoneId);

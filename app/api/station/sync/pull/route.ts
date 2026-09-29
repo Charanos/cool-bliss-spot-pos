@@ -38,6 +38,7 @@ export async function GET(request: Request) {
   const deviceId = url.searchParams.get('device');
 
   await fresh();
+  if (!trade.zones().some((z) => z.status === 'active')) await withWrite(() => trade.ensureWalkUpZone());
   const data = dataset();
   const outlet = identity.outlet();
   const map = availability.map();

@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { openTab } from '@/lib/pos/mutations';
 import { posDb } from '@/lib/pos/db';
+import { syncNow } from '@/lib/pos/sync';
 import { useNextWalkUpNo, usePlaceName } from '@/lib/pos/queries';
 
 /** A place's name for people: Table 4, Stool 2, or Walk up. docs/14 section 2. */
@@ -157,7 +158,14 @@ export function OpenTabSheet({
   const seatWord = guests === 1 ? 'seat' : 'seats';
 
   const submit = async () => {
-    if (!zoneId) return;
+    if (!zoneId) {
+      // Never a button that does nothing: say why, and fetch the venue again. The server puts a zone
+      // back when a venue has none, so the next tap works.
+      setError('This station has not received the venue layout yet. It is fetching it now; try again in a moment.');
+      void syncNow().catch(() => undefined);
+      return;
+    }
+    setError(null);
     setPending(true);
     try {
       const tabId = await openTab({ tableId: table?.id ?? null, zoneId, guestCount: guests, name: name || null });

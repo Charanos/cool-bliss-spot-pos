@@ -61,7 +61,8 @@ export default function TabsPage() {
   const freeTables = (places?.tables ?? [])
     .filter((t) => !occupied.has(t.id) && t.status !== 'out_of_service' && (zone === 'all' || t.zoneId === zone))
     .sort((a, b) => a.label.localeCompare(b.label, 'en', { numeric: true }));
-  const counterZone = places?.zones.find((z) => z.name === 'Counter')?.id ?? places?.zones[0]?.id ?? null;
+  const liveZones = (places?.zones ?? []).filter((z) => z.status !== 'archived');
+  const counterZone = liveZones.find((z) => z.name === 'Counter')?.id ?? liveZones[0]?.id ?? null;
 
   // Total across all visible tabs (not just mine) for the floor summary
   const allScopedTabs = (tabs ?? []).filter((t) => scope === 'everyone' || t.tab.assignedTo === session?.staffId);

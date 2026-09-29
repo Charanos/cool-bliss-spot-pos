@@ -61,8 +61,14 @@ export function ListboxPopup({
     list.focus({ preventScroll: true });
   }, [anchor]);
 
+  // Bring the active option into view by scrolling the list alone. scrollIntoView also scrolls every
+  // scroller around it, the page included, and on iPad that page scroll closed the list as it opened.
   useLayoutEffect(() => {
-    listRef.current?.querySelector<HTMLElement>(`[data-index="${active}"]`)?.scrollIntoView({ block: 'nearest' });
+    const list = listRef.current;
+    const item = list?.querySelector<HTMLElement>(`[data-index="${active}"]`);
+    if (!list || !item) return;
+    if (item.offsetTop < list.scrollTop) list.scrollTop = item.offsetTop - 4;
+    else if (item.offsetTop + item.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = item.offsetTop + item.offsetHeight - list.clientHeight + 4;
   }, [active]);
 
   const move = (from: number, step: 1 | -1) => {

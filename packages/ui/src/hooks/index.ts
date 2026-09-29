@@ -167,6 +167,9 @@ export function useDismiss(ref: RefObject<HTMLElement | null>, open: boolean, on
     const baseline = new Map<EventTarget, number>();
     const position = (target: EventTarget | null) => (target instanceof Element ? target.scrollTop : window.scrollY);
     const onScroll = (event: Event) => {
+      // On iPad the document itself scrolls when the keyboard rises for a field: not the page being
+      // scrolled away. The Console and the stations scroll inside their own element anyway.
+      if (!(event.target instanceof Element) && document.activeElement?.matches('input, textarea, [contenteditable="true"]')) return;
       if (inside(event.target)) return;
       const key = event.target ?? window;
       const now = position(event.target);
@@ -176,7 +179,13 @@ export function useDismiss(ref: RefObject<HTMLElement | null>, open: boolean, on
       }
       if (Math.abs(now - baseline.get(key)!) > 24) latest.current();
     };
-    const onResize = () => latest.current();
+    // Only a real change of width (turning the iPad) closes it. iPad Safari fires resize for its
+    // toolbar collapsing, the keyboard rising for a field inside the popup, and on some taps; closing
+    // on those shut every dropdown the instant it opened.
+    const openedWidth = window.innerWidth;
+    const onResize = () => {
+      if (Math.abs(window.innerWidth - openedWidth) > 40) latest.current();
+    };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') latest.current();
     };
