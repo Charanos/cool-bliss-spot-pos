@@ -11,9 +11,9 @@ import type { StockSheet } from '../stock-sheet';
  *
  * Settled with the owner, over the first reading:
  *  - The 45 on the beers page is Savanna.
- *  - The cans block was read one row high throughout. The 10, corrected to 12, sits on Tusker Lite,
- *    and the prices the menu took from the same sheet (Heineken can 350) only line up one row down:
- *    so the 4 is Tusker Malt, the sale of one at 300 is the Guinness can and the two at 600 Guarana.
+ *  - The cans, as the owner read them from the sheet: Tusker Lager 4, Malt 0, Lite 12 (written 10,
+ *    corrected to 12), Cider 1, Balozi 10, White Cap 10, Guinness 4, Guinness Smooth 0, Pineapple
+ *    Punch 4, Heineken 10, Guarana 13. The sale of one at 300 is the Guinness can, the two at 600 Guarana.
  *  - KC 250ml closed at 36. Three left the shelf and two were paid for (700, the 1,820 page total
  *    corrected to 1,470), so the third is a variance of one, not a sale.
  *  - Soda 300ml: one at 70 and two at 100.
@@ -57,8 +57,8 @@ export const SHEET_2026_09_28: StockSheet = {
     { item: 'KO', opening: 20, closing: 20 },
     { item: 'Summit', opening: 0, closing: 0 },
     // Cans, read one row lower than first read: see above.
-    { item: 'Tusker Lager can', opening: 0, closing: 0, note: 'Blank once the cans are read on their own rows.' },
-    { item: 'Tusker Malt can', opening: 4, closing: 4, note: 'The 4 first read against Tusker Lager.' },
+    { item: 'Tusker Lager can', opening: 4, closing: 4 },
+    { item: 'Tusker Malt can', opening: 0, closing: 0 },
     { item: 'Tusker Lite can', opening: 12, closing: 12, note: 'Written 10, corrected to 12.' },
     { item: 'Tusker Cider can', opening: 1, closing: 1 },
     { item: 'Balozi can', opening: 10, closing: 10 },

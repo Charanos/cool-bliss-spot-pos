@@ -8,7 +8,8 @@ import { applyUpdate, snoozeUpdate, useAppUpdate } from '@/lib/pos/updates';
 /**
  * A new build is out. It never interrupts: one quiet line under the top bar. The tablet restarts into
  * it by itself at the next free moment (lib/pos/updates.ts), so Later only puts the line away for a
- * while; it does not keep the old build. docs/16-responsive-and-offline.md section 5.
+ * while; it does not keep the old build. Restart now always goes: anything waiting to send is kept on
+ * the tablet and sends after it. docs/16-responsive-and-offline.md section 5.
  */
 export function UpdateBar() {
   const { ready, applying, snoozedUntil } = useAppUpdate();

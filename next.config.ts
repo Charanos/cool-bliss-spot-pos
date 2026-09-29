@@ -13,8 +13,9 @@ if (!process.env.BLISS_BUILD_ID) {
   let commit = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? '';
   if (!commit) {
     try {
+      // The commit alone: two servers built from the same code must name it the same, or a station
+      // talking to both sees a newer build on every other pull and is asked to restart for ever.
       commit = execSync('git rev-parse --short=7 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-      if (execSync('git status --porcelain --untracked-files=no', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()) commit += `.${Date.now().toString(36)}`;
     } catch {
       commit = '';
     }
