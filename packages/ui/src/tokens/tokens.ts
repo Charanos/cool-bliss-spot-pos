@@ -275,10 +275,11 @@ export const printWeight = 700;
 
 /**
  * Weights for paper only. A thermal head prints a dot or none, so a stroke one dot wide comes out
- * broken: a ticket's body is set at 600, its figures at the print weight, and what is read from across
- * a table (the total, the till, the ticket's name) at 800. Never used on a screen.
+ * broken: a ticket's body is set at 600, its figures at 650, and what is read from across a table (the
+ * total, the till, the ticket's name) at 750, a shade under bold so a line keeps its shape. Tickets are
+ * set in Geist alone, a variable font, so each weight is drawn by the font, not thickened. Never on a screen.
  */
-export const printWeights = { 'print-body': 600, print: printWeight, 'print-strong': 800 } as const;
+export const printWeights = { 'print-body': 600, print: 650, 'print-strong': 750 } as const;
 
 export const type = {
   display: { size: 40, lineHeight: 44, tracking: '-0.025em', weight: 400 },

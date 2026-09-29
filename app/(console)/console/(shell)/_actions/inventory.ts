@@ -5,6 +5,9 @@ import { z } from 'zod';
 import * as inventory from '@/modules/inventory/service';
 import * as inventoryManage from '@/modules/inventory/manage';
 import * as stockSheet from '@/modules/inventory/stock-sheet';
+import { revalidatePath } from 'next/cache';
+import * as identity from '@/modules/identity/service';
+import { isUserFacing } from '@/modules/_data/errors';
 import { type ActionResult, id, optionalText, reason, runAction } from '../_lib/action';
 
 /** Inventory actions. docs/19 section 3: validated here, ruled in the inventory service. */
@@ -44,6 +47,21 @@ export async function setTrialStock(raw: { qty: number; reason: string }): Promi
 /** Book a paper stock sheet: the menu it needs, its opening and closing counts, and its night's sales. */
 export async function applyStockSheet(raw: { sheetId: string; reason: string }): Promise<ActionResult<{ billNumber: number; items: number }>> {
   return runAction(z.object({ sheetId: id('stock sheet'), reason }), raw, (input, actor) => stockSheet.applySheet({ ...input, actor }), { revalidate: ['/console'] });
+}
+
+/** Start the outlet again from a stock sheet. Runs its own transaction, so not inside runAction. */
+export async function resetToStockSheet(raw: { sheetId: string; confirm: string; reason: string }): Promise<ActionResult<{ summary: string }>> {
+  if (raw.confirm.trim().toUpperCase() !== 'RESET') return { ok: false, message: 'Type RESET to confirm.' };
+  const actor = await identity.currentConsoleActor();
+  try {
+    const { summary: s, billNumber } = await stockSheet.resetToSheet({ sheetId: raw.sheetId, reason: raw.reason, actor });
+    revalidatePath('/console', 'layout');
+    return { ok: true, summary: `${s.bills} bills, ${s.tabs} tabs and ${s.stockMovements} stock movements cleared. The sheet is the starting point, its night bill ${billNumber}.` };
+  } catch (error) {
+    if (isUserFacing(error)) return { ok: false, message: (error as Error).message };
+    console.error('[reset to stock sheet]', error);
+    return { ok: false, message: 'That did not go through. Nothing was booked; check the stock page before trying again.' };
+  }
 }
 
 /** Bring every balance below zero back to zero, each flagged for a count. */

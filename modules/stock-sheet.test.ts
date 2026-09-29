@@ -105,4 +105,44 @@ describe('the stock sheet for Monday 28 September', () => {
     expect(() => stockSheet.applySheet({ sheetId: sheet.id, reason: 'Again, by mistake', actor: ownerActor(), now: NOW })).toThrow(/already booked/);
     expect(stockSheet.sheetsToBook(NOW)).toEqual([]);
   });
+
+  it('starts again from the sheet when stock recorded after it sits on top', () => {
+    // What happened on the outlet: a placeholder and trial stock recorded after the sheet's night,
+    // which the booking left on top, and a tab of sales on another day.
+    const bar = inventory.locations().find((l) => l.isDefaultSale)!;
+    inventory.recordMovement({ variantId: sealed('Tusker Lager').id, locationId: bar.id, qtyDelta: 10, type: 'count_adjustment', sourceType: 'trial_stock', sourceId: null, reason: 'Trial run with the staff before handover', actor: ownerActor() });
+    inventory.recordMovement({ variantId: sealed('KO').id, locationId: bar.id, qtyDelta: 1, type: 'opening_balance', sourceType: 'opening', sourceId: null, reason: 'Placeholder until the first stock take', actor: ownerActor() });
+    expect(onHand('Tusker Lager')).toBe(43);
+    expect(onHand('KO')).toBe(21);
+  });
+});
+
+describe('starting again from the sheet', () => {
+  it('leaves the sheet as the only stock and the only sales, and keeps the outlet as set up', async () => {
+    const zones = dataset().zones.length;
+    const tables = dataset().tables.length;
+    const staff = dataset().staff.length;
+    const products = catalogue.products().length;
+    const { summary } = await stockSheet.resetToSheet({ sheetId: sheet.id, reason: 'Placeholder and trial stock sat on top of the stock take', actor: ownerActor(), now: NOW });
+    expect(summary.stockMovements).toBeGreaterThan(0);
+
+    expect(onHand('Tusker Lager')).toBe(33);
+    expect(onHand('KO')).toBe(20);
+    expect(onHand('KC 250ml')).toBe(36);
+    expect(onHand('Pall Mall Red')).toBe(84);
+    expect(onHand('Tusker Ndimu')).toBe(0);
+    // Every movement in the ledger now comes from the sheet.
+    expect(inventory.movements().every((m) => m.sourceType === 'stock_sheet' || m.sourceType === 'order_line')).toBe(true);
+    // One bill, the sheet's night, and the reports start there.
+    expect(settlement.billsBetween('2026-01-01', '2026-12-31').map((b) => b.businessDate)).toEqual(['2026-09-28']);
+    expect(dataset().firstBusinessDate).toBe('2026-09-28');
+    expect(dataset().epoch.startsWith('baseline:')).toBe(true);
+    // What the outlet is made of is untouched, the sheet's tots and sticks included.
+    expect([dataset().zones.length, dataset().tables.length, dataset().staff.length, catalogue.products().length]).toEqual([zones, tables, staff, products]);
+    expect(way('Gilbeys 750ml', 'Gilbeys 750ml, tot')).toBeTruthy();
+  });
+
+  it('is for an owner only, and asks for a reason', async () => {
+    await expect(stockSheet.resetToSheet({ sheetId: sheet.id, reason: 'x', actor: ownerActor(), now: NOW })).rejects.toThrow();
+  });
 });

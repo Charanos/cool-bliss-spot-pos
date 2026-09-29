@@ -11,7 +11,8 @@ import { cx } from '../lib/cx';
  * one dot wide comes out broken), rules are borders two dots deep (backgrounds do not print unless
  * the dialog's Background graphics is on), and small letterspaced capitals are kept for labels only.
  * Names wrap rather than truncate; a cut-off drink on a bill is a dispute. About 28 characters fit a
- * line at the body size.
+ * line at the body size. Set in Geist throughout, figures included, with tabular numbers so totals
+ * line up in a column.
  */
 
 /** Body, labels and figures. Tuned on the printer, not the screen. */
@@ -33,7 +34,8 @@ export function PrintPage({ children, autoPrint = true }: { children: ReactNode;
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .thermal-ticket + .thermal-ticket { break-before: page; }`}</style>
-      {autoPrint ? <script dangerouslySetInnerHTML={{ __html: `window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 250); });` }} /> : null}
+      {/* Printed once the fonts are in: printed before, a ticket comes out in the computer's fallback font. */}
+      {autoPrint ? <script dangerouslySetInnerHTML={{ __html: `window.addEventListener('load', function () { var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve(); ready.then(function () { setTimeout(function () { window.print(); }, 150); }); });` }} /> : null}
       <div className="flex flex-col gap-24 print:gap-0">{children}</div>
     </div>
   );
@@ -43,7 +45,7 @@ export function Receipt({ children, className }: { children: ReactNode; classNam
   return (
     <article
       className={cx(
-        'thermal-ticket mx-auto flex w-[58mm] flex-col bg-paper px-[5mm] pb-[8mm] pt-[4mm] font-sans text-[12.5px] font-print-body leading-[1.32]',
+        'thermal-ticket mx-auto flex w-[58mm] flex-col bg-paper px-[5mm] pb-[8mm] pt-[4mm] font-sans tabular-nums text-[12.5px] font-print-body leading-[1.32]',
         ink,
         'shadow-raised print:shadow-none',
         className,
@@ -89,7 +91,7 @@ export function ReceiptBand({ title, detail }: { title: string; detail?: string 
         <span className="text-[14px] font-print-strong uppercase tracking-[0.2em]">{title}</span>
         <span aria-hidden="true" className="h-0 flex-1 border-t-2 border-paper-ink" />
       </div>
-      {detail ? <span className="font-mono text-[12.5px] font-print-strong tracking-[0.04em]">{detail}</span> : null}
+      {detail ? <span className="font-sans text-[12.5px] font-print-strong tracking-[0.04em]">{detail}</span> : null}
     </div>
   );
 }
@@ -121,7 +123,7 @@ export function ReceiptSection({ title, aside }: { title: string; aside?: ReactN
     <div className="mb-2 mt-12 flex items-center gap-6">
       <span className={caps}>{title}</span>
       <span aria-hidden="true" className="h-0 flex-1 border-b-2 border-dashed border-paper-ink" />
-      {aside ? <span className="font-mono text-[11px] font-print">{aside}</span> : null}
+      {aside ? <span className="font-sans text-[11px] font-print">{aside}</span> : null}
     </div>
   );
 }
@@ -136,10 +138,10 @@ export function ReceiptLine({ name, qty, unit, total, notes }: { name: string; q
     <div className="flex w-full break-inside-avoid flex-col py-4">
       <div className="flex items-start justify-between gap-6">
         <span className="min-w-0 break-words text-[13px] font-print leading-[1.25]">{name}</span>
-        {total && !unit ? <span className="shrink-0 font-mono text-[13px] font-print-strong tabular-nums">{total}</span> : null}
+        {total && !unit ? <span className="shrink-0 font-sans text-[13px] font-print-strong tabular-nums">{total}</span> : null}
       </div>
       {unit ? (
-        <div className="flex items-baseline justify-between gap-6 font-mono tabular-nums">
+        <div className="flex items-baseline justify-between gap-6 font-sans tabular-nums">
           <span className="text-[12px] font-print">
             {qty} × {unit}
           </span>
@@ -159,7 +161,7 @@ export function ReceiptLine({ name, qty, unit, total, notes }: { name: string; q
 export function TicketLine({ qty, name, where, notes }: { qty: string; name: string; where?: string | null; notes?: readonly (string | null | undefined)[] }) {
   return (
     <div className="flex w-full break-inside-avoid gap-6 border-b-2 border-dashed border-paper-ink py-6 last:border-b-0">
-      <span className="w-[8mm] shrink-0 font-mono text-[19px] font-print-strong leading-none tabular-nums">{qty}</span>
+      <span className="w-[8mm] shrink-0 font-sans text-[19px] font-print-strong leading-none tabular-nums">{qty}</span>
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         {/* The name takes the full width of a 58mm ticket; where it goes sits under it. */}
         <span className="min-w-0 break-words text-[14.5px] font-print-strong leading-[1.2]">{name}</span>
@@ -179,14 +181,14 @@ export function ReceiptTotalRow({ label, value, bold = false, large = false }: {
     return (
       <div className="my-6 flex w-full break-inside-avoid items-baseline justify-between gap-6">
         <span className="text-[11px] font-print-strong uppercase tracking-[0.12em]">{label}</span>
-        <span className="font-mono text-[23px] font-print-strong leading-none tabular-nums">{value}</span>
+        <span className="font-sans text-[23px] font-print-strong leading-none tabular-nums">{value}</span>
       </div>
     );
   }
   return (
     <div className={cx('flex w-full items-baseline justify-between gap-6 py-[1px] text-[11.5px]', bold ? 'font-print-strong' : 'font-print-body')}>
       <span>{label}</span>
-      <span className="font-mono font-print tabular-nums">{value}</span>
+      <span className="font-sans font-print tabular-nums">{value}</span>
     </div>
   );
 }
@@ -212,9 +214,9 @@ export function ReceiptPay({ parts, currency = 'KES', paid = false, viaMpesa = t
               {paid && viaMpesa ? <span className="text-[9.5px] font-print-strong uppercase tracking-[0.1em]">Paid</span> : null}
             </span>
             <span className="flex items-baseline justify-between gap-4">
-              <span className="font-mono text-[17px] font-print-strong leading-[1.15] tracking-[0.02em]">{p.till}</span>
+              <span className="font-sans text-[17px] font-print-strong leading-[1.15] tracking-[0.02em]">{p.till}</span>
               {p.amount ? (
-                <span className="whitespace-nowrap font-mono text-[15px] font-print-strong leading-[1.15] tabular-nums">
+                <span className="whitespace-nowrap font-sans text-[15px] font-print-strong leading-[1.15] tabular-nums">
                   <span className="text-[9.5px] font-print">{currency} </span>
                   {p.amount}
                 </span>
@@ -225,7 +227,7 @@ export function ReceiptPay({ parts, currency = 'KES', paid = false, viaMpesa = t
         {parts.length > 1 && total ? (
           <div className="mt-2 flex items-baseline justify-between border-t-2 border-paper-ink pt-4 text-[11px] font-print-strong">
             <span className="uppercase tracking-[0.1em]">{paid ? (viaMpesa ? 'Paid in all' : 'Total') : 'Both tills'}</span>
-            <span className="font-mono tabular-nums">
+            <span className="font-sans tabular-nums">
               {currency} {total}
             </span>
           </div>
@@ -240,16 +242,16 @@ export function ReceiptTenderRow({ kind, reference, amount, tendered, change }: 
     <div className="flex w-full break-inside-avoid flex-col py-2 text-[11.5px]">
       <div className="flex justify-between gap-6">
         <span className="font-print-strong">{kind}</span>
-        <span className="font-mono font-print-strong tabular-nums">{amount}</span>
+        <span className="font-sans font-print-strong tabular-nums">{amount}</span>
       </div>
       {reference ? (
         <div className="flex justify-between gap-6 text-[11px] font-print-body">
           <span>Reference</span>
-          <span className="break-all text-right font-mono font-print">{reference}</span>
+          <span className="break-all text-right font-sans font-print">{reference}</span>
         </div>
       ) : null}
       {tendered && change ? (
-        <div className="flex justify-between gap-6 font-mono text-[11px] font-print tabular-nums">
+        <div className="flex justify-between gap-6 font-sans text-[11px] font-print tabular-nums">
           <span>Given {tendered}</span>
           <span>Change {change}</span>
         </div>

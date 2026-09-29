@@ -3,7 +3,7 @@ import 'server-only';
 import { tradingClock } from '@bliss/db/seed/history';
 import type { ChangeRef, Dataset, SyncTable } from '@bliss/db/seed/types';
 import { Pool, type PoolClient } from 'pg';
-import { type ClearPlan, TRADE_COLLECTIONS, planClearTrade } from './clear-trade';
+import { BASELINE_COLLECTIONS, type BaselineSummary, type ClearPlan, TRADE_COLLECTIONS, planClearBaseline, planClearTrade } from './clear-trade';
 import { fillMenuPhotos } from './menu-photos';
 import { COLLECTIONS, SCALARS, SCHEMA, SINGLETONS, WRITE_LOCK, databaseUrl, decode, encode, insertApplied, insertChanges, keyOf, upsertRows, writeMeta } from './records';
 
@@ -539,6 +539,42 @@ export async function clearTradeStored(epoch: string): Promise<ClearPlan['summar
       await client.query('commit');
       await hydrate(client);
       return plan.summary;
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  });
+  s.queue = run.catch(() => undefined);
+  return run;
+}
+
+/**
+ * Clear trade and every record of stock from the database in one transaction, under the write lock,
+ * for an outlet starting again from a stock sheet. A new epoch starts, so every station drops its
+ * copy and every server instance loads the outlet again. The outlet as set up is not touched.
+ */
+export async function clearBaselineStored(epoch: string): Promise<BaselineSummary> {
+  await boot();
+  const s = state();
+  const run = s.queue.then(async () => {
+    const client = await s.pool.connect();
+    try {
+      await client.query('begin');
+      await client.query('select pg_advisory_xact_lock($1)', [WRITE_LOCK]);
+      const latest = await versionOf(client);
+      if (latest > s.loaded) await catchUp(client, latest);
+      const summary = planClearBaseline(s.data!);
+      const next = latest + 1;
+      await client.query('delete from bliss_record where collection = any($1::text[])', [[...BASELINE_COLLECTIONS]]);
+      await client.query('delete from bliss_change');
+      await client.query('delete from bliss_applied');
+      const data = s.data as unknown as Record<string, unknown>;
+      await writeMeta(client, { version: next, epoch, availabilityVersion: Number(data.availabilityVersion ?? 0) + 1 });
+      await client.query('commit');
+      await hydrate(client);
+      return summary;
     } catch (error) {
       await client.query('rollback').catch(() => undefined);
       throw error;

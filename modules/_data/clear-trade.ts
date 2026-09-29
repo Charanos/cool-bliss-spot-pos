@@ -58,3 +58,45 @@ export function applyClearTrade(data: Dataset, plan: ClearPlan, epoch: string): 
   data.epoch = epoch;
   data.availabilityVersion += 1;
 }
+
+/**
+ * What starting again from a stock sheet takes away: all of trade, and every record of stock (the
+ * ledger, delivery lots, counts, holds, deliveries and purchase orders), so the sheet's counts are
+ * the only stock the outlet has ever recorded. What the outlet is made of stays, as above, with its
+ * menu, prices, recipes, suppliers and the audit trail.
+ */
+export const BASELINE_COLLECTIONS = [...TRADE_COLLECTIONS, 'movements', 'stockBatches', 'counts', 'countLines', 'holds', 'goodsReceivedNotes', 'receipts', 'receiptLines', 'purchaseOrders', 'purchaseOrderLines'] as const satisfies readonly (keyof Dataset)[];
+
+export interface BaselineSummary {
+  tabs: number;
+  bills: number;
+  shifts: number;
+  drawers: number;
+  stockMovements: number;
+  counts: number;
+  deliveries: number;
+  purchaseOrders: number;
+}
+
+export function planClearBaseline(data: Dataset): BaselineSummary {
+  return {
+    tabs: data.tabs.length,
+    bills: data.bills.length,
+    shifts: data.shifts.length,
+    drawers: data.drawerSessions.length,
+    stockMovements: data.movements.length,
+    counts: data.counts.length,
+    deliveries: data.receipts.length,
+    purchaseOrders: data.purchaseOrders.length,
+  };
+}
+
+/** Clear a dataset held in memory for a new baseline: the arrays are replaced, so every cache rebuilds. */
+export function applyClearBaseline(data: Dataset, epoch: string): void {
+  const record = data as unknown as Record<string, unknown>;
+  for (const c of BASELINE_COLLECTIONS) record[c] = [];
+  data.changes = [];
+  data.applied = new Set();
+  data.epoch = epoch;
+  data.availabilityVersion += 1;
+}
