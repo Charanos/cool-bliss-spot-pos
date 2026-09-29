@@ -106,7 +106,7 @@ export function SalesReport({
           value={<CountUp value={summary.bills} delayMs={60} />}
           detail={
             <>
-              Average <Money value={summary.averageBill} decimals="whole" size="num-sm" tone="muted" />
+              Average <Money value={summary.averageBill} decimals="round" size="num-sm" tone="muted" />
             </>
           }
         />

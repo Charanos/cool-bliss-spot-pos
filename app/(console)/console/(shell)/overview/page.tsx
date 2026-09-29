@@ -1,46 +1,42 @@
-import { formatDateTime, formatIsoDate, formatWeekday, plural } from '@bliss/shared/format';
-import { sum } from '@bliss/shared/money';
+import { formatIsoDate, formatWeekday } from '@bliss/shared/format';
 import { ButtonLink } from '@bliss/ui/components/button-link';
-import { Card, CardHeader } from '@bliss/ui/components/console/card';
-import { Callout } from '@bliss/ui/components/console/section';
 import { PageHeader } from '@bliss/ui/components/console/shell';
-import { Money } from '@bliss/ui/components/money';
-import { ToneChip } from '@bliss/ui/components/status';
-import { IconAlertCircle, IconArrowRight, IconChartBar, IconClock, IconPackage, IconScale, IconTrendingUp } from '@tabler/icons-react';
+import { IconChartBar, IconScale } from '@tabler/icons-react';
 import type { Metadata } from 'next';
-import * as identity from '@/modules/identity/service';
-import * as reporting from '@/modules/reporting/service';
-import * as trade from '@/modules/trade/service';
-import { AttentionBoard, HeadlineMetrics, SalesByHour, TopMovers, VarianceByProduct } from './_parts';
+import { loadOverview } from './_data';
+import { AttentionPanel } from './_sections/attention';
+import { LiveFloor } from './_sections/floor';
+import { OverviewHero } from './_sections/hero';
+import { OverviewKpis } from './_sections/kpis';
+import { MoneyPanel } from './_sections/money';
+import { SalesByHourPanel } from './_sections/sales';
+import { CategoriesPanel, MoversPanel } from './_sections/sold';
+import { StockPanel } from './_sections/stock';
+import { PulsePanel, TeamPanel } from './_sections/team';
 
 export const metadata: Metadata = { title: 'Overview' };
 
 /**
- * The page opened at nine in the morning or in the middle of service: last night's figures, what
- * needs a person now, and what is on the floor at this moment.
+ * The page opened at nine in the morning or in the middle of service. docs/19 section 5.
+ *
+ *   1. The night in view: its takings against a usual night, and the week behind it.
+ *   2. Four figures: average bill, margin, guests, what was taken back.
+ *   3. The night by the hour against a usual night, beside what needs a person now.
+ *   4. The floor this moment, beside the money: tenders and drawers.
+ *   5. The categories, beside the best sellers.
+ *   6. Stock, who is on shift, and the app's own health.
+ *
+ * Every section is its own component under _sections, and every figure opens the page it comes from.
  */
-export default function OverviewPage() {
-  const outlet = identity.outlet();
-  // Tonight so far while it trades, last night otherwise: the same night the Tonight card shows.
-  const { date, live } = reporting.nightInView();
-  const night = live ? 'Tonight so far' : 'Last night';
-  const headline = reporting.headline(date);
-  const hours = reporting.salesByHour(date);
-  const attention = reporting.needsAttention();
-  const movers = reporting.topMovers(date, date);
-  const variance = reporting.latestCommittedVariance();
-
-  const openTabs = trade.openTabs();
-  const onFloor = sum(openTabs.map((t) => t.total));
-  const guests = openTabs.reduce((n, t) => n + t.tab.guestCount, 0);
-  const devices = identity.devices();
-  const online = devices.filter((d) => d.online).length;
+export default async function OverviewPage() {
+  const d = await loadOverview();
+  const night = d.live ? 'Tonight so far' : 'Last night';
 
   return (
     <div className="flex flex-col gap-32">
       <PageHeader
         title="Overview"
-        description={`${night}, ${formatWeekday(date)} ${formatIsoDate(date)}, at a glance, and what needs you now.`}
+        description={`${night}, ${formatWeekday(d.date)} ${formatIsoDate(d.date)}, at a glance, and what needs you now.`}
         actions={
           <>
             <ButtonLink href="/console/reports/sales" variant="secondary" icon={IconChartBar}>
@@ -53,92 +49,28 @@ export default function OverviewPage() {
         }
       />
 
-      {openTabs.length > 0 ? (
-        <Callout
-          tone="info"
-          texture
-          title="On the floor now"
-          aside={<Money value={onFloor} size="num-lg" decimals="whole" />}
-          action={
-            <ButtonLink href="/console/trade/open" variant="secondary" icon={IconArrowRight} iconPosition="end">
-              See open tabs
-            </ButtonLink>
-          }
-        >
-          {plural(openTabs.length, 'open tab')}, {plural(guests, 'guest')} seated, {online} of {plural(devices.length, 'station')} online.
-        </Callout>
-      ) : null}
+      <OverviewHero d={d} />
+      <OverviewKpis d={d} />
 
-      <HeadlineMetrics
-        netSales={headline.netSales}
-        cogs={headline.cogs}
-        grossProfit={headline.grossProfit}
-        delta={headline.salesDeltaBps === null ? null : { bps: headline.salesDeltaBps, against: headline.comparedWith }}
-        marginBps={headline.grossMarginBps}
-        costCoverageBps={headline.costCoverageBps}
-        seats={headline.seatsServed}
-        tabs={headline.tabs}
-        avgSeatsTenths={Math.round(headline.avgSeats * 10)}
-        variance={headline.varianceAtCost}
-        varianceLines={headline.varianceLines}
-      />
-
-      <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-[3fr_2fr]">
-        <Card aria-labelledby="overview-hours">
-          <CardHeader band level="h2" titleId="overview-hours" icon={IconClock} title="Sales by hour" subtitle={`${night}, by the hour each line was fired`} />
-          <SalesByHour data={hours.map((h) => ({ key: h.hour, label: h.hour.slice(0, 2), value: h.value }))} />
-        </Card>
-
-        <Card aria-labelledby="overview-attention">
-          <CardHeader
-            band
-            level="h2"
-            titleId="overview-attention"
-            icon={IconAlertCircle}
-            tone={attention.length > 0 ? 'low' : 'poured'}
-            title="Needs attention"
-            subtitle={attention.length > 0 ? 'Most urgent first' : 'Nothing is waiting on you'}
-            meta={attention.length > 0 ? <ToneChip tone="low">{attention.length}</ToneChip> : null}
-          />
-          <AttentionBoard items={attention} />
-        </Card>
+      <div className="grid grid-cols-1 items-stretch gap-24 desktop:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <SalesByHourPanel d={d} />
+        <AttentionPanel d={d} />
       </div>
 
       <div className="grid grid-cols-1 items-start gap-24 desktop:grid-cols-2">
-        <Card aria-labelledby="overview-movers">
-          <CardHeader
-            band
-            level="h2"
-            titleId="overview-movers"
-            icon={IconTrendingUp}
-            title="Top movers"
-            subtitle={`${night}, by sales`}
-            actions={
-              <ButtonLink href="/console/reports/sales" variant="ghost" size="sm">
-                Sales report
-              </ButtonLink>
-            }
-          />
-          <TopMovers rows={movers} />
-        </Card>
+        <LiveFloor d={d} />
+        <MoneyPanel d={d} />
+      </div>
 
-        <Card aria-labelledby="overview-variance">
-          <CardHeader
-            band
-            level="h2"
-            titleId="overview-variance"
-            icon={IconPackage}
-            tone={variance && variance.outside > 0 ? 'low' : undefined}
-            title="Variance by product"
-            subtitle={variance ? `Count committed ${formatDateTime(variance.count.committedAt ?? variance.count.openedAt, outlet.timezone)}` : 'No count has been committed yet'}
-            actions={
-              <ButtonLink href="/console/inventory/counts" variant="ghost" size="sm">
-                Counts
-              </ButtonLink>
-            }
-          />
-          <VarianceByProduct rows={(variance?.rows ?? []).slice(0, 8)} />
-        </Card>
+      <div className="grid grid-cols-1 items-stretch gap-24 desktop:grid-cols-2">
+        <CategoriesPanel d={d} />
+        <MoversPanel d={d} />
+      </div>
+
+      <div className="grid grid-cols-1 items-stretch gap-24 desktop:grid-cols-3">
+        <StockPanel d={d} />
+        <TeamPanel d={d} />
+        <PulsePanel d={d} />
       </div>
     </div>
   );

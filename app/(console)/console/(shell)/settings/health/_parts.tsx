@@ -1,6 +1,6 @@
 import { formatAgo } from '@bliss/shared/format';
 import { Card, CardHeader, IconTile } from '@bliss/ui/components/console/card';
-import { Sparkline } from '@bliss/ui/components/console/sparkline';
+import { TrendChart, type TrendPoint } from '@bliss/ui/components/console/trend-chart';
 import { ICON_STROKE, type TablerIcon } from '@bliss/ui/components/icon';
 import { Dot, type Tone } from '@bliss/ui/components/status';
 import { cx } from '@bliss/ui/lib/cx';
@@ -13,24 +13,106 @@ export const TONE: Record<health.HealthStatus, Tone> = { ok: 'poured', warn: 'lo
 export const WORD: Record<health.HealthStatus, string> = { ok: 'Healthy', warn: 'Look', fail: 'Problem', info: 'Note' };
 const TEXT: Record<health.HealthStatus, string> = { ok: 'text-ink', warn: 'text-low', fail: 'text-stop', info: 'text-ink' };
 
-/** One vital sign: its name, the figure now, its last hour as a line, and a note under it. */
-export function VitalCard({ icon, label, value, unit, tone = 'neutral', values, note, sparkLabel }: { icon: TablerIcon; label: string; value: ReactNode; unit?: string; tone?: Tone; values?: readonly number[]; note: ReactNode; sparkLabel?: string }) {
+/** The spread of a series: lowest, middle, highest. */
+function spread(values: readonly number[]): { min: number; median: number; max: number } | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  return { min: sorted[0]!, median: sorted[Math.floor(sorted.length / 2)]!, max: sorted[sorted.length - 1]! };
+}
+
+/**
+ * One vital sign, read against its own limits: the reading now with the word for it, how it sits
+ * against the hour's median, the hour as a chart with the band where it turns slow, and the lowest,
+ * middle and highest reading, so a single spike is not mistaken for a trend.
+ */
+export function VitalCard({
+  icon,
+  label,
+  unit,
+  points,
+  timeZone,
+  decimals = 0,
+  warnAt,
+  failAt,
+  warnLabel,
+  failLabel,
+  note,
+  empty,
+}: {
+  icon: TablerIcon;
+  label: string;
+  unit: string;
+  points: readonly TrendPoint[];
+  timeZone: string;
+  decimals?: number;
+  warnAt: number;
+  failAt: number;
+  warnLabel?: string;
+  failLabel?: string;
+  note: ReactNode;
+  /** Said in place of the figure when there is nothing to read, as with no database. */
+  empty?: string;
+}) {
+  const values = points.map((p) => p.value).filter((v): v is number => v !== null);
+  const now = values.at(-1) ?? null;
+  const s = spread(values);
+  const state: 'ok' | 'warn' | 'fail' = now === null ? 'ok' : now >= failAt ? 'fail' : now >= warnAt ? 'warn' : 'ok';
+  const word = state === 'fail' ? (failLabel ?? 'Too slow') : state === 'warn' ? (warnLabel ?? 'Slow') : 'Normal';
+  const tone: Tone = state === 'fail' ? 'stop' : state === 'warn' ? 'low' : 'poured';
+  const ratio = now !== null && s && s.median > 0 ? now / s.median : null;
+  const fmt = (v: number) => v.toLocaleString('en-KE', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
   return (
-    <Card as="article" aria-label={label} className="min-h-kpi-min">
-      <div className="flex flex-1 flex-col gap-12 px-20 pb-16 pt-16">
-        <span className="flex items-center gap-8">
-          <IconTile icon={icon} tone={tone} />
-          <span className="text-body-sm font-medium text-ink-muted">{label}</span>
+    <Card as="article" aria-label={label} className="min-w-0">
+      <div className="flex items-center justify-between gap-12 px-20 pt-16">
+        <span className="flex min-w-0 items-center gap-8">
+          <IconTile icon={icon} tone={now === null ? 'neutral' : tone} />
+          <span className="truncate text-body-sm font-medium text-ink-muted">{label}</span>
         </span>
-        <p className="flex items-baseline gap-4">
-          <span className={cx('font-mono tabular text-num-kpi', tone === 'stop' ? 'text-stop' : tone === 'low' ? 'text-low' : 'text-ink')}>{value}</span>
-          {unit ? <span className="font-mono text-body-sm text-ink-subtle">{unit}</span> : null}
-        </p>
-        <div className="mt-auto flex flex-col gap-8">
-          {values === undefined ? null : values.length > 1 ? <Sparkline values={values} variant="area" label={sparkLabel ?? label} /> : <span className="flex h-24 items-center text-micro text-ink-subtle">The line fills in as the minutes pass.</span>}
-          <p className="text-body-sm text-ink-muted">{note}</p>
-        </div>
+        {now !== null ? (
+          <span className={cx('inline-flex shrink-0 items-center gap-6 rounded-pill px-8 py-2 text-micro', state === 'fail' ? 'bg-stop-wash text-stop' : state === 'warn' ? 'bg-low-wash text-low' : 'bg-poured-wash text-poured')}>
+            <Dot tone={tone} className={state === 'fail' ? 'animate-breathe' : undefined} />
+            {word}
+          </span>
+        ) : null}
       </div>
+      <div className="flex items-end justify-between gap-12 px-20 pt-8">
+        <p className="flex items-baseline gap-4">
+          <span className={cx('font-mono tabular text-num-kpi', now === null ? 'text-ink-muted' : state === 'fail' ? 'text-stop' : state === 'warn' ? 'text-low' : 'text-ink')}>{now === null ? (empty ?? 'No reading') : fmt(now)}</span>
+          {now !== null ? <span className="font-mono text-body-sm text-ink-subtle">{unit}</span> : null}
+        </p>
+        {ratio !== null && values.length > 2 ? (
+          <span className="pb-4 text-right text-micro text-ink-subtle">{ratio > 1.5 ? `${ratio.toFixed(1)}× the usual` : ratio < 0.67 ? `${(1 / ratio).toFixed(1)}× faster than usual` : 'In line with the hour'}</span>
+        ) : null}
+      </div>
+      <div className="px-12 pt-8">
+        {values.length > 1 ? (
+          <TrendChart points={points} unit={unit} label={`${label} over the last hour`} timeZone={timeZone} decimals={decimals} warnAt={warnAt} failAt={failAt} warnLabel={warnLabel} failLabel={failLabel} />
+        ) : (
+          <div className="flex h-[132px] flex-col items-center justify-center gap-4 rounded-control bg-band text-center">
+            <span className="text-body-sm text-ink-muted">{now === null ? 'No readings to chart' : 'Charting starts on the next reading'}</span>
+            <span className="text-micro text-ink-subtle">A reading every 30 seconds while the Console is open</span>
+          </div>
+        )}
+      </div>
+      {s ? (
+        <dl className="mt-auto grid grid-cols-3 border-t border-edge">
+          {(
+            [
+              ['Lowest', s.min],
+              ['Median', s.median],
+              ['Highest', s.max],
+            ] as const
+          ).map(([k, v]) => (
+            <div key={k} className="flex flex-col gap-2 border-l border-edge px-16 py-12 first:border-l-0">
+              <dt className="label-caps text-ink-subtle">{k}</dt>
+              <dd className={cx('font-mono tabular text-num-sm', v >= failAt ? 'text-stop' : v >= warnAt ? 'text-low' : 'text-ink')}>
+                {fmt(v)} <span className="text-micro text-ink-subtle">{unit}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      <p className="border-t border-edge px-20 py-12 text-body-sm text-ink-muted">{note}</p>
     </Card>
   );
 }

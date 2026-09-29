@@ -71,7 +71,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ suppl
 
       <MetricGrid>
         <Metric label="Items they carry" icon={IconPackage} value={String(carried.length)} detail="With their cost and pack" />
-        <Metric label="Open orders" icon={IconTruckDelivery} tone={open.length > 0 ? 'info' : 'default'} value={String(open.length)} detail={open.length > 0 ? `${formatKes(sum(open.map((o) => o.totalCents)), { decimals: 'whole' })} on its way` : 'Nothing on its way'} />
+        <Metric label="Open orders" icon={IconTruckDelivery} tone={open.length > 0 ? 'info' : 'default'} value={String(open.length)} detail={open.length > 0 ? `${formatKes(sum(open.map((o) => o.totalCents)), { decimals: 'round' })} on its way` : 'Nothing on its way'} />
         <Metric label="Deliveries" icon={IconTruckDelivery} value={String(receipts.length)} detail={receipts[0] ? `Last on ${formatDate(receipts[0].receivedAt, tz)}` : 'None yet'} />
         <Metric label="Spent with them" icon={IconWallet} value={<Money value={sum(orders.filter((o) => o.status !== 'cancelled').map((o) => o.totalCents))} size="num-kpi" decimals="whole" />} detail={plural(orders.filter((o) => o.status !== 'cancelled').length, 'order')} />
       </MetricGrid>

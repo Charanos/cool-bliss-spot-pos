@@ -9,8 +9,7 @@ import { cx } from '@bliss/ui/lib/cx';
 import {
   IconActivityHeartbeat,
   IconBrandWhatsapp,
-  IconClockHour4,
-  IconCpu,
+    IconCpu,
   IconDatabase,
   IconDeviceTablet,
   IconGauge,
@@ -40,12 +39,6 @@ const ICON: Record<health.HealthSystem['key'], TablerIcon> = {
 
 const SHORT: Record<health.HealthSystem['key'], string> = { server: 'Server', stations: 'Stations', trade: 'Trade', stock: 'Stock', alerts: 'Alerts', setup: 'Set-up' };
 
-function median(values: readonly number[]): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)]!;
-}
-
 /**
  * The app's vital signs, docs/21. A score and one verdict; the server's pulse over the last hour;
  * what needs a person, most pressing first; then each system with what it shows at a glance and
@@ -67,8 +60,6 @@ export default async function HealthPage() {
 
   const v = r.vitals;
   const db = v.samples.map((s) => s.dbMs).filter((n): n is number => n !== null);
-  const heap = v.samples.map((s) => s.heapMb);
-  const loop = v.samples.map((s) => s.loopMs);
   const minutes = Math.max(1, Math.round((r.at - v.since) / 60_000));
   const over = v.samples.length > 1 ? `over the last ${minutes < 60 ? `${minutes} min` : 'hour'}` : 'since this page opened';
   const peak = r.trade.hours.reduce<(typeof r.trade.hours)[number] | null>((best, h) => (h.value > (best?.value ?? 0n) ? h : best), null);
@@ -134,29 +125,68 @@ export default async function HealthPage() {
         </section>
 
         {/* ── The server's pulse ──────────────────────────────────────────────── */}
-        <section aria-label="Vital signs" className="grid grid-cols-1 gap-16 tablet:grid-cols-2 desktop:grid-cols-4">
-          <VitalCard
-            icon={IconDatabase}
-            label="Database answers in"
-            value={v.latest.dbMs ?? (v.latest.dbOk ? '–' : 'No answer')}
-            unit={v.latest.dbMs !== null ? 'ms' : undefined}
-            tone={!v.latest.dbOk ? 'stop' : (v.latest.dbMs ?? 0) > 800 ? 'low' : 'poured'}
-            values={db}
-            sparkLabel={`Database answer time ${over}`}
-            note={db.length > 0 ? `Typically ${median(db)} ms ${over}.` : 'No database is set on this server.'}
-          />
-          <VitalCard icon={IconCpu} label="Memory in use" value={v.latest.heapMb} unit="MB" tone={v.latest.heapMb > 900 ? 'low' : 'accent'} values={heap} sparkLabel={`Memory ${over}`} note={`${v.latest.rssMb} MB held by the process in all.`} />
-          <VitalCard
-            icon={IconGauge}
-            label="Waiting for the server"
-            value={v.latest.loopMs}
-            unit="ms"
-            tone={v.latest.loopMs > 200 ? 'low' : 'accent'}
-            values={loop}
-            sparkLabel={`Event loop delay ${over}`}
-            note={v.latest.loopMs > 200 ? 'The server is busy: pages may feel slow.' : 'Under 50 ms feels instant.'}
-          />
-          <VitalCard icon={IconClockHour4} label="Server up for" value={up.value} unit={up.unit} tone="neutral" note={`Node ${v.node.replace(/^v/, '')}, build ${v.build}. The lines start again after a restart.`} />
+        <section aria-labelledby="health-vitals" className="flex flex-col gap-16">
+          <div className="flex flex-wrap items-end justify-between gap-12">
+            <div className="flex flex-col gap-2">
+              <h2 id="health-vitals" className="text-title-section text-ink">
+                The server, {over}
+              </h2>
+              <p className="text-body-sm text-ink-muted">Hover a chart for each reading. The shaded band is where it turns slow.</p>
+            </div>
+            <dl className="flex flex-wrap gap-x-20 gap-y-4 text-body-sm">
+              {(
+                [
+                  ['Up for', `${up.value}${up.unit ? ` ${up.unit}` : ''}`],
+                  ['Readings', String(v.samples.length)],
+                  ['Node', v.node.replace(/^v/, '')],
+                  ['Build', v.build],
+                ] as const
+              ).map(([k, val]) => (
+                <div key={k} className="flex items-baseline gap-6">
+                  <dt className="text-ink-subtle">{k}</dt>
+                  <dd className="font-mono tabular text-ink">{val}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <div className="grid grid-cols-1 gap-16 desktop:grid-cols-3">
+            <VitalCard
+              icon={IconDatabase}
+              label="Database answer time"
+              unit="ms"
+              points={v.samples.map((x) => ({ at: x.at, value: x.dbMs }))}
+              timeZone={tz}
+              warnAt={500}
+              failAt={1500}
+              empty={v.latest.dbOk ? 'In memory' : 'No answer'}
+              note={db.length > 0 ? 'Every page reads the database. Over half a second, pages start to feel slow; a cold start after a quiet spell can spike once.' : 'No database is set on this server: nothing is kept past a restart.'}
+            />
+            <VitalCard
+              icon={IconCpu}
+              label="Memory in use"
+              unit="MB"
+              points={v.samples.map((x) => ({ at: x.at, value: x.heapMb }))}
+              timeZone={tz}
+              warnAt={1024}
+              failAt={1536}
+              warnLabel="High"
+              failLabel="Near the limit"
+              note={`${v.latest.rssMb.toLocaleString('en-KE')} MB held by the process in all. A line that only climbs means something is not being let go.`}
+            />
+            <VitalCard
+              icon={IconGauge}
+              label="Waiting for the server"
+              unit="ms"
+              decimals={1}
+              points={v.samples.map((x) => ({ at: x.at, value: x.loopMs }))}
+              timeZone={tz}
+              warnAt={100}
+              failAt={500}
+              warnLabel="Busy"
+              failLabel="Overloaded"
+              note="How long a request waits before the server can start on it. Under 50 ms feels instant; steady readings over 100 mean it is doing too much at once."
+            />
+          </div>
         </section>
 
         {/* ── What needs a person ─────────────────────────────────────────────── */}
