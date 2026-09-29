@@ -94,6 +94,7 @@ export async function loadOverview() {
     headline,
     summary,
     hours: reporting.salesByHour(date),
+    usualHours: usualHours(date),
     week,
     attention: reporting.needsAttention(),
     movers: reporting.topMovers(date, date, 6),
@@ -111,3 +112,13 @@ export async function loadOverview() {
 }
 
 export type OverviewData = Awaited<ReturnType<typeof loadOverview>>;
+
+/**
+ * The same weekday over the four weeks before, hour by hour, averaged over the ones that traded: what
+ * a usual night of this kind looks like, to set tonight against.
+ */
+function usualHours(date: string) {
+  const nights = [7, 14, 21, 28].map((n) => reporting.salesByHour(addDays(date, -n))).filter((h) => h.some((x) => x.value > 0n));
+  if (nights.length === 0) return null;
+  return nights[0]!.map((h, i) => ({ hour: h.hour, value: Math.round(nights.reduce((a, n) => a + Number(n[i]!.value), 0) / nights.length) }));
+}

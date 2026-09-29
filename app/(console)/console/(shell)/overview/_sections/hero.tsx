@@ -2,7 +2,7 @@ import { formatBps, formatIsoDate, formatWeekday, plural } from '@bliss/shared/f
 import { sum } from '@bliss/shared/money';
 import { zonedParts } from '@bliss/shared/time';
 import { ButtonLink } from '@bliss/ui/components/button-link';
-import { Sparkline } from '@bliss/ui/components/console/sparkline';
+import { WeekBars } from '@bliss/ui/components/console/week-bars';
 import { AnimatedMoney, Money } from '@bliss/ui/components/money';
 import { cx } from '@bliss/ui/lib/cx';
 import { IconArrowDownRight, IconArrowUpRight, IconCash, IconLayoutGrid, IconPackage, IconReceipt2 } from '@tabler/icons-react';
@@ -64,20 +64,18 @@ export function OverviewHero({ d }: { d: OverviewData }) {
         <div className="flex flex-col gap-8">
           <p className="flex items-baseline justify-between gap-12 text-body-sm">
             <span className="text-ink-muted">The last seven nights</span>
-            <Money value={weekTotal} size="num-sm" decimals="whole" tone="muted" />
+            <Money value={weekTotal} size="num-sm" decimals="round" tone="muted" />
           </p>
           {hasWeek ? (
-            <Sparkline values={d.week.map((w) => Number(w.value))} label="Net sales over the last seven nights" highlight="last" className="h-72" />
+            <WeekBars
+              caption="Net sales over the last seven nights"
+              currentKey={d.date}
+              height={170}
+              nights={d.week.map((w) => ({ key: w.date, label: formatWeekday(w.date).slice(0, 3), title: `${formatWeekday(w.date)} ${formatIsoDate(w.date)}`, shillings: Math.round(Number(w.value) / 100), tabs: w.tabs }))}
+            />
           ) : (
             <span className="flex h-72 items-center text-body-sm text-ink-subtle">The week fills in as nights are traded.</span>
           )}
-          <p aria-hidden="true" className="grid grid-cols-7 text-center font-mono text-micro text-ink-subtle">
-            {d.week.map((w) => (
-              <span key={w.date} className={w.date === d.date ? 'text-ink' : undefined}>
-                {formatWeekday(w.date).slice(0, 1)}
-              </span>
-            ))}
-          </p>
         </div>
       </div>
 

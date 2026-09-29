@@ -9,7 +9,7 @@ import { LiveFloor } from './_sections/floor';
 import { OverviewHero } from './_sections/hero';
 import { OverviewKpis } from './_sections/kpis';
 import { MoneyPanel } from './_sections/money';
-import { SalesByHourPanel, WeekPanel } from './_sections/sales';
+import { SalesByHourPanel } from './_sections/sales';
 import { CategoriesPanel, MoversPanel } from './_sections/sold';
 import { StockPanel } from './_sections/stock';
 import { PulsePanel, TeamPanel } from './_sections/team';
@@ -21,10 +21,10 @@ export const metadata: Metadata = { title: 'Overview' };
  *
  *   1. The night in view: its takings against a usual night, and the week behind it.
  *   2. Four figures: average bill, margin, guests, what was taken back.
- *   3. The night by the hour, beside what needs a person now.
+ *   3. The night by the hour against a usual night, beside what needs a person now.
  *   4. The floor this moment, beside the money: tenders and drawers.
- *   5. The week, beside the categories. 6. Best sellers, beside the stock.
- *   7. Who is on shift, beside the app's own health.
+ *   5. The categories, beside the best sellers.
+ *   6. Stock, who is on shift, and the app's own health.
  *
  * Every section is its own component under _sections, and every figure opens the page it comes from.
  */
@@ -63,16 +63,12 @@ export default async function OverviewPage() {
       </div>
 
       <div className="grid grid-cols-1 items-stretch gap-24 desktop:grid-cols-2">
-        <WeekPanel d={d} />
         <CategoriesPanel d={d} />
-      </div>
-
-      <div className="grid grid-cols-1 items-stretch gap-24 desktop:grid-cols-2">
         <MoversPanel d={d} />
-        <StockPanel d={d} />
       </div>
 
-      <div className="grid grid-cols-1 items-stretch gap-24 desktop:grid-cols-2">
+      <div className="grid grid-cols-1 items-stretch gap-24 desktop:grid-cols-3">
+        <StockPanel d={d} />
         <TeamPanel d={d} />
         <PulsePanel d={d} />
       </div>

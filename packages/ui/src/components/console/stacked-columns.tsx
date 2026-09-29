@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { cx } from '../../lib/cx';
 import { type Tone, dotTone } from '../status';
 
@@ -17,66 +17,76 @@ export interface ColumnDatum {
   values: Record<string, number>;
 }
 
+const FILL: Record<Tone, string> = {
+  poured: 'var(--color-poured)',
+  served: 'var(--color-served)',
+  low: 'var(--color-low)',
+  stop: 'var(--color-stop)',
+  info: 'var(--color-info)',
+  neutral: 'var(--color-ink-subtle)',
+  accent: 'var(--color-accent)',
+};
+
 /**
- * A few columns, each stacked from its series (days of a week, each split by outcome). Following
- * the dataviz method: a 2px gap between stacked segments, the first series on the baseline, a
- * legend above for two or more series, a hover card per column with a hit target the full column
- * height, the total over each column, and a table for screen readers.
+ * A few columns, each stacked from its series (days of a week, each split by outcome), following
+ * the dataviz method: the first series on the baseline, the total over each column, a legend above,
+ * a whole-number scale, a hover card per column with every series and its share, and a table for
+ * screen readers. Built on Recharts, coloured by tokens.
  */
 export function StackedColumns({ data, series, caption, height = 140, className }: { data: readonly ColumnDatum[]; series: readonly ColumnSeries[]; caption: string; height?: number; className?: string }) {
-  const [hover, setHover] = useState<string | null>(null);
-  const titleId = useId();
-  const totals = data.map((d) => series.reduce((sum, s) => sum + (d.values[s.key] ?? 0), 0));
-  const max = Math.max(1, ...totals);
-  const active = data.find((d) => d.key === hover) ?? null;
-
+  const rows = data.map((d) => ({ key: d.key, label: d.label, total: series.reduce((a, s) => a + (d.values[s.key] ?? 0), 0), ...d.values }));
+  const top = series.at(-1)?.key;
   return (
-    <figure aria-labelledby={titleId} className={cx('flex flex-col gap-12', className)}>
-      <figcaption id={titleId} className="sr-only">
-        {caption}
-      </figcaption>
+    <figure aria-label={caption} className={cx('flex flex-col gap-8', className)}>
       <ul aria-hidden="true" className="flex flex-wrap gap-x-16 gap-y-4">
         {series.map((s) => (
           <li key={s.key} className="flex items-center gap-6 text-micro text-ink-muted">
-            <span className={cx('size-dot rounded-dot', dotTone[s.tone])} />
+            <span className={cx('size-8 rounded-sm', dotTone[s.tone])} />
             {s.label}
           </li>
         ))}
       </ul>
-      <div aria-hidden="true" className="relative grid gap-8" style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}>
-        {data.map((d, i) => {
-          const total = totals[i]!;
-          const on = hover === d.key;
-          return (
-            <div key={d.key} onPointerEnter={() => setHover(d.key)} onPointerLeave={() => setHover((h) => (h === d.key ? null : h))} className="flex flex-col items-center gap-6">
-              <span className={cx('font-mono tabular text-micro', total > 0 ? 'text-ink' : 'text-ink-disabled')}>{total}</span>
-              <div className={cx('flex w-full max-w-40 flex-col-reverse gap-2 rounded-sm transition-hover', hover && !on && 'opacity-60')} style={{ height }}>
-                {total === 0 ? (
-                  <span className="h-2 w-full rounded-sm bg-band-strong" />
-                ) : (
-                  series.map((s, j) => {
-                    const v = d.values[s.key] ?? 0;
-                    if (v <= 0) return null;
-                    return <span key={s.key} className={cx('gauge-grow-y w-full rounded-sm', dotTone[s.tone])} style={{ height: `${((v / max) * 94).toFixed(2)}%`, animationDelay: `${i * 50 + j * 40}ms` }} />;
-                  })
-                )}
-              </div>
-              <span className={cx('text-micro', on ? 'text-ink' : 'text-ink-subtle')}>{d.label}</span>
-            </div>
-          );
-        })}
-        {active ? (
-          <div className="pointer-events-none absolute top-0 right-0 z-raised flex min-w-popover-min flex-col gap-4 rounded-control bg-overlay px-12 py-8 shadow-popover">
-            <span className="text-body-sm font-medium text-ink">{active.label}</span>
+      <div style={{ height }} aria-hidden="true">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={rows} margin={{ top: 16, right: 4, bottom: 0, left: 0 }} barCategoryGap="24%">
+            <CartesianGrid vertical={false} stroke="var(--color-grid)" strokeDasharray="2 4" />
+            <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-ink-subtle)', fontSize: 10, fontFamily: 'var(--font-mono)' }} />
+            <YAxis width={28} allowDecimals={false} tickCount={3} tickLine={false} axisLine={false} tick={{ fill: 'var(--color-ink-subtle)', fontSize: 10, fontFamily: 'var(--font-mono)' }} />
+            <Tooltip
+              cursor={{ fill: 'var(--color-band)' }}
+              isAnimationActive={false}
+              content={({ active, payload }) => {
+                const r = active ? (payload?.[0]?.payload as (typeof rows)[number] | undefined) : undefined;
+                if (!r) return null;
+                const rec = r as unknown as Record<string, number>;
+                return (
+                  <div className="flex min-w-popover-min flex-col gap-4 rounded-control bg-overlay px-12 py-8 shadow-popover">
+                    <span className="flex items-baseline justify-between gap-12">
+                      <span className="text-body-sm font-medium text-ink">{r.label}</span>
+                      <span className="font-mono tabular text-micro text-ink-subtle">{r.total} in all</span>
+                    </span>
+                    {series.map((s) => {
+                      const v = rec[s.key] ?? 0;
+                      return (
+                        <span key={s.key} className="flex items-center gap-8 text-body-sm">
+                          <span className={cx('size-dot rounded-dot', dotTone[s.tone])} />
+                          <span className="flex-1 text-ink-muted">{s.label}</span>
+                          <span className="font-mono tabular text-ink">{v}</span>
+                          <span className="w-40 text-right font-mono tabular text-micro text-ink-subtle">{r.total > 0 ? `${Math.round((v / r.total) * 100)}%` : ''}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                );
+              }}
+            />
             {series.map((s) => (
-              <span key={s.key} className="flex items-center gap-8 text-body-sm">
-                <span className={cx('size-dot rounded-dot', dotTone[s.tone])} />
-                <span className="flex-1 text-ink-muted">{s.label}</span>
-                <span className="font-mono tabular text-ink">{active.values[s.key] ?? 0}</span>
-              </span>
+              <Bar key={s.key} dataKey={s.key} stackId="a" fill={FILL[s.tone]} radius={s.key === top ? [3, 3, 0, 0] : 0} isAnimationActive animationDuration={600}>
+                {s.key === top ? <LabelList dataKey="total" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? String(v) : '')} style={{ fill: 'var(--color-ink-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }} /> : null}
+              </Bar>
             ))}
-          </div>
-        ) : null}
+          </BarChart>
+        </ResponsiveContainer>
       </div>
       <table className="sr-only">
         <caption>{caption}</caption>

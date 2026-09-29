@@ -20,7 +20,9 @@
     "./motion/floor-hooks": "./src/motion/floor-hooks.ts"
   },
   "dependencies": {
-    "@bliss/shared": "workspace:*"
+    "@bliss/shared": "workspace:*",
+    "react-is": "19.3.0",
+    "recharts": "3.10.1"
   },
   "peerDependencies": {
     "@tabler/icons-react": "3.46.0",
