@@ -40,6 +40,7 @@ export function evaluate(variantId: string): AvailabilityResult & { threshold: n
   let threshold = outletDefault;
   let tracked = category.trackStock;
   let hasActiveHold = held.has(variantId);
+  let uncounted = false;
 
   if (recipe) {
     for (const c of recipe.components) if (held.has(c.componentVariantId)) hasActiveHold = true;
@@ -52,7 +53,11 @@ export function evaluate(variantId: string): AvailabilityResult & { threshold: n
         // A part kept in stock stops the drink when it runs out, and so does one never counted or
         // received: stock that was never recorded is not there to pour. Parts not kept in stock do not.
         if (!isKept(c.componentVariantId)) return UNTRACKED_QTY;
-        return inventory.stockRecorded(c.componentVariantId) ? servesFromStock(inventory.onHand(c.componentVariantId), c.qty) : 0;
+        if (!inventory.stockRecorded(c.componentVariantId)) {
+          uncounted = true;
+          return 0;
+        }
+        return servesFromStock(inventory.onHand(c.componentVariantId), c.qty);
       }),
     );
     threshold = Math.max(LAST_FEW_SERVES + 1, outletDefault);
@@ -61,7 +66,10 @@ export function evaluate(variantId: string): AvailabilityResult & { threshold: n
     // Stock never received or counted is not on the shelf: it cannot be sold until a delivery or a
     // count records it. The Console lists it as not counted yet.
     if (stock && held.has(stock.stockVariantId)) hasActiveHold = true;
-    if (stock && !inventory.stockRecorded(stock.stockVariantId)) qty = 0;
+    if (stock && !inventory.stockRecorded(stock.stockVariantId)) {
+      qty = 0;
+      uncounted = true;
+    }
     else if (stock) {
       const units = inventory.onHand(stock.stockVariantId);
       qty = variant.kind === 'serve' ? servesFromStock(units, stock.factor) : Math.floor(units + 1e-9);
@@ -78,6 +86,8 @@ export function evaluate(variantId: string): AvailabilityResult & { threshold: n
     qtyAvailable: qty,
     threshold,
   });
+  // Finished because nothing was ever recorded, not because it ran out: say so, so the bar counts it.
+  if (uncounted && result.state === 'finished' && result.reason === 'stock') return { ...result, reason: 'not_counted', threshold };
   return { ...result, threshold };
 }
 

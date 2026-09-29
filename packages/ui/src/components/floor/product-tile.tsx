@@ -74,6 +74,7 @@ export const ProductTile = memo(function ProductTile({ variantId, name, price, r
   const ref = useRef<HTMLButtonElement>(null);
   const finished = state === 'finished';
   const held = finished && reason === 'hold';
+  const uncounted = finished && reason === 'not_counted';
   const low = state === 'low' || state === 'last_few';
   const count = Math.max(0, Math.floor(qtyAvailable));
 
@@ -86,7 +87,7 @@ export const ProductTile = memo(function ProductTile({ variantId, name, price, r
     onLongPress: () => onLongPress(variantId),
   });
 
-  const stateWords = finished ? (held ? ', on hold' : ', finished') : low ? `, ${count} left` : '';
+  const stateWords = finished ? (held ? ', on hold' : uncounted ? ', not counted yet' : ', finished') : low ? `, ${count} left` : '';
   const Glyph = GLYPH[glyph];
   const tint = CATEGORY_COLOR[category] ?? 'var(--color-ink-subtle)';
 
@@ -117,7 +118,7 @@ export const ProductTile = memo(function ProductTile({ variantId, name, price, r
           }
         />
         {finished ? (
-          <span className="py-2 text-caps caps text-ink-muted">{held ? 'On hold' : 'Finished'}</span>
+          <span className="py-2 text-caps caps text-ink-muted">{held ? 'On hold' : uncounted ? 'Not counted' : 'Finished'}</span>
         ) : low ? (
           <span className={cx('rounded-sm px-6 py-2 font-mono tabular text-num-sm', state === 'last_few' ? 'bg-low-wash text-low' : 'text-low')}>{count} left</span>
         ) : null}

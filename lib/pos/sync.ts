@@ -265,7 +265,7 @@ async function applyPull(body: PullBody) {
         const before = previous.get(entry.productVariantId);
         if (before && before !== 'finished' && entry.state === 'finished') {
           const variant = await db.variants.get(entry.productVariantId);
-          if (variant) changed.push(`${variant.name} is ${entry.reason === 'hold' ? 'on hold' : 'finished'}.`);
+          if (variant) changed.push(`${variant.name} is ${entry.reason === 'hold' ? 'on hold' : entry.reason === 'not_counted' ? 'not counted yet' : 'finished'}.`);
         }
       }
       await db.availability.bulkPut(body.availability);

@@ -285,7 +285,8 @@ export interface PriceRule {
 /* ------------------------------------------------ inventory and availability */
 
 export type AvailabilityState = 'available' | 'low' | 'last_few' | 'finished';
-export type AvailabilityReason = 'stock' | 'hold' | 'variant_status' | 'category_status';
+/** Why an item cannot be sold, or is running low. `not_counted`: kept in stock, but none was ever counted or received. */
+export type AvailabilityReason = 'stock' | 'not_counted' | 'hold' | 'variant_status' | 'category_status';
 
 export interface AvailabilityEntry {
   productVariantId: Id;
