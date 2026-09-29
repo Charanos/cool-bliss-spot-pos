@@ -356,6 +356,7 @@ export const size = {
   keypad: 72,
   'tile-min': 96,
   tile: 116,
+  'tile-photo': 192,
   'rail-nav': 72,
   'rail-tables': 180,
   'rail-ticket': 340,

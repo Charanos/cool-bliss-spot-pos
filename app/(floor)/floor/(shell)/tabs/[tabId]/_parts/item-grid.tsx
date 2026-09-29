@@ -106,7 +106,7 @@ export function ItemGrid({
         {!grid ? (
           <div className="grid grid-cols-2 gap-8 pb-24 pad:grid-cols-tiles pad:gap-12">
             {Array.from({ length: 12 }, (_, i) => (
-              <Skeleton key={i} className="h-tile rounded-card" />
+              <Skeleton key={i} className="h-tile-photo rounded-card" />
             ))}
           </div>
         ) : visible.length === 0 ? (
