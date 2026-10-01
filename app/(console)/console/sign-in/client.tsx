@@ -16,7 +16,7 @@ import { pinWeakness } from '@bliss/shared/pin';
 import { chooseConsolePin, signInToConsole } from './actions';
 
 /** The photograph behind the clock, served from the app (public/backdrops) so it never waits on a photo host. */
-const BACKDROP = '/backdrops/console.webp';
+const BACKDROP = '/backdrops/console.jpg';
 
 export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSummary[]; outlet: { name: string; timezone: string }; notice: string | null }) {
   const [chosen, setChosen] = useState<string | null>(null);
@@ -94,15 +94,15 @@ export function ConsoleSignInClient({ staff, outlet, notice }: { staff: StaffSum
       {/* The photograph fades out towards the top into the page itself, so in light the fade reads as one
           sheet of paper; only the photograph and the words laid over it keep the dark treatment. */}
       <section className="relative hidden shrink-0 flex-col justify-between overflow-hidden p-24 pad:flex pad:h-sign-band pad:flex-row pad:items-center tablet:h-auto tablet:shrink tablet:flex-col tablet:items-stretch tablet:p-40 bg-page text-ink">
-        <div data-theme="dark" aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
           <PhotoBackdrop src={BACKDROP} />
         </div>
 
-        <div className="relative z-10 pad:self-center tablet:self-auto">
+        <div data-theme="dark" className="relative z-10 pad:self-center tablet:self-auto">
           <BlissWordmark size={96} label="Cool Bliss" />
         </div>
 
-        <div data-theme="dark" className="relative z-10 mt-auto flex flex-col text-ink pad:mt-0 tablet:mt-auto">
+        <div className="relative z-10 mt-auto flex flex-col text-ink pad:mt-0 tablet:mt-auto">
           <Eyebrow as="p" className="flex items-center gap-12">
             <span>{outlet.name}</span>
             <span aria-hidden="true" className="size-[2px] rounded-dot bg-ink-subtle/80" />

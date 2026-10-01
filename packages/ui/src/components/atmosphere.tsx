@@ -170,7 +170,7 @@ export function PhotoBackdrop({ src, className }: { src: string; className?: str
   return (
     <div aria-hidden="true" className={cx('pointer-events-none absolute inset-0 z-0', className)}>
       <Photo src={src} loading="eager" fetchPriority="high" className="ambient-art photo-mask size-full object-cover" />
-      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-page/85 via-page/45 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-[65%] bg-gradient-to-t from-page via-page/70 to-transparent" />
       {/* Beside the team, its inner edge melts into the page. */}
       <div className="absolute inset-y-0 right-0 hidden w-2/5 bg-gradient-to-r from-transparent to-page tablet:block" />
     </div>

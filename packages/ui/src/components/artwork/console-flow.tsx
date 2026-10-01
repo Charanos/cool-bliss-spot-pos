@@ -314,8 +314,8 @@ export const AmbientConsoleArtwork = memo(function AmbientConsoleArtwork() {
       <div
         className="absolute inset-0"
         style={{
-          maskImage: 'radial-gradient(circle at 46% 60%, transparent 0%, rgba(0,0,0,0.35) 55%, black 100%)',
-          WebkitMaskImage: 'radial-gradient(circle at 46% 60%, transparent 0%, rgba(0,0,0,0.35) 55%, black 100%)',
+          maskImage: 'radial-gradient(ellipse 80% 60% at 50% 100%, transparent 0%, rgba(0,0,0,0.4) 50%, black 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 100%, transparent 0%, rgba(0,0,0,0.4) 50%, black 100%)',
         }}
       >
         {/* ── Top-right: shisha ── */}

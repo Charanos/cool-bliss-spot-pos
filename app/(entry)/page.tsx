@@ -127,6 +127,17 @@ export default async function EntryPage() {
         <footer className="mt-24 flex flex-wrap items-center justify-between gap-12 border-t border-hairline/40 pt-20 text-micro uppercase text-ink-subtle">
           <span>Cool Bliss Spot · Nairobi</span>
           <span>Floor and Counter</span>
+          <span>
+            by{' '}
+            <a
+              href="https://www.andishi.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 decoration-hairline/60 hover:text-ink hover:decoration-accent transition-colors"
+            >
+              Andishi
+            </a>
+          </span>
         </footer>
       </main>
     </>

@@ -194,7 +194,7 @@ export function StaffSignIn({ surface, home }: { surface: StaffSurface; home: st
       <section className="relative hidden shrink-0 flex-col justify-between overflow-hidden p-24 pad:flex pad:h-sign-band pad:flex-row pad:items-center tablet:h-auto tablet:shrink tablet:flex-col tablet:items-stretch tablet:p-40">
         <PhotoBackdrop src={backdrop} />
 
-        <div className="relative z-10 pad:self-center tablet:self-auto">
+        <div data-theme="dark" className="relative z-10 pad:self-center tablet:self-auto">
           <BlissWordmark size={96} label="Cool Bliss" />
         </div>
 
