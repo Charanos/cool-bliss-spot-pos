@@ -9,7 +9,7 @@ import { MetaLine } from '@bliss/ui/components/working';
 import { SeatSelector } from '@bliss/ui/components/floor/seat-selector';
 import { useNow } from '@bliss/ui/hooks';
 import { orderFire } from '@bliss/ui/motion/floor';
-import { IconArrowBackUp, IconArrowLeft, IconArrowsRightLeft, IconCheck, IconChevronDown, IconDoorExit, IconFlame, IconLayoutGrid, IconPrinter, IconReceipt, IconReceipt2, IconUserPlus } from '@tabler/icons-react';
+import { IconArrowBackUp, IconArrowLeft, IconArrowsRightLeft, IconCheck, IconChevronDown, IconDoorExit, IconFlame, IconLayoutGrid, IconReceipt, IconReceipt2, IconUserPlus } from '@tabler/icons-react';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams, useRouter } from 'next/navigation';
@@ -32,7 +32,7 @@ import { FinishedSheet, LabelSeatSheet, LineSheet, ModifierSheet, MoveLineSheet,
 import { TablesRail } from './_parts/tables-rail';
 import { TicketColumn, type TicketColumnHandle } from './_parts/ticket-column';
 import type { RowAction } from './_parts/ticket-row';
-import { openPrint } from '@/lib/pos/print';
+
 
 type Overlay =
   | { kind: 'none' }
@@ -286,16 +286,12 @@ export default function TabScreen() {
                   ...(stage === 'bill'
                     ? [
                         { key: 'bill', label: 'Take back the bill request', icon: IconArrowBackUp, onSelect: () => void takeBackBill(tabId, label) },
-                        { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => openPrint(`/print/tab/${tabId}`) },
                       ]
                     : stage && stage !== 'empty'
                       ? [
                           { key: 'bill', label: 'Ask for the bill', icon: IconReceipt, onSelect: () => void askBill(tabId, label) },
-                          { key: 'print-bill', label: 'Print current bill', icon: IconPrinter, onSelect: () => openPrint(`/print/tab/${tabId}`) },
                         ]
-                      : allLines.some(({ state }) => state !== 'draft')
-                        ? [{ key: 'print-bill', label: 'Print bill', icon: IconPrinter, onSelect: () => openPrint(`/print/tab/${tabId}`) }]
-                        : []),
+                      : []),
                   // Only while nothing has been fired: a tab with something on it is paid, not closed.
                   ...(allLines.every(({ state }) => state === 'draft')
                     ? [{ key: 'close', label: 'Guests left without ordering', icon: IconDoorExit, destructive: true, onSelect: () => setOverlay({ kind: 'close-empty' }) }]
@@ -555,11 +551,7 @@ function SettledTab({ detail, timezone }: { detail: TabDetail; timezone: string 
           </p>
         </div>
         {seated ? <Money value={detail.total} size="num-xl" tone="money" /> : null}
-        {seated ? (
-          <Button variant="secondary" size="lg" icon={IconPrinter} onClick={() => openPrint(`/print/tab/${detail.tab.id}`)}>
-            Print receipt
-          </Button>
-        ) : null}
+
         <Button variant="ghost" size="lg" icon={IconArrowLeft} onClick={() => router.push('/floor/tabs')}>
           Back to tabs
         </Button>

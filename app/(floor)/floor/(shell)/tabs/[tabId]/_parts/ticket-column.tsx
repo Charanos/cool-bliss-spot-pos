@@ -9,9 +9,7 @@ import { SeatGroupHeader, seatRgbVar } from '@bliss/ui/components/floor/ticket';
 import { type FlipState, captureRows, lineEnter, playRowMove } from '@bliss/ui/motion/floor';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import type { TabDetail } from '@/lib/pos/queries';
-import { Button } from '@bliss/ui/components/button';
-import { IconPrinter } from '@tabler/icons-react';
-import { openPrint } from '@/lib/pos/print';
+
 import { type RowAction, TicketRow } from './ticket-row';
 
 export interface TicketColumnHandle {
@@ -170,19 +168,7 @@ export const TicketColumn = forwardRef<
             <span className="text-body text-ink-muted">Tab total</span>
             <AnimatedMoney value={detail.total} animation="seat.total" size="num-lg" tone="money" />
           </div>
-          {detail.groups.length > 0 ? (
-            <div className="pt-10">
-              <Button
-                variant="secondary"
-                size="md"
-                fullWidth
-                icon={IconPrinter}
-                onClick={() => openPrint(`/print/tab/${detail.tab.id}`)}
-              >
-                Print bill
-              </Button>
-            </div>
-          ) : null}
+
         </div>
       </section>
     </>
