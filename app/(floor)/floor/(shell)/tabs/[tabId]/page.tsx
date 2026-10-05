@@ -189,14 +189,7 @@ export default function TabScreen() {
       tone: 'success',
       title: `${detail.label} ordered`,
       body: 'Order sent to bar/kitchen.',
-      action: {
-        label: 'Print bill',
-        run: () => openPrint(`/print/tab/${tabId}`),
-      },
-      holdMs: 8000,
     });
-    // Also trigger openPrint directly so it opens seamlessly
-    openPrint(`/print/tab/${tabId}`);
   };
 
   const onAddSeat = () =>

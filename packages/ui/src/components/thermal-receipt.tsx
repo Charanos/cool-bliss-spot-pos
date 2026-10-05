@@ -22,24 +22,31 @@ const caps = 'text-[9.5px] font-print-strong uppercase tracking-[0.14em]';
 /** The printed page: auto-prints once loaded, and on screen sits on a desk so the ticket reads as paper. */
 export function PrintPage({ children, autoPrint = true }: { children: ReactNode; autoPrint?: boolean }) {
   return (
-    <div className="flex min-h-screen flex-col items-center bg-paper-desk py-32 print:block print:min-h-0 print:h-auto print:bg-paper print:p-0 print:m-0">
+    <div className="flex flex-col items-center bg-paper-desk py-32 print:block print:bg-paper print:p-0 print:m-0" style={{ minHeight: '100vh' }}>
       {/*
         58mm roll width with auto height to match continuous receipt roll paper.
-        Eliminates fixed 210mm sheet length which caused thermal printers to feed blank paper endlessly.
-        Resets all print heights to auto and removes screen min-height to prevent trailing blank pages.
+        Screen-only min-height is in a @media screen rule so it never bleeds into @media print.
+        @page size uses 58mm auto to match thermal roll — no fixed A4/letter height.
+        All block/html heights forced to auto in print to prevent trailing blank pages.
       */}
-      <style>{`@page { size: 58mm auto; margin: 0; }
+      <style>{`
+@page { size: 58mm auto; margin: 0; }
+@media screen {
+  .print-page-root { min-height: 100vh; }
+}
 @media print {
+  .print-page-root { min-height: 0 !important; height: auto !important; }
   html, body {
-    width: 58mm;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #fff;
+    width: 58mm !important;
     height: auto !important;
     min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
     overflow: visible !important;
   }
-  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .thermal-ticket {
     width: 58mm !important;
     max-width: 58mm !important;
@@ -49,11 +56,13 @@ export function PrintPage({ children, autoPrint = true }: { children: ReactNode;
     page-break-inside: avoid;
   }
 }
-.thermal-ticket + .thermal-ticket { break-before: page; }`}</style>
+.thermal-ticket + .thermal-ticket { break-before: page; }
+`}</style>
       {/*
-        Printed once fonts and the ticket DOM are both ready.
-        Polls until .thermal-ticket has rendered with positive height, then waits for paint before
-        opening print dialog. Guarded against double execution and printer driver re-triggers.
+        Auto-print script: waits for fonts + DOM to be ready before calling window.print().
+        Uses a single guarded flag so neither the fonts.ready callback nor the load event
+        can trigger a double print. The afterprint handler also sets the flag to prevent
+        printer driver re-triggers that fire a second print job on some Windows POS drivers.
       */}
       {autoPrint ? (
         <script
@@ -64,9 +73,7 @@ export function PrintPage({ children, autoPrint = true }: { children: ReactNode;
     if (printed) return;
     printed = true;
     requestAnimationFrame(function () {
-      setTimeout(function () {
-        window.print();
-      }, 60);
+      setTimeout(function () { window.print(); }, 120);
     });
   }
   function tryPrint(retries) {
@@ -74,19 +81,21 @@ export function PrintPage({ children, autoPrint = true }: { children: ReactNode;
     if (ticket && ticket.offsetHeight > 0) {
       doPrint();
     } else if (retries > 0) {
-      setTimeout(function () { tryPrint(retries - 1); }, 80);
+      setTimeout(function () { tryPrint(retries - 1); }, 100);
     } else {
       doPrint();
     }
   }
-  window.addEventListener('afterprint', function () {
-    printed = true;
-  });
-  var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-  ready.then(function () { tryPrint(25); });
-  window.addEventListener('load', function () {
-    ready.then(function () { tryPrint(25); });
-  });
+  window.addEventListener('afterprint', function () { printed = true; });
+  // Single entry point: wait for fonts AND page load, whichever resolves last.
+  var fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+  if (document.readyState === 'complete') {
+    fontsReady.then(function () { tryPrint(30); });
+  } else {
+    window.addEventListener('load', function () {
+      fontsReady.then(function () { tryPrint(30); });
+    }, { once: true });
+  }
 })();`,
           }}
         />
