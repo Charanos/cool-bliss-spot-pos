@@ -205,7 +205,7 @@ export default function QuickSalePage() {
           Tap a bottle to start a sale.
         </p>
       ) : (
-        <ul className="py-4">
+        <ul className="max-h-[260px] overflow-y-auto overscroll-contain py-4 no-scrollbar">
           {cart.map((line) => (
             <li key={line.variantId} className="flex min-h-row-floor items-center gap-12 border-b border-rule-raised/20 px-16 py-6 last:border-b-0">
               <span className="min-w-0 flex-1">
@@ -299,12 +299,12 @@ export default function QuickSalePage() {
       {/* From a tablet held upright: the sale beside the shelf, cart and tender each on their own pane. */}
       <aside
         aria-label="This sale"
-        className="hidden shrink-0 flex-col gap-16 overflow-y-auto border-l border-rule-raised/30 bg-sunken/30 p-16 backdrop-blur-glass pad:flex pad:w-[380px] tablet:w-panel-tender tablet:gap-20 tablet:p-24"
+        className="hidden shrink-0 flex-col gap-16 overflow-y-auto overscroll-contain border-l border-rule-raised/30 bg-sunken/30 p-16 backdrop-blur-glass pad:flex pad:w-[380px] tablet:w-panel-tender tablet:gap-20 tablet:p-24"
       >
         {doneCard}
-        <section className={`${PANE} overflow-hidden`}>{cartBody}</section>
+        <section className={`${PANE} flex shrink-0 flex-col overflow-hidden`}>{cartBody}</section>
         {errorNotice}
-        {cart.length > 0 ? <div className={`${PANE} p-16 tablet:p-20`}>{tenderPanel}</div> : null}
+        {cart.length > 0 ? <div className={`${PANE} shrink-0 p-16 tablet:p-20`}>{tenderPanel}</div> : null}
       </aside>
 
       {/* On a phone the shelf keeps the screen; the sale opens over it. */}
