@@ -22,21 +22,76 @@ const caps = 'text-[9.5px] font-print-strong uppercase tracking-[0.14em]';
 /** The printed page: auto-prints once loaded, and on screen sits on a desk so the ticket reads as paper. */
 export function PrintPage({ children, autoPrint = true }: { children: ReactNode; autoPrint?: boolean }) {
   return (
-    <div className="flex min-h-screen flex-col items-center bg-paper-desk py-32 print:bg-paper print:py-0">
+    <div className="flex min-h-screen flex-col items-center bg-paper-desk py-32 print:block print:min-h-0 print:h-auto print:bg-paper print:p-0 print:m-0">
       {/*
-        One 58mm by 210mm sheet, the size the POS-58 driver offers, with no browser margins. A ticket
-        longer than a sheet runs on to the next without splitting a line. Colours print as they are,
-        and a second copy starts a sheet of its own; the last one leaves no blank sheet after it.
+        58mm roll width with auto height to match continuous receipt roll paper.
+        Eliminates fixed 210mm sheet length which caused thermal printers to feed blank paper endlessly.
+        Resets all print heights to auto and removes screen min-height to prevent trailing blank pages.
       */}
-      <style>{`@page { size: 58mm 210mm; margin: 0; }
+      <style>{`@page { size: 58mm auto; margin: 0; }
 @media print {
-  html, body { background: var(--color-paper); margin: 0; }
+  html, body {
+    width: 58mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .thermal-ticket {
+    width: 58mm !important;
+    max-width: 58mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }
 .thermal-ticket + .thermal-ticket { break-before: page; }`}</style>
-      {/* Printed once the fonts are in: printed before, a ticket comes out in the computer's fallback font. */}
-      {autoPrint ? <script dangerouslySetInnerHTML={{ __html: `window.addEventListener('load', function () { var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve(); ready.then(function () { setTimeout(function () { window.print(); }, 150); }); });` }} /> : null}
-      <div className="flex flex-col gap-24 print:gap-0">{children}</div>
+      {/*
+        Printed once fonts and the ticket DOM are both ready.
+        Polls until .thermal-ticket has rendered with positive height, then waits for paint before
+        opening print dialog. Guarded against double execution and printer driver re-triggers.
+      */}
+      {autoPrint ? (
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function () {
+  var printed = false;
+  function doPrint() {
+    if (printed) return;
+    printed = true;
+    requestAnimationFrame(function () {
+      setTimeout(function () {
+        window.print();
+      }, 60);
+    });
+  }
+  function tryPrint(retries) {
+    var ticket = document.querySelector('.thermal-ticket');
+    if (ticket && ticket.offsetHeight > 0) {
+      doPrint();
+    } else if (retries > 0) {
+      setTimeout(function () { tryPrint(retries - 1); }, 80);
+    } else {
+      doPrint();
+    }
+  }
+  window.addEventListener('afterprint', function () {
+    printed = true;
+  });
+  var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+  ready.then(function () { tryPrint(25); });
+  window.addEventListener('load', function () {
+    ready.then(function () { tryPrint(25); });
+  });
+})();`,
+          }}
+        />
+      ) : null}
+      <div className="flex flex-col gap-24 print:block print:gap-0 print:p-0 print:m-0">{children}</div>
     </div>
   );
 }

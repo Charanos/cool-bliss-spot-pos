@@ -184,6 +184,19 @@ export default function TabScreen() {
     await new Promise<void>((resolve) => orderFire(markers, resolve));
     await fire(tabId, detail.label);
     setFiring(false);
+    notify({
+      key: `fire:${tabId}`,
+      tone: 'success',
+      title: `${detail.label} ordered`,
+      body: 'Order sent to bar/kitchen.',
+      action: {
+        label: 'Print bill',
+        run: () => openPrint(`/print/tab/${tabId}`),
+      },
+      holdMs: 8000,
+    });
+    // Also trigger openPrint directly so it opens seamlessly
+    openPrint(`/print/tab/${tabId}`);
   };
 
   const onAddSeat = () =>
@@ -285,9 +298,11 @@ export default function TabScreen() {
                     : stage && stage !== 'empty'
                       ? [
                           { key: 'bill', label: 'Ask for the bill', icon: IconReceipt, onSelect: () => void askBill(tabId, label) },
-                          { key: 'print-bill', label: 'Print requested bill', icon: IconPrinter, onSelect: () => openPrint(`/print/tab/${tabId}`) },
+                          { key: 'print-bill', label: 'Print current bill', icon: IconPrinter, onSelect: () => openPrint(`/print/tab/${tabId}`) },
                         ]
-                      : []),
+                      : allLines.some(({ state }) => state !== 'draft')
+                        ? [{ key: 'print-bill', label: 'Print bill', icon: IconPrinter, onSelect: () => openPrint(`/print/tab/${tabId}`) }]
+                        : []),
                   // Only while nothing has been fired: a tab with something on it is paid, not closed.
                   ...(allLines.every(({ state }) => state === 'draft')
                     ? [{ key: 'close', label: 'Guests left without ordering', icon: IconDoorExit, destructive: true, onSelect: () => setOverlay({ kind: 'close-empty' }) }]
@@ -547,6 +562,11 @@ function SettledTab({ detail, timezone }: { detail: TabDetail; timezone: string 
           </p>
         </div>
         {seated ? <Money value={detail.total} size="num-xl" tone="money" /> : null}
+        {seated ? (
+          <Button variant="secondary" size="lg" icon={IconPrinter} onClick={() => openPrint(`/print/tab/${detail.tab.id}`)}>
+            Print receipt
+          </Button>
+        ) : null}
         <Button variant="ghost" size="lg" icon={IconArrowLeft} onClick={() => router.push('/floor/tabs')}>
           Back to tabs
         </Button>

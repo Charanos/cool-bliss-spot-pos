@@ -186,9 +186,14 @@ export default function SettleTabPage() {
               : []
           }
           aside={
-            <Button variant="ghost" size="md" icon={IconArrowLeft} onClick={() => router.push('/counter/tabs')}>
-              Tabs
-            </Button>
+            <div className="flex items-center gap-8">
+              <Button variant="secondary" size="md" icon={IconPrinter} onClick={() => openPrint(`/print/tab/${tabId}`)}>
+                Print bill
+              </Button>
+              <Button variant="ghost" size="md" icon={IconArrowLeft} onClick={() => router.push('/counter/tabs')}>
+                Tabs
+              </Button>
+            </div>
           }
         >
           <div className="flex flex-wrap items-center gap-12">

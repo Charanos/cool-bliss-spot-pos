@@ -4,6 +4,7 @@ import { tabLabel } from '@bliss/shared/trade';
 import { PRINT_RETRIES, TAGLINE, attemptOf, brandLines, printAccess, retryHref, tillParts } from '@/lib/print';
 import * as catalogue from '@/modules/catalogue/service';
 import * as identity from '@/modules/identity/service';
+import * as settlement from '@/modules/settlement/service';
 import * as trade from '@/modules/trade/service';
 import {
   PrintNotice,
@@ -17,16 +18,20 @@ import {
   ReceiptPay,
   ReceiptRule,
   ReceiptSection,
+  ReceiptTenderRow,
   ReceiptThanks,
   ReceiptTotalRow,
 } from '@bliss/ui/components/thermal-receipt';
 
+const TENDER_WORD: Record<string, string> = { cash: 'Cash', mpesa: 'M-Pesa', card: 'Card', account: 'On account', comp: 'On the house' };
 const kes = (v: Parameters<typeof formatFigure>[0]) => formatFigure(v, { decimals: 'whole' });
 
 /**
  * The bill a table asks for before it pays: everything on the tab so far, the total, and the M-Pesa
  * tills to pay drinks and food to. Any tab prints, a walk-up with no name included. A tab opened a
  * moment ago on a tablet may not have reached the server yet, so the page waits for it.
+ *
+ * If settled, it prints as a paid receipt showing all settled tenders and confirmation of payment.
  */
 export default async function PrintTabPage({ params, searchParams }: { params: Promise<{ tabId: string }>; searchParams: Promise<{ t?: string; a?: string }> }) {
   const { t, a } = await searchParams;
@@ -53,11 +58,15 @@ export default async function PrintTabPage({ params, searchParams }: { params: P
   // Each line's stored total carries its extras; a requested bill is before any discount.
   const total = sum(lines.map((l) => l.lineTotalCents));
 
+  const bills = settlement.billsForTab(tab.id);
+  const isPaid = tab.status === 'settled' || (bills.length > 0 && bills.every((b) => Boolean(b.settledBy)));
+  const tenders = isPaid ? bills.flatMap((b) => settlement.tendersFor(b.id)) : [];
+
   return (
     <PrintPage>
       <Receipt>
         <ReceiptBrand name={outlet.name} tagline={TAGLINE} logoUrl="/brand/logo-ink.svg" lines={brandLines(outlet)} />
-        <ReceiptBand title="Your bill" detail={tab.tabNumber ? `Tab ${tab.tabNumber}` : null} />
+        <ReceiptBand title={isPaid ? 'Receipt' : 'Your bill'} detail={tab.tabNumber ? `Tab ${tab.tabNumber}${isPaid ? ' · Paid' : ''}` : isPaid ? 'Paid' : null} />
         <ReceiptFacts
           items={[
             { label: 'Date', value: formatDate(Date.now(), tz) },
@@ -65,6 +74,7 @@ export default async function PrintTabPage({ params, searchParams }: { params: P
             { label: 'Table', value: tabLabel({ tableLabel: table?.label, name: tab.name, walkUpNo: tab.walkUpNo }) },
             zone ? { label: 'Area', value: zone } : null,
             server ? { label: 'Served by', value: identity.displayName(server) } : null,
+            isPaid ? { label: 'Status', value: 'Paid in full' } : null,
           ]}
         />
 
@@ -85,13 +95,31 @@ export default async function PrintTabPage({ params, searchParams }: { params: P
         })}
 
         <ReceiptRule strong />
-        <ReceiptTotalRow label={`To pay ${outlet.currency}`} value={kes(total)} bold large />
+        <ReceiptTotalRow label={`${isPaid ? 'Total' : 'To pay'} ${outlet.currency}`} value={kes(total)} bold large />
 
-        <ReceiptPay parts={tillParts(outlet, lines, total)} currency={outlet.currency} total={kes(total)} />
+        {isPaid ? (
+          tenders.length > 0 ? (
+            <>
+              <ReceiptSection title="Paid" />
+              {tenders.map((tender) => (
+                <ReceiptTenderRow
+                  key={tender.id}
+                  kind={TENDER_WORD[tender.kind] ?? tender.kind}
+                  reference={tender.reference}
+                  amount={kes(tender.amountCents)}
+                />
+              ))}
+            </>
+          ) : (
+            <p className="py-4 text-center font-print-strong">Paid in full</p>
+          )
+        ) : (
+          <ReceiptPay parts={tillParts(outlet, lines, total)} currency={outlet.currency} total={kes(total)} />
+        )}
 
         <ReceiptFooter>
           <ReceiptThanks>Asante, karibu tena</ReceiptThanks>
-          <p>Prices include VAT. Not a receipt: yours prints once the bill is paid.</p>
+          <p>{isPaid ? 'Prices include VAT. Bill settled in full.' : 'Prices include VAT. Not a receipt: yours prints once the bill is paid.'}</p>
         </ReceiptFooter>
       </Receipt>
     </PrintPage>

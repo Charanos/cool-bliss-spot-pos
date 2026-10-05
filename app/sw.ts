@@ -107,9 +107,15 @@ const serwist = new Serwist({
       }),
     },
     {
+      // Print pages carry live receipt data and must never be served stale. A cached blank or
+      // error page replaying through the dialog is exactly the endless-blank-sheet bug.
+      matcher: ({ url, sameOrigin }: { url: URL; sameOrigin: boolean }) => sameOrigin && url.pathname.startsWith('/print/'),
+      handler: new NetworkOnly(),
+    },
+    {
       // Rule 2, the Console. Its pages carry the figures in the page itself, so it waits for the
       // network however long that takes, and a copy answers only when the network is actually gone.
-      matcher: ({ request, url, sameOrigin }) => sameOrigin && (request.mode === 'navigate' || url.searchParams.has('_rsc')),
+      matcher: ({ request, url, sameOrigin }: { request: Request; url: URL; sameOrigin: boolean }) => sameOrigin && (request.mode === 'navigate' || url.searchParams.has('_rsc')),
       handler: new NetworkFirst({
         cacheName: PAGES,
         plugins: [new CacheableResponsePlugin({ statuses: [200] })],

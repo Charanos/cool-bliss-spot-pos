@@ -13,7 +13,7 @@ import { Sheet, SheetIcon } from '@bliss/ui/components/floor/sheet';
 import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { Money } from '@bliss/ui/components/money';
 import { useNow } from '@bliss/ui/hooks';
-import { IconArrowRight, IconCheck, IconPrinter, IconShoppingBag, IconTrash } from '@tabler/icons-react';
+import { IconArrowRight, IconCheck, IconPrinter, IconReceipt, IconShoppingBag, IconTrash } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BaseAction } from '@/app/_pos/base-layer';
 import { PageHeader } from '@/app/_pos/chrome';
@@ -262,6 +262,7 @@ export default function QuickSalePage() {
         </PageHeader>
 
         <div className="scroll-region px-12 pb-24 pt-16 pad:px-24 pad:pt-24">
+          {!wide && doneCard ? <div className="mb-16">{doneCard}</div> : null}
           {catalogue === undefined ? (
             <div className="grid grid-cols-2 gap-8 pad:grid-cols-[repeat(auto-fill,minmax(168px,1fr))] pad:gap-12">
               {Array.from({ length: 8 }, (_, i) => (
@@ -328,9 +329,27 @@ export default function QuickSalePage() {
 
       <BaseAction>
         {done && cart.length === 0 ? (
-          <Button variant="secondary" size="xl" icon={IconArrowRight} iconPosition="end" onClick={() => setDone(null)}>
-            Next sale
-          </Button>
+          <div className="flex w-full gap-12">
+            <Button
+              variant="secondary"
+              size="xl"
+              icon={IconPrinter}
+              onClick={() => openPrint(`/print/bill/${done.billId}`)}
+              className="flex-1"
+            >
+              Print Final Receipt
+            </Button>
+            <Button
+              variant="primary"
+              size="xl"
+              icon={IconArrowRight}
+              iconPosition="end"
+              onClick={() => setDone(null)}
+              className="flex-1"
+            >
+              Next sale
+            </Button>
+          </div>
         ) : wide ? (
           <Button variant="primary" size="xl" loading={busy} disabled={!covered} onClick={() => void onSettle()}>
             {cart.length === 0 ? 'Take payment' : `Take ${formatKes(due, { decimals: 'whole' })}`}
