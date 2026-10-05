@@ -6,7 +6,7 @@ import { ICON_STROKE } from '@bliss/ui/components/icon';
 import { SeatChip } from '@bliss/ui/components/seat-chip';
 import { StateMark, StatePill } from '@bliss/ui/components/status';
 import { cx } from '@bliss/ui/lib/cx';
-import { IconAlertCircle, IconCheck, IconChecks, IconClockHour4 } from '@tabler/icons-react';
+import { IconAlertCircle, IconCheck, IconChecks, IconClockHour4, IconPrinter } from '@tabler/icons-react';
 import type { Ticket, TicketLine } from '@/lib/pos/counter-queries';
 
 /** A ticket older than this takes the Low edge, once, with no pulse. docs/10 B1. */
@@ -26,12 +26,15 @@ export function TicketCard({
   timezone,
   onPour,
   onVoid,
+  onPrintBill,
 }: {
   ticket: Ticket;
   now: number;
   timezone: string;
   onPour: (lineIds: string[]) => void;
   onVoid: (line: TicketLine) => void;
+  /** Called when the counter taps "Print bill" after all lines are poured. */
+  onPrintBill?: () => void;
 }) {
   const waitingIds = ticket.lines.filter((l) => l.state === 'waiting').map((l) => l.lineId);
   const late = now - ticket.firedAt > LATE_MS;
@@ -142,7 +145,7 @@ export function TicketCard({
         })}
       </ul>
 
-      <footer className="mt-auto px-8 pb-8">
+      <footer className="mt-auto flex flex-col gap-4 px-8 pb-8">
         {waitingIds.length > 0 ? (
           <button
             type="button"
@@ -158,12 +161,22 @@ export function TicketCard({
               {totalQty > ticket.lines.length ? ` · ${totalQty} items` : ''}
             </span>
           </button>
-        ) : (
+        ) : ranOut ? (
           <p className="flex h-control-lg items-center gap-8 rounded-lg bg-stop-wash px-16 text-body-sm text-stop">
             <IconAlertCircle size={16} stroke={ICON_STROKE} aria-hidden="true" />
             Nothing left to pour. Void what ran out so the tab is right.
           </p>
-        )}
+        ) : null}
+        {waitingIds.length === 0 && !ranOut && onPrintBill ? (
+          <button
+            type="button"
+            onClick={onPrintBill}
+            className="flex h-control-lg w-full items-center justify-center gap-8 rounded-lg bg-control px-16 text-body text-ink press-feedback hover:bg-control-hover"
+          >
+            <IconPrinter size={16} stroke={ICON_STROKE} aria-hidden="true" />
+            Print bill
+          </button>
+        ) : null}
       </footer>
     </article>
   );

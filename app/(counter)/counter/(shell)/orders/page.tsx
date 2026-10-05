@@ -14,6 +14,7 @@ import { PageHeader } from '@/app/_pos/chrome';
 import { pour } from '@/lib/pos/actions';
 import { useTickets } from '@/lib/pos/counter-queries';
 import { useOutlet } from '@/lib/pos/queries';
+import { openPrint } from '@/lib/pos/print';
 import { PANE, Quiet } from '../../_components/parts';
 import { useShortcut } from '../../_components/shortcuts';
 import { LATE_MS, TicketCard } from '../../_components/ticket-card';
@@ -107,6 +108,7 @@ export default function CounterOrdersPage() {
                     timezone={tz}
                     onPour={(ids) => void pour(t.tabId, t.orderId, ids, t.label, ids.length === t.lines.filter((l) => l.state === 'waiting').length)}
                     onVoid={(line) => setVoiding({ lineId: line.lineId, title: `${line.qty} × ${line.name}`, poured: false, ranOut: true })}
+                    onPrintBill={() => openPrint(`/print/tab/${t.tabId}`)}
                   />
                 </div>
               ))}
